@@ -1,0 +1,17 @@
+{
+  "name": "instore-screens",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Hackathon middleware and management UI for in-store screen inventory delivery.",
+  "type": "module",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "express": "^4.21.2"
+  }
+}

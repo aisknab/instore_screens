@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>In-Store Screen</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Space+Grotesk:wght@500;700&display=swap"
+      rel="stylesheet"
+    >
+    <link rel="stylesheet" href="/screen.css">
+  </head>
+  <body>
+    <div id="statusBadge" class="status-badge">Booting screen player...</div>
+    <div id="ad-container">
+      <div class="loading">Loading ad...</div>
+    </div>
+
+    <script type="module">
+      const urlParams = new URLSearchParams(window.location.search);
+      const screenId = urlParams.get("screenId") || "STORE_42_ELECTRONICS_V1";
+      const apiBase = (urlParams.get("apiBase") || "").replace(/\/$/, "");
+      const rmjsMode = (urlParams.get("rmjs") || "auto").toLowerCase();
+      const rmjsSources = (() => {
+        const custom = urlParams.get("rmjsUrl");
+        if (custom) {
+          return [custom];
+        }
+        return ["https://delivery.retailmedia.com/Delivery/ClientPaths/Library/rm.js?a=89627"];
+      })();
+      const adContainer = document.getElementById("ad-container");
+      const statusBadge = document.getElementById("statusBadge");
+
+      let refreshTimer = null;
+      let fallbackLoopTimer = null;
+      let rmjsChecked = false;
+      let rmjsAvailable = Boolean(window.RMJS && typeof window.RMJS.render === "function");
+      const LOOPING_TEMPLATES = new Set(["carousel-banner", "menu-loop"]);
+      const FALLBACK_LOOP_INTERVALS = {
+        "carousel-banner": 4000,
+        "menu-loop": 3200
+      };
+
+      function setStatus(message) {
+        statusBadge.textContent = message;
+      }
+
+      function scheduleRefresh(interval) {
+        if (refreshTimer) {
+          window.clearInterval(refreshTimer);
+        }
+        refreshTimer = window.setInterval(loadAndRenderAd, interval);
+      }
+
+      function clearFallbackLoop() {
+        if (!fallbackLoopTimer) {
+          return;
+        }
+        window.clearInterval(fallbackLoopTimer);
+        fallbackLoopTimer = null;
+      }
+
+      function isLocalhost() {
+        return (
+          window.location.hostname === "localhost" ||
+          window.location.hostname === "127.0.0.1" ||
+          window.location.hostname === "::1"
+        );
+      }
+
+      function shouldAttemptRmjs() {
+        if (rmjsMode === "on") {
+          return true;
+        }
+        if (rmjsMode === "off") {
+          return false;
+        }
+        return !isLocalhost();
+      }
+
+      function loadScript(src, timeoutMs = 3500) {
+        return new Promise((resolve) => {
+          const script = document.createElement("script");
+          script.src = src;
+          script.async = true;
+
+          let finished = false;
+          const done = (value) => {
+            if (finished) {
+              return;
+            }
+            finished = true;
+            window.clearTimeout(timer);
+            resolve(value);
+          };
+
+          script.onload = () => done(true);
+          script.onerror = () => done(false);
+          const timer = window.setTimeout(() => done(false), timeoutMs);
+          document.head.appendChild(script);
+        });
+      }
+
+      async function ensureRmjsReady() {
+        if (rmjsAvailable) {
+          rmjsChecked = true;
+          return true;
+        }
+        if (!shouldAttemptRmjs()) {
+          rmjsChecked = true;
+          rmjsAvailable = false;
+          return false;
+        }
+
+        for (const source of rmjsSources) {
+          const loaded = await loadScript(source);
+          if (loaded && window.RMJS && typeof window.RMJS.render === "function") {
+            rmjsAvailable = true;
+            rmjsChecked = true;
+            return true;
+          }
+        }
+
+        rmjsChecked = true;
+        rmjsAvailable = false;
+        return false;
+      }
+
+      function renderFallback(data) {
+        clearFallbackLoop();
+
+        const products = Array.isArray(data.products) && data.products.length > 0 ? data.products : [{}];
+        const templateId = String(data.settings?.templateId || "fullscreen-banner");
+        const templateName = String(data.settings?.templateName || templateId);
+        const supportsLoop = LOOPING_TEMPLATES.has(templateId) && products.length > 1;
+        const loopInterval =
+          Number(data.settings?.loopIntervalMs) || FALLBACK_LOOP_INTERVALS[templateId] || 0;
+        let currentIndex = 0;
+
+        adContainer.innerHTML = "";
+
+        const card = document.createElement("article");
+        card.className = `fallback fallback--${templateId.replace(/[^a-z0-9-]/gi, "").toLowerCase()}`;
+
+        const content = document.createElement("section");
+        content.className = "fallback__content";
+        const tag = document.createElement("span");
+        tag.className = "fallback__tag";
+        tag.textContent = supportsLoop ? `${templateName} | Live Loop` : templateName;
+        const cycle = document.createElement("span");
+        cycle.className = "fallback__cycle";
+        const title = document.createElement("h1");
+        const priceRow = document.createElement("div");
+        priceRow.className = "fallback__price";
+        const priceStrong = document.createElement("strong");
+        priceRow.appendChild(priceStrong);
+        const compare = document.createElement("del");
+        priceRow.appendChild(compare);
+        const meta = document.createElement("p");
+        meta.className = "fallback__meta";
+
+        content.appendChild(tag);
+        content.appendChild(cycle);
+        content.appendChild(title);
+        content.appendChild(priceRow);
+        content.appendChild(meta);
+
+        const visual = document.createElement("section");
+        visual.className = "fallback__visual";
+        const img = document.createElement("img");
+        const initialProduct = products[0] || {};
+        img.src = String(initialProduct.Image || "");
+        img.alt = String(initialProduct.ProductName || "In-Store Promotion");
+        const veil = document.createElement("div");
+        veil.className = "fallback__veil";
+        visual.appendChild(img);
+        visual.appendChild(veil);
+
+        card.appendChild(content);
+        card.appendChild(visual);
+        adContainer.appendChild(card);
+
+        function renderProduct(product, index) {
+          const name = String(product.ProductName || "In-Store Promotion");
+          const image = String(product.Image || "");
+          const price = String(product.Price || "0.00");
+          const comparePrice = String(product.ComparePrice || "");
+          const rating = String(product.Rating || "-");
+          const promotion = (() => {
+            const attributes = String(product.RenderingAttributes || "");
+            if (!attributes) {
+              return "";
+            }
+            try {
+              const parsed = JSON.parse(attributes);
+              return String(parsed.promotion || "");
+            } catch {
+              return "";
+            }
+          })();
+
+          title.textContent = name;
+          img.src = image;
+          img.alt = name;
+          priceStrong.textContent = `$${price}`;
+          if (comparePrice) {
+            compare.textContent = `$${comparePrice}`;
+            compare.style.display = "";
+          } else {
+            compare.textContent = "";
+            compare.style.display = "none";
+          }
+          const promoSuffix = promotion ? ` | ${promotion}` : "";
+          const indexText = supportsLoop ? ` | Item ${index + 1}/${products.length}` : "";
+          cycle.textContent = supportsLoop ? `Loop Interval ${Math.round(loopInterval / 1000)}s` : "";
+          meta.textContent = `Rating ${rating} | Template ${templateId}${indexText}${promoSuffix} | Screen ${screenId}`;
+          card.classList.remove("is-transition");
+          void card.offsetWidth;
+          card.classList.add("is-transition");
+        }
+
+        renderProduct(products[0], 0);
+        if (supportsLoop && loopInterval >= 1000) {
+          fallbackLoopTimer = window.setInterval(() => {
+            currentIndex = (currentIndex + 1) % products.length;
+            renderProduct(products[currentIndex], currentIndex);
+          }, loopInterval);
+        }
+      }
+
+      function renderWithRmjs(data) {
+        if (!rmjsAvailable || !window.RMJS || typeof window.RMJS.render !== "function") {
+          return false;
+        }
+        clearFallbackLoop();
+
+        window.RMJS.render({
+          Status: "OK",
+          Placements: [
+            {
+              Format: data.format,
+              Products: data.products,
+              RenderingSettings: data.settings || {}
+            }
+          ],
+          InjectionPoint: "#ad-container",
+          Environment: "instore"
+        });
+
+        return true;
+      }
+
+      async function loadAndRenderAd() {
+        try {
+          setStatus(`Loading ${screenId}...`);
+          if (!rmjsChecked || rmjsMode === "on") {
+            await ensureRmjsReady();
+          }
+          const response = await fetch(`${apiBase}/api/screen-ad?screenId=${encodeURIComponent(screenId)}`, {
+            cache: "no-store"
+          });
+          if (!response.ok) {
+            throw new Error(`Middleware returned ${response.status}`);
+          }
+
+          const payload = await response.json();
+          const renderedByRmjs = renderWithRmjs(payload);
+          if (!renderedByRmjs) {
+            renderFallback(payload);
+          }
+
+          const refreshInterval = Number(payload.settings?.refreshInterval) || 30000;
+          scheduleRefresh(refreshInterval);
+          const templateId = String(payload.settings?.templateId || "fullscreen-banner");
+          const modeLabel = rmjsAvailable ? "RMJS" : "Fallback";
+          setStatus(`Live ${screenId} | ${templateId} | ${modeLabel} | ${Math.round(refreshInterval / 1000)}s refresh`);
+        } catch (error) {
+          clearFallbackLoop();
+          setStatus("Load failed | retrying");
+          adContainer.innerHTML = "";
+          const wrapper = document.createElement("div");
+          wrapper.style.textAlign = "center";
+          wrapper.style.padding = "24px";
+          const title = document.createElement("h1");
+          title.style.margin = "0 0 8px";
+          title.style.fontSize = "30px";
+          title.textContent = "Unable to load ad";
+          const message = document.createElement("p");
+          message.style.margin = "0";
+          message.style.color = "#d0d8ef";
+          message.textContent = String(error.message || "Unknown error");
+          const screen = document.createElement("p");
+          screen.style.margin = "8px 0 0";
+          screen.style.color = "#9eb0d8";
+          screen.textContent = `Screen ID: ${screenId}`;
+          wrapper.appendChild(title);
+          wrapper.appendChild(message);
+          wrapper.appendChild(screen);
+          adContainer.appendChild(wrapper);
+          scheduleRefresh(15000);
+        }
+      }
+
+      window.addEventListener("load", loadAndRenderAd);
+      window.addEventListener("beforeunload", clearFallbackLoop);
+      window.refreshAd = loadAndRenderAd;
+    </script>
+  </body>
+</html>

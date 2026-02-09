@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>In-Store Inventory Manager</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap"
+      rel="stylesheet"
+    >
+    <link rel="stylesheet" href="/admin.css">
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="topbar__inner">
+        <div>
+          <p class="eyebrow">Criteo Retail Media</p>
+          <h1>Add Page</h1>
+          <p class="subtitle">
+            Model in-store zones as pages and screens as placements in the same inventory workflow.
+          </p>
+        </div>
+        <a class="ghost-link" href="/screen.html?screenId=STORE_42_ELECTRONICS_V1" target="_blank" rel="noreferrer">
+          Open Demo Screen
+        </a>
+      </div>
+    </header>
+
+    <main class="shell">
+      <section class="panel panel--primary">
+        <h2>Add a page from the retailer site</h2>
+        <p class="panel__hint">Enter the ad delivery settings for a page and assign its Page ID.</p>
+
+        <form id="page-form" novalidate>
+          <div class="field">
+            <label for="pageId">Page ID*</label>
+            <input id="pageId" name="pageId" maxlength="40" placeholder="Enter a unique ID for this page" required>
+            <p class="field__meta"><span id="pageIdCount">0</span>/40</p>
+          </div>
+
+          <fieldset class="field">
+            <legend>Page Type*</legend>
+            <div id="pageTypeGrid" class="choice-grid"></div>
+          </fieldset>
+
+          <fieldset class="field">
+            <legend>Environment*</legend>
+            <div id="environmentGrid" class="choice-grid choice-grid--env"></div>
+          </fieldset>
+
+          <div class="toggle-list">
+            <label class="switch-row" for="firePageBeacons">
+              <span>
+                <strong>Delivery Should Fire Page Beacons</strong>
+                <small>Enables page beacons to fire for all placements on this page.</small>
+              </span>
+              <span class="switch">
+                <input id="firePageBeacons" name="firePageBeacons" type="checkbox" checked>
+                <span class="slider"></span>
+              </span>
+            </label>
+
+            <label class="switch-row" for="oneTagHybridIntegration">
+              <span>
+                <strong>OneTag Hybrid Integration</strong>
+                <small>Disable ad serving from Delivery for placements on this page.</small>
+              </span>
+              <span class="switch">
+                <input id="oneTagHybridIntegration" name="oneTagHybridIntegration" type="checkbox">
+                <span class="slider"></span>
+              </span>
+            </label>
+
+            <label class="switch-row" for="includeBidInResponse">
+              <span>
+                <strong>Include Bid In Response</strong>
+                <small>Append bid amount to the ad response payload for this page.</small>
+              </span>
+              <span class="switch">
+                <input id="includeBidInResponse" name="includeBidInResponse" type="checkbox">
+                <span class="slider"></span>
+              </span>
+            </label>
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" class="btn btn--primary">Add Page</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="panel">
+        <h2>Add or Edit Screen Placement</h2>
+        <p class="panel__hint">
+          Keep screen setup lean. Template presets control the visual behavior and refresh defaults.
+        </p>
+
+        <form id="screen-form" novalidate>
+          <input id="editScreenId" name="editScreenId" type="hidden">
+
+          <div class="field-row">
+            <div class="field">
+              <label for="screenId">Screen ID*</label>
+              <input id="screenId" name="screenId" placeholder="STORE_42_ELECTRONICS_V2" required>
+            </div>
+            <div class="field">
+              <label for="storeId">Store ID*</label>
+              <input id="storeId" name="storeId" value="STORE_42" required>
+            </div>
+          </div>
+
+          <div class="field-row">
+            <div class="field">
+              <label for="location">Location*</label>
+              <input id="location" name="location" placeholder="electronics" required>
+            </div>
+            <div class="field">
+              <label for="pageIdSelect">Mapped Page*</label>
+              <select id="pageIdSelect" name="pageId" required></select>
+            </div>
+          </div>
+
+          <div class="field-row">
+            <div class="field">
+              <label for="screenType">Screen Type*</label>
+              <select id="screenType" name="screenType" required></select>
+            </div>
+            <div class="field">
+              <label for="screenSize">Screen Size*</label>
+              <input id="screenSize" name="screenSize" value="1920x1080" required>
+            </div>
+          </div>
+
+          <div class="field-row">
+            <div class="field">
+              <label for="templateId">Template*</label>
+              <select id="templateId" name="templateId" required></select>
+            </div>
+            <div class="field">
+              <label for="refreshInterval">Refresh Interval (ms)</label>
+              <input id="refreshInterval" name="refreshInterval" type="number" min="5000" step="1000" value="30000">
+            </div>
+          </div>
+
+          <div class="template-preview" id="templatePreview">
+            Select a template to see recommended setup.
+          </div>
+
+          <div class="form-actions">
+            <button id="screenCancelBtn" type="button" class="btn btn--ghost is-hidden">Cancel Edit</button>
+            <button id="screenSubmitBtn" type="submit" class="btn btn--primary">Add Screen</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="panel panel--split">
+        <div class="panel__header">
+          <h2>Configured Pages</h2>
+          <button id="refreshBtn" class="btn btn--ghost" type="button">Refresh</button>
+        </div>
+        <div id="pagesList" class="stack-list"></div>
+      </section>
+
+      <section class="panel panel--split">
+        <h2>Configured Screens</h2>
+        <p class="panel__hint">Use Edit to update mapping, template, size, and refresh values.</p>
+        <div id="screensList" class="stack-list"></div>
+      </section>
+    </main>
+
+    <p id="statusText" class="status-text"></p>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+    <script type="module" src="/admin.js"></script>
+  </body>
+</html>
