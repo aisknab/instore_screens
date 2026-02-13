@@ -1,0 +1,283 @@
+﻿[
+    {
+        "sku":  "LAP-ULTRA-13-001",
+        "name":  "UltraBook 13 Pro",
+        "category":  "electronics",
+        "brand":  "Vertex",
+        "productPage":  "https://store.example.com/products/lap-ultra-13-001",
+        "image":  "/assets/products/lap-ultra-13-001.svg",
+        "price":  "1299.00",
+        "comparePrice":  "1499.00",
+        "rating":  "4.8",
+        "advertiserId":  "advertiser-vertex",
+        "tags":  [
+                     "laptop",
+                     "ultrabook",
+                     "premium",
+                     "new-range"
+                 ]
+    },
+    {
+        "sku":  "LAP-GAME-16-002",
+        "name":  "GameCore 16 RTX",
+        "category":  "electronics",
+        "brand":  "Aegis",
+        "productPage":  "https://store.example.com/products/lap-game-16-002",
+        "image":  "/assets/products/lap-game-16-002.svg",
+        "price":  "1799.00",
+        "comparePrice":  "1999.00",
+        "rating":  "4.7",
+        "advertiserId":  "advertiser-aegis",
+        "tags":  [
+                     "laptop",
+                     "gaming",
+                     "performance",
+                     "new-range"
+                 ]
+    },
+    {
+        "sku":  "LAP-BIZ-14-003",
+        "name":  "Business Lite 14",
+        "category":  "electronics",
+        "brand":  "Northfield",
+        "productPage":  "https://store.example.com/products/lap-biz-14-003",
+        "image":  "/assets/products/lap-biz-14-003.svg",
+        "price":  "999.00",
+        "comparePrice":  "1199.00",
+        "rating":  "4.6",
+        "advertiserId":  "advertiser-northfield",
+        "tags":  [
+                     "laptop",
+                     "business",
+                     "work",
+                     "new-range"
+                 ]
+    },
+    {
+        "sku":  "LAP-STUDENT-15-004",
+        "name":  "Student Plus 15",
+        "category":  "electronics",
+        "brand":  "Orbit",
+        "productPage":  "https://store.example.com/products/lap-student-15-004",
+        "image":  "/assets/products/lap-student-15-004.svg",
+        "price":  "749.00",
+        "comparePrice":  "899.00",
+        "rating":  "4.5",
+        "advertiserId":  "advertiser-orbit",
+        "tags":  [
+                     "laptop",
+                     "student",
+                     "value",
+                     "new-range"
+                 ]
+    },
+    {
+        "sku":  "LAP-CREATOR-15-005",
+        "name":  "Creator Studio 15 OLED",
+        "category":  "electronics",
+        "brand":  "Aurora",
+        "productPage":  "https://store.example.com/products/lap-creator-15-005",
+        "image":  "/assets/products/lap-creator-15-005.svg",
+        "price":  "1599.00",
+        "comparePrice":  "1799.00",
+        "rating":  "4.8",
+        "advertiserId":  "advertiser-aurora",
+        "tags":  [
+                     "laptop",
+                     "creator",
+                     "oled",
+                     "new-range"
+                 ]
+    },
+    {
+        "sku":  "LAP-2IN1-14-006",
+        "name":  "Flex 2-in-1 14 Touch",
+        "category":  "electronics",
+        "brand":  "Vertex",
+        "productPage":  "https://store.example.com/products/lap-2in1-14-006",
+        "image":  "/assets/products/lap-2in1-14-006.svg",
+        "price":  "1099.00",
+        "comparePrice":  "1299.00",
+        "rating":  "4.6",
+        "advertiserId":  "advertiser-vertex",
+        "tags":  [
+                     "laptop",
+                     "2-in-1",
+                     "touch",
+                     "new-range"
+                 ]
+    },
+    {
+        "sku":  "ACC-MOUSE-001",
+        "name":  "Ergo Wireless Mouse",
+        "category":  "electronics",
+        "brand":  "Northfield",
+        "productPage":  "https://store.example.com/products/acc-mouse-001",
+        "image":  "/assets/products/acc-mouse-001.svg",
+        "price":  "49.00",
+        "comparePrice":  "69.00",
+        "rating":  "4.4",
+        "advertiserId":  "advertiser-northfield",
+        "tags":  [
+                     "accessory",
+                     "mouse",
+                     "checkout-attach"
+                 ]
+    },
+    {
+        "sku":  "ACC-BACKPACK-002",
+        "name":  "Commuter Laptop Backpack",
+        "category":  "electronics",
+        "brand":  "Orbit",
+        "productPage":  "https://store.example.com/products/acc-backpack-002",
+        "image":  "/assets/products/acc-backpack-002.svg",
+        "price":  "89.00",
+        "comparePrice":  "109.00",
+        "rating":  "4.5",
+        "advertiserId":  "advertiser-orbit",
+        "tags":  [
+                     "accessory",
+                     "laptop",
+                     "bag",
+                     "checkout-attach"
+                 ]
+    },
+    {
+        "sku":  "ACC-DOCK-003",
+        "name":  "USB-C Multi Dock",
+        "category":  "electronics",
+        "brand":  "Aegis",
+        "productPage":  "https://store.example.com/products/acc-dock-003",
+        "image":  "/assets/products/acc-dock-003.svg",
+        "price":  "149.00",
+        "comparePrice":  "179.00",
+        "rating":  "4.6",
+        "advertiserId":  "advertiser-aegis",
+        "tags":  [
+                     "accessory",
+                     "dock",
+                     "usb-c",
+                     "checkout-attach"
+                 ]
+    },
+    {
+        "sku":  "WG-FRIDGE-001",
+        "name":  "Smart Fridge Family XL",
+        "category":  "whitegoods",
+        "brand":  "Polarix",
+        "productPage":  "https://store.example.com/products/wg-fridge-001",
+        "image":  "/assets/products/wg-fridge-001.svg",
+        "price":  "1299.00",
+        "comparePrice":  "1599.00",
+        "rating":  "4.8",
+        "advertiserId":  "advertiser-polarix",
+        "tags":  [
+                     "fridge",
+                     "kitchen",
+                     "premium"
+                 ]
+    },
+    {
+        "sku":  "WG-WASHER-002",
+        "name":  "EcoWash Washer 9kg",
+        "category":  "whitegoods",
+        "brand":  "HydroHome",
+        "productPage":  "https://store.example.com/products/wg-washer-002",
+        "image":  "/assets/products/wg-washer-002.svg",
+        "price":  "549.00",
+        "comparePrice":  "699.00",
+        "rating":  "4.6",
+        "advertiserId":  "advertiser-hydrohome",
+        "tags":  [
+                     "washer",
+                     "laundry",
+                     "value"
+                 ]
+    },
+    {
+        "sku":  "WG-OVEN-003",
+        "name":  "Steam Oven Pro 60L",
+        "category":  "whitegoods",
+        "brand":  "ChefLine",
+        "productPage":  "https://store.example.com/products/wg-oven-003",
+        "image":  "/assets/products/wg-oven-003.svg",
+        "price":  "749.00",
+        "comparePrice":  "899.00",
+        "rating":  "4.5",
+        "advertiserId":  "advertiser-chefline",
+        "tags":  [
+                     "oven",
+                     "kitchen",
+                     "clearance"
+                 ]
+    },
+    {
+        "sku":  "FS-LUNCH-001",
+        "name":  "Lunch Combo Upgrade",
+        "category":  "foodcourt",
+        "brand":  "QuickBite",
+        "productPage":  "https://store.example.com/products/fs-lunch-001",
+        "image":  "/assets/products/fs-lunch-001.svg",
+        "price":  "14.99",
+        "comparePrice":  "19.99",
+        "rating":  "4.6",
+        "advertiserId":  "advertiser-quickbite",
+        "tags":  [
+                     "menu",
+                     "combo",
+                     "foodcourt"
+                 ]
+    },
+    {
+        "sku":  "FS-BREAKFAST-002",
+        "name":  "Breakfast Stack + Coffee",
+        "category":  "foodcourt",
+        "brand":  "QuickBite",
+        "productPage":  "https://store.example.com/products/fs-breakfast-002",
+        "image":  "/assets/products/fs-breakfast-002.svg",
+        "price":  "9.99",
+        "comparePrice":  "12.99",
+        "rating":  "4.7",
+        "advertiserId":  "advertiser-quickbite",
+        "tags":  [
+                     "menu",
+                     "breakfast",
+                     "foodcourt"
+                 ]
+    },
+    {
+        "sku":  "GR-PROTEIN-001",
+        "name":  "Protein Bar 6 Pack",
+        "category":  "aisle",
+        "brand":  "FitFuel",
+        "productPage":  "https://store.example.com/products/gr-protein-001",
+        "image":  "/assets/products/gr-protein-001.svg",
+        "price":  "8.99",
+        "comparePrice":  "12.99",
+        "rating":  "4.5",
+        "advertiserId":  "advertiser-fitfuel",
+        "tags":  [
+                     "shelf",
+                     "snack",
+                     "clearance"
+                 ]
+    },
+    {
+        "sku":  "GR-COFFEE-002",
+        "name":  "Premium Coffee Beans",
+        "category":  "aisle",
+        "brand":  "BeanCraft",
+        "productPage":  "https://store.example.com/products/gr-coffee-002",
+        "image":  "/assets/products/gr-coffee-002.svg",
+        "price":  "24.99",
+        "comparePrice":  "34.99",
+        "rating":  "4.8",
+        "advertiserId":  "advertiser-beancraft",
+        "tags":  [
+                     "shelf",
+                     "coffee",
+                     "premium"
+                 ]
+    }
+]
+

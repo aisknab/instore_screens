@@ -1,0 +1,14 @@
+﻿<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="675" viewBox="0 0 1200 675" role="img" aria-label="Foodcourt Spotlight">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#9c2b1f"/>
+      <stop offset="100%" stop-color="#f39a3c"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="675" fill="url(#bg)"/>
+  <circle cx="1000" cy="120" r="220" fill="rgba(255,255,255,0.14)"/>
+  <circle cx="140" cy="550" r="260" fill="rgba(255,255,255,0.10)"/>
+  <text x="64" y="280" fill="#ffffff" font-size="74" font-family="Segoe UI, Arial, sans-serif" font-weight="700">Foodcourt Spotlight</text>
+  <text x="64" y="352" fill="rgba(255,255,255,0.92)" font-size="30" font-family="Segoe UI, Arial, sans-serif">In-store creative fallback</text>
+  <text x="64" y="608" fill="rgba(255,255,255,0.86)" font-size="24" font-family="Consolas, Menlo, monospace">FOODCOURT</text>
+</svg>

@@ -155,6 +155,91 @@
         </form>
       </section>
 
+      <section class="panel">
+        <div class="panel__header">
+          <h2>Goal Agent</h2>
+          <button id="agentRefreshBtn" class="btn btn--ghost" type="button">Refresh Runs</button>
+        </div>
+        <p class="panel__hint">
+          Define a business goal, generate a plan, then apply changes to scoped screens with one click.
+        </p>
+
+        <form id="goalAgentForm" novalidate>
+          <div class="field-row">
+            <div class="field">
+              <label for="goalObjective">Goal Objective*</label>
+              <select id="goalObjective" name="objective" required></select>
+            </div>
+            <div class="field">
+              <label for="goalAggressiveness">Optimization Style*</label>
+              <select id="goalAggressiveness" name="aggressiveness" required></select>
+            </div>
+          </div>
+
+          <div class="field-row">
+            <div class="field">
+              <label for="goalStoreScope">Store Scope</label>
+              <select id="goalStoreScope" name="storeId"></select>
+            </div>
+            <div class="field">
+              <label for="goalPageScope">Mapped Page Scope</label>
+              <select id="goalPageScope" name="pageId"></select>
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="goalPrompt">Goal Brief (Optional)</label>
+            <textarea
+              id="goalPrompt"
+              name="prompt"
+              rows="3"
+              maxlength="280"
+              placeholder="Example: Increase checkout add-on visibility in STORE_42 this afternoon."
+            ></textarea>
+          </div>
+
+          <div class="field-row">
+            <div class="field">
+              <label for="goalProductCategory">Product Category</label>
+              <select id="goalProductCategory"></select>
+            </div>
+            <div class="field">
+              <label for="goalProductSearch">Search Product Feed</label>
+              <input
+                id="goalProductSearch"
+                type="search"
+                placeholder="Search by SKU, product, brand, or tag"
+                autocomplete="off"
+              >
+            </div>
+          </div>
+
+          <div class="field">
+            <label>Target SKUs To Influence</label>
+            <p class="panel__hint goal-products__hint">
+              Select one or more SKUs from the feed. If left empty, the Goal Agent infers products from your brief and only applies to compatible screen contexts.
+            </p>
+            <div id="goalProductList" class="goal-products"></div>
+            <p id="goalSkuCount" class="field__meta">0 SKU(s) selected.</p>
+          </div>
+
+          <div class="form-actions form-actions--left">
+            <button id="goalPlanBtn" type="submit" class="btn btn--primary">Generate Plan</button>
+            <button id="goalApplyBtn" type="button" class="btn btn--ghost" disabled>Apply Plan</button>
+          </div>
+        </form>
+
+        <div id="goalPlanSummary" class="goal-summary empty">No goal plan generated yet.</div>
+        <div id="goalPlanChanges" class="stack-list"></div>
+
+        <h3 class="subhead">Live After Apply</h3>
+        <div id="goalLiveSummary" class="goal-summary empty">Apply a plan to view live screens and creatives.</div>
+        <div id="goalLiveScreens" class="stack-list"></div>
+
+        <h3 class="subhead">Agent Run History</h3>
+        <div id="agentRunsList" class="stack-list"></div>
+      </section>
+
       <section class="panel panel--split">
         <div class="panel__header">
           <h2>Configured Pages</h2>
@@ -165,7 +250,7 @@
 
       <section class="panel panel--split">
         <h2>Configured Screens</h2>
-        <p class="panel__hint">Use Edit to update mapping, template, size, and refresh values.</p>
+        <p class="panel__hint">Grouped by Store ID, then mapped page. Click Store/Page rows to collapse or expand.</p>
         <div id="screensList" class="stack-list"></div>
       </section>
     </main>

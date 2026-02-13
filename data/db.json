@@ -75,7 +75,7 @@
       "pageId": "ELECTRONICS",
       "screenType": "Vertical Screen",
       "screenSize": "1080x1920",
-      "format": "desktop-instore-1080x1920",
+      "format": "desktop-instore-hero-1080x1920",
       "templateId": "fullscreen-hero",
       "refreshInterval": 30000,
       "lineItems": [
@@ -87,19 +87,19 @@
           "templateId": "fullscreen-hero",
           "products": [
             {
-              "ProductId": "SKU-HDPH-001",
-              "ProductName": "ANC Headphones Pro",
-              "ProductPage": "https://store.example.com/products/sku-hdph-001",
-              "Image": "https://images.unsplash.com/photo-1583394838336-acd977736f90?w=1200",
-              "Price": "199.99",
-              "ComparePrice": "249.99",
-              "Rating": "4.8",
-              "adid": "seed-ad-elec-1",
-              "ClientAdvertiserId": "advertiser-audio",
-              "RenderingAttributes": "{\"promotion\":\"Save 20%\"}",
-              "OnLoadBeacon": "https://httpbin.org/get?event=load&seed=1",
-              "OnViewBeacon": "https://httpbin.org/get?event=view&seed=1",
-              "OnClickBeacon": "https://httpbin.org/get?event=click&seed=1",
+              "ProductId": "ACC-BACKPACK-002",
+              "ProductName": "Commuter Laptop Backpack",
+              "ProductPage": "https://store.example.com/products/acc-backpack-002",
+              "Image": "/assets/products/acc-backpack-002.svg",
+              "Price": "89.00",
+              "ComparePrice": "109.00",
+              "Rating": "4.5",
+              "adid": "",
+              "ClientAdvertiserId": "advertiser-orbit",
+              "RenderingAttributes": "{\"promotion\":\"Now live in-store\",\"badge\":\"Brand Spotlight\",\"cta\":\"See in aisle\",\"subcopy\":\"Featured this hour in your current store. Focus brand: Orbit.\",\"legal\":\"Availability may vary by store.\",\"templateId\":\"fullscreen-hero\",\"goalObjective\":\"awareness\",\"goalTargetSku\":\"ACC-BACKPACK-002\",\"targetSku\":\"ACC-BACKPACK-002\",\"targetCategory\":\"electronics\",\"targetBrand\":\"Orbit\"}",
+              "OnLoadBeacon": "",
+              "OnViewBeacon": "",
+              "OnClickBeacon": "",
               "OnBasketChangeBeacon": "",
               "OnWishlistBeacon": ""
             }
@@ -110,22 +110,22 @@
           "name": "4K OLED TV Spotlight",
           "activeFrom": "2026-01-01T00:00:00.000Z",
           "activeTo": "2027-01-01T00:00:00.000Z",
-          "templateId": "fullscreen-banner",
+          "templateId": "fullscreen-hero",
           "products": [
             {
-              "ProductId": "SKU-TV-004",
-              "ProductName": "4K OLED Smart TV 55\"",
-              "ProductPage": "https://store.example.com/products/sku-tv-004",
-              "Image": "https://images.unsplash.com/photo-1593359677879-a4bb92f829d1?w=1200",
-              "Price": "899.00",
-              "ComparePrice": "1099.00",
-              "Rating": "4.7",
-              "adid": "seed-ad-elec-2",
-              "ClientAdvertiserId": "advertiser-homecinema",
-              "RenderingAttributes": "{\"promotion\":\"Weekend Deal\"}",
-              "OnLoadBeacon": "https://httpbin.org/get?event=load&seed=2",
-              "OnViewBeacon": "https://httpbin.org/get?event=view&seed=2",
-              "OnClickBeacon": "https://httpbin.org/get?event=click&seed=2",
+              "ProductId": "ACC-BACKPACK-002",
+              "ProductName": "Commuter Laptop Backpack",
+              "ProductPage": "https://store.example.com/products/acc-backpack-002",
+              "Image": "/assets/products/acc-backpack-002.svg",
+              "Price": "89.00",
+              "ComparePrice": "109.00",
+              "Rating": "4.5",
+              "adid": "",
+              "ClientAdvertiserId": "advertiser-orbit",
+              "RenderingAttributes": "{\"promotion\":\"Now live in-store\",\"badge\":\"Brand Spotlight\",\"cta\":\"See in aisle\",\"subcopy\":\"Featured this hour in your current store. Focus brand: Orbit.\",\"legal\":\"Availability may vary by store.\",\"templateId\":\"fullscreen-hero\",\"goalObjective\":\"awareness\",\"goalTargetSku\":\"ACC-BACKPACK-002\",\"targetSku\":\"ACC-BACKPACK-002\",\"targetCategory\":\"electronics\",\"targetBrand\":\"Orbit\"}",
+              "OnLoadBeacon": "",
+              "OnViewBeacon": "",
+              "OnClickBeacon": "",
               "OnBasketChangeBeacon": "",
               "OnWishlistBeacon": ""
             }
@@ -133,7 +133,7 @@
         }
       ],
       "createdAt": "2026-02-09T10:00:00.000Z",
-      "updatedAt": "2026-02-09T10:00:00.000Z"
+      "updatedAt": "2026-02-10T17:52:36.852Z"
     },
     {
       "screenId": "STORE_42_WHITEGOODS_H1",
@@ -177,88 +177,6 @@
       "updatedAt": "2026-02-09T10:00:00.000Z"
     },
     {
-      "screenId": "screen002",
-      "storeId": "STORE_42",
-      "location": "Checkout_1",
-      "pageId": "CHECKOUT",
-      "screenType": "Kiosk",
-      "screenSize": "1920x1080",
-      "format": "desktop-instore-1920x1080",
-      "templateId": "fullscreen-banner",
-      "refreshInterval": 30000,
-      "lineItems": [
-        {
-          "lineItemId": "screen002-LI-1",
-          "name": "Checkout 1 Default Rotation",
-          "activeFrom": "2026-02-09T14:23:07.856Z",
-          "activeTo": "2027-02-09T14:24:07.856Z",
-          "templateId": "fullscreen-banner",
-          "products": [
-            {
-              "ProductId": "SKU-DEMO-001",
-              "ProductName": "Demo Product",
-              "ProductPage": "https://www.nintendo.com/au/hardware/nintendo-switch-2/features/",
-              "Image": "https://assets.nintendo.eu/image/private/f_auto/q_auto/v1748919968/kx3yhcxo5ihuvqjun3wy.png",
-              "Price": "299.99",
-              "ComparePrice": "599.99",
-              "Rating": "4.5",
-              "adid": "",
-              "ClientAdvertiserId": "nintendo-advertiser",
-              "RenderingAttributes": "{\"promotion\":\"Save 50%\"}",
-              "OnLoadBeacon": "",
-              "OnViewBeacon": "",
-              "OnClickBeacon": "",
-              "OnBasketChangeBeacon": "",
-              "OnWishlistBeacon": ""
-            }
-          ]
-        }
-      ],
-      "createdAt": "2026-02-09T14:24:07.856Z",
-      "updatedAt": "2026-02-09T14:24:07.856Z"
-    },
-    {
-      "screenId": "screen003",
-      "storeId": "STORE_42",
-      "location": "store",
-      "pageId": "CHECKOUT",
-      "screenType": "Kiosk",
-      "screenSize": "1920x1080",
-      "format": "desktop-instore-1920x1080",
-      "templateId": "fullscreen-banner",
-      "refreshInterval": 30000,
-      "lineItems": [
-        {
-          "lineItemId": "screen003-LI-1",
-          "name": "Store Default Rotation",
-          "activeFrom": "2026-02-09T14:25:31.002Z",
-          "activeTo": "2027-02-09T14:26:31.002Z",
-          "templateId": "fullscreen-banner",
-          "products": [
-            {
-              "ProductId": "SKU-DEMO-001",
-              "ProductName": "Nintendo Switc",
-              "ProductPage": "https://store.example.com/products/demo",
-              "Image": "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=1200",
-              "Price": "29.99",
-              "ComparePrice": "39.99",
-              "Rating": "4.5",
-              "adid": "",
-              "ClientAdvertiserId": "demo-advertiser",
-              "RenderingAttributes": "{\"promotion\":\"Save 25%\"}",
-              "OnLoadBeacon": "",
-              "OnViewBeacon": "",
-              "OnClickBeacon": "",
-              "OnBasketChangeBeacon": "",
-              "OnWishlistBeacon": ""
-            }
-          ]
-        }
-      ],
-      "createdAt": "2026-02-09T14:26:31.002Z",
-      "updatedAt": "2026-02-09T14:26:31.002Z"
-    },
-    {
       "screenId": "STORE_42_TEMPLATE_BANNER_H1",
       "storeId": "STORE_42",
       "location": "entrance",
@@ -281,12 +199,12 @@
               "ProductName": "Weekend Mega Sale",
               "ProductPage": "https://store.example.com/products/banner-001",
               "Image": "https://images.unsplash.com/photo-1607083206968-13611e3d76db?w=1200",
-              "Price": "39.99",
-              "ComparePrice": "59.99",
+              "Price": "34.99",
+              "ComparePrice": "49.99",
               "Rating": "4.6",
               "adid": "tpl-banner-001",
               "ClientAdvertiserId": "advertiser-banner",
-              "RenderingAttributes": "{\"promotion\":\"Weekend doorbuster\"}",
+              "RenderingAttributes": "{\"promotion\":\"Weekend doorbuster\",\"badge\":\"Entrance Exclusive\",\"cta\":\"Shop the sale\",\"subcopy\":\"Members save extra at checkout.\",\"legal\":\"While stock lasts.\"}",
               "OnLoadBeacon": "https://httpbin.org/get?event=load&seed=tpl-banner",
               "OnViewBeacon": "https://httpbin.org/get?event=view&seed=tpl-banner",
               "OnClickBeacon": "https://httpbin.org/get?event=click&seed=tpl-banner",
@@ -297,7 +215,7 @@
         }
       ],
       "createdAt": "2026-02-09T15:00:00.000Z",
-      "updatedAt": "2026-02-09T15:00:00.000Z"
+      "updatedAt": "2026-02-09T16:41:44.272Z"
     },
     {
       "screenId": "STORE_42_TEMPLATE_HERO_V1",
@@ -318,19 +236,19 @@
           "templateId": "fullscreen-hero",
           "products": [
             {
-              "ProductId": "SKU-TPL-HERO-001",
-              "ProductName": "UltraSound Headphones",
-              "ProductPage": "https://store.example.com/products/hero-001",
-              "Image": "https://images.unsplash.com/photo-1546435770-a3e426bf472b?w=1200",
-              "Price": "179.99",
-              "ComparePrice": "249.99",
-              "Rating": "4.8",
-              "adid": "tpl-hero-001",
-              "ClientAdvertiserId": "advertiser-hero",
-              "RenderingAttributes": "{\"promotion\":\"Top pick today\"}",
-              "OnLoadBeacon": "https://httpbin.org/get?event=load&seed=tpl-hero",
-              "OnViewBeacon": "https://httpbin.org/get?event=view&seed=tpl-hero",
-              "OnClickBeacon": "https://httpbin.org/get?event=click&seed=tpl-hero",
+              "ProductId": "ACC-BACKPACK-002",
+              "ProductName": "Commuter Laptop Backpack",
+              "ProductPage": "https://store.example.com/products/acc-backpack-002",
+              "Image": "/assets/products/acc-backpack-002.svg",
+              "Price": "89.00",
+              "ComparePrice": "109.00",
+              "Rating": "4.5",
+              "adid": "",
+              "ClientAdvertiserId": "advertiser-orbit",
+              "RenderingAttributes": "{\"promotion\":\"Now live in-store\",\"badge\":\"Brand Spotlight\",\"cta\":\"See in aisle\",\"subcopy\":\"Featured this hour in your current store. Focus brand: Orbit.\",\"legal\":\"Availability may vary by store.\",\"templateId\":\"fullscreen-hero\",\"goalObjective\":\"awareness\",\"goalTargetSku\":\"ACC-BACKPACK-002\",\"targetSku\":\"ACC-BACKPACK-002\",\"targetCategory\":\"electronics\",\"targetBrand\":\"Orbit\"}",
+              "OnLoadBeacon": "",
+              "OnViewBeacon": "",
+              "OnClickBeacon": "",
               "OnBasketChangeBeacon": "",
               "OnWishlistBeacon": ""
             }
@@ -338,7 +256,7 @@
         }
       ],
       "createdAt": "2026-02-09T15:00:00.000Z",
-      "updatedAt": "2026-02-09T15:00:00.000Z"
+      "updatedAt": "2026-02-10T17:52:36.852Z"
     },
     {
       "screenId": "STORE_42_TEMPLATE_CAROUSEL_H1",
@@ -368,7 +286,7 @@
               "Rating": "4.7",
               "adid": "tpl-carousel-001",
               "ClientAdvertiserId": "advertiser-carousel",
-              "RenderingAttributes": "{\"promotion\":\"Bundle and save\"}",
+              "RenderingAttributes": "{\"promotion\":\"Bundle and save\",\"badge\":\"Appliance Event\",\"cta\":\"View bundle\",\"subcopy\":\"Free 2-year care plan included.\",\"legal\":\"T&Cs apply.\"}",
               "OnLoadBeacon": "https://httpbin.org/get?event=load&seed=tpl-carousel-1",
               "OnViewBeacon": "https://httpbin.org/get?event=view&seed=tpl-carousel-1",
               "OnClickBeacon": "https://httpbin.org/get?event=click&seed=tpl-carousel-1",
@@ -385,7 +303,7 @@
               "Rating": "4.8",
               "adid": "tpl-carousel-002",
               "ClientAdvertiserId": "advertiser-carousel",
-              "RenderingAttributes": "{\"promotion\":\"Free delivery today\"}",
+              "RenderingAttributes": "{\"promotion\":\"Free delivery today\",\"badge\":\"Smart Kitchen\",\"cta\":\"See details\",\"subcopy\":\"Energy rating A++ with app control.\",\"legal\":\"Delivery windows may vary.\"}",
               "OnLoadBeacon": "https://httpbin.org/get?event=load&seed=tpl-carousel-2",
               "OnViewBeacon": "https://httpbin.org/get?event=view&seed=tpl-carousel-2",
               "OnClickBeacon": "https://httpbin.org/get?event=click&seed=tpl-carousel-2",
@@ -402,7 +320,7 @@
               "Rating": "4.5",
               "adid": "tpl-carousel-003",
               "ClientAdvertiserId": "advertiser-carousel",
-              "RenderingAttributes": "{\"promotion\":\"Kitchen upgrade week\"}",
+              "RenderingAttributes": "{\"promotion\":\"Kitchen upgrade week\",\"badge\":\"Chef Series\",\"cta\":\"Explore finishes\",\"subcopy\":\"Now available with steam-clean mode.\",\"legal\":\"Limited promotional period.\"}",
               "OnLoadBeacon": "https://httpbin.org/get?event=load&seed=tpl-carousel-3",
               "OnViewBeacon": "https://httpbin.org/get?event=view&seed=tpl-carousel-3",
               "OnClickBeacon": "https://httpbin.org/get?event=click&seed=tpl-carousel-3",
@@ -413,7 +331,7 @@
         }
       ],
       "createdAt": "2026-02-09T15:00:00.000Z",
-      "updatedAt": "2026-02-09T16:00:00.000Z"
+      "updatedAt": "2026-02-09T16:41:44.272Z"
     },
     {
       "screenId": "STORE_42_TEMPLATE_KIOSK_K1",
@@ -435,15 +353,15 @@
           "products": [
             {
               "ProductId": "SKU-TPL-KIOSK-001",
-              "ProductName": "Scan and Save Rewards",
+              "ProductName": "Rewards Plus Starter Pack",
               "ProductPage": "https://store.example.com/products/kiosk-001",
               "Image": "https://images.unsplash.com/photo-1578916171728-46686eac8d58?w=1200",
-              "Price": "0.00",
-              "ComparePrice": "",
+              "Price": "49.00",
+              "ComparePrice": "79.00",
               "Rating": "4.4",
               "adid": "tpl-kiosk-001",
               "ClientAdvertiserId": "advertiser-kiosk",
-              "RenderingAttributes": "{\"promotion\":\"Tap to explore\"}",
+              "RenderingAttributes": "{\"promotion\":\"Tap to build your basket\",\"badge\":\"Interactive Offer\",\"cta\":\"Tap to begin\",\"subcopy\":\"Scan and continue this offer on your phone.\",\"legal\":\"Digital coupon applied at checkout.\"}",
               "OnLoadBeacon": "https://httpbin.org/get?event=load&seed=tpl-kiosk",
               "OnViewBeacon": "https://httpbin.org/get?event=view&seed=tpl-kiosk",
               "OnClickBeacon": "https://httpbin.org/get?event=click&seed=tpl-kiosk",
@@ -454,7 +372,7 @@
         }
       ],
       "createdAt": "2026-02-09T15:00:00.000Z",
-      "updatedAt": "2026-02-09T15:00:00.000Z"
+      "updatedAt": "2026-02-09T16:41:44.272Z"
     },
     {
       "screenId": "STORE_42_TEMPLATE_SHELF_S1",
@@ -484,7 +402,7 @@
               "Rating": "4.5",
               "adid": "tpl-shelf-001",
               "ClientAdvertiserId": "advertiser-shelf",
-              "RenderingAttributes": "{\"promotion\":\"Aisle special\"}",
+              "RenderingAttributes": "{\"promotion\":\"2 for $15 mix and match\",\"badge\":\"Shelf Edge Deal\",\"cta\":\"Add to basket\",\"subcopy\":\"High-conversion promo right at shelf level.\",\"legal\":\"Price valid for this aisle only.\"}",
               "OnLoadBeacon": "https://httpbin.org/get?event=load&seed=tpl-shelf",
               "OnViewBeacon": "https://httpbin.org/get?event=view&seed=tpl-shelf",
               "OnClickBeacon": "https://httpbin.org/get?event=click&seed=tpl-shelf",
@@ -495,7 +413,7 @@
         }
       ],
       "createdAt": "2026-02-09T15:00:00.000Z",
-      "updatedAt": "2026-02-09T15:00:00.000Z"
+      "updatedAt": "2026-02-09T16:41:44.273Z"
     },
     {
       "screenId": "STORE_42_TEMPLATE_MENU_M1",
@@ -525,7 +443,7 @@
               "Rating": "4.6",
               "adid": "tpl-menu-001",
               "ClientAdvertiserId": "advertiser-menu",
-              "RenderingAttributes": "{\"promotion\":\"Now serving deals\"}",
+              "RenderingAttributes": "{\"promotion\":\"Combo includes fries and drink\",\"badge\":\"Lunch Favorite\",\"cta\":\"Order now\",\"subcopy\":\"Ready in under 6 minutes.\",\"legal\":\"Availability may vary by time of day.\"}",
               "OnLoadBeacon": "https://httpbin.org/get?event=load&seed=tpl-menu-1",
               "OnViewBeacon": "https://httpbin.org/get?event=view&seed=tpl-menu-1",
               "OnClickBeacon": "https://httpbin.org/get?event=click&seed=tpl-menu-1",
@@ -542,7 +460,7 @@
               "Rating": "4.7",
               "adid": "tpl-menu-002",
               "ClientAdvertiserId": "advertiser-menu",
-              "RenderingAttributes": "{\"promotion\":\"Morning special\"}",
+              "RenderingAttributes": "{\"promotion\":\"Freshly brewed\",\"badge\":\"Morning Pick\",\"cta\":\"Start order\",\"subcopy\":\"Breakfast menu served until 11:30 AM.\",\"legal\":\"Morning menu timing applies.\"}",
               "OnLoadBeacon": "https://httpbin.org/get?event=load&seed=tpl-menu-2",
               "OnViewBeacon": "https://httpbin.org/get?event=view&seed=tpl-menu-2",
               "OnClickBeacon": "https://httpbin.org/get?event=click&seed=tpl-menu-2",
@@ -559,7 +477,7 @@
               "Rating": "4.8",
               "adid": "tpl-menu-003",
               "ClientAdvertiserId": "advertiser-menu",
-              "RenderingAttributes": "{\"promotion\":\"Dinner value pick\"}",
+              "RenderingAttributes": "{\"promotion\":\"Feeds 4\",\"badge\":\"Family Bundle\",\"cta\":\"Add family meal\",\"subcopy\":\"Includes 4 drinks and 4 sides.\",\"legal\":\"Not combinable with other discounts.\"}",
               "OnLoadBeacon": "https://httpbin.org/get?event=load&seed=tpl-menu-3",
               "OnViewBeacon": "https://httpbin.org/get?event=view&seed=tpl-menu-3",
               "OnClickBeacon": "https://httpbin.org/get?event=click&seed=tpl-menu-3",
@@ -570,7 +488,1289 @@
         }
       ],
       "createdAt": "2026-02-09T15:00:00.000Z",
-      "updatedAt": "2026-02-09T16:00:00.000Z"
+      "updatedAt": "2026-02-09T16:41:44.273Z"
+    }
+  ],
+  "agentRuns": [
+    {
+      "planId": "goal-mlgwemn9-ptfur",
+      "status": "applied",
+      "createdAt": "2026-02-10T17:52:08.229Z",
+      "updatedAt": "2026-02-10T17:52:36.852Z",
+      "goal": {
+        "objective": "awareness",
+        "aggressiveness": "Balanced",
+        "prompt": "We have too many of these backpacks, please sell them.",
+        "storeId": "",
+        "pageId": "",
+        "targetSkuIds": [
+          "ACC-BACKPACK-002"
+        ],
+        "targetProducts": [
+          {
+            "sku": "ACC-BACKPACK-002",
+            "name": "Commuter Laptop Backpack",
+            "category": "electronics",
+            "brand": "Orbit",
+            "productPage": "https://store.example.com/products/acc-backpack-002",
+            "image": "/assets/products/acc-backpack-002.svg",
+            "price": "89.00",
+            "comparePrice": "109.00",
+            "rating": "4.5",
+            "advertiserId": "advertiser-orbit",
+            "tags": [
+              "accessory",
+              "laptop",
+              "bag",
+              "checkout-attach"
+            ]
+          }
+        ],
+        "targetSource": "manual",
+        "inferredTerms": []
+      },
+      "summary": "Goal Agent found 2 change(s) for Drive In-Store Awareness. Manual SKU selection on 1 SKU(s): Commuter Laptop Backpack. 6 screen(s) were skipped by context guardrails. Applied 2 screen update(s).",
+      "totals": {
+        "scopedScreens": 8,
+        "plannedScreens": 2,
+        "compatibleScreens": 2,
+        "excludedScreens": 6,
+        "targetSkus": 1,
+        "proposedChanges": 2,
+        "templateSwitches": 0,
+        "refreshUpdates": 2,
+        "skuTargetUpdates": 2
+      },
+      "proposedChanges": [
+        {
+          "screenId": "STORE_42_ELECTRONICS_V1",
+          "storeId": "STORE_42",
+          "pageId": "ELECTRONICS",
+          "location": "electronics",
+          "objective": "awareness",
+          "confidence": 0.74,
+          "reason": "Vertical Screen at Electronics: maximize broad visibility with high-reach creative (high context relevance). Maximize broad visibility across screens and high-traffic zones. SKU focus: Commuter Laptop Backpack.",
+          "productRelevance": 0.66,
+          "targetingChanged": true,
+          "recommendedTargetSkus": [
+            "ACC-BACKPACK-002"
+          ],
+          "currentTemplateId": "fullscreen-hero",
+          "recommendedTemplateId": "fullscreen-hero",
+          "currentRefreshInterval": 23000,
+          "recommendedRefreshInterval": 30000
+        },
+        {
+          "screenId": "STORE_42_TEMPLATE_HERO_V1",
+          "storeId": "STORE_42",
+          "pageId": "ELECTRONICS",
+          "location": "electronics",
+          "objective": "awareness",
+          "confidence": 0.74,
+          "reason": "Vertical Screen at Electronics: maximize broad visibility with high-reach creative (high context relevance). Maximize broad visibility across screens and high-traffic zones. SKU focus: Commuter Laptop Backpack.",
+          "productRelevance": 0.66,
+          "targetingChanged": true,
+          "recommendedTargetSkus": [
+            "ACC-BACKPACK-002"
+          ],
+          "currentTemplateId": "fullscreen-hero",
+          "recommendedTemplateId": "fullscreen-hero",
+          "currentRefreshInterval": 23000,
+          "recommendedRefreshInterval": 30000
+        }
+      ],
+      "excludedScreens": [
+        {
+          "screenId": "STORE_42_WHITEGOODS_H1",
+          "storeId": "STORE_42",
+          "pageId": "WHITEGOODS",
+          "location": "whitegoods",
+          "productRelevance": 0.58,
+          "reason": "Skipped by context guardrail. No compatible target products were found for this screen."
+        },
+        {
+          "screenId": "STORE_42_TEMPLATE_BANNER_H1",
+          "storeId": "STORE_42",
+          "pageId": "ENTRANCE",
+          "location": "entrance",
+          "productRelevance": 0.58,
+          "reason": "Skipped by context guardrail. No compatible target products were found for this screen."
+        },
+        {
+          "screenId": "STORE_42_TEMPLATE_CAROUSEL_H1",
+          "storeId": "STORE_42",
+          "pageId": "WHITEGOODS",
+          "location": "whitegoods",
+          "productRelevance": 0.58,
+          "reason": "Skipped by context guardrail. No compatible target products were found for this screen."
+        },
+        {
+          "screenId": "STORE_42_TEMPLATE_KIOSK_K1",
+          "storeId": "STORE_42",
+          "pageId": "CHECKOUT",
+          "location": "checkout",
+          "productRelevance": 0.08,
+          "reason": "Skipped by context guardrail. Screen context does not match target categories (electronic)."
+        },
+        {
+          "screenId": "STORE_42_TEMPLATE_SHELF_S1",
+          "storeId": "STORE_42",
+          "pageId": "AISLE",
+          "location": "aisle",
+          "productRelevance": 0.58,
+          "reason": "Skipped by context guardrail. No compatible target products were found for this screen."
+        },
+        {
+          "screenId": "STORE_42_TEMPLATE_MENU_M1",
+          "storeId": "STORE_42",
+          "pageId": "FOODCOURT",
+          "location": "foodcourt",
+          "productRelevance": 0.58,
+          "reason": "Skipped by context guardrail. No compatible target products were found for this screen."
+        }
+      ],
+      "appliedAt": "2026-02-10T17:52:36.852Z",
+      "appliedCount": 2,
+      "skippedCount": 0,
+      "creativeGeneratedCount": 0,
+      "appliedScreenIds": [
+        "STORE_42_ELECTRONICS_V1",
+        "STORE_42_TEMPLATE_HERO_V1"
+      ],
+      "liveScreens": [
+        {
+          "screenId": "STORE_42_ELECTRONICS_V1",
+          "storeId": "STORE_42",
+          "pageId": "ELECTRONICS",
+          "location": "electronics",
+          "screenType": "Vertical Screen",
+          "screenSize": "1080x1920",
+          "templateId": "fullscreen-hero",
+          "templateName": "Fullscreen Hero",
+          "format": "desktop-instore-hero-1080x1920",
+          "refreshInterval": 30000,
+          "lineItemCount": 2,
+          "activeLineItemId": "LI-ELEC-001",
+          "activeLineItemName": "Noise Cancelling Headphones Hero",
+          "productCount": 1,
+          "products": [
+            {
+              "sku": "ACC-BACKPACK-002",
+              "name": "Commuter Laptop Backpack",
+              "image": "/assets/products/acc-backpack-002.svg",
+              "price": "89.00",
+              "comparePrice": "109.00",
+              "rating": "4.5"
+            }
+          ],
+          "screenUrl": "/screen.html?screenId=STORE_42_ELECTRONICS_V1",
+          "updatedAt": "2026-02-10T17:52:36.852Z"
+        },
+        {
+          "screenId": "STORE_42_TEMPLATE_HERO_V1",
+          "storeId": "STORE_42",
+          "pageId": "ELECTRONICS",
+          "location": "electronics",
+          "screenType": "Vertical Screen",
+          "screenSize": "1080x1920",
+          "templateId": "fullscreen-hero",
+          "templateName": "Fullscreen Hero",
+          "format": "desktop-instore-hero-1080x1920",
+          "refreshInterval": 30000,
+          "lineItemCount": 1,
+          "activeLineItemId": "LI-TPL-HERO-001",
+          "activeLineItemName": "Electronics Hero Feature",
+          "productCount": 1,
+          "products": [
+            {
+              "sku": "ACC-BACKPACK-002",
+              "name": "Commuter Laptop Backpack",
+              "image": "/assets/products/acc-backpack-002.svg",
+              "price": "89.00",
+              "comparePrice": "109.00",
+              "rating": "4.5"
+            }
+          ],
+          "screenUrl": "/screen.html?screenId=STORE_42_TEMPLATE_HERO_V1",
+          "updatedAt": "2026-02-10T17:52:36.852Z"
+        }
+      ],
+      "liveCount": 2
+    },
+    {
+      "planId": "goal-mlgupg3z-zxnnr",
+      "status": "applied",
+      "createdAt": "2026-02-10T17:04:33.743Z",
+      "updatedAt": "2026-02-10T17:04:58.353Z",
+      "goal": {
+        "objective": "clearance",
+        "aggressiveness": "Aggressive",
+        "prompt": "Sell more ulstrabooks as we have too much stock",
+        "storeId": "STORE_42",
+        "pageId": "",
+        "targetSkuIds": [
+          "LAP-ULTRA-13-001"
+        ],
+        "targetProducts": [
+          {
+            "sku": "LAP-ULTRA-13-001",
+            "name": "UltraBook 13 Pro",
+            "category": "electronics",
+            "brand": "Vertex",
+            "productPage": "https://store.example.com/products/lap-ultra-13-001",
+            "image": "https://images.unsplash.com/photo-1517336714739-489689fd1ca8?w=1200",
+            "price": "1299.00",
+            "comparePrice": "1499.00",
+            "rating": "4.8",
+            "advertiserId": "advertiser-vertex",
+            "tags": [
+              "laptop",
+              "ultrabook",
+              "premium",
+              "new-range"
+            ]
+          }
+        ],
+        "targetSource": "manual",
+        "inferredTerms": []
+      },
+      "summary": "Goal Agent found 2 change(s) for Clear Overstock Inventory. Manual SKU selection on 1 SKU(s): UltraBook 13 Pro. 6 screen(s) were skipped by context guardrails. Applied 2 screen update(s).",
+      "totals": {
+        "scopedScreens": 8,
+        "plannedScreens": 2,
+        "compatibleScreens": 2,
+        "excludedScreens": 6,
+        "targetSkus": 1,
+        "proposedChanges": 2,
+        "templateSwitches": 0,
+        "refreshUpdates": 2,
+        "skuTargetUpdates": 2
+      },
+      "proposedChanges": [
+        {
+          "screenId": "STORE_42_ELECTRONICS_V1",
+          "storeId": "STORE_42",
+          "pageId": "ELECTRONICS",
+          "location": "electronics",
+          "objective": "clearance",
+          "confidence": 0.74,
+          "reason": "Vertical Screen at Electronics: increase rotation pressure to move excess stock (high context relevance). SKU focus: UltraBook 13 Pro.",
+          "productRelevance": 0.66,
+          "targetingChanged": true,
+          "recommendedTargetSkus": [
+            "LAP-ULTRA-13-001"
+          ],
+          "currentTemplateId": "fullscreen-hero",
+          "recommendedTemplateId": "fullscreen-hero",
+          "currentRefreshInterval": 30000,
+          "recommendedRefreshInterval": 23000
+        },
+        {
+          "screenId": "STORE_42_TEMPLATE_HERO_V1",
+          "storeId": "STORE_42",
+          "pageId": "ELECTRONICS",
+          "location": "electronics",
+          "objective": "clearance",
+          "confidence": 0.74,
+          "reason": "Vertical Screen at Electronics: increase rotation pressure to move excess stock (high context relevance). SKU focus: UltraBook 13 Pro.",
+          "productRelevance": 0.66,
+          "targetingChanged": true,
+          "recommendedTargetSkus": [
+            "LAP-ULTRA-13-001"
+          ],
+          "currentTemplateId": "fullscreen-hero",
+          "recommendedTemplateId": "fullscreen-hero",
+          "currentRefreshInterval": 30000,
+          "recommendedRefreshInterval": 23000
+        }
+      ],
+      "excludedScreens": [
+        {
+          "screenId": "STORE_42_WHITEGOODS_H1",
+          "storeId": "STORE_42",
+          "pageId": "WHITEGOODS",
+          "location": "whitegoods",
+          "productRelevance": 0.58,
+          "reason": "Skipped by context guardrail. No compatible target products were found for this screen."
+        },
+        {
+          "screenId": "STORE_42_TEMPLATE_BANNER_H1",
+          "storeId": "STORE_42",
+          "pageId": "ENTRANCE",
+          "location": "entrance",
+          "productRelevance": 0.58,
+          "reason": "Skipped by context guardrail. No compatible target products were found for this screen."
+        },
+        {
+          "screenId": "STORE_42_TEMPLATE_CAROUSEL_H1",
+          "storeId": "STORE_42",
+          "pageId": "WHITEGOODS",
+          "location": "whitegoods",
+          "productRelevance": 0.58,
+          "reason": "Skipped by context guardrail. No compatible target products were found for this screen."
+        },
+        {
+          "screenId": "STORE_42_TEMPLATE_KIOSK_K1",
+          "storeId": "STORE_42",
+          "pageId": "CHECKOUT",
+          "location": "checkout",
+          "productRelevance": 0.58,
+          "reason": "Skipped by context guardrail. No compatible target products were found for this screen."
+        },
+        {
+          "screenId": "STORE_42_TEMPLATE_SHELF_S1",
+          "storeId": "STORE_42",
+          "pageId": "AISLE",
+          "location": "aisle",
+          "productRelevance": 0.58,
+          "reason": "Skipped by context guardrail. No compatible target products were found for this screen."
+        },
+        {
+          "screenId": "STORE_42_TEMPLATE_MENU_M1",
+          "storeId": "STORE_42",
+          "pageId": "FOODCOURT",
+          "location": "foodcourt",
+          "productRelevance": 0.58,
+          "reason": "Skipped by context guardrail. No compatible target products were found for this screen."
+        }
+      ],
+      "appliedAt": "2026-02-10T17:04:58.353Z",
+      "appliedCount": 2,
+      "skippedCount": 0,
+      "liveScreens": [
+        {
+          "screenId": "STORE_42_ELECTRONICS_V1",
+          "storeId": "STORE_42",
+          "pageId": "ELECTRONICS",
+          "location": "electronics",
+          "screenType": "Vertical Screen",
+          "screenSize": "1080x1920",
+          "templateId": "fullscreen-hero",
+          "templateName": "Fullscreen Hero",
+          "format": "desktop-instore-hero-1080x1920",
+          "refreshInterval": 23000,
+          "lineItemCount": 2,
+          "activeLineItemId": "LI-ELEC-001",
+          "activeLineItemName": "Noise Cancelling Headphones Hero",
+          "productCount": 1,
+          "products": [
+            {
+              "sku": "LAP-ULTRA-13-001",
+              "name": "UltraBook 13 Pro",
+              "image": "/assets/products/lap-ultra-13-001.svg",
+              "price": "1299.00",
+              "comparePrice": "1499.00",
+              "rating": "4.8"
+            }
+          ],
+          "screenUrl": "/screen.html?screenId=STORE_42_ELECTRONICS_V1",
+          "updatedAt": "2026-02-10T17:04:58.353Z"
+        },
+        {
+          "screenId": "STORE_42_TEMPLATE_HERO_V1",
+          "storeId": "STORE_42",
+          "pageId": "ELECTRONICS",
+          "location": "electronics",
+          "screenType": "Vertical Screen",
+          "screenSize": "1080x1920",
+          "templateId": "fullscreen-hero",
+          "templateName": "Fullscreen Hero",
+          "format": "desktop-instore-hero-1080x1920",
+          "refreshInterval": 23000,
+          "lineItemCount": 1,
+          "activeLineItemId": "LI-TPL-HERO-001",
+          "activeLineItemName": "Electronics Hero Feature",
+          "productCount": 1,
+          "products": [
+            {
+              "sku": "LAP-ULTRA-13-001",
+              "name": "UltraBook 13 Pro",
+              "image": "/assets/products/lap-ultra-13-001.svg",
+              "price": "1299.00",
+              "comparePrice": "1499.00",
+              "rating": "4.8"
+            }
+          ],
+          "screenUrl": "/screen.html?screenId=STORE_42_TEMPLATE_HERO_V1",
+          "updatedAt": "2026-02-10T17:04:58.353Z"
+        }
+      ],
+      "liveCount": 2,
+      "appliedScreenIds": [
+        "STORE_42_ELECTRONICS_V1",
+        "STORE_42_TEMPLATE_HERO_V1"
+      ]
+    },
+    {
+      "planId": "goal-mlgrcbnx-gdj4t",
+      "status": "planned",
+      "createdAt": "2026-02-10T15:30:22.605Z",
+      "updatedAt": "2026-02-10T15:30:22.605Z",
+      "goal": {
+        "objective": "checkout-attach",
+        "aggressiveness": "Balanced",
+        "prompt": "I want to sell more laptops as we will be getting a new range soon.",
+        "storeId": "STORE_42",
+        "pageId": "",
+        "targetSkuIds": [
+          "ACC-BACKPACK-002",
+          "LAP-BIZ-14-003",
+          "LAP-CREATOR-15-005",
+          "LAP-2IN1-14-006",
+          "LAP-GAME-16-002",
+          "LAP-STUDENT-15-004",
+          "LAP-ULTRA-13-001"
+        ],
+        "targetProducts": [
+          {
+            "sku": "ACC-BACKPACK-002",
+            "name": "Commuter Laptop Backpack",
+            "category": "electronics",
+            "brand": "Orbit",
+            "productPage": "https://store.example.com/products/acc-backpack-002",
+            "image": "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=1200",
+            "price": "89.00",
+            "comparePrice": "109.00",
+            "rating": "4.5",
+            "advertiserId": "advertiser-orbit",
+            "tags": [
+              "accessory",
+              "laptop",
+              "bag",
+              "checkout-attach"
+            ]
+          },
+          {
+            "sku": "LAP-BIZ-14-003",
+            "name": "Business Lite 14",
+            "category": "electronics",
+            "brand": "Northfield",
+            "productPage": "https://store.example.com/products/lap-biz-14-003",
+            "image": "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=1200",
+            "price": "999.00",
+            "comparePrice": "1199.00",
+            "rating": "4.6",
+            "advertiserId": "advertiser-northfield",
+            "tags": [
+              "laptop",
+              "business",
+              "work",
+              "new-range"
+            ]
+          },
+          {
+            "sku": "LAP-CREATOR-15-005",
+            "name": "Creator Studio 15 OLED",
+            "category": "electronics",
+            "brand": "Aurora",
+            "productPage": "https://store.example.com/products/lap-creator-15-005",
+            "image": "https://images.unsplash.com/photo-1504707748692-419802cf939d?w=1200",
+            "price": "1599.00",
+            "comparePrice": "1799.00",
+            "rating": "4.8",
+            "advertiserId": "advertiser-aurora",
+            "tags": [
+              "laptop",
+              "creator",
+              "oled",
+              "new-range"
+            ]
+          },
+          {
+            "sku": "LAP-2IN1-14-006",
+            "name": "Flex 2-in-1 14 Touch",
+            "category": "electronics",
+            "brand": "Vertex",
+            "productPage": "https://store.example.com/products/lap-2in1-14-006",
+            "image": "https://images.unsplash.com/photo-1629131726692-1accd0c53ce0?w=1200",
+            "price": "1099.00",
+            "comparePrice": "1299.00",
+            "rating": "4.6",
+            "advertiserId": "advertiser-vertex",
+            "tags": [
+              "laptop",
+              "2-in-1",
+              "touch",
+              "new-range"
+            ]
+          },
+          {
+            "sku": "LAP-GAME-16-002",
+            "name": "GameCore 16 RTX",
+            "category": "electronics",
+            "brand": "Aegis",
+            "productPage": "https://store.example.com/products/lap-game-16-002",
+            "image": "https://images.unsplash.com/photo-1593642634524-b40b5baae6bb?w=1200",
+            "price": "1799.00",
+            "comparePrice": "1999.00",
+            "rating": "4.7",
+            "advertiserId": "advertiser-aegis",
+            "tags": [
+              "laptop",
+              "gaming",
+              "performance",
+              "new-range"
+            ]
+          },
+          {
+            "sku": "LAP-STUDENT-15-004",
+            "name": "Student Plus 15",
+            "category": "electronics",
+            "brand": "Orbit",
+            "productPage": "https://store.example.com/products/lap-student-15-004",
+            "image": "https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?w=1200",
+            "price": "749.00",
+            "comparePrice": "899.00",
+            "rating": "4.5",
+            "advertiserId": "advertiser-orbit",
+            "tags": [
+              "laptop",
+              "student",
+              "value",
+              "new-range"
+            ]
+          },
+          {
+            "sku": "LAP-ULTRA-13-001",
+            "name": "UltraBook 13 Pro",
+            "category": "electronics",
+            "brand": "Vertex",
+            "productPage": "https://store.example.com/products/lap-ultra-13-001",
+            "image": "https://images.unsplash.com/photo-1517336714739-489689fd1ca8?w=1200",
+            "price": "1299.00",
+            "comparePrice": "1499.00",
+            "rating": "4.8",
+            "advertiserId": "advertiser-vertex",
+            "tags": [
+              "laptop",
+              "ultrabook",
+              "premium",
+              "new-range"
+            ]
+          }
+        ],
+        "targetSource": "prompt",
+        "inferredTerms": [
+          "laptop"
+        ]
+      },
+      "summary": "Goal Agent found 2 change(s) for Increase Checkout Attach Rate. Prompt-inferred SKU selection on 7 SKU(s): Commuter Laptop Backpack, Business Lite 14, Creator Studio 15 OLED +4 more. Prompt terms: laptop. 6 screen(s) were skipped by context guardrails.",
+      "totals": {
+        "scopedScreens": 8,
+        "plannedScreens": 2,
+        "compatibleScreens": 2,
+        "excludedScreens": 6,
+        "targetSkus": 7,
+        "proposedChanges": 2,
+        "templateSwitches": 0,
+        "refreshUpdates": 0,
+        "skuTargetUpdates": 2
+      },
+      "proposedChanges": [
+        {
+          "screenId": "STORE_42_ELECTRONICS_V1",
+          "storeId": "STORE_42",
+          "pageId": "ELECTRONICS",
+          "location": "electronics",
+          "objective": "checkout-attach",
+          "confidence": 0.74,
+          "reason": "Vertical Screen at Electronics: prioritize basket-building offers near conversion zones (high context relevance). SKU focus: Commuter Laptop Backpack, Business Lite 14, Creator Studio 15 OLED +4 more.",
+          "productRelevance": 0.66,
+          "targetingChanged": true,
+          "recommendedTargetSkus": [
+            "LAP-BIZ-14-003"
+          ],
+          "currentTemplateId": "fullscreen-hero",
+          "recommendedTemplateId": "fullscreen-hero",
+          "currentRefreshInterval": 30000,
+          "recommendedRefreshInterval": 30000
+        },
+        {
+          "screenId": "STORE_42_TEMPLATE_HERO_V1",
+          "storeId": "STORE_42",
+          "pageId": "ELECTRONICS",
+          "location": "electronics",
+          "objective": "checkout-attach",
+          "confidence": 0.74,
+          "reason": "Vertical Screen at Electronics: prioritize basket-building offers near conversion zones (high context relevance). SKU focus: Commuter Laptop Backpack, Business Lite 14, Creator Studio 15 OLED +4 more.",
+          "productRelevance": 0.66,
+          "targetingChanged": true,
+          "recommendedTargetSkus": [
+            "LAP-BIZ-14-003"
+          ],
+          "currentTemplateId": "fullscreen-hero",
+          "recommendedTemplateId": "fullscreen-hero",
+          "currentRefreshInterval": 30000,
+          "recommendedRefreshInterval": 30000
+        }
+      ],
+      "excludedScreens": [
+        {
+          "screenId": "STORE_42_WHITEGOODS_H1",
+          "storeId": "STORE_42",
+          "pageId": "WHITEGOODS",
+          "location": "whitegoods",
+          "productRelevance": 0.58,
+          "reason": "Skipped by context guardrail. No compatible target products were found for this screen."
+        },
+        {
+          "screenId": "STORE_42_TEMPLATE_BANNER_H1",
+          "storeId": "STORE_42",
+          "pageId": "ENTRANCE",
+          "location": "entrance",
+          "productRelevance": 0.58,
+          "reason": "Skipped by context guardrail. No compatible target products were found for this screen."
+        },
+        {
+          "screenId": "STORE_42_TEMPLATE_CAROUSEL_H1",
+          "storeId": "STORE_42",
+          "pageId": "WHITEGOODS",
+          "location": "whitegoods",
+          "productRelevance": 0.58,
+          "reason": "Skipped by context guardrail. No compatible target products were found for this screen."
+        },
+        {
+          "screenId": "STORE_42_TEMPLATE_KIOSK_K1",
+          "storeId": "STORE_42",
+          "pageId": "CHECKOUT",
+          "location": "checkout",
+          "productRelevance": 0.08,
+          "reason": "Skipped by context guardrail. Screen context does not match target categories (electronic)."
+        },
+        {
+          "screenId": "STORE_42_TEMPLATE_SHELF_S1",
+          "storeId": "STORE_42",
+          "pageId": "AISLE",
+          "location": "aisle",
+          "productRelevance": 0.58,
+          "reason": "Skipped by context guardrail. No compatible target products were found for this screen."
+        },
+        {
+          "screenId": "STORE_42_TEMPLATE_MENU_M1",
+          "storeId": "STORE_42",
+          "pageId": "FOODCOURT",
+          "location": "foodcourt",
+          "productRelevance": 0.58,
+          "reason": "Skipped by context guardrail. No compatible target products were found for this screen."
+        }
+      ]
+    },
+    {
+      "planId": "goal-mlgrap4f-vcnv6",
+      "status": "planned",
+      "createdAt": "2026-02-10T15:29:06.735Z",
+      "updatedAt": "2026-02-10T15:29:06.735Z",
+      "goal": {
+        "objective": "awareness",
+        "aggressiveness": "Balanced",
+        "prompt": "",
+        "storeId": "STORE_42",
+        "pageId": "",
+        "targetSkuIds": [],
+        "targetProducts": [],
+        "targetSource": "none",
+        "inferredTerms": []
+      },
+      "summary": "Goal Agent found 3 change(s) for Drive In-Store Awareness. No SKU targeting applied.",
+      "totals": {
+        "scopedScreens": 8,
+        "plannedScreens": 8,
+        "compatibleScreens": 8,
+        "excludedScreens": 0,
+        "targetSkus": 0,
+        "proposedChanges": 3,
+        "templateSwitches": 2,
+        "refreshUpdates": 3,
+        "skuTargetUpdates": 0
+      },
+      "proposedChanges": [
+        {
+          "screenId": "STORE_42_WHITEGOODS_H1",
+          "storeId": "STORE_42",
+          "pageId": "WHITEGOODS",
+          "location": "whitegoods",
+          "objective": "awareness",
+          "confidence": 0.72,
+          "reason": "Horizontal Screen at Whitegoods: maximize broad visibility with high-reach creative (medium context relevance). Maximize broad visibility across screens and high-traffic zones.",
+          "productRelevance": 0.58,
+          "targetingChanged": false,
+          "recommendedTargetSkus": [],
+          "currentTemplateId": "carousel-banner",
+          "recommendedTemplateId": "fullscreen-banner",
+          "currentRefreshInterval": 45000,
+          "recommendedRefreshInterval": 30000
+        },
+        {
+          "screenId": "STORE_42_TEMPLATE_CAROUSEL_H1",
+          "storeId": "STORE_42",
+          "pageId": "WHITEGOODS",
+          "location": "whitegoods",
+          "objective": "awareness",
+          "confidence": 0.72,
+          "reason": "Horizontal Screen at Whitegoods: maximize broad visibility with high-reach creative (medium context relevance). Maximize broad visibility across screens and high-traffic zones.",
+          "productRelevance": 0.58,
+          "targetingChanged": false,
+          "recommendedTargetSkus": [],
+          "currentTemplateId": "carousel-banner",
+          "recommendedTemplateId": "fullscreen-banner",
+          "currentRefreshInterval": 14000,
+          "recommendedRefreshInterval": 30000
+        },
+        {
+          "screenId": "STORE_42_TEMPLATE_MENU_M1",
+          "storeId": "STORE_42",
+          "pageId": "FOODCOURT",
+          "location": "foodcourt",
+          "objective": "awareness",
+          "confidence": 0.8,
+          "reason": "Digital Menu Board at Foodcourt: maximize broad visibility with high-reach creative (medium context relevance). Maximize broad visibility across screens and high-traffic zones.",
+          "productRelevance": 0.58,
+          "targetingChanged": false,
+          "recommendedTargetSkus": [],
+          "currentTemplateId": "menu-loop",
+          "recommendedTemplateId": "menu-loop",
+          "currentRefreshInterval": 12000,
+          "recommendedRefreshInterval": 10000
+        }
+      ],
+      "excludedScreens": []
+    },
+    {
+      "planId": "goal-mlgrap43-p72ya",
+      "status": "planned",
+      "createdAt": "2026-02-10T15:29:06.723Z",
+      "updatedAt": "2026-02-10T15:29:06.723Z",
+      "goal": {
+        "objective": "checkout-attach",
+        "aggressiveness": "Balanced",
+        "prompt": "Laptop push with explicit SKUs",
+        "storeId": "STORE_42",
+        "pageId": "",
+        "targetSkuIds": [
+          "LAP-ULTRA-13-001",
+          "LAP-GAME-16-002"
+        ],
+        "targetProducts": [
+          {
+            "sku": "LAP-ULTRA-13-001",
+            "name": "UltraBook 13 Pro",
+            "category": "electronics",
+            "brand": "Vertex",
+            "productPage": "https://store.example.com/products/lap-ultra-13-001",
+            "image": "https://images.unsplash.com/photo-1517336714739-489689fd1ca8?w=1200",
+            "price": "1299.00",
+            "comparePrice": "1499.00",
+            "rating": "4.8",
+            "advertiserId": "advertiser-vertex",
+            "tags": [
+              "laptop",
+              "ultrabook",
+              "premium",
+              "new-range"
+            ]
+          },
+          {
+            "sku": "LAP-GAME-16-002",
+            "name": "GameCore 16 RTX",
+            "category": "electronics",
+            "brand": "Aegis",
+            "productPage": "https://store.example.com/products/lap-game-16-002",
+            "image": "https://images.unsplash.com/photo-1593642634524-b40b5baae6bb?w=1200",
+            "price": "1799.00",
+            "comparePrice": "1999.00",
+            "rating": "4.7",
+            "advertiserId": "advertiser-aegis",
+            "tags": [
+              "laptop",
+              "gaming",
+              "performance",
+              "new-range"
+            ]
+          }
+        ],
+        "targetSource": "manual",
+        "inferredTerms": []
+      },
+      "summary": "Goal Agent found 2 change(s) for Increase Checkout Attach Rate. Manual SKU selection on 2 SKU(s): UltraBook 13 Pro, GameCore 16 RTX. 6 screen(s) were skipped by context guardrails.",
+      "totals": {
+        "scopedScreens": 8,
+        "plannedScreens": 2,
+        "compatibleScreens": 2,
+        "excludedScreens": 6,
+        "targetSkus": 2,
+        "proposedChanges": 2,
+        "templateSwitches": 0,
+        "refreshUpdates": 0,
+        "skuTargetUpdates": 2
+      },
+      "proposedChanges": [
+        {
+          "screenId": "STORE_42_ELECTRONICS_V1",
+          "storeId": "STORE_42",
+          "pageId": "ELECTRONICS",
+          "location": "electronics",
+          "objective": "checkout-attach",
+          "confidence": 0.74,
+          "reason": "Vertical Screen at Electronics: prioritize basket-building offers near conversion zones (high context relevance). SKU focus: UltraBook 13 Pro, GameCore 16 RTX.",
+          "productRelevance": 0.66,
+          "targetingChanged": true,
+          "recommendedTargetSkus": [
+            "LAP-GAME-16-002"
+          ],
+          "currentTemplateId": "fullscreen-hero",
+          "recommendedTemplateId": "fullscreen-hero",
+          "currentRefreshInterval": 30000,
+          "recommendedRefreshInterval": 30000
+        },
+        {
+          "screenId": "STORE_42_TEMPLATE_HERO_V1",
+          "storeId": "STORE_42",
+          "pageId": "ELECTRONICS",
+          "location": "electronics",
+          "objective": "checkout-attach",
+          "confidence": 0.74,
+          "reason": "Vertical Screen at Electronics: prioritize basket-building offers near conversion zones (high context relevance). SKU focus: UltraBook 13 Pro, GameCore 16 RTX.",
+          "productRelevance": 0.66,
+          "targetingChanged": true,
+          "recommendedTargetSkus": [
+            "LAP-GAME-16-002"
+          ],
+          "currentTemplateId": "fullscreen-hero",
+          "recommendedTemplateId": "fullscreen-hero",
+          "currentRefreshInterval": 30000,
+          "recommendedRefreshInterval": 30000
+        }
+      ],
+      "excludedScreens": [
+        {
+          "screenId": "STORE_42_WHITEGOODS_H1",
+          "storeId": "STORE_42",
+          "pageId": "WHITEGOODS",
+          "location": "whitegoods",
+          "productRelevance": 0.58,
+          "reason": "Skipped by context guardrail. No compatible target products were found for this screen."
+        },
+        {
+          "screenId": "STORE_42_TEMPLATE_BANNER_H1",
+          "storeId": "STORE_42",
+          "pageId": "ENTRANCE",
+          "location": "entrance",
+          "productRelevance": 0.58,
+          "reason": "Skipped by context guardrail. No compatible target products were found for this screen."
+        },
+        {
+          "screenId": "STORE_42_TEMPLATE_CAROUSEL_H1",
+          "storeId": "STORE_42",
+          "pageId": "WHITEGOODS",
+          "location": "whitegoods",
+          "productRelevance": 0.58,
+          "reason": "Skipped by context guardrail. No compatible target products were found for this screen."
+        },
+        {
+          "screenId": "STORE_42_TEMPLATE_KIOSK_K1",
+          "storeId": "STORE_42",
+          "pageId": "CHECKOUT",
+          "location": "checkout",
+          "productRelevance": 0.58,
+          "reason": "Skipped by context guardrail. No compatible target products were found for this screen."
+        },
+        {
+          "screenId": "STORE_42_TEMPLATE_SHELF_S1",
+          "storeId": "STORE_42",
+          "pageId": "AISLE",
+          "location": "aisle",
+          "productRelevance": 0.58,
+          "reason": "Skipped by context guardrail. No compatible target products were found for this screen."
+        },
+        {
+          "screenId": "STORE_42_TEMPLATE_MENU_M1",
+          "storeId": "STORE_42",
+          "pageId": "FOODCOURT",
+          "location": "foodcourt",
+          "productRelevance": 0.58,
+          "reason": "Skipped by context guardrail. No compatible target products were found for this screen."
+        }
+      ]
+    },
+    {
+      "planId": "goal-mlgrap2e-ivvnf",
+      "status": "planned",
+      "createdAt": "2026-02-10T15:29:06.662Z",
+      "updatedAt": "2026-02-10T15:29:06.662Z",
+      "goal": {
+        "objective": "checkout-attach",
+        "aggressiveness": "Balanced",
+        "prompt": "Sell more laptops because a new range is arriving soon.",
+        "storeId": "STORE_42",
+        "pageId": "",
+        "targetSkuIds": [
+          "ACC-BACKPACK-002",
+          "LAP-BIZ-14-003",
+          "LAP-CREATOR-15-005",
+          "LAP-2IN1-14-006",
+          "LAP-GAME-16-002",
+          "LAP-STUDENT-15-004",
+          "LAP-ULTRA-13-001"
+        ],
+        "targetProducts": [
+          {
+            "sku": "ACC-BACKPACK-002",
+            "name": "Commuter Laptop Backpack",
+            "category": "electronics",
+            "brand": "Orbit",
+            "productPage": "https://store.example.com/products/acc-backpack-002",
+            "image": "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=1200",
+            "price": "89.00",
+            "comparePrice": "109.00",
+            "rating": "4.5",
+            "advertiserId": "advertiser-orbit",
+            "tags": [
+              "accessory",
+              "laptop",
+              "bag",
+              "checkout-attach"
+            ]
+          },
+          {
+            "sku": "LAP-BIZ-14-003",
+            "name": "Business Lite 14",
+            "category": "electronics",
+            "brand": "Northfield",
+            "productPage": "https://store.example.com/products/lap-biz-14-003",
+            "image": "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=1200",
+            "price": "999.00",
+            "comparePrice": "1199.00",
+            "rating": "4.6",
+            "advertiserId": "advertiser-northfield",
+            "tags": [
+              "laptop",
+              "business",
+              "work",
+              "new-range"
+            ]
+          },
+          {
+            "sku": "LAP-CREATOR-15-005",
+            "name": "Creator Studio 15 OLED",
+            "category": "electronics",
+            "brand": "Aurora",
+            "productPage": "https://store.example.com/products/lap-creator-15-005",
+            "image": "https://images.unsplash.com/photo-1504707748692-419802cf939d?w=1200",
+            "price": "1599.00",
+            "comparePrice": "1799.00",
+            "rating": "4.8",
+            "advertiserId": "advertiser-aurora",
+            "tags": [
+              "laptop",
+              "creator",
+              "oled",
+              "new-range"
+            ]
+          },
+          {
+            "sku": "LAP-2IN1-14-006",
+            "name": "Flex 2-in-1 14 Touch",
+            "category": "electronics",
+            "brand": "Vertex",
+            "productPage": "https://store.example.com/products/lap-2in1-14-006",
+            "image": "https://images.unsplash.com/photo-1629131726692-1accd0c53ce0?w=1200",
+            "price": "1099.00",
+            "comparePrice": "1299.00",
+            "rating": "4.6",
+            "advertiserId": "advertiser-vertex",
+            "tags": [
+              "laptop",
+              "2-in-1",
+              "touch",
+              "new-range"
+            ]
+          },
+          {
+            "sku": "LAP-GAME-16-002",
+            "name": "GameCore 16 RTX",
+            "category": "electronics",
+            "brand": "Aegis",
+            "productPage": "https://store.example.com/products/lap-game-16-002",
+            "image": "https://images.unsplash.com/photo-1593642634524-b40b5baae6bb?w=1200",
+            "price": "1799.00",
+            "comparePrice": "1999.00",
+            "rating": "4.7",
+            "advertiserId": "advertiser-aegis",
+            "tags": [
+              "laptop",
+              "gaming",
+              "performance",
+              "new-range"
+            ]
+          },
+          {
+            "sku": "LAP-STUDENT-15-004",
+            "name": "Student Plus 15",
+            "category": "electronics",
+            "brand": "Orbit",
+            "productPage": "https://store.example.com/products/lap-student-15-004",
+            "image": "https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?w=1200",
+            "price": "749.00",
+            "comparePrice": "899.00",
+            "rating": "4.5",
+            "advertiserId": "advertiser-orbit",
+            "tags": [
+              "laptop",
+              "student",
+              "value",
+              "new-range"
+            ]
+          },
+          {
+            "sku": "LAP-ULTRA-13-001",
+            "name": "UltraBook 13 Pro",
+            "category": "electronics",
+            "brand": "Vertex",
+            "productPage": "https://store.example.com/products/lap-ultra-13-001",
+            "image": "https://images.unsplash.com/photo-1517336714739-489689fd1ca8?w=1200",
+            "price": "1299.00",
+            "comparePrice": "1499.00",
+            "rating": "4.8",
+            "advertiserId": "advertiser-vertex",
+            "tags": [
+              "laptop",
+              "ultrabook",
+              "premium",
+              "new-range"
+            ]
+          }
+        ],
+        "targetSource": "prompt",
+        "inferredTerms": [
+          "laptop"
+        ]
+      },
+      "summary": "Goal Agent found 2 change(s) for Increase Checkout Attach Rate. Prompt-inferred SKU selection on 7 SKU(s): Commuter Laptop Backpack, Business Lite 14, Creator Studio 15 OLED +4 more. Prompt terms: laptop. 6 screen(s) were skipped by context guardrails.",
+      "totals": {
+        "scopedScreens": 8,
+        "plannedScreens": 2,
+        "compatibleScreens": 2,
+        "excludedScreens": 6,
+        "targetSkus": 7,
+        "proposedChanges": 2,
+        "templateSwitches": 0,
+        "refreshUpdates": 0,
+        "skuTargetUpdates": 2
+      },
+      "proposedChanges": [
+        {
+          "screenId": "STORE_42_ELECTRONICS_V1",
+          "storeId": "STORE_42",
+          "pageId": "ELECTRONICS",
+          "location": "electronics",
+          "objective": "checkout-attach",
+          "confidence": 0.74,
+          "reason": "Vertical Screen at Electronics: prioritize basket-building offers near conversion zones (high context relevance). SKU focus: Commuter Laptop Backpack, Business Lite 14, Creator Studio 15 OLED +4 more.",
+          "productRelevance": 0.66,
+          "targetingChanged": true,
+          "recommendedTargetSkus": [
+            "LAP-BIZ-14-003"
+          ],
+          "currentTemplateId": "fullscreen-hero",
+          "recommendedTemplateId": "fullscreen-hero",
+          "currentRefreshInterval": 30000,
+          "recommendedRefreshInterval": 30000
+        },
+        {
+          "screenId": "STORE_42_TEMPLATE_HERO_V1",
+          "storeId": "STORE_42",
+          "pageId": "ELECTRONICS",
+          "location": "electronics",
+          "objective": "checkout-attach",
+          "confidence": 0.74,
+          "reason": "Vertical Screen at Electronics: prioritize basket-building offers near conversion zones (high context relevance). SKU focus: Commuter Laptop Backpack, Business Lite 14, Creator Studio 15 OLED +4 more.",
+          "productRelevance": 0.66,
+          "targetingChanged": true,
+          "recommendedTargetSkus": [
+            "LAP-BIZ-14-003"
+          ],
+          "currentTemplateId": "fullscreen-hero",
+          "recommendedTemplateId": "fullscreen-hero",
+          "currentRefreshInterval": 30000,
+          "recommendedRefreshInterval": 30000
+        }
+      ],
+      "excludedScreens": [
+        {
+          "screenId": "STORE_42_WHITEGOODS_H1",
+          "storeId": "STORE_42",
+          "pageId": "WHITEGOODS",
+          "location": "whitegoods",
+          "productRelevance": 0.58,
+          "reason": "Skipped by context guardrail. No compatible target products were found for this screen."
+        },
+        {
+          "screenId": "STORE_42_TEMPLATE_BANNER_H1",
+          "storeId": "STORE_42",
+          "pageId": "ENTRANCE",
+          "location": "entrance",
+          "productRelevance": 0.58,
+          "reason": "Skipped by context guardrail. No compatible target products were found for this screen."
+        },
+        {
+          "screenId": "STORE_42_TEMPLATE_CAROUSEL_H1",
+          "storeId": "STORE_42",
+          "pageId": "WHITEGOODS",
+          "location": "whitegoods",
+          "productRelevance": 0.58,
+          "reason": "Skipped by context guardrail. No compatible target products were found for this screen."
+        },
+        {
+          "screenId": "STORE_42_TEMPLATE_KIOSK_K1",
+          "storeId": "STORE_42",
+          "pageId": "CHECKOUT",
+          "location": "checkout",
+          "productRelevance": 0.08,
+          "reason": "Skipped by context guardrail. Screen context does not match target categories (electronic)."
+        },
+        {
+          "screenId": "STORE_42_TEMPLATE_SHELF_S1",
+          "storeId": "STORE_42",
+          "pageId": "AISLE",
+          "location": "aisle",
+          "productRelevance": 0.58,
+          "reason": "Skipped by context guardrail. No compatible target products were found for this screen."
+        },
+        {
+          "screenId": "STORE_42_TEMPLATE_MENU_M1",
+          "storeId": "STORE_42",
+          "pageId": "FOODCOURT",
+          "location": "foodcourt",
+          "productRelevance": 0.58,
+          "reason": "Skipped by context guardrail. No compatible target products were found for this screen."
+        }
+      ]
+    },
+    {
+      "planId": "goal-mlgnkfnl-912hg",
+      "status": "planned",
+      "createdAt": "2026-02-10T13:44:42.561Z",
+      "updatedAt": "2026-02-10T13:44:42.561Z",
+      "goal": {
+        "objective": "checkout-attach",
+        "aggressiveness": "Aggressive",
+        "prompt": "I want you to sell more laptops as we will be getting in a new range soon.",
+        "storeId": "STORE_42",
+        "pageId": ""
+      },
+      "summary": "Goal Agent found 8 change(s) for Increase Checkout Attach Rate.",
+      "totals": {
+        "scopedScreens": 8,
+        "proposedChanges": 8,
+        "templateSwitches": 2,
+        "refreshUpdates": 8
+      },
+      "proposedChanges": [
+        {
+          "screenId": "STORE_42_ELECTRONICS_V1",
+          "storeId": "STORE_42",
+          "pageId": "ELECTRONICS",
+          "location": "electronics",
+          "objective": "checkout-attach",
+          "confidence": 0.68,
+          "reason": "Vertical Screen at Electronics: prioritize basket-building offers near conversion zones.",
+          "currentTemplateId": "fullscreen-hero",
+          "recommendedTemplateId": "fullscreen-hero",
+          "currentRefreshInterval": 30000,
+          "recommendedRefreshInterval": 23000
+        },
+        {
+          "screenId": "STORE_42_WHITEGOODS_H1",
+          "storeId": "STORE_42",
+          "pageId": "WHITEGOODS",
+          "location": "whitegoods",
+          "objective": "checkout-attach",
+          "confidence": 0.68,
+          "reason": "Horizontal Screen at Whitegoods: prioritize basket-building offers near conversion zones.",
+          "currentTemplateId": "carousel-banner",
+          "recommendedTemplateId": "fullscreen-banner",
+          "currentRefreshInterval": 45000,
+          "recommendedRefreshInterval": 23000
+        },
+        {
+          "screenId": "STORE_42_TEMPLATE_BANNER_H1",
+          "storeId": "STORE_42",
+          "pageId": "ENTRANCE",
+          "location": "entrance",
+          "objective": "checkout-attach",
+          "confidence": 0.68,
+          "reason": "Horizontal Screen at Entrance: prioritize basket-building offers near conversion zones.",
+          "currentTemplateId": "fullscreen-banner",
+          "recommendedTemplateId": "fullscreen-banner",
+          "currentRefreshInterval": 30000,
+          "recommendedRefreshInterval": 23000
+        },
+        {
+          "screenId": "STORE_42_TEMPLATE_HERO_V1",
+          "storeId": "STORE_42",
+          "pageId": "ELECTRONICS",
+          "location": "electronics",
+          "objective": "checkout-attach",
+          "confidence": 0.68,
+          "reason": "Vertical Screen at Electronics: prioritize basket-building offers near conversion zones.",
+          "currentTemplateId": "fullscreen-hero",
+          "recommendedTemplateId": "fullscreen-hero",
+          "currentRefreshInterval": 30000,
+          "recommendedRefreshInterval": 23000
+        },
+        {
+          "screenId": "STORE_42_TEMPLATE_CAROUSEL_H1",
+          "storeId": "STORE_42",
+          "pageId": "WHITEGOODS",
+          "location": "whitegoods",
+          "objective": "checkout-attach",
+          "confidence": 0.68,
+          "reason": "Horizontal Screen at Whitegoods: prioritize basket-building offers near conversion zones.",
+          "currentTemplateId": "carousel-banner",
+          "recommendedTemplateId": "fullscreen-banner",
+          "currentRefreshInterval": 14000,
+          "recommendedRefreshInterval": 23000
+        },
+        {
+          "screenId": "STORE_42_TEMPLATE_KIOSK_K1",
+          "storeId": "STORE_42",
+          "pageId": "CHECKOUT",
+          "location": "checkout",
+          "objective": "checkout-attach",
+          "confidence": 0.9,
+          "reason": "Kiosk at Checkout: prioritize basket-building offers near conversion zones.",
+          "currentTemplateId": "kiosk-interactive",
+          "recommendedTemplateId": "kiosk-interactive",
+          "currentRefreshInterval": 15000,
+          "recommendedRefreshInterval": 12000
+        },
+        {
+          "screenId": "STORE_42_TEMPLATE_SHELF_S1",
+          "storeId": "STORE_42",
+          "pageId": "AISLE",
+          "location": "aisle",
+          "objective": "checkout-attach",
+          "confidence": 0.68,
+          "reason": "Shelf Edge at Aisle: prioritize basket-building offers near conversion zones.",
+          "currentTemplateId": "shelf-spotlight",
+          "recommendedTemplateId": "shelf-spotlight",
+          "currentRefreshInterval": 12000,
+          "recommendedRefreshInterval": 9000
+        },
+        {
+          "screenId": "STORE_42_TEMPLATE_MENU_M1",
+          "storeId": "STORE_42",
+          "pageId": "FOODCOURT",
+          "location": "foodcourt",
+          "objective": "checkout-attach",
+          "confidence": 0.76,
+          "reason": "Digital Menu Board at Foodcourt: prioritize basket-building offers near conversion zones.",
+          "currentTemplateId": "menu-loop",
+          "recommendedTemplateId": "menu-loop",
+          "currentRefreshInterval": 12000,
+          "recommendedRefreshInterval": 8000
+        }
+      ]
     }
   ]
 }

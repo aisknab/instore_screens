@@ -23,6 +23,62 @@
       const screenId = urlParams.get("screenId") || "STORE_42_ELECTRONICS_V1";
       const apiBase = (urlParams.get("apiBase") || "").replace(/\/$/, "");
       const rmjsMode = (urlParams.get("rmjs") || "auto").toLowerCase();
+      const moneyFormatter = new Intl.NumberFormat("en-US", {
+        style: "currency",
+        currency: "USD",
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      });
+      const TEMPLATE_DISPLAY_DEFAULTS = {
+        "fullscreen-banner": {
+          badge: "In-Store Exclusive",
+          promotion: "Limited-time event pricing",
+          cta: "Find in aisle",
+          subcopy: "Top offers available in this store today.",
+          legal: "While stock lasts.",
+          image: "/assets/products/category-general.svg"
+        },
+        "fullscreen-hero": {
+          badge: "Featured Product",
+          promotion: "Premium pick of the day",
+          cta: "See product display",
+          subcopy: "Compare key features before you buy.",
+          legal: "Selection may vary by location.",
+          image: "/assets/products/category-electronics.svg"
+        },
+        "carousel-banner": {
+          badge: "Trending Deals",
+          promotion: "Rotating aisle highlights",
+          cta: "Browse this aisle",
+          subcopy: "Fresh recommendations rotate automatically.",
+          legal: "Offers rotate throughout the day.",
+          image: "/assets/products/category-electronics.svg"
+        },
+        "kiosk-interactive": {
+          badge: "Kiosk Display",
+          promotion: "Assisted kiosk offers",
+          cta: "Scan QR or ask staff",
+          subcopy: "Use QR handoff or staff assistance to continue on mobile.",
+          legal: "Digital offers applied at checkout.",
+          image: "/assets/products/category-general.svg"
+        },
+        "shelf-spotlight": {
+          badge: "Shelf Edge Deal",
+          promotion: "Grab-and-go savings",
+          cta: "Pick up nearby",
+          subcopy: "High-conversion offer near shelf location.",
+          legal: "Price valid for this location only.",
+          image: "/assets/products/category-aisle.svg"
+        },
+        "menu-loop": {
+          badge: "Now Serving",
+          promotion: "Chef-picked specials",
+          cta: "Order at counter",
+          subcopy: "Menu board rotates through daypart favorites.",
+          legal: "Preparation times may vary.",
+          image: "/assets/products/category-foodcourt.svg"
+        }
+      };
       const rmjsSources = (() => {
         const custom = urlParams.get("rmjsUrl");
         if (custom) {
@@ -60,6 +116,83 @@
         }
         window.clearInterval(fallbackLoopTimer);
         fallbackLoopTimer = null;
+      }
+
+      function readText(value) {
+        return typeof value === "string" ? value.trim() : "";
+      }
+
+      function readTemplateDefaults(templateId) {
+        return (
+          TEMPLATE_DISPLAY_DEFAULTS[templateId] ||
+          TEMPLATE_DISPLAY_DEFAULTS["fullscreen-banner"]
+        );
+      }
+
+      function parseRenderingAttributes(value) {
+        if (!value) {
+          return {};
+        }
+        if (typeof value === "object") {
+          return value;
+        }
+        const raw = readText(value);
+        if (!raw) {
+          return {};
+        }
+        try {
+          const parsed = JSON.parse(raw);
+          return parsed && typeof parsed === "object" ? parsed : {};
+        } catch {
+          return {};
+        }
+      }
+
+      function toNumber(value) {
+        const text = readText(String(value ?? ""));
+        if (!text) {
+          return Number.NaN;
+        }
+        return Number(text.replace(/[^0-9.-]/g, ""));
+      }
+
+      function formatMoney(value) {
+        const raw = readText(String(value ?? ""));
+        if (!raw) {
+          return "";
+        }
+        const parsed = toNumber(raw);
+        if (Number.isFinite(parsed)) {
+          return moneyFormatter.format(parsed);
+        }
+        return raw;
+      }
+
+      function shouldShowComparePrice(priceValue, compareValue) {
+        const compareRaw = readText(String(compareValue ?? ""));
+        if (!compareRaw) {
+          return false;
+        }
+
+        const priceNumber = toNumber(priceValue);
+        const compareNumber = toNumber(compareRaw);
+        if (Number.isFinite(priceNumber) && Number.isFinite(compareNumber)) {
+          return compareNumber > priceNumber;
+        }
+
+        return compareRaw !== readText(String(priceValue ?? ""));
+      }
+
+      function formatRating(value) {
+        const parsed = toNumber(value);
+        if (Number.isFinite(parsed) && parsed > 0) {
+          return `\u2605 ${parsed.toFixed(1)}`;
+        }
+        return "";
+      }
+
+      function escapeTemplateClass(value) {
+        return String(value).replace(/[^a-z0-9-]/gi, "").toLowerCase();
       }
 
       function isLocalhost() {
@@ -134,6 +267,7 @@
         const products = Array.isArray(data.products) && data.products.length > 0 ? data.products : [{}];
         const templateId = String(data.settings?.templateId || "fullscreen-banner");
         const templateName = String(data.settings?.templateName || templateId);
+        const templateDefaults = readTemplateDefaults(templateId);
         const supportsLoop = LOOPING_TEMPLATES.has(templateId) && products.length > 1;
         const loopInterval =
           Number(data.settings?.loopIntervalMs) || FALLBACK_LOOP_INTERVALS[templateId] || 0;
@@ -142,36 +276,74 @@
         adContainer.innerHTML = "";
 
         const card = document.createElement("article");
-        card.className = `fallback fallback--${templateId.replace(/[^a-z0-9-]/gi, "").toLowerCase()}`;
+        card.className = `fallback fallback--${escapeTemplateClass(templateId)}`;
 
         const content = document.createElement("section");
         content.className = "fallback__content";
+
         const tag = document.createElement("span");
         tag.className = "fallback__tag";
-        tag.textContent = supportsLoop ? `${templateName} | Live Loop` : templateName;
+
         const cycle = document.createElement("span");
         cycle.className = "fallback__cycle";
+
         const title = document.createElement("h1");
+
+        const subcopy = document.createElement("p");
+        subcopy.className = "fallback__subcopy";
+
         const priceRow = document.createElement("div");
         priceRow.className = "fallback__price";
+
         const priceStrong = document.createElement("strong");
         priceRow.appendChild(priceStrong);
         const compare = document.createElement("del");
         priceRow.appendChild(compare);
+
         const meta = document.createElement("p");
         meta.className = "fallback__meta";
+
+        const cta = document.createElement("span");
+        cta.className = "fallback__cta";
+
+        const utility = document.createElement("div");
+        utility.className = "fallback__utility";
+        const qr = document.createElement("div");
+        qr.className = "fallback__qr";
+        qr.setAttribute("aria-hidden", "true");
+        const qrNote = document.createElement("p");
+        qrNote.className = "fallback__qr-note";
+        utility.appendChild(qr);
+        utility.appendChild(qrNote);
+
+        const indicators = document.createElement("div");
+        indicators.className = "fallback__indicators";
+        const indicatorDots = [];
+
+        const legal = document.createElement("p");
+        legal.className = "fallback__legal";
+
+        const menuList = document.createElement("ul");
+        menuList.className = "fallback__menu";
+        const menuItems = [];
 
         content.appendChild(tag);
         content.appendChild(cycle);
         content.appendChild(title);
+        content.appendChild(subcopy);
         content.appendChild(priceRow);
         content.appendChild(meta);
+        content.appendChild(cta);
+        content.appendChild(utility);
+        content.appendChild(indicators);
+        content.appendChild(legal);
+        content.appendChild(menuList);
 
         const visual = document.createElement("section");
         visual.className = "fallback__visual";
         const img = document.createElement("img");
         const initialProduct = products[0] || {};
-        img.src = String(initialProduct.Image || "");
+        img.src = readText(initialProduct.Image) || templateDefaults.image;
         img.alt = String(initialProduct.ProductName || "In-Store Promotion");
         const veil = document.createElement("div");
         veil.className = "fallback__veil";
@@ -182,40 +354,99 @@
         card.appendChild(visual);
         adContainer.appendChild(card);
 
-        function renderProduct(product, index) {
-          const name = String(product.ProductName || "In-Store Promotion");
-          const image = String(product.Image || "");
-          const price = String(product.Price || "0.00");
-          const comparePrice = String(product.ComparePrice || "");
-          const rating = String(product.Rating || "-");
-          const promotion = (() => {
-            const attributes = String(product.RenderingAttributes || "");
-            if (!attributes) {
-              return "";
-            }
-            try {
-              const parsed = JSON.parse(attributes);
-              return String(parsed.promotion || "");
-            } catch {
-              return "";
-            }
-          })();
+        if (supportsLoop) {
+          for (let index = 0; index < products.length; index += 1) {
+            const dot = document.createElement("span");
+            dot.className = "fallback__dot";
+            dot.setAttribute("aria-hidden", "true");
+            indicators.appendChild(dot);
+            indicatorDots.push(dot);
+          }
+        }
 
+        if (templateId === "menu-loop" && products.length) {
+          for (let index = 0; index < products.length; index += 1) {
+            const product = products[index] || {};
+            const menuItem = document.createElement("li");
+            menuItem.className = "fallback__menu-item";
+            const menuTitle = document.createElement("span");
+            menuTitle.className = "fallback__menu-title";
+            menuTitle.textContent = readText(product.ProductName) || `Menu Item ${index + 1}`;
+            const menuPrice = document.createElement("span");
+            menuPrice.className = "fallback__menu-price";
+            menuPrice.textContent = formatMoney(product.Price) || "$0.00";
+            menuItem.appendChild(menuTitle);
+            menuItem.appendChild(menuPrice);
+            menuList.appendChild(menuItem);
+            menuItems.push(menuItem);
+          }
+        }
+
+        function renderProduct(product, index) {
+          const entry = product && typeof product === "object" ? product : {};
+          const attributes = parseRenderingAttributes(entry.RenderingAttributes);
+          const name = readText(entry.ProductName) || "In-Store Promotion";
+          const image = readText(entry.Image) || templateDefaults.image;
+          const price = formatMoney(entry.Price) || "$0.00";
+          const comparePrice = formatMoney(entry.ComparePrice);
+          const rating = formatRating(entry.Rating);
+          const promotion = readText(attributes.promotion) || templateDefaults.promotion;
+          const badge = readText(attributes.badge) || templateDefaults.badge || templateName;
+          const ctaLabel = readText(attributes.cta) || templateDefaults.cta;
+          const subcopyText = readText(attributes.subcopy) || templateDefaults.subcopy;
+          const legalText = readText(attributes.legal) || templateDefaults.legal;
           title.textContent = name;
+          tag.textContent = badge;
+          subcopy.textContent = subcopyText;
           img.src = image;
           img.alt = name;
-          priceStrong.textContent = `$${price}`;
-          if (comparePrice) {
-            compare.textContent = `$${comparePrice}`;
+          priceStrong.textContent = price;
+          if (shouldShowComparePrice(entry.Price, entry.ComparePrice) && comparePrice) {
+            compare.textContent = comparePrice;
             compare.style.display = "";
           } else {
             compare.textContent = "";
             compare.style.display = "none";
           }
-          const promoSuffix = promotion ? ` | ${promotion}` : "";
-          const indexText = supportsLoop ? ` | Item ${index + 1}/${products.length}` : "";
-          cycle.textContent = supportsLoop ? `Loop Interval ${Math.round(loopInterval / 1000)}s` : "";
-          meta.textContent = `Rating ${rating} | Template ${templateId}${indexText}${promoSuffix} | Screen ${screenId}`;
+
+          if (supportsLoop) {
+            cycle.textContent = `Item ${index + 1}/${products.length} | Rotates every ${Math.round(
+              loopInterval / 1000
+            )}s`;
+          } else if (templateId === "kiosk-interactive") {
+            cycle.textContent = "Staff-assisted kiosk | scan QR to continue on mobile";
+          } else {
+            cycle.textContent = "";
+          }
+
+          const metaParts = [];
+          if (rating) {
+            metaParts.push(rating);
+          }
+          if (promotion) {
+            metaParts.push(promotion);
+          }
+          meta.textContent = metaParts.join(" | ");
+
+          cta.textContent = ctaLabel;
+          cta.style.display = ctaLabel ? "inline-flex" : "none";
+
+          legal.textContent = legalText;
+          legal.style.display = legalText ? "block" : "none";
+
+          qrNote.textContent =
+            templateId === "kiosk-interactive"
+              ? "Scan to continue this offer on your phone"
+              : "";
+
+          indicatorDots.forEach((dot, dotIndex) => {
+            dot.classList.toggle("is-active", dotIndex === index);
+          });
+
+          menuItems.forEach((item, itemIndex) => {
+            item.classList.toggle("is-active", itemIndex === index);
+          });
+
           card.classList.remove("is-transition");
           void card.offsetWidth;
           card.classList.add("is-transition");
@@ -274,7 +505,7 @@
           const refreshInterval = Number(payload.settings?.refreshInterval) || 30000;
           scheduleRefresh(refreshInterval);
           const templateId = String(payload.settings?.templateId || "fullscreen-banner");
-          const modeLabel = rmjsAvailable ? "RMJS" : "Fallback";
+          const modeLabel = rmjsAvailable ? "RMJS" : "Native Fallback";
           setStatus(`Live ${screenId} | ${templateId} | ${modeLabel} | ${Math.round(refreshInterval / 1000)}s refresh`);
         } catch (error) {
           clearFallbackLoop();

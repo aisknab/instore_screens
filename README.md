@@ -1,29 +1,73 @@
-﻿# In-Store Screens Middleware Demo
+# In-Store Screens Middleware Demo
 
-Hackathon starter for treating physical in-store screens as retail media inventory in Criteo:
+Hackathon demo for treating physical in-store screens as retail media inventory in Criteo.
+
 - `Page` = in-store zone (`electronics`, `whitegoods`, `checkout`, etc.)
-- `Placement` = physical display (`Vertical Screen`, `Horizontal Screen`, etc.)
+- `Screen` = physical placement (`Vertical Screen`, `Kiosk`, `Digital Menu Board`, etc.)
+- `Template` = display behavior/look for that screen placement
 - `GET /api/screen-ad?screenId=...` returns RMJS-compatible payloads
 
-## What is included
+## What Is Included
 
-- Management UI inspired by the Criteo "Add Page" flow, including screen edit mode and template presets: `http://localhost:3000/admin.html`
-- Fullscreen ad player page that calls middleware and renders via RMJS: `http://localhost:3000/screen.html`
-- Express middleware API with file-backed storage in `data/db.json`
-- Seed data for `ELECTRONICS`, `WHITEGOODS`, and template showcase screens
+- Admin UI: `http://localhost:3000/admin.html`
+- Screen player: `http://localhost:3000/screen.html`
+- Express middleware API with file-backed storage (`data/db.json`)
+- Pre-seeded showcase screens for all template presets
+- Local product image assets for reliable offline/demo rendering (`public/assets/products`)
 
-## Run locally
+## Admin UI Capabilities
+
+- Add pages (Page ID, Page Type, Environment, beacon toggles)
+- Add screens with template preset dropdown
+- Edit configured screens
+- Delete configured screens
+- Goal Agent workflow:
+  - Generate goal-driven plans
+  - Target specific SKUs from product feed
+  - Review proposed screen-level changes
+  - Apply approved plans
+  - View live running screens/creative snapshot after apply
+  - Auto-create missing line-item creative during apply when required
+  - View run history
+- Group configured screens by parent-child tree:
+  - Parent: `Store ID`
+  - Child: `Mapped Page`
+- Collapse/expand Store and Page groups
+- Open any configured screen directly from the list
+
+## Screen Player Behavior
+
+- Attempts RMJS render first when available
+- Uses native fallback renderer when RMJS is unreachable (or forced)
+- Template-specific fallback layouts are production-like and distinct
+- Looping templates (`carousel-banner`, `menu-loop`) rotate through multi-product creative sets
+- Template CTAs are signage instructions for non-touch screens (not clickable UI actions)
+
+RMJS mode options:
+
+- `?rmjs=auto` (default): attempt RMJS except local/dev fallback scenarios
+- `?rmjs=on`: always attempt RMJS
+- `?rmjs=off`: force native fallback renderer
+
+Example:
+
+`http://localhost:3000/screen.html?screenId=STORE_42_TEMPLATE_KIOSK_K1&rmjs=off`
+
+## Run Locally
 
 ```bash
 npm install
 npm run dev
+npm run smoke
 ```
 
 Open:
-- Admin: `http://localhost:3000/admin.html`
-- Seed screen: `http://localhost:3000/screen.html?screenId=STORE_42_ELECTRONICS_V1`
 
-Template showcase screens (pre-set for demo):
+- Admin: `http://localhost:3000/admin.html`
+- Default seed screen: `http://localhost:3000/screen.html?screenId=STORE_42_ELECTRONICS_V1`
+
+## Template Showcase URLs
+
 - Fullscreen Banner: `http://localhost:3000/screen.html?screenId=STORE_42_TEMPLATE_BANNER_H1`
 - Fullscreen Hero: `http://localhost:3000/screen.html?screenId=STORE_42_TEMPLATE_HERO_V1`
 - Carousel Banner: `http://localhost:3000/screen.html?screenId=STORE_42_TEMPLATE_CAROUSEL_H1`
@@ -31,20 +75,63 @@ Template showcase screens (pre-set for demo):
 - Shelf Spotlight: `http://localhost:3000/screen.html?screenId=STORE_42_TEMPLATE_SHELF_S1`
 - Menu Loop: `http://localhost:3000/screen.html?screenId=STORE_42_TEMPLATE_MENU_M1`
 
-Looping behavior for local demo:
-- `menu-loop` and `carousel-banner` include 3 pre-seeded products and rotate in fallback mode.
-- On localhost, fallback mode is automatic when RMJS is unreachable.
-- You can force fallback explicitly with `&rmjs=off`.
+## Template Presets
 
-## API overview
+- `fullscreen-banner`: general high-impact horizontal promo
+- `fullscreen-hero`: portrait/feature-led creative
+- `carousel-banner`: rotating horizontal offer set
+- `kiosk-interactive`: staff-assisted kiosk signage with QR handoff
+- `shelf-spotlight`: compact shelf-edge promotion
+- `menu-loop`: digital menu board rotation
+
+Each preset includes default values for:
+
+- Screen type
+- Screen size
+- Refresh interval
+- Format prefix
+- Fallback image
+- Default rendering attributes (promotion, badge, CTA, subcopy, legal)
+
+## API Overview
+
+### `GET /api/health`
+
+Basic health check.
 
 ### `GET /api/options`
-Returns available page types, environments, verbosity values, and screen types.
+
+Returns:
+
+- `pageTypes`
+- `environments`
+- `verbosityOptions` (page-level field; defaults to `Min`)
+- `screenTypes`
+- `templates` (preset metadata and defaults)
+- `goalObjectives` (agent objective presets)
+- `goalAggressivenessOptions` (`Conservative`, `Balanced`, `Aggressive`)
+- `goalSupportsSkuTargeting` (`true`)
+
+### `GET /api/products`
+
+Returns product feed items for SKU targeting in Goal Agent.
+
+Query params:
+
+- `q` (optional free text search)
+- `category` (optional category filter)
+- `limit` (optional, max `300`)
+
+Example:
+
+`GET /api/products?q=laptop&category=electronics&limit=20`
 
 ### `GET /api/pages`
+
 List configured pages.
 
 ### `POST /api/pages`
+
 Create a page.
 
 ```json
@@ -60,9 +147,16 @@ Create a page.
 ```
 
 ### `GET /api/screens`
+
 List configured screens and line items.
 
+Optional filters:
+
+- `?pageId=ELECTRONICS`
+- `?storeId=STORE_42`
+
 ### `POST /api/screens`
+
 Create a screen and default line item.
 
 ```json
@@ -79,36 +173,117 @@ Create a screen and default line item.
     "ProductId": "SKU12345",
     "ProductName": "Demo Product",
     "ProductPage": "https://store.example.com/product/sku12345",
-    "Image": "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=1200",
+    "Image": "/assets/products/category-general.svg",
     "Price": "29.99",
     "ComparePrice": "39.99",
     "Rating": "4.5",
     "ClientAdvertiserId": "demo-advertiser",
-    "RenderingAttributes": "{\"promotion\":\"Save 25%\"}"
+    "RenderingAttributes": "{\"promotion\":\"Save 25%\",\"badge\":\"Featured\",\"cta\":\"Find in aisle\",\"subcopy\":\"Today only\",\"legal\":\"While stock lasts.\"}"
   }
 }
 ```
 
 ### `PUT /api/screens/:screenId`
-Edit an existing configured screen (mapping, template, size, refresh).
+
+Edit an existing screen configuration (mapping, template, size, refresh, etc.).
+
+### `DELETE /api/screens/:screenId`
+
+Delete a configured screen.
+
+### `POST /api/screens/:screenId/line-items`
+
+Add a line item to an existing screen.
+
+### `GET /api/agent/goals/runs`
+
+Returns recent Goal Agent runs (planned/applied), newest first.
+
+### `POST /api/agent/goals/plan`
+
+Generates and stores a proposed plan for a business goal.
+
+Behavior:
+
+- `targetSkuIds` is optional.
+- If `targetSkuIds` is empty and `prompt` is provided, the planner infers candidate SKUs from `data/productFeed.json`.
+- Context guardrails prevent mismatched section targeting (for example laptop-focused SKUs on whitegoods screens).
+- Response run includes:
+  - `goal.targetSource` (`manual`, `prompt`, `none`)
+  - `goal.inferredTerms` (prompt terms used for inference)
+  - `totals.excludedScreens` (count skipped by guardrail)
+  - `excludedScreens[]` with per-screen skip reason and relevance
 
 ```json
 {
+  "objective": "checkout-attach",
+  "aggressiveness": "Balanced",
   "storeId": "STORE_42",
-  "location": "electronics",
-  "pageId": "ELECTRONICS",
-  "screenType": "Kiosk",
-  "screenSize": "1080x1920",
-  "templateId": "kiosk-interactive",
-  "refreshInterval": 15000
+  "pageId": "CHECKOUT",
+  "prompt": "Boost checkout add-on visibility for afternoon traffic.",
+  "targetSkuIds": ["LAP-ULTRA-13-001", "LAP-GAME-16-002"]
 }
 ```
 
-### `DELETE /api/screens/:screenId`
-Delete a configured screen.
+Objective IDs:
+
+- `awareness`
+- `checkout-attach`
+- `clearance`
+- `premium`
+
+### `POST /api/agent/goals/apply`
+
+Applies a previously generated plan by `planId`.
+
+```json
+{
+  "planId": "goal-abc123"
+}
+```
+
+Returns:
+
+- `run` (updated run record)
+- `appliedCount`
+- `skippedCount`
+- `creativeGeneratedCount` (auto-generated creatives for screens missing usable line items/products)
+- `liveCount`
+- `liveScreens[]` (snapshot of currently live templates/products)
+
+### `GET /api/agent/goals/live?planId=goal-abc123`
+
+Returns live/run-time snapshot data for an applied plan.
+
+```json
+{
+  "planId": "goal-abc123",
+  "status": "applied",
+  "appliedAt": "2026-02-10T17:00:00.000Z",
+  "liveCount": 2,
+  "liveScreens": [
+    {
+      "screenId": "STORE_42_ELECTRONICS_V1",
+      "templateId": "fullscreen-hero",
+      "templateName": "Fullscreen Hero",
+      "refreshInterval": 23000,
+      "products": [
+        {
+          "sku": "LAP-ULTRA-13-001",
+          "name": "UltraBook 13 Pro",
+          "image": "/assets/products/lap-ultra-13-001.svg"
+        }
+      ]
+    }
+  ]
+}
+```
 
 ### `GET /api/screen-ad?screenId=STORE_42_ELECTRONICS_V1`
-Returns RMJS-ready payload:
+
+Returns RMJS-ready payload with all required product fields.
+
+Response shape:
 
 ```json
 {
@@ -118,22 +293,24 @@ Returns RMJS-ready payload:
       "ProductId": "SKU-HDPH-001",
       "ProductName": "ANC Headphones Pro",
       "ProductPage": "https://store.example.com/products/sku-hdph-001",
-      "Image": "https://images.unsplash.com/photo-1583394838336-acd977736f90?w=1200",
+      "Image": "/assets/products/category-electronics.svg",
       "Price": "199.99",
       "ComparePrice": "249.99",
       "Rating": "4.8",
-      "adid": "LI-ELEC-001-1739074811000-1",
+      "adid": "LI-ELEC-001-...",
       "ClientAdvertiserId": "advertiser-audio",
-      "RenderingAttributes": "{\"promotion\":\"Save 20%\"}",
-      "OnLoadBeacon": "https://httpbin.org/get?event=load&screenId=STORE_42_ELECTRONICS_V1&adid=...",
-      "OnViewBeacon": "https://httpbin.org/get?event=view&screenId=STORE_42_ELECTRONICS_V1&adid=...",
-      "OnClickBeacon": "https://httpbin.org/get?event=click&screenId=STORE_42_ELECTRONICS_V1&adid=...",
+      "RenderingAttributes": "{\"promotion\":\"Save 20%\",\"badge\":\"Featured\",\"cta\":\"Find in aisle\"}",
+      "OnLoadBeacon": "https://...",
+      "OnViewBeacon": "https://...",
+      "OnClickBeacon": "https://...",
       "OnBasketChangeBeacon": "",
       "OnWishlistBeacon": ""
     }
   ],
   "settings": {
     "templateId": "fullscreen-hero",
+    "templateName": "Fullscreen Hero",
+    "loopIntervalMs": 0,
     "refreshInterval": 30000,
     "screenType": "Vertical Screen",
     "pageId": "ELECTRONICS",
@@ -142,9 +319,13 @@ Returns RMJS-ready payload:
 }
 ```
 
-## Notes
+## Important Demo Notes
 
-- `GET /api/screen-ad` rotates through active line items for each screen on each refresh call.
-- RMJS receives all required product fields even when defaults are used.
-- If RMJS library is unavailable, `screen.html` falls back to native rendering for demo reliability.
-- Change tracking endpoint with env var: `TRACKING_BASE_URL=https://your-tracker.example.com/collect`
+- `GET /api/screen-ad` rotates through active line items per screen across calls.
+- RMJS payload includes all required product fields even when defaults are used.
+- Product images are normalized to local demo assets when remote URLs are present, to avoid broken visuals in restricted networks.
+- Looping templates are topped up from product feed at runtime when a screen is under-configured (so carousel/menu demos still rotate).
+- If `rm.js` fails to load (for example DNS/network restrictions), fallback renderer still shows full template behavior.
+- Tracking base URL can be changed with:
+
+`TRACKING_BASE_URL=https://your-tracker.example.com/collect`
