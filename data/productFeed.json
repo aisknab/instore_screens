@@ -82,6 +82,18 @@
         "comparePrice":  "1799.00",
         "rating":  "4.8",
         "advertiserId":  "advertiser-aurora",
+        "stockByStore":  {
+                             "STORE_42":  34,
+                             "STORE_17":  18,
+                             "STORE_08":  12,
+                             "STORE_21":  16,
+                             "STORE_33":  46,
+                             "STORE_55":  14,
+                             "STORE_64":  20,
+                             "STORE_71":  28,
+                             "STORE_88":  11,
+                             "STORE_95":  22
+                         },
         "tags":  [
                      "laptop",
                      "creator",
@@ -118,6 +130,18 @@
         "comparePrice":  "69.00",
         "rating":  "4.4",
         "advertiserId":  "advertiser-northfield",
+        "stockByStore":  {
+                             "STORE_42":  48,
+                             "STORE_17":  26,
+                             "STORE_08":  15,
+                             "STORE_21":  18,
+                             "STORE_33":  21,
+                             "STORE_55":  31,
+                             "STORE_64":  14,
+                             "STORE_71":  52,
+                             "STORE_88":  12,
+                             "STORE_95":  24
+                         },
         "tags":  [
                      "accessory",
                      "mouse",
@@ -153,6 +177,18 @@
         "comparePrice":  "179.00",
         "rating":  "4.6",
         "advertiserId":  "advertiser-aegis",
+        "stockByStore":  {
+                             "STORE_42":  29,
+                             "STORE_17":  16,
+                             "STORE_08":  9,
+                             "STORE_21":  12,
+                             "STORE_33":  24,
+                             "STORE_55":  13,
+                             "STORE_64":  11,
+                             "STORE_71":  27,
+                             "STORE_88":  8,
+                             "STORE_95":  19
+                         },
         "tags":  [
                      "accessory",
                      "dock",
@@ -205,6 +241,18 @@
         "comparePrice":  "899.00",
         "rating":  "4.5",
         "advertiserId":  "advertiser-chefline",
+        "stockByStore":  {
+                             "STORE_42":  23,
+                             "STORE_17":  14,
+                             "STORE_08":  10,
+                             "STORE_21":  34,
+                             "STORE_33":  12,
+                             "STORE_55":  9,
+                             "STORE_64":  39,
+                             "STORE_71":  11,
+                             "STORE_88":  8,
+                             "STORE_95":  28
+                         },
         "tags":  [
                      "oven",
                      "kitchen",
@@ -256,6 +304,18 @@
         "comparePrice":  "12.99",
         "rating":  "4.5",
         "advertiserId":  "advertiser-fitfuel",
+        "stockByStore":  {
+                             "STORE_42":  41,
+                             "STORE_17":  22,
+                             "STORE_08":  31,
+                             "STORE_21":  18,
+                             "STORE_33":  12,
+                             "STORE_55":  26,
+                             "STORE_64":  10,
+                             "STORE_71":  19,
+                             "STORE_88":  45,
+                             "STORE_95":  29
+                         },
         "tags":  [
                      "shelf",
                      "snack",

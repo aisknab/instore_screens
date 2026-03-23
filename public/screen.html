@@ -20,7 +20,9 @@
 
     <script type="module">
       const urlParams = new URLSearchParams(window.location.search);
-      const screenId = urlParams.get("screenId") || "STORE_42_ELECTRONICS_V1";
+      const screenIdOverride = (urlParams.get("screenId") || "").trim();
+      const deviceId = (urlParams.get("deviceId") || "").trim();
+      const deviceProfile = (urlParams.get("deviceProfile") || "").trim();
       const apiBase = (urlParams.get("apiBase") || "").replace(/\/$/, "");
       const rmjsMode = (urlParams.get("rmjs") || "auto").toLowerCase();
       const moneyFormatter = new Intl.NumberFormat("en-US", {
@@ -91,16 +93,87 @@
 
       let refreshTimer = null;
       let fallbackLoopTimer = null;
+      let activeExposure = null;
       let rmjsChecked = false;
       let rmjsAvailable = Boolean(window.RMJS && typeof window.RMJS.render === "function");
+      let currentResolvedScreenId = screenIdOverride;
       const LOOPING_TEMPLATES = new Set(["carousel-banner", "menu-loop"]);
       const FALLBACK_LOOP_INTERVALS = {
         "carousel-banner": 4000,
         "menu-loop": 3200
       };
+      const MIN_EXPOSURE_MS = 250;
+
+      function getViewportString() {
+        const width = window.screen?.width || window.innerWidth || 0;
+        const height = window.screen?.height || window.innerHeight || 0;
+        if (!width || !height) {
+          return "";
+        }
+        return `${width}x${height}`;
+      }
+
+      function getOrientation() {
+        const width = window.screen?.width || window.innerWidth || 0;
+        const height = window.screen?.height || window.innerHeight || 0;
+        if (!width || !height) {
+          return "";
+        }
+        return width >= height ? "landscape" : "portrait";
+      }
+
+      function getRequestLabel() {
+        return screenIdOverride || deviceId || "shared player URL";
+      }
+
+      function buildScreenAdUrl() {
+        const params = new URLSearchParams();
+        if (screenIdOverride) {
+          params.set("screenId", screenIdOverride);
+        }
+        if (deviceId) {
+          params.set("deviceId", deviceId);
+        }
+        if (deviceProfile) {
+          params.set("deviceProfile", deviceProfile);
+        }
+        const viewport = getViewportString();
+        if (viewport) {
+          params.set("viewport", viewport);
+        }
+        const orientation = getOrientation();
+        if (orientation) {
+          params.set("orientation", orientation);
+        }
+        const query = params.toString();
+        return `${apiBase}/api/screen-ad${query ? `?${query}` : ""}`;
+      }
 
       function setStatus(message) {
         statusBadge.textContent = message;
+      }
+
+      async function readResponseError(response) {
+        try {
+          const payload = await response.json();
+          const message = readText(payload?.error);
+          if (message) {
+            return message;
+          }
+        } catch {
+          // Try plain text next.
+        }
+
+        try {
+          const message = readText(await response.text());
+          if (message) {
+            return message;
+          }
+        } catch {
+          // Fall back to the generic status line below.
+        }
+
+        return `Middleware returned ${response.status}`;
       }
 
       function scheduleRefresh(interval) {
@@ -111,11 +184,10 @@
       }
 
       function clearFallbackLoop() {
-        if (!fallbackLoopTimer) {
-          return;
+        if (fallbackLoopTimer) {
+          window.clearInterval(fallbackLoopTimer);
+          fallbackLoopTimer = null;
         }
-        window.clearInterval(fallbackLoopTimer);
-        fallbackLoopTimer = null;
       }
 
       function readText(value) {
@@ -211,6 +283,101 @@
           return false;
         }
         return !isLocalhost();
+      }
+
+      function resolveBeaconUrl(url) {
+        const beaconUrl = readText(url);
+        if (!beaconUrl) {
+          return "";
+        }
+        if (/^https?:\/\//i.test(beaconUrl)) {
+          return beaconUrl;
+        }
+        if (!apiBase) {
+          return beaconUrl;
+        }
+        if (beaconUrl.startsWith("/")) {
+          return `${apiBase}${beaconUrl}`;
+        }
+        return `${apiBase}/${beaconUrl.replace(/^\/+/, "")}`;
+      }
+
+      async function postTelemetryBeacon(url, payload) {
+        const targetUrl = resolveBeaconUrl(url);
+        if (!targetUrl) {
+          return;
+        }
+        try {
+          await fetch(targetUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+            keepalive: true,
+            cache: "no-store"
+          });
+        } catch {
+          // Swallow telemetry failures so playback is unaffected.
+        }
+      }
+
+      function buildTelemetryPayload(eventName, product, data, context = {}) {
+        const entry = product && typeof product === "object" ? product : {};
+        return {
+          event: eventName,
+          screenId: readText(data.settings?.screenId) || currentResolvedScreenId || screenIdOverride,
+          adid: readText(entry.adid),
+          lineItemId: readText(data.settings?.lineItemId),
+          templateId: readText(data.settings?.templateId),
+          pageId: readText(data.settings?.pageId),
+          storeId: readText(data.settings?.storeId),
+          location: readText(data.settings?.location),
+          productId: readText(entry.ProductId),
+          sku: readText(entry.ProductId),
+          productName: readText(entry.ProductName),
+          productPage: readText(entry.ProductPage),
+          source: "native-fallback",
+          reason: readText(context.reason),
+          exposureMs: Number.isFinite(Number(context.exposureMs)) ? Math.max(0, Math.round(Number(context.exposureMs))) : 0,
+          position: Number.isFinite(Number(context.index)) ? Number(context.index) : 0,
+          occurredAt: new Date().toISOString()
+        };
+      }
+
+      function sendProductBeacon(eventName, product, data, context = {}) {
+        const entry = product && typeof product === "object" ? product : {};
+        const beaconField = eventName === "play" ? "OnLoadBeacon" : "OnViewBeacon";
+        const beaconUrl = readText(entry[beaconField]);
+        if (!beaconUrl) {
+          return;
+        }
+        const payload = buildTelemetryPayload(eventName, entry, data, context);
+        postTelemetryBeacon(beaconUrl, payload);
+      }
+
+      function flushActiveExposure(reason = "") {
+        if (!activeExposure) {
+          return;
+        }
+        const snapshot = activeExposure;
+        activeExposure = null;
+        const exposureMs = Date.now() - snapshot.startedAt;
+        if (exposureMs < MIN_EXPOSURE_MS) {
+          return;
+        }
+        sendProductBeacon("exposure", snapshot.product, snapshot.data, {
+          ...snapshot.context,
+          reason: readText(reason) || readText(snapshot.context?.reason),
+          exposureMs
+        });
+      }
+
+      function startProductExposure(product, data, context = {}) {
+        activeExposure = {
+          product,
+          data,
+          context,
+          startedAt: Date.now()
+        };
       }
 
       function loadScript(src, timeoutMs = 3500) {
@@ -382,7 +549,8 @@
           }
         }
 
-        function renderProduct(product, index) {
+        function renderProduct(product, index, { reason = "" } = {}) {
+          flushActiveExposure(reason || "rotation");
           const entry = product && typeof product === "object" ? product : {};
           const attributes = parseRenderingAttributes(entry.RenderingAttributes);
           const name = readText(entry.ProductName) || "In-Store Promotion";
@@ -450,13 +618,22 @@
           card.classList.remove("is-transition");
           void card.offsetWidth;
           card.classList.add("is-transition");
+
+          sendProductBeacon("play", entry, data, {
+            index,
+            reason: readText(reason) || (supportsLoop ? "rotation" : "screen-refresh")
+          });
+          startProductExposure(entry, data, {
+            index,
+            reason: supportsLoop ? "visible-rotation" : "visible-product"
+          });
         }
 
-        renderProduct(products[0], 0);
+        renderProduct(products[0], 0, { reason: "screen-refresh" });
         if (supportsLoop && loopInterval >= 1000) {
           fallbackLoopTimer = window.setInterval(() => {
             currentIndex = (currentIndex + 1) % products.length;
-            renderProduct(products[currentIndex], currentIndex);
+            renderProduct(products[currentIndex], currentIndex, { reason: "rotation" });
           }, loopInterval);
         }
       }
@@ -485,18 +662,20 @@
 
       async function loadAndRenderAd() {
         try {
-          setStatus(`Loading ${screenId}...`);
+          flushActiveExposure("screen-refresh");
+          setStatus(`Loading ${getRequestLabel()}...`);
           if (!rmjsChecked || rmjsMode === "on") {
             await ensureRmjsReady();
           }
-          const response = await fetch(`${apiBase}/api/screen-ad?screenId=${encodeURIComponent(screenId)}`, {
+          const response = await fetch(buildScreenAdUrl(), {
             cache: "no-store"
           });
           if (!response.ok) {
-            throw new Error(`Middleware returned ${response.status}`);
+            throw new Error(await readResponseError(response));
           }
 
           const payload = await response.json();
+          currentResolvedScreenId = readText(payload.settings?.screenId) || currentResolvedScreenId || screenIdOverride;
           const renderedByRmjs = renderWithRmjs(payload);
           if (!renderedByRmjs) {
             renderFallback(payload);
@@ -505,10 +684,17 @@
           const refreshInterval = Number(payload.settings?.refreshInterval) || 30000;
           scheduleRefresh(refreshInterval);
           const templateId = String(payload.settings?.templateId || "fullscreen-banner");
+          const resolvedBy =
+            readText(payload.settings?.resolvedBy) || (screenIdOverride ? "screenId override" : deviceId ? "resolver id" : "shared-url resolver");
           const modeLabel = rmjsAvailable ? "RMJS" : "Native Fallback";
-          setStatus(`Live ${screenId} | ${templateId} | ${modeLabel} | ${Math.round(refreshInterval / 1000)}s refresh`);
+          setStatus(
+            `Live ${currentResolvedScreenId || "screen"} | ${templateId} | ${resolvedBy} | ${modeLabel} | ${Math.round(
+              refreshInterval / 1000
+            )}s refresh`
+          );
         } catch (error) {
           clearFallbackLoop();
+          flushActiveExposure("load-failed");
           setStatus("Load failed | retrying");
           adContainer.innerHTML = "";
           const wrapper = document.createElement("div");
@@ -525,7 +711,7 @@
           const screen = document.createElement("p");
           screen.style.margin = "8px 0 0";
           screen.style.color = "#9eb0d8";
-          screen.textContent = `Screen ID: ${screenId}`;
+          screen.textContent = `Screen: ${currentResolvedScreenId || screenIdOverride || deviceId || "shared player URL"}`;
           wrapper.appendChild(title);
           wrapper.appendChild(message);
           wrapper.appendChild(screen);
@@ -535,7 +721,10 @@
       }
 
       window.addEventListener("load", loadAndRenderAd);
-      window.addEventListener("beforeunload", clearFallbackLoop);
+      window.addEventListener("beforeunload", () => {
+        clearFallbackLoop();
+        flushActiveExposure("page-unload");
+      });
       window.refreshAd = loadAndRenderAd;
     </script>
   </body>

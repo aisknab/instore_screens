@@ -173,15 +173,630 @@ const TEMPLATE_PRESETS = [
 ];
 const TEMPLATE_PRESET_MAP = new Map(TEMPLATE_PRESETS.map((entry) => [entry.id, entry]));
 const GOAL_OBJECTIVE_MAP = new Map(GOAL_OBJECTIVES.map((entry) => [entry.id, entry]));
+const SHARED_PLAYER_URL = "/screen.html";
+
+const DEMO_PRESET_ID = "cyield-cmax-demo";
+const DEMO_STORE_ID = "STORE_42";
+const DEMO_STORE_PROFILES = [
+  {
+    storeId: "STORE_42",
+    storeLabel: "Store 42",
+    stockBase: 18,
+    categoryBias: { electronics: 1.32, whitegoods: 1.05, aisle: 0.9, foodcourt: 0.78, general: 1.0 },
+    screenConfigs: {
+      entrance: { screenType: "Horizontal Screen", screenSize: "1920x1080", templateId: "fullscreen-banner", refreshInterval: 30000 },
+      electronics: { screenType: "Vertical Screen", screenSize: "1080x1920", templateId: "fullscreen-hero", refreshInterval: 30000 },
+      whitegoods: { screenType: "Horizontal Screen", screenSize: "1920x1080", templateId: "carousel-banner", refreshInterval: 14000 },
+      aisle: { screenType: "Shelf Edge", screenSize: "1280x720", templateId: "shelf-spotlight", refreshInterval: 12000 },
+      checkout: { screenType: "Kiosk", screenSize: "1080x1920", templateId: "kiosk-interactive", refreshInterval: 15000 }
+    }
+  },
+  {
+    storeId: "STORE_17",
+    storeLabel: "Store 17",
+    stockBase: 14,
+    categoryBias: { electronics: 1.08, whitegoods: 0.94, aisle: 1.04, foodcourt: 0.84, general: 0.98 },
+    screenConfigs: {
+      entrance: { screenType: "Vertical Screen", screenSize: "1080x1920", templateId: "fullscreen-hero", refreshInterval: 26000 },
+      electronics: { screenType: "Horizontal Screen", screenSize: "1920x1080", templateId: "fullscreen-banner", refreshInterval: 24000 },
+      whitegoods: { screenType: "Horizontal Screen", screenSize: "1600x900", templateId: "carousel-banner", refreshInterval: 18000 },
+      aisle: { screenType: "Endcap", screenSize: "1080x1920", templateId: "shelf-spotlight", refreshInterval: 11000 },
+      checkout: { screenType: "Kiosk", screenSize: "1080x1920", templateId: "kiosk-interactive", refreshInterval: 14000 }
+    }
+  },
+  {
+    storeId: "STORE_08",
+    storeLabel: "Store 08",
+    stockBase: 12,
+    categoryBias: { electronics: 0.9, whitegoods: 0.86, aisle: 1.24, foodcourt: 0.92, general: 0.96 },
+    screenConfigs: {
+      entrance: { screenType: "Horizontal Screen", screenSize: "1600x900", templateId: "fullscreen-banner", refreshInterval: 22000 },
+      electronics: { screenType: "Vertical Screen", screenSize: "1200x1920", templateId: "fullscreen-hero", refreshInterval: 28000 },
+      whitegoods: { screenType: "Horizontal Screen", screenSize: "1920x1080", templateId: "fullscreen-banner", refreshInterval: 22000 },
+      aisle: { screenType: "Shelf Edge", screenSize: "1024x600", templateId: "shelf-spotlight", refreshInterval: 10000 },
+      checkout: { screenType: "Horizontal Screen", screenSize: "1920x1080", templateId: "fullscreen-banner", refreshInterval: 18000 }
+    }
+  },
+  {
+    storeId: "STORE_21",
+    storeLabel: "Store 21",
+    stockBase: 16,
+    categoryBias: { electronics: 0.94, whitegoods: 1.22, aisle: 0.9, foodcourt: 0.76, general: 1.0 },
+    screenConfigs: {
+      entrance: { screenType: "Horizontal Screen", screenSize: "1920x1080", templateId: "fullscreen-banner", refreshInterval: 26000 },
+      electronics: { screenType: "Vertical Screen", screenSize: "1080x1920", templateId: "fullscreen-hero", refreshInterval: 26000 },
+      whitegoods: { screenType: "Horizontal Screen", screenSize: "1920x1080", templateId: "carousel-banner", refreshInterval: 12000 },
+      aisle: { screenType: "Endcap", screenSize: "1080x1920", templateId: "shelf-spotlight", refreshInterval: 12000 },
+      checkout: { screenType: "Kiosk", screenSize: "1080x1920", templateId: "kiosk-interactive", refreshInterval: 15000 }
+    }
+  },
+  {
+    storeId: "STORE_33",
+    storeLabel: "Store 33",
+    stockBase: 17,
+    categoryBias: { electronics: 1.4, whitegoods: 0.96, aisle: 0.82, foodcourt: 0.74, general: 1.02 },
+    screenConfigs: {
+      entrance: { screenType: "Vertical Screen", screenSize: "1080x1920", templateId: "fullscreen-hero", refreshInterval: 24000 },
+      electronics: { screenType: "Vertical Screen", screenSize: "1080x1920", templateId: "fullscreen-hero", refreshInterval: 22000 },
+      whitegoods: { screenType: "Horizontal Screen", screenSize: "1920x1080", templateId: "fullscreen-banner", refreshInterval: 18000 },
+      aisle: { screenType: "Shelf Edge", screenSize: "1280x720", templateId: "shelf-spotlight", refreshInterval: 12000 },
+      checkout: { screenType: "Kiosk", screenSize: "1080x1920", templateId: "kiosk-interactive", refreshInterval: 15000 }
+    }
+  },
+  {
+    storeId: "STORE_55",
+    storeLabel: "Store 55",
+    stockBase: 11,
+    categoryBias: { electronics: 0.92, whitegoods: 0.84, aisle: 1.08, foodcourt: 1.14, general: 0.95 },
+    screenConfigs: {
+      entrance: { screenType: "Horizontal Screen", screenSize: "1366x768", templateId: "fullscreen-banner", refreshInterval: 20000 },
+      electronics: { screenType: "Horizontal Screen", screenSize: "1920x1080", templateId: "carousel-banner", refreshInterval: 20000 },
+      whitegoods: { screenType: "Horizontal Screen", screenSize: "1600x900", templateId: "fullscreen-banner", refreshInterval: 20000 },
+      aisle: { screenType: "Endcap", screenSize: "1080x1920", templateId: "shelf-spotlight", refreshInterval: 10000 },
+      checkout: { screenType: "Horizontal Screen", screenSize: "1920x1080", templateId: "fullscreen-banner", refreshInterval: 15000 }
+    }
+  },
+  {
+    storeId: "STORE_64",
+    storeLabel: "Store 64",
+    stockBase: 19,
+    categoryBias: { electronics: 0.98, whitegoods: 1.34, aisle: 0.88, foodcourt: 0.72, general: 1.04 },
+    screenConfigs: {
+      entrance: { screenType: "Horizontal Screen", screenSize: "1920x1080", templateId: "fullscreen-banner", refreshInterval: 28000 },
+      electronics: { screenType: "Vertical Screen", screenSize: "1080x1920", templateId: "fullscreen-hero", refreshInterval: 26000 },
+      whitegoods: { screenType: "Horizontal Screen", screenSize: "1920x1080", templateId: "carousel-banner", refreshInterval: 10000 },
+      aisle: { screenType: "Shelf Edge", screenSize: "1280x720", templateId: "shelf-spotlight", refreshInterval: 12000 },
+      checkout: { screenType: "Kiosk", screenSize: "1080x1920", templateId: "kiosk-interactive", refreshInterval: 14000 }
+    }
+  },
+  {
+    storeId: "STORE_71",
+    storeLabel: "Store 71",
+    stockBase: 15,
+    categoryBias: { electronics: 1.14, whitegoods: 0.88, aisle: 0.96, foodcourt: 0.88, general: 1.0 },
+    screenConfigs: {
+      entrance: { screenType: "Vertical Screen", screenSize: "1080x1920", templateId: "fullscreen-hero", refreshInterval: 24000 },
+      electronics: { screenType: "Horizontal Screen", screenSize: "1920x1080", templateId: "fullscreen-banner", refreshInterval: 22000 },
+      whitegoods: { screenType: "Horizontal Screen", screenSize: "1600x900", templateId: "carousel-banner", refreshInterval: 18000 },
+      aisle: { screenType: "Endcap", screenSize: "1080x1920", templateId: "shelf-spotlight", refreshInterval: 11000 },
+      checkout: { screenType: "Kiosk", screenSize: "1080x1920", templateId: "kiosk-interactive", refreshInterval: 12000 }
+    }
+  },
+  {
+    storeId: "STORE_88",
+    storeLabel: "Store 88",
+    stockBase: 13,
+    categoryBias: { electronics: 0.86, whitegoods: 0.82, aisle: 1.36, foodcourt: 0.94, general: 0.97 },
+    screenConfigs: {
+      entrance: { screenType: "Horizontal Screen", screenSize: "1600x900", templateId: "fullscreen-banner", refreshInterval: 22000 },
+      electronics: { screenType: "Vertical Screen", screenSize: "1080x1920", templateId: "fullscreen-hero", refreshInterval: 26000 },
+      whitegoods: { screenType: "Horizontal Screen", screenSize: "1366x768", templateId: "fullscreen-banner", refreshInterval: 22000 },
+      aisle: { screenType: "Shelf Edge", screenSize: "1024x600", templateId: "shelf-spotlight", refreshInterval: 9000 },
+      checkout: { screenType: "Horizontal Screen", screenSize: "1920x1080", templateId: "fullscreen-banner", refreshInterval: 16000 }
+    }
+  },
+  {
+    storeId: "STORE_95",
+    storeLabel: "Store 95",
+    stockBase: 17,
+    categoryBias: { electronics: 1.02, whitegoods: 1.16, aisle: 1.12, foodcourt: 0.78, general: 1.03 },
+    screenConfigs: {
+      entrance: { screenType: "Horizontal Screen", screenSize: "1920x1080", templateId: "fullscreen-banner", refreshInterval: 26000 },
+      electronics: { screenType: "Horizontal Screen", screenSize: "1920x1080", templateId: "carousel-banner", refreshInterval: 20000 },
+      whitegoods: { screenType: "Horizontal Screen", screenSize: "1920x1080", templateId: "carousel-banner", refreshInterval: 12000 },
+      aisle: { screenType: "Endcap", screenSize: "1080x1920", templateId: "shelf-spotlight", refreshInterval: 10000 },
+      checkout: { screenType: "Kiosk", screenSize: "1080x1920", templateId: "kiosk-interactive", refreshInterval: 13000 }
+    }
+  }
+];
+const DEMO_STORE_IDS = DEMO_STORE_PROFILES.map((profile) => profile.storeId);
+const DEMO_STORE_ID_SET = new Set(DEMO_STORE_IDS);
+
+function clampNumber(value, min = 0, max = 1) {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) {
+    return min;
+  }
+  return Math.min(max, Math.max(min, parsed));
+}
+
+function normalizeRange(value, min, max, fallback = 0.5) {
+  const parsedValue = Number(value);
+  const parsedMin = Number(min);
+  const parsedMax = Number(max);
+  if (!Number.isFinite(parsedValue) || !Number.isFinite(parsedMin) || !Number.isFinite(parsedMax) || parsedMax <= parsedMin) {
+    return fallback;
+  }
+  return clampNumber((parsedValue - parsedMin) / (parsedMax - parsedMin), 0, 1);
+}
+
+function readNumericValue(value, fallback = 0) {
+  const normalized =
+    typeof value === "string"
+      ? value.replace(/[^0-9.-]+/g, "")
+      : value;
+  const parsed = Number(normalized);
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function averageOf(values = [], fallback = 0) {
+  const numeric = values.map((value) => Number(value)).filter((value) => Number.isFinite(value));
+  if (numeric.length === 0) {
+    return fallback;
+  }
+  return numeric.reduce((sum, value) => sum + value, 0) / numeric.length;
+}
+
+function buildDemoStoreSalesSignalMap() {
+  const rawEntries = DEMO_STORE_PROFILES.map((profile, index) => {
+    const screenConfigs = Object.values(profile?.screenConfigs || {});
+    const screenCount = screenConfigs.length;
+    const verticalCount = screenConfigs.filter((config) => toTrimmedString(config?.screenType).toLowerCase().includes("vertical")).length;
+    const kioskCount = screenConfigs.filter((config) => toTrimmedString(config?.screenType).toLowerCase() === "kiosk").length;
+    const shelfCount = screenConfigs.filter((config) => {
+      const screenType = toTrimmedString(config?.screenType).toLowerCase();
+      return screenType.includes("shelf") || screenType.includes("endcap");
+    }).length;
+    const entranceCount = screenConfigs.filter((config, configIndex) => {
+      const key = Object.keys(profile?.screenConfigs || {})[configIndex] || "";
+      return String(key).toLowerCase().includes("entrance");
+    }).length;
+    const electronicsBias = Number(profile?.categoryBias?.electronics || 1);
+    const whitegoodsBias = Number(profile?.categoryBias?.whitegoods || 1);
+    const aisleBias = Number(profile?.categoryBias?.aisle || 1);
+    const foodcourtBias = Number(profile?.categoryBias?.foodcourt || 1);
+    const totalSales =
+      520000 +
+      Number(profile?.stockBase || 0) * 64000 +
+      electronicsBias * 135000 +
+      whitegoodsBias * 112000 +
+      aisleBias * 54000 +
+      foodcourtBias * 26000 +
+      verticalCount * 42000 +
+      kioskCount * 24000 +
+      shelfCount * 16000 +
+      screenCount * 12000 +
+      index * 3500;
+    const avgBasketValue = 34 + Number(profile?.stockBase || 0) * 0.95 + whitegoodsBias * 8 + electronicsBias * 6 + aisleBias * 3;
+    const estimatedTransactions = Math.max(1, Math.round(totalSales / Math.max(24, avgBasketValue)));
+    const inferredFootTraffic = Math.round(estimatedTransactions * (1.18 + entranceCount * 0.07 + screenCount * 0.01));
+    const checkoutIntent = estimatedTransactions * (0.34 + kioskCount * 0.08 + shelfCount * 0.03 + aisleBias * 0.05);
+    const premiumDemand = totalSales * (0.08 + electronicsBias * 0.11 + verticalCount * 0.05);
+    const clearancePressure = Number(profile?.stockBase || 0) * 6 + aisleBias * 22 + whitegoodsBias * 11 + shelfCount * 6;
+
+    return {
+      storeId: readOptionalString(profile?.storeId, 80),
+      storeLabel: readOptionalString(profile?.storeLabel, 80) || readOptionalString(profile?.storeId, 80),
+      totalSales: Math.round(totalSales),
+      avgBasketValue: Number(avgBasketValue.toFixed(2)),
+      estimatedTransactions,
+      inferredFootTraffic,
+      checkoutIntent: Number(checkoutIntent.toFixed(2)),
+      premiumDemand: Number(premiumDemand.toFixed(2)),
+      clearancePressure: Number(clearancePressure.toFixed(2))
+    };
+  }).filter((entry) => Boolean(entry.storeId));
+
+  const salesValues = rawEntries.map((entry) => entry.totalSales);
+  const footTrafficValues = rawEntries.map((entry) => entry.inferredFootTraffic);
+  const checkoutValues = rawEntries.map((entry) => entry.checkoutIntent);
+  const premiumValues = rawEntries.map((entry) => entry.premiumDemand);
+  const clearanceValues = rawEntries.map((entry) => entry.clearancePressure);
+  const salesMin = Math.min(...salesValues);
+  const salesMax = Math.max(...salesValues);
+  const footTrafficMin = Math.min(...footTrafficValues);
+  const footTrafficMax = Math.max(...footTrafficValues);
+  const checkoutMin = Math.min(...checkoutValues);
+  const checkoutMax = Math.max(...checkoutValues);
+  const premiumMin = Math.min(...premiumValues);
+  const premiumMax = Math.max(...premiumValues);
+  const clearanceMin = Math.min(...clearanceValues);
+  const clearanceMax = Math.max(...clearanceValues);
+
+  return new Map(
+    rawEntries.map((entry) => [
+      entry.storeId,
+      {
+        ...entry,
+        salesIndex: Number(normalizeRange(entry.totalSales, salesMin, salesMax, 0.5).toFixed(2)),
+        footTrafficIndex: Number(normalizeRange(entry.inferredFootTraffic, footTrafficMin, footTrafficMax, 0.5).toFixed(2)),
+        checkoutIntentIndex: Number(normalizeRange(entry.checkoutIntent, checkoutMin, checkoutMax, 0.5).toFixed(2)),
+        premiumDemandIndex: Number(normalizeRange(entry.premiumDemand, premiumMin, premiumMax, 0.5).toFixed(2)),
+        clearancePressureIndex: Number(normalizeRange(entry.clearancePressure, clearanceMin, clearanceMax, 0.5).toFixed(2))
+      }
+    ])
+  );
+}
+
+const DEMO_STORE_SALES_SIGNAL_MAP = buildDemoStoreSalesSignalMap();
+const DEMO_STAGE_ORDER = ["cyield-supply", "cmax-demand", "monitoring"];
+const DEMO_PAGE_SPECS = [
+  {
+    pageId: "ENTRANCE",
+    pageType: "Homepage",
+    environment: "In-Store",
+    verbosity: "Min",
+    firePageBeacons: true,
+    oneTagHybridIntegration: false,
+    includeBidInResponse: false
+  },
+  {
+    pageId: "ELECTRONICS",
+    pageType: "Category",
+    environment: "In-Store",
+    verbosity: "Min",
+    firePageBeacons: true,
+    oneTagHybridIntegration: false,
+    includeBidInResponse: false
+  },
+  {
+    pageId: "WHITEGOODS",
+    pageType: "Category",
+    environment: "In-Store",
+    verbosity: "Min",
+    firePageBeacons: true,
+    oneTagHybridIntegration: false,
+    includeBidInResponse: false
+  },
+  {
+    pageId: "AISLE",
+    pageType: "In-Store Zone",
+    environment: "In-Store",
+    verbosity: "Min",
+    firePageBeacons: true,
+    oneTagHybridIntegration: false,
+    includeBidInResponse: false
+  },
+  {
+    pageId: "CHECKOUT",
+    pageType: "Checkout",
+    environment: "In-Store",
+    verbosity: "Min",
+    firePageBeacons: true,
+    oneTagHybridIntegration: false,
+    includeBidInResponse: false
+  }
+];
+const DEMO_SCREEN_BLUEPRINTS = [
+  {
+    screenIdSuffix: "CYIELD_ENTRANCE_HERO",
+    resolverSuffix: "entrance",
+    stageId: "cyield-supply",
+    stageLabel: "CYield Supply Setup",
+    placementKey: "entrance",
+    label: "Entrance Hero",
+    pageId: "ENTRANCE",
+    location: "entrance",
+    screenType: "Horizontal Screen",
+    screenSize: "1920x1080",
+    templateId: "fullscreen-banner",
+    refreshInterval: 30000,
+    lineItemKey: "CYIELD-ENTRANCE",
+    lineItemName: "CYield Entrance Supply Anchor",
+    productSkus: ["LAP-ULTRA-13-001"],
+    minimumProducts: 1,
+    fallbackCategory: "electronics",
+    creative: {
+      badge: "CYield Supply",
+      promotion: "Supply setup is live",
+      cta: "Open the demo flow",
+      subcopy: "Load one placement manually, then fan out the preset in one click.",
+      legal: "Demo baseline only."
+    }
+  },
+  {
+    screenIdSuffix: "CYIELD_ELECTRONICS_V1",
+    resolverSuffix: "electronics",
+    stageId: "cyield-supply",
+    stageLabel: "CYield Supply Setup",
+    placementKey: "electronics",
+    label: "Electronics Hero",
+    pageId: "ELECTRONICS",
+    location: "electronics",
+    screenType: "Vertical Screen",
+    screenSize: "1080x1920",
+    templateId: "fullscreen-hero",
+    refreshInterval: 30000,
+    lineItemKey: "CYIELD-ELECTRONICS",
+    lineItemName: "CYield Electronics Placement",
+    productSkus: ["LAP-ULTRA-13-001"],
+    minimumProducts: 1,
+    fallbackCategory: "electronics",
+    creative: {
+      badge: "Store Inventory",
+      promotion: "Electronics supply on the shelf",
+      cta: "Show the placement",
+      subcopy: "The first manual placement becomes the anchor for the preset.",
+      legal: "Demo baseline only."
+    }
+  },
+  {
+    screenIdSuffix: "CYIELD_WHITEGOODS_LOOP",
+    resolverSuffix: "whitegoods",
+    stageId: "cyield-supply",
+    stageLabel: "CYield Supply Setup",
+    placementKey: "whitegoods",
+    label: "Whitegoods Loop",
+    pageId: "WHITEGOODS",
+    location: "whitegoods",
+    screenType: "Horizontal Screen",
+    screenSize: "1920x1080",
+    templateId: "carousel-banner",
+    refreshInterval: 14000,
+    lineItemKey: "CYIELD-WHITEGOODS",
+    lineItemName: "CYield Whitegoods Coverage",
+    productSkus: ["WG-FRIDGE-001", "WG-WASHER-002", "WG-OVEN-003"],
+    minimumProducts: 3,
+    fallbackCategory: "whitegoods",
+    creative: {
+      badge: "Coverage View",
+      promotion: "Whitegoods range expansion",
+      cta: "Rotate the range",
+      subcopy: "Preset fills the floor with a complete retail story.",
+      legal: "Demo baseline only."
+    }
+  },
+  {
+    screenIdSuffix: "CYIELD_AISLE_EDGE",
+    resolverSuffix: "aisle",
+    stageId: "cyield-supply",
+    stageLabel: "CYield Supply Setup",
+    placementKey: "aisle",
+    label: "Aisle Edge",
+    pageId: "AISLE",
+    location: "aisle",
+    screenType: "Shelf Edge",
+    screenSize: "1280x720",
+    templateId: "shelf-spotlight",
+    refreshInterval: 12000,
+    lineItemKey: "CYIELD-AISLE",
+    lineItemName: "CYield Aisle Coverage",
+    productSkus: ["GR-PROTEIN-001"],
+    minimumProducts: 1,
+    fallbackCategory: "aisle",
+    creative: {
+      badge: "Aisle Coverage",
+      promotion: "Aisle-level supply proof",
+      cta: "Keep it on shelf",
+      subcopy: "A compact placement proves the inventory map.",
+      legal: "Demo baseline only."
+    }
+  },
+  {
+    screenIdSuffix: "CMAX_CHECKOUT_KIOSK",
+    resolverSuffix: "checkout",
+    stageId: "cmax-demand",
+    stageLabel: "CMax Buying / Demand",
+    placementKey: "checkout",
+    label: "Checkout Kiosk",
+    pageId: "CHECKOUT",
+    location: "checkout",
+    screenType: "Kiosk",
+    screenSize: "1080x1920",
+    templateId: "kiosk-interactive",
+    refreshInterval: 15000,
+    lineItemKey: "CMAX-CHECKOUT",
+    lineItemName: "CMax Demand Activation",
+    productSkus: ["ACC-MOUSE-001", "ACC-DOCK-003"],
+    minimumProducts: 2,
+    fallbackCategory: "electronics",
+    creative: {
+      badge: "CMax Demand",
+      promotion: "Checkout demand activation",
+      cta: "Scan to continue",
+      subcopy: "Turn supply into demand at the moment of purchase.",
+      legal: "Demo baseline only."
+    }
+  }
+];
+
+function normalizeDemoStoreSlug(storeId) {
+  return String(storeId || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function buildDemoScreenSpec(storeProfile, blueprint, storeIndex) {
+  const config = storeProfile?.screenConfigs?.[blueprint.placementKey] || {};
+  const storeId = readRequiredString(storeProfile?.storeId, "demo storeId", 80);
+  const storeLabel = readOptionalString(storeProfile?.storeLabel, 80) || storeId.replace(/_/g, " ");
+  const resolverStore = normalizeDemoStoreSlug(storeId) || `store-${storeIndex + 1}`;
+  const lineItemSuffix = String(blueprint.lineItemKey || blueprint.screenIdSuffix || `screen-${storeIndex + 1}`)
+    .replace(/[^A-Z0-9-]+/gi, "-")
+    .toUpperCase();
+
+  return {
+    ...blueprint,
+    storeId,
+    storeLabel,
+    label: `${storeLabel} ${blueprint.label}`,
+    screenId: `${storeId}_${blueprint.screenIdSuffix}`,
+    resolverId: `tv-${resolverStore}-${blueprint.resolverSuffix}-01`,
+    screenType: readOptionalString(config.screenType, 80) || blueprint.screenType,
+    screenSize: readOptionalString(config.screenSize, 40) || blueprint.screenSize,
+    templateId: readOptionalString(config.templateId, 80) || blueprint.templateId,
+    refreshInterval: Number(config.refreshInterval || blueprint.refreshInterval),
+    lineItemId: `LI-DEMO-${storeId}-${lineItemSuffix}`.slice(0, 120),
+    lineItemName: `${storeLabel} ${blueprint.lineItemName}`.slice(0, 120)
+  };
+}
+
+const DEMO_SCREEN_SPECS = DEMO_STORE_PROFILES.flatMap((storeProfile, index) =>
+  DEMO_SCREEN_BLUEPRINTS.map((blueprint) => buildDemoScreenSpec(storeProfile, blueprint, index))
+);
+const DEMO_STAGE_TEMPLATES = [
+  {
+    id: "cyield-supply",
+    label: "CYield Supply Setup",
+    description: "Add one placement manually, then load the preset to complete the supply setup story.",
+    actionLabel: "Load supply preset",
+    starterScreenId: "STORE_42_CYIELD_ENTRANCE_HERO",
+    speakerSummary: "One manual CYield-style mapping proves the integration point, then the preset fills the rest of the store.",
+    presenterNotes: [
+      "Start with one anchor placement so the workflow still looks like CYield page setup.",
+      "Every screen still calls the same shared player URL.",
+      "The only extra layer is backend resolution of which installed screen is asking for the ad."
+    ],
+    proofPoints: [
+      "Minimal CYield change",
+      "One shared player URL",
+      "Preset rolls out the store fast"
+    ]
+  },
+  {
+    id: "cmax-demand",
+    label: "CMax Buying / Demand",
+    description: "Switch to the buying plan, generate demand, and apply it at checkout.",
+    actionLabel: "Generate buying plan",
+    starterScreenId: "STORE_42_CMAX_CHECKOUT_KIOSK",
+    goalDefaults: {
+      objective: "checkout-attach",
+      aggressiveness: "Balanced",
+      storeId: "",
+      pageId: "CHECKOUT",
+      advertiserId: "advertiser-northfield",
+      prompt: "Drive checkout demand for Northfield accessories in STORE_42.",
+      targetSkuIds: ["ACC-MOUSE-001"]
+    },
+    speakerSummary: "CMax turns the configured supply into a demand brief, and the demo can automatically pivot to the best matching mapped screens for the selected SKUs.",
+    presenterNotes: [
+      "Generate the brief from a business goal and target SKUs, not from hand-editing creatives.",
+      "If the selected products fit aisle or category screens better than checkout, the demo automatically adjusts the scope.",
+      "Already-compatible screens still count as live proof even when no template change is required."
+    ],
+    proofPoints: [
+      "Goal-led buying brief",
+      "Auto-matched screen scope",
+      "Applies even when the best screen already matches"
+    ]
+  },
+  {
+    id: "monitoring",
+    label: "Monitoring",
+    description: "Review live screens, telemetry, and the applied plan after the click-through.",
+    actionLabel: "Open monitoring",
+    starterScreenId: "STORE_42_CMAX_CHECKOUT_KIOSK",
+    speakerSummary: "The same shared player URL now shows live proof across screens, with telemetry that makes the activation feel operational.",
+    presenterNotes: [
+      "Show that the plan moved from setup into live state without changing the player path.",
+      "Use the preview rail and telemetry to make the demo feel observable and production-like.",
+      "The key takeaway is continuity: same URL, different resolved screens, measurable delivery."
+    ],
+    proofPoints: [
+      "Live proof-of-play",
+      "Telemetry by screen and SKU",
+      "Same shared player path end to end"
+    ]
+  }
+];
 const DEFAULT_REFRESH_INTERVAL = 30000;
-const DEFAULT_TRACKING_BASE_URL = "https://httpbin.org/get";
+const DEFAULT_TRACKING_BASE_URL = "/collect";
+const TELEMETRY_EVENT_TYPES = ["play", "exposure"];
+const TELEMETRY_EVENT_LIMIT = 4000;
+const TELEMETRY_BREAKDOWN_LIMIT = 6;
 const SCREEN_SIZE_PATTERN = /^\d{3,5}x\d{3,5}$/i;
 const AGENT_RUN_HISTORY_LIMIT = 40;
 const GOAL_TARGET_SKU_LIMIT = 24;
 const GOAL_INFERRED_PRODUCT_LIMIT = 8;
 const GOAL_RELEVANCE_THRESHOLD = 0.24;
 const GOAL_PROMPT_MIN_SCORE = 0.75;
+const GOAL_PLANNING_THEME_KEYWORDS = {
+  urgency: ["today", "now", "afternoon", "weekend", "launch", "rush", "limited", "immediate"],
+  premium: ["premium", "hero", "flagship", "signature", "oled", "luxury", "new", "launch"],
+  clearance: ["clearance", "markdown", "overstock", "sell", "through", "last", "chance"],
+  bundle: ["attach", "addon", "add", "on", "bundle", "pair", "basket", "cross", "sell"],
+  compare: ["compare", "range", "assortment", "browse", "collection", "lineup"],
+  entrance: ["entrance", "entry", "arrival", "front", "door"],
+  checkout: ["checkout", "register", "basket", "payment", "lane"],
+  aisle: ["aisle", "shelf", "endcap", "bay"],
+  foodcourt: ["foodcourt", "counter", "menu", "meal", "drink"],
+  value: ["value", "save", "deal", "student", "budget"]
+};
 const PRODUCT_FEED_FILE = path.resolve(process.cwd(), "data", "productFeed.json");
+const DEMO_STOCK_BY_SKU = {
+  "LAP-CREATOR-15-005": {
+    STORE_42: 34,
+    STORE_17: 18,
+    STORE_08: 12,
+    STORE_21: 16,
+    STORE_33: 46,
+    STORE_55: 14,
+    STORE_64: 20,
+    STORE_71: 28,
+    STORE_88: 11,
+    STORE_95: 22
+  },
+  "ACC-MOUSE-001": {
+    STORE_42: 48,
+    STORE_17: 26,
+    STORE_08: 15,
+    STORE_21: 18,
+    STORE_33: 21,
+    STORE_55: 31,
+    STORE_64: 14,
+    STORE_71: 52,
+    STORE_88: 12,
+    STORE_95: 24
+  },
+  "ACC-DOCK-003": {
+    STORE_42: 29,
+    STORE_17: 16,
+    STORE_08: 9,
+    STORE_21: 12,
+    STORE_33: 24,
+    STORE_55: 13,
+    STORE_64: 11,
+    STORE_71: 27,
+    STORE_88: 8,
+    STORE_95: 19
+  },
+  "WG-OVEN-003": {
+    STORE_42: 23,
+    STORE_17: 14,
+    STORE_08: 10,
+    STORE_21: 34,
+    STORE_33: 12,
+    STORE_55: 9,
+    STORE_64: 39,
+    STORE_71: 11,
+    STORE_88: 8,
+    STORE_95: 28
+  },
+  "GR-PROTEIN-001": {
+    STORE_42: 41,
+    STORE_17: 22,
+    STORE_08: 31,
+    STORE_21: 18,
+    STORE_33: 12,
+    STORE_55: 26,
+    STORE_64: 10,
+    STORE_71: 19,
+    STORE_88: 45,
+    STORE_95: 29
+  }
+};
 const PRODUCT_FEED_DEFAULT = [];
 const PRODUCT_IMAGE_BASE_PATH = "/assets/products";
 const DEMO_SKU_IMAGE_PREFIXES = ["LAP-", "WG-", "FS-", "GR-", "ACC-"];
@@ -259,6 +874,36 @@ const GOAL_PROMPT_STOPWORDS = new Set([
   "weeks",
   "with"
 ]);
+
+function hashText(value) {
+  const input = String(value || "");
+  let hash = 0;
+  for (let index = 0; index < input.length; index += 1) {
+    hash = (hash * 31 + input.charCodeAt(index)) % 10007;
+  }
+  return hash;
+}
+
+function buildGeneratedDemoStockByStore({ sku = "", category = "", tags = [] }, index = 0) {
+  const normalizedSku = normalizeSku(sku);
+  const normalizedCategory = readOptionalString(category, 80).toLowerCase();
+  const tagSet = new Set((Array.isArray(tags) ? tags : []).map((entry) => readOptionalString(entry, 40).toLowerCase()));
+  const baseUnits = 12 + (index % 5) * 4 + (hashText(normalizedSku) % 6);
+  const demandKey = tagSet.has("clearance")
+    ? "aisle"
+    : tagSet.has("checkout-attach")
+      ? "electronics"
+      : normalizedCategory || "general";
+
+  return Object.fromEntries(
+    DEMO_STORE_PROFILES.map((storeProfile, storeIndex) => {
+      const categoryBias = Number(storeProfile.categoryBias?.[demandKey] || storeProfile.categoryBias?.[normalizedCategory] || 1);
+      const variability = hashText(`${normalizedSku}-${storeProfile.storeId}`) % 7;
+      const units = Math.max(0, Math.round((baseUnits + variability + Number(storeProfile.stockBase || 0) + (storeIndex % 3)) * categoryBias));
+      return [storeProfile.storeId, units];
+    })
+  );
+}
 
 class HttpError extends Error {
   constructor(status, message) {
@@ -401,6 +1046,233 @@ function slugify(value) {
     .replace(/^-+|-+$/g, "");
 }
 
+function parseScreenSize(value) {
+  const normalized = readOptionalString(value, 20).toLowerCase();
+  const match = normalized.match(/^(\d{3,5})x(\d{3,5})$/);
+  if (!match) {
+    return {
+      width: 0,
+      height: 0,
+      normalized: "",
+      orientation: ""
+    };
+  }
+
+  const width = Number(match[1]);
+  const height = Number(match[2]);
+  return {
+    width,
+    height,
+    normalized: `${width}x${height}`,
+    orientation: width >= height ? "landscape" : "portrait"
+  };
+}
+
+function inferDeviceUserAgentHints(screenType) {
+  const normalizedType = slugify(screenType);
+  if (normalizedType === "kiosk") {
+    return ["android", "kiosk", "chrome"];
+  }
+  if (normalizedType === "digital-menu-board") {
+    return ["tizen", "webos", "smart-tv", "tv"];
+  }
+  return ["tizen", "webos", "smart-tv", "tv"];
+}
+
+function buildScreenDeviceHints({
+  screenId = "",
+  storeId = "",
+  pageId = "",
+  location = "",
+  screenType = "",
+  screenSize = "",
+  resolverId = "",
+  rawHints = null
+} = {}) {
+  const size = parseScreenSize(screenSize);
+  const hints = rawHints && typeof rawHints === "object" ? rawHints : {};
+  const requestedUserAgentHints = readStringArray(hints.userAgentHints, 8, 40).map((entry) => entry.toLowerCase());
+  const defaultResolverId =
+    readOptionalString(resolverId, 120) ||
+    [slugify(storeId), slugify(location), slugify(screenId)].filter(Boolean).join("-") ||
+    slugify(screenId) ||
+    "screen";
+
+  return {
+    sharedPlayerUrl: SHARED_PLAYER_URL,
+    resolverId: readOptionalString(hints.resolverId, 120) || defaultResolverId.slice(0, 120),
+    viewport: readOptionalString(hints.viewport, 20) || size.normalized,
+    orientation: readOptionalString(hints.orientation, 20) || size.orientation,
+    pageToken: readOptionalString(hints.pageToken, 80) || slugify(pageId),
+    locationToken: readOptionalString(hints.locationToken, 80) || slugify(location),
+    storeId: readOptionalString(hints.storeId, 80) || readOptionalString(storeId, 80),
+    screenTypeToken: readOptionalString(hints.screenTypeToken, 80) || slugify(screenType),
+    userAgentHints: requestedUserAgentHints.length > 0 ? requestedUserAgentHints : inferDeviceUserAgentHints(screenType)
+  };
+}
+
+function getScreenDeviceHints(screen) {
+  return buildScreenDeviceHints({
+    screenId: readOptionalString(screen?.screenId, 80),
+    storeId: readOptionalString(screen?.storeId, 80),
+    pageId: readOptionalString(screen?.pageId, 40),
+    location: readOptionalString(screen?.location, 80),
+    screenType: readOptionalString(screen?.screenType, 80),
+    screenSize: readOptionalString(screen?.screenSize, 20),
+    rawHints: screen?.deviceHints
+  });
+}
+
+function buildScreenRequestContext(req) {
+  const userAgent = readOptionalString(req.get("user-agent"), 500).toLowerCase();
+  const platform = readOptionalString(req.get("sec-ch-ua-platform") || req.query.platform, 80)
+    .toLowerCase()
+    .replaceAll('"', "");
+  const language = readOptionalString(req.get("accept-language"), 120).toLowerCase();
+  const viewport = parseScreenSize(req.query.viewport || req.get("x-screen-viewport"));
+  const explicitResolverId = readOptionalString(req.query.deviceId || req.get("x-device-id"), 120)
+    .toLowerCase();
+  const deviceProfile = readOptionalString(req.query.deviceProfile || req.get("x-device-profile"), 120)
+    .toLowerCase();
+  const orientation =
+    readOptionalString(req.query.orientation || req.get("x-screen-orientation"), 20).toLowerCase() ||
+    viewport.orientation;
+
+  return {
+    userAgent,
+    platform,
+    language,
+    viewport,
+    orientation,
+    explicitResolverId,
+    deviceProfile
+  };
+}
+
+function scoreScreenForRequest(screen, context) {
+  const hints = getScreenDeviceHints(screen);
+  const normalizedScreenId = readOptionalString(screen.screenId, 80).toLowerCase();
+  const resolverId = readOptionalString(hints.resolverId, 120).toLowerCase();
+  let score = 0;
+  let resolvedBy = "shared-url fallback";
+
+  if (context.explicitResolverId && (context.explicitResolverId === resolverId || context.explicitResolverId === normalizedScreenId)) {
+    return { score: 100, resolvedBy: "resolver id", hints };
+  }
+
+  if (context.deviceProfile) {
+    if (resolverId && context.deviceProfile.includes(resolverId)) {
+      return { score: 90, resolvedBy: "device profile", hints };
+    }
+    if (hints.locationToken && context.deviceProfile.includes(hints.locationToken)) {
+      score += 12;
+      resolvedBy = "device profile";
+    }
+    if (hints.pageToken && context.deviceProfile.includes(hints.pageToken)) {
+      score += 9;
+      resolvedBy = "device profile";
+    }
+  }
+
+  if (context.viewport.normalized && hints.viewport && context.viewport.normalized === hints.viewport) {
+    score += 16;
+    resolvedBy = "viewport fingerprint";
+  }
+
+  if (context.orientation && hints.orientation && context.orientation === hints.orientation) {
+    score += 4;
+    if (resolvedBy === "shared-url fallback") {
+      resolvedBy = "orientation fingerprint";
+    }
+  }
+
+  if (context.platform && /tv|smart/i.test(context.platform)) {
+    score += 2;
+  }
+
+  let userAgentMatches = 0;
+  for (const hint of Array.isArray(hints.userAgentHints) ? hints.userAgentHints : []) {
+    if (hint && context.userAgent.includes(hint)) {
+      userAgentMatches += 1;
+    }
+  }
+  if (userAgentMatches > 0) {
+    score += Math.min(6, userAgentMatches * 2);
+    resolvedBy = "browser fingerprint";
+  }
+
+  if (hints.storeId && context.deviceProfile && context.deviceProfile.includes(slugify(hints.storeId))) {
+    score += 2;
+  }
+
+  if (context.language.includes("en")) {
+    score += 0.5;
+  }
+
+  return { score, resolvedBy, hints };
+}
+
+function resolveScreenRequest(db, req) {
+  const explicitScreenId = readOptionalString(req.query.screenId, 80);
+  if (explicitScreenId) {
+    const screen = (db.screens || []).find((entry) => entry.screenId === explicitScreenId);
+    if (!screen) {
+      throw new HttpError(404, `Screen ${explicitScreenId} was not found.`);
+    }
+    return {
+      screen,
+      resolvedBy: "screenId override",
+      requestContext: buildScreenRequestContext(req)
+    };
+  }
+
+  const screens = Array.isArray(db.screens) ? db.screens : [];
+  if (screens.length === 0) {
+    throw new HttpError(404, "No screens are configured yet.");
+  }
+
+  const context = buildScreenRequestContext(req);
+  const scored = screens
+    .map((screen) => ({
+      screen,
+      ...scoreScreenForRequest(screen, context)
+    }))
+    .sort((left, right) => {
+      if (right.score !== left.score) {
+        return right.score - left.score;
+      }
+      return left.screen.screenId.localeCompare(right.screen.screenId);
+    });
+
+  const best = scored[0];
+  if (!best) {
+    throw new HttpError(404, "No screen match could be resolved.");
+  }
+
+  const topScore = Number(best.score || 0);
+  const tiedMatches = scored.filter((entry) => Number(entry.score || 0) === topScore);
+  if (!context.explicitResolverId) {
+    if (topScore <= 0) {
+      throw new HttpError(
+        409,
+        "Shared player URL could not resolve a screen. Provide a deviceId/x-device-id or a unique device profile."
+      );
+    }
+    if (tiedMatches.length > 1 && topScore < 90) {
+      throw new HttpError(
+        409,
+        `Shared player URL matched ${tiedMatches.length} screens equally. Provide a deviceId/x-device-id or a unique device profile.`
+      );
+    }
+  }
+
+  return {
+    screen: best.screen,
+    resolvedBy: best.resolvedBy,
+    requestContext: context
+  };
+}
+
 function tokenize(value) {
   return readOptionalString(value, 500)
     .toLowerCase()
@@ -501,6 +1373,27 @@ function normalizeProductFeedItem(rawProduct, index) {
     readOptionalString(product.advertiserId || product.ClientAdvertiserId, 120) ||
     `advertiser-${slugify(brand) || "store"}`;
   const tags = readStringArray(product.tags, 12, 40).map((entry) => entry.toLowerCase());
+  const fallbackStockByStore =
+    DEMO_STOCK_BY_SKU[sku] ||
+    buildGeneratedDemoStockByStore(
+      {
+        sku,
+        category,
+        tags
+      },
+      index
+    );
+  const stockByStoreInput =
+    product.stockByStore && typeof product.stockByStore === "object"
+      ? product.stockByStore
+      : product.inventoryByStore && typeof product.inventoryByStore === "object"
+        ? product.inventoryByStore
+        : fallbackStockByStore;
+  const stockByStore = Object.fromEntries(
+    Object.entries(stockByStoreInput)
+      .map(([storeId, quantity]) => [readOptionalString(storeId, 80), Math.max(0, Number(quantity) || 0)])
+      .filter(([storeId]) => Boolean(storeId))
+  );
 
   return {
     sku,
@@ -513,7 +1406,8 @@ function normalizeProductFeedItem(rawProduct, index) {
     comparePrice,
     rating,
     advertiserId,
-    tags
+    tags,
+    stockByStore
   };
 }
 
@@ -645,6 +1539,10 @@ function computeProductRelevanceForScreen(screen, targetProducts) {
   if (!Array.isArray(targetProducts) || targetProducts.length === 0) {
     return 0.58;
   }
+  const targetSkuIds = targetProducts.map((product) => normalizeSku(product.sku)).filter(Boolean);
+  if (targetSkuIds.length > 0 && screenContainsAnyTargetSku(screen, targetSkuIds)) {
+    return 0.72;
+  }
 
   const screenContext = buildScreenGoalContext(screen);
   let bestScore = 0;
@@ -689,10 +1587,959 @@ function pickGoalProductsForScreen(screen, targetProducts, templateId) {
   });
 
   const limit = getTemplateProductLimit(templateId);
+  const existingMatches = getExistingTargetProductsForScreen(screen, targetProducts);
   const relevant = scored
     .filter((entry) => entry.hasStrongContextMatch && entry.score >= GOAL_RELEVANCE_THRESHOLD)
     .map((entry) => entry.product);
-  return uniqueBySku(relevant).slice(0, limit);
+  return uniqueBySku([...existingMatches, ...relevant]).slice(0, limit);
+}
+
+function isObjectivePreferredScreen(screen, objectiveId) {
+  const pageId = readOptionalString(screen?.pageId, 40).toLowerCase();
+  const location = readOptionalString(screen?.location, 80).toLowerCase();
+  const screenType = readOptionalString(screen?.screenType, 80).toLowerCase();
+
+  switch (objectiveId) {
+    case "checkout-attach":
+      return pageId.includes("checkout") || location.includes("checkout") || screenType.includes("kiosk");
+    case "clearance":
+      return pageId.includes("aisle") || location.includes("aisle") || screenType.includes("shelf") || screenType.includes("endcap");
+    case "premium":
+      return pageId.includes("entrance") || location.includes("entrance") || screenType.includes("vertical");
+    case "awareness":
+    default:
+      return pageId.includes("entrance") || location.includes("entrance") || pageId.includes("electronics") || screenType.includes("vertical");
+  }
+}
+
+function pickGoalProductsForScreenWithObjective(screen, targetProducts, templateId, objectiveId) {
+  const matchedProducts = pickGoalProductsForScreen(screen, targetProducts, templateId);
+  if (matchedProducts.length > 0) {
+    return matchedProducts;
+  }
+  if (!isObjectivePreferredScreen(screen, objectiveId)) {
+    return [];
+  }
+
+  const limit = getTemplateProductLimit(templateId);
+  return uniqueBySku(targetProducts).slice(0, limit);
+}
+
+function filterGoalScopeScreens(screens, goal, { ignorePage = false } = {}) {
+  return (Array.isArray(screens) ? screens : []).filter((screen) => {
+    if (goal.storeId && screen.storeId !== goal.storeId) {
+      return false;
+    }
+    if (!ignorePage && goal.pageId && screen.pageId !== goal.pageId) {
+      return false;
+    }
+    return true;
+  });
+}
+
+function filterScreensByStoreIds(screens, storeIds = []) {
+  const allowedStoreIds = new Set((Array.isArray(storeIds) ? storeIds : []).map((storeId) => readOptionalString(storeId, 80)).filter(Boolean));
+  if (allowedStoreIds.size === 0) {
+    return Array.isArray(screens) ? [...screens] : [];
+  }
+  return (Array.isArray(screens) ? screens : []).filter((screen) => allowedStoreIds.has(readOptionalString(screen.storeId, 80)));
+}
+
+function findCompatibleGoalScreens(goal, screens, targetProducts) {
+  if (!Array.isArray(targetProducts) || targetProducts.length === 0) {
+    return Array.isArray(screens) ? [...screens] : [];
+  }
+  return (Array.isArray(screens) ? screens : []).filter((screen) => {
+    const relevance = computeProductRelevanceForScreen(screen, targetProducts);
+    const preferredForObjective = isObjectivePreferredScreen(screen, goal.objective);
+    if (relevance < GOAL_RELEVANCE_THRESHOLD && !preferredForObjective) {
+      return false;
+    }
+    const recommendedTemplateId = computeGoalTemplateId(screen, goal.objective);
+    return pickGoalProductsForScreenWithObjective(screen, targetProducts, recommendedTemplateId, goal.objective).length > 0;
+  });
+}
+
+function getGoalScreenRole(screen) {
+  const pageId = readOptionalString(screen?.pageId, 40).toLowerCase();
+  const location = readOptionalString(screen?.location, 80).toLowerCase();
+  const screenType = readOptionalString(screen?.screenType, 80).toLowerCase();
+  if (pageId.includes("checkout") || location.includes("checkout") || screenType.includes("kiosk")) {
+    return "checkout";
+  }
+  if (pageId.includes("aisle") || location.includes("aisle") || screenType.includes("shelf") || screenType.includes("endcap")) {
+    return "aisle";
+  }
+  if (pageId.includes("entrance") || location.includes("entrance")) {
+    return "entrance";
+  }
+  if (pageId.includes("foodcourt") || location.includes("foodcourt") || screenType.includes("menu")) {
+    return "foodcourt";
+  }
+  if (pageId.includes("electronics") || pageId.includes("whitegoods") || location.includes("electronics") || location.includes("whitegoods")) {
+    return "category";
+  }
+  return "general";
+}
+
+function buildGoalPlanningSignals(goal, targetProducts = []) {
+  const assortmentCategory = readOptionalString(goal?.assortmentCategory, 80).toLowerCase();
+  const promptTokens = new Set(tokenizeForMatch(readOptionalString(goal?.prompt, 280), true));
+  const targetCategories = [
+    ...new Set(
+      targetProducts
+        .map((product) => normalizeMatchToken(product?.category))
+        .filter(Boolean)
+    )
+  ];
+  const targetTagTokens = new Set(
+    targetProducts.flatMap((product) => tokenizeForMatch(readStringArray(product?.tags, 12, 40).join(" "), true))
+  );
+  if (assortmentCategory) {
+    promptTokens.add(assortmentCategory);
+  }
+  const allTokens = new Set([...promptTokens, ...targetTagTokens, ...targetCategories]);
+  const briefThemes = new Set();
+  for (const [theme, keywords] of Object.entries(GOAL_PLANNING_THEME_KEYWORDS)) {
+    if (keywords.some((keyword) => allTokens.has(keyword))) {
+      briefThemes.add(theme);
+    }
+  }
+
+  const prices = targetProducts.map((product) => readNumericValue(product?.price, 0)).filter((value) => value > 0);
+  const ratings = targetProducts.map((product) => readNumericValue(product?.rating, 0)).filter((value) => value > 0);
+  const discountRates = targetProducts
+    .map((product) => {
+      const price = readNumericValue(product?.price, 0);
+      const comparePrice = readNumericValue(product?.comparePrice, 0);
+      if (comparePrice <= 0 || comparePrice <= price) {
+        return 0;
+      }
+      return clampNumber((comparePrice - price) / comparePrice, 0, 0.95);
+    })
+    .filter((value) => Number.isFinite(value));
+
+  const avgPrice = averageOf(prices, 0);
+  const avgRating = averageOf(ratings, 0);
+  const avgDiscountRate = averageOf(discountRates, 0);
+  if (goal?.objective === "awareness") {
+    briefThemes.add("reach");
+    briefThemes.add("entrance");
+  }
+  if (goal?.objective === "checkout-attach") {
+    briefThemes.add("bundle");
+    briefThemes.add("checkout");
+  }
+  if (goal?.objective === "clearance") {
+    briefThemes.add("clearance");
+    briefThemes.add("aisle");
+  }
+  if (goal?.objective === "premium") {
+    briefThemes.add("premium");
+    briefThemes.add("entrance");
+  }
+  if (avgPrice >= 1200 || avgRating >= 4.75) {
+    briefThemes.add("premium");
+  }
+  if (avgDiscountRate >= 0.18) {
+    briefThemes.add("value");
+  }
+  if (targetProducts.length > 1) {
+    briefThemes.add("assortment");
+  }
+  if (targetProducts.length >= 3) {
+    briefThemes.add("compare");
+  }
+  if (promptTokens.has("afternoon") || promptTokens.has("today") || promptTokens.has("now") || promptTokens.has("weekend")) {
+    briefThemes.add("urgency");
+  }
+
+  const primaryCategory = assortmentCategory || targetCategories[0] || "";
+  const stageHints = [
+    ...new Set(
+      [
+        briefThemes.has("entrance") ? "entrance" : "",
+        briefThemes.has("checkout") ? "checkout" : "",
+        briefThemes.has("aisle") ? "aisle" : "",
+        primaryCategory === "electronics" || primaryCategory === "whitegoods" ? "category" : ""
+      ].filter(Boolean)
+    )
+  ];
+
+  let strategyMode = "Objective-led placement plan";
+  let trafficModel = "balanced-signal";
+  switch (goal?.objective) {
+    case "awareness":
+      strategyMode = "Footfall-weighted awareness plan";
+      trafficModel = "sales-to-footfall";
+      break;
+    case "checkout-attach":
+      strategyMode = "Basket-builder conversion plan";
+      trafficModel = "sales-to-trip-and-checkout-intent";
+      break;
+    case "clearance":
+      strategyMode = "Stock-pressure sell-through plan";
+      trafficModel = "stock-and-clearance-pressure";
+      break;
+    case "premium":
+      strategyMode = "Hero-led premium demand plan";
+      trafficModel = "sales-to-premium-demand";
+      break;
+    default:
+      break;
+  }
+
+  return {
+    assortmentCategory,
+    primaryCategory,
+    targetCategories,
+    briefThemes: [...briefThemes],
+    stageHints,
+    avgPrice: Number(avgPrice.toFixed(2)),
+    avgRating: Number(avgRating.toFixed(2)),
+    avgDiscountRate: Number(avgDiscountRate.toFixed(2)),
+    wantsHeroMoment: briefThemes.has("premium") || targetProducts.length <= 1,
+    wantsAssortmentRotation: briefThemes.has("compare") || targetProducts.length >= 3,
+    wantsFastCadence:
+      goal?.aggressiveness === "Aggressive" ||
+      goal?.objective === "clearance" ||
+      briefThemes.has("urgency") ||
+      briefThemes.has("clearance"),
+    strategyMode,
+    trafficModel
+  };
+}
+
+function buildGoalPlanningProfile(goal, planningSignals = {}) {
+  const baseWeightsByObjective = {
+    awareness: {
+      objectiveFit: 0.18,
+      assortmentFit: 0.12,
+      stockFit: 0.08,
+      trafficFit: 0.28,
+      capabilityFit: 0.18,
+      continuityFit: 0.08,
+      scopeFit: 0.08
+    },
+    "checkout-attach": {
+      objectiveFit: 0.24,
+      assortmentFit: 0.2,
+      stockFit: 0.1,
+      trafficFit: 0.16,
+      capabilityFit: 0.14,
+      continuityFit: 0.08,
+      scopeFit: 0.08
+    },
+    clearance: {
+      objectiveFit: 0.18,
+      assortmentFit: 0.16,
+      stockFit: 0.28,
+      trafficFit: 0.08,
+      capabilityFit: 0.14,
+      continuityFit: 0.08,
+      scopeFit: 0.08
+    },
+    premium: {
+      objectiveFit: 0.22,
+      assortmentFit: 0.18,
+      stockFit: 0.08,
+      trafficFit: 0.16,
+      capabilityFit: 0.22,
+      continuityFit: 0.08,
+      scopeFit: 0.06
+    }
+  };
+  const aggressivenessProfiles = {
+    Conservative: { minPlanScore: 0.62, minAssortmentFit: 0.24, offPageScopeFit: 0.42, maxPlacementsPerStore: 1 },
+    Balanced: { minPlanScore: 0.54, minAssortmentFit: 0.2, offPageScopeFit: 0.64, maxPlacementsPerStore: 2 },
+    Aggressive: { minPlanScore: 0.46, minAssortmentFit: 0.15, offPageScopeFit: 0.78, maxPlacementsPerStore: 3 }
+  };
+  const weights = {
+    ...(baseWeightsByObjective[goal?.objective] || baseWeightsByObjective.awareness)
+  };
+  const profile = {
+    ...(aggressivenessProfiles[goal?.aggressiveness] || aggressivenessProfiles.Balanced)
+  };
+
+  if (goal?.aggressiveness === "Conservative") {
+    weights.continuityFit += 0.06;
+    weights.scopeFit += 0.04;
+  } else if (goal?.aggressiveness === "Aggressive") {
+    weights.objectiveFit += 0.03;
+    weights.trafficFit += 0.03;
+    weights.capabilityFit += 0.02;
+  }
+  if (planningSignals.wantsAssortmentRotation) {
+    weights.capabilityFit += 0.03;
+  }
+  if (planningSignals.wantsHeroMoment) {
+    weights.objectiveFit += 0.02;
+  }
+  if (planningSignals.wantsFastCadence) {
+    weights.trafficFit += 0.02;
+    weights.stockFit += 0.02;
+  }
+  if (Array.isArray(planningSignals.briefThemes) && planningSignals.briefThemes.includes("value")) {
+    weights.stockFit += 0.02;
+  }
+
+  const totalWeight = Object.values(weights).reduce((sum, value) => sum + value, 0);
+  profile.weights = Object.fromEntries(
+    Object.entries(weights).map(([key, value]) => [key, Number((value / totalWeight).toFixed(4))])
+  );
+  return profile;
+}
+
+function computeGoalStoreObjectiveCapability(storeScreens, objectiveId) {
+  const screens = Array.isArray(storeScreens) ? storeScreens : [];
+  if (screens.length === 0) {
+    return 0.5;
+  }
+  const roleCounts = screens.reduce(
+    (accumulator, screen) => {
+      const role = getGoalScreenRole(screen);
+      accumulator[role] = (accumulator[role] || 0) + 1;
+      return accumulator;
+    },
+    { entrance: 0, category: 0, aisle: 0, checkout: 0, foodcourt: 0, general: 0 }
+  );
+  const totalScreens = screens.length;
+  const verticalShare = screens.filter((screen) => readOptionalString(screen?.screenType, 80).toLowerCase().includes("vertical")).length / totalScreens;
+  const kioskShare = screens.filter((screen) => readOptionalString(screen?.screenType, 80).toLowerCase().includes("kiosk")).length / totalScreens;
+  const shelfShare = screens.filter((screen) => {
+    const screenType = readOptionalString(screen?.screenType, 80).toLowerCase();
+    return screenType.includes("shelf") || screenType.includes("endcap");
+  }).length / totalScreens;
+  const heroShare = screens.filter((screen) => readOptionalString(screen?.templateId, 80) === "fullscreen-hero").length / totalScreens;
+  const diversity = new Set(screens.map((screen) => getGoalScreenRole(screen))).size / 5;
+  const hasRole = (role) => ((roleCounts[role] || 0) > 0 ? 1 : 0);
+
+  switch (objectiveId) {
+    case "checkout-attach":
+      return clampNumber(hasRole("checkout") * 0.45 + hasRole("aisle") * 0.22 + kioskShare * 0.18 + hasRole("category") * 0.1 + diversity * 0.05);
+    case "clearance":
+      return clampNumber(hasRole("aisle") * 0.48 + shelfShare * 0.2 + hasRole("category") * 0.18 + hasRole("checkout") * 0.06 + diversity * 0.08);
+    case "premium":
+      return clampNumber(hasRole("entrance") * 0.34 + hasRole("category") * 0.28 + verticalShare * 0.22 + heroShare * 0.1 + diversity * 0.06);
+    case "awareness":
+    default:
+      return clampNumber(hasRole("entrance") * 0.42 + hasRole("category") * 0.24 + verticalShare * 0.18 + diversity * 0.16);
+  }
+}
+
+function computeGoalStoreContinuityFit(storeScreens, targetProducts, objectiveId) {
+  const screens = Array.isArray(storeScreens) ? storeScreens : [];
+  if (screens.length === 0) {
+    return 0.45;
+  }
+  const targetSkuIds = Array.isArray(targetProducts) ? targetProducts.map((product) => normalizeSku(product?.sku)).filter(Boolean) : [];
+  if (targetSkuIds.length > 0 && screens.some((screen) => screenContainsAnyTargetSku(screen, targetSkuIds))) {
+    return 0.94;
+  }
+  const alignedTemplates = screens.filter((screen) => {
+    const currentTemplateId = readOptionalString(screen?.templateId, 80);
+    return currentTemplateId && currentTemplateId === computeGoalTemplateId(screen, objectiveId);
+  }).length;
+  return clampNumber(0.4 + (alignedTemplates / screens.length) * 0.36 + computeGoalStoreObjectiveCapability(screens, objectiveId) * 0.12);
+}
+
+function computeGoalCategoryDemandFit(storeId, primaryCategory = "") {
+  const storeProfile = DEMO_STORE_PROFILES.find((profile) => profile.storeId === storeId);
+  if (!storeProfile) {
+    return primaryCategory ? 0.58 : 0.55;
+  }
+  const bias = Number(storeProfile?.categoryBias?.[primaryCategory] || storeProfile?.categoryBias?.general || 1);
+  return clampNumber(0.35 + (bias - 0.8) / 0.6);
+}
+
+function buildGoalStoreStrategy(goal, targetProducts, screens, planningSignals = {}) {
+  const screensByStore = new Map();
+  for (const screen of Array.isArray(screens) ? screens : []) {
+    const storeId = readOptionalString(screen?.storeId, 80);
+    if (!storeId) {
+      continue;
+    }
+    const bucket = screensByStore.get(storeId) || [];
+    bucket.push(screen);
+    screensByStore.set(storeId, bucket);
+  }
+
+  const stockEntries = [...screensByStore.keys()].map((storeId) => {
+    const stockUnits = Array.isArray(targetProducts)
+      ? targetProducts.reduce((sum, product) => sum + Math.max(0, Number(product?.stockByStore?.[storeId]) || 0), 0)
+      : 0;
+    const stockedSkuCount =
+      Array.isArray(targetProducts) && targetProducts.length > 0
+        ? targetProducts.filter((product) => Math.max(0, Number(product?.stockByStore?.[storeId]) || 0) > 0).length
+        : 0;
+    return {
+      storeId,
+      stockUnits,
+      stockedSkuCount,
+      stockCoverage:
+        Array.isArray(targetProducts) && targetProducts.length > 0 ? stockedSkuCount / Math.max(1, targetProducts.length) : 0
+    };
+  });
+  const maxStockUnits = Math.max(1, ...stockEntries.map((entry) => entry.stockUnits));
+
+  const rankings = stockEntries
+    .map((stockEntry) => {
+      const storeScreens = screensByStore.get(stockEntry.storeId) || [];
+      const backend =
+        DEMO_STORE_SALES_SIGNAL_MAP.get(stockEntry.storeId) || {
+          storeId: stockEntry.storeId,
+          storeLabel: stockEntry.storeId,
+          totalSales: 780000 + storeScreens.length * 48000,
+          avgBasketValue: 39,
+          estimatedTransactions: 20000,
+          inferredFootTraffic: 26000,
+          salesIndex: 0.55,
+          footTrafficIndex: 0.55,
+          checkoutIntentIndex: 0.55,
+          premiumDemandIndex: 0.55,
+          clearancePressureIndex: 0.55
+        };
+      const capabilityFit = computeGoalStoreObjectiveCapability(storeScreens, goal?.objective);
+      const continuityFit = computeGoalStoreContinuityFit(storeScreens, targetProducts, goal?.objective);
+      const categoryDemandFit = computeGoalCategoryDemandFit(stockEntry.storeId, planningSignals.primaryCategory);
+      const stockFit =
+        Array.isArray(targetProducts) && targetProducts.length > 0
+          ? clampNumber((stockEntry.stockUnits / maxStockUnits) * 0.72 + stockEntry.stockCoverage * 0.28)
+          : clampNumber(0.48 + categoryDemandFit * 0.32);
+      let trafficFit = clampNumber(backend.footTrafficIndex * 0.7 + backend.salesIndex * 0.3);
+      let score =
+        trafficFit * 0.44 +
+        capabilityFit * 0.22 +
+        categoryDemandFit * 0.14 +
+        stockFit * 0.06 +
+        continuityFit * 0.14;
+
+      if (goal?.objective === "checkout-attach") {
+        trafficFit = clampNumber(backend.checkoutIntentIndex * 0.72 + backend.footTrafficIndex * 0.18 + capabilityFit * 0.1);
+        score =
+          trafficFit * 0.3 +
+          capabilityFit * 0.28 +
+          stockFit * 0.16 +
+          continuityFit * 0.16 +
+          categoryDemandFit * 0.1;
+      } else if (goal?.objective === "clearance") {
+        trafficFit = clampNumber(backend.clearancePressureIndex * 0.6 + stockFit * 0.3 + capabilityFit * 0.1);
+        score =
+          stockFit * 0.44 +
+          capabilityFit * 0.18 +
+          trafficFit * 0.12 +
+          continuityFit * 0.1 +
+          categoryDemandFit * 0.16;
+      } else if (goal?.objective === "premium") {
+        trafficFit = clampNumber(backend.premiumDemandIndex * 0.72 + backend.salesIndex * 0.18 + capabilityFit * 0.1);
+        score =
+          trafficFit * 0.24 +
+          capabilityFit * 0.3 +
+          categoryDemandFit * 0.22 +
+          continuityFit * 0.12 +
+          stockFit * 0.12;
+      }
+
+      return {
+        storeId: stockEntry.storeId,
+        storeLabel: backend.storeLabel || stockEntry.storeId,
+        totalSales: backend.totalSales,
+        footTrafficIndex: backend.footTrafficIndex,
+        checkoutIntentIndex: backend.checkoutIntentIndex,
+        premiumDemandIndex: backend.premiumDemandIndex,
+        clearancePressureIndex: backend.clearancePressureIndex,
+        stockUnits: stockEntry.stockUnits,
+        stockCoverage: Number(stockEntry.stockCoverage.toFixed(2)),
+        stockFit: Number(stockFit.toFixed(2)),
+        trafficFit: Number(trafficFit.toFixed(2)),
+        capabilityFit: Number(capabilityFit.toFixed(2)),
+        continuityFit: Number(continuityFit.toFixed(2)),
+        categoryDemandFit: Number(categoryDemandFit.toFixed(2)),
+        score: Number(score.toFixed(2))
+      };
+    })
+    .sort((left, right) => right.score - left.score || left.storeId.localeCompare(right.storeId));
+
+  const requestedStoreId = readOptionalString(goal?.storeId, 80);
+  if (requestedStoreId) {
+    const requestedEntry = rankings.find((entry) => entry.storeId === requestedStoreId) || {
+      storeId: requestedStoreId,
+      storeLabel: requestedStoreId,
+      totalSales: 0,
+      footTrafficIndex: 0.5,
+      checkoutIntentIndex: 0.5,
+      premiumDemandIndex: 0.5,
+      clearancePressureIndex: 0.5,
+      stockUnits: 0,
+      stockCoverage: 0,
+      stockFit: 0.5,
+      trafficFit: 0.5,
+      capabilityFit: 0.5,
+      continuityFit: 0.5,
+      categoryDemandFit: 0.5,
+      score: 0.5
+    };
+    const focusLabel = describeTargetSkus(targetProducts) || `${targetProducts.length || 0} priority SKU(s)`;
+    return {
+      requestedStoreId,
+      effectiveStoreId: requestedStoreId,
+      effectiveStoreIds: [requestedStoreId],
+      storeFocusLabel: requestedStoreId,
+      stockMessage:
+        goal?.objective === "clearance" && Array.isArray(targetProducts) && targetProducts.length > 0 && requestedEntry.stockUnits > 0
+          ? `Store focus: ${requestedStoreId} has ${requestedEntry.stockUnits} unit(s) on hand for ${focusLabel}.`
+          : "",
+      storeSelectionReason: `Store scope stayed on ${requestedStoreId} because the planner was explicitly pinned to that store.`,
+      storeRankings: rankings
+    };
+  }
+
+  const ratioByObjective = {
+    awareness: { Conservative: 0.3, Balanced: 0.5, Aggressive: 0.7 },
+    "checkout-attach": { Conservative: 0.25, Balanced: 0.4, Aggressive: 0.55 },
+    clearance: { Conservative: 0.25, Balanced: 0.4, Aggressive: 0.55 },
+    premium: { Conservative: 0.2, Balanced: 0.35, Aggressive: 0.45 }
+  };
+  const ratio =
+    ratioByObjective[goal?.objective]?.[goal?.aggressiveness] ||
+    ratioByObjective.awareness.Balanced;
+  const extraStore =
+    Array.isArray(planningSignals.briefThemes) && planningSignals.briefThemes.includes("urgency")
+      ? 1
+      : 0;
+  const selectedCount = Math.min(rankings.length, Math.max(1, Math.ceil(rankings.length * ratio) + extraStore));
+  const selectedEntries = rankings.slice(0, selectedCount);
+  const focusLabel = describeTargetSkus(targetProducts) || `${targetProducts.length || 0} priority SKU(s)`;
+  let storeSelectionReason = `Selected ${selectedEntries.length} stores with the strongest blended planning score.`;
+  if (goal?.objective === "awareness") {
+    storeSelectionReason = `Selected ${selectedEntries.length} stores with the highest inferred foot traffic, using synthetic total sales and transaction volume from the demo backend.`;
+  } else if (goal?.objective === "checkout-attach") {
+    storeSelectionReason = `Selected ${selectedEntries.length} stores with the strongest checkout intent, combining sales-derived trips with checkout-capable screens.`;
+  } else if (goal?.objective === "clearance") {
+    storeSelectionReason = `Selected ${selectedEntries.length} stores with the highest stock pressure and on-hand units for ${focusLabel}.`;
+  } else if (goal?.objective === "premium") {
+    storeSelectionReason = `Selected ${selectedEntries.length} stores with the strongest premium demand index and hero-capable screens.`;
+  }
+  const topStore = selectedEntries[0] || null;
+  if (topStore && goal?.objective === "awareness") {
+    storeSelectionReason += ` Lead store: ${topStore.storeLabel} (${Math.round(topStore.totalSales).toLocaleString("en-US")} in modeled sales).`;
+  }
+
+  return {
+    requestedStoreId: "",
+    effectiveStoreId: selectedEntries.length === 1 ? selectedEntries[0].storeId : "",
+    effectiveStoreIds: selectedEntries.map((entry) => entry.storeId),
+    storeFocusLabel: selectedEntries.length === 1 ? selectedEntries[0].storeId : `Top ${selectedEntries.length} stores`,
+    stockMessage:
+      goal?.objective === "clearance" && Array.isArray(targetProducts) && targetProducts.length > 0
+        ? `Store focus: top ${selectedEntries.length} stores by stock pressure and on-hand units for ${focusLabel}.`
+        : "",
+    storeSelectionReason,
+    storeRankings: rankings
+  };
+}
+
+function computeGoalPageScopeFit(screen, goal) {
+  const requestedPageId = readOptionalString(goal?.requestedPageId || goal?.pageId, 40);
+  if (!requestedPageId) {
+    return 1;
+  }
+  if (readOptionalString(screen?.pageId, 40) === requestedPageId) {
+    return 1;
+  }
+  switch (goal?.aggressiveness) {
+    case "Conservative":
+      return 0.42;
+    case "Aggressive":
+      return 0.78;
+    case "Balanced":
+    default:
+      return 0.64;
+  }
+}
+
+function computeGoalObjectiveFit(screen, objectiveId, planningSignals = {}) {
+  const role = getGoalScreenRole(screen);
+  const screenType = readOptionalString(screen?.screenType, 80).toLowerCase();
+  let score = 0.54;
+  switch (objectiveId) {
+    case "checkout-attach":
+      score = role === "checkout" ? 0.96 : role === "aisle" ? 0.84 : role === "category" ? 0.68 : role === "entrance" ? 0.56 : 0.5;
+      if (screenType.includes("kiosk")) {
+        score += 0.06;
+      }
+      break;
+    case "clearance":
+      score = role === "aisle" ? 0.96 : role === "category" ? 0.78 : role === "checkout" ? 0.52 : role === "entrance" ? 0.5 : 0.46;
+      if (screenType.includes("shelf") || screenType.includes("endcap")) {
+        score += 0.06;
+      }
+      break;
+    case "premium":
+      score = role === "entrance" ? 0.95 : role === "category" ? 0.88 : role === "checkout" ? 0.54 : role === "foodcourt" ? 0.5 : 0.48;
+      if (screenType.includes("vertical")) {
+        score += 0.05;
+      }
+      break;
+    case "awareness":
+    default:
+      score = role === "entrance" ? 0.94 : role === "category" ? 0.82 : role === "aisle" ? 0.66 : role === "checkout" ? 0.58 : 0.52;
+      if (screenType.includes("vertical")) {
+        score += 0.04;
+      }
+      break;
+  }
+
+  if (Array.isArray(planningSignals.stageHints)) {
+    if (planningSignals.stageHints.includes(role)) {
+      score += 0.04;
+    }
+    if (planningSignals.stageHints.includes("category") && role === "category") {
+      score += 0.04;
+    }
+  }
+  if (planningSignals.wantsHeroMoment && (role === "entrance" || screenType.includes("vertical"))) {
+    score += 0.03;
+  }
+  return clampNumber(score);
+}
+
+function computeGoalCapabilityFit(screen, templateId, planningSignals = {}, goalProductsForScreen = []) {
+  const screenType = readOptionalString(screen?.screenType, 80).toLowerCase();
+  const role = getGoalScreenRole(screen);
+  const productLimit = getTemplateProductLimit(templateId);
+  let score = 0.52;
+  if (role === "checkout" && templateId === "kiosk-interactive") {
+    score += 0.2;
+  }
+  if (role === "aisle" && templateId === "shelf-spotlight") {
+    score += 0.2;
+  }
+  if (role === "entrance" && (templateId === "fullscreen-banner" || templateId === "fullscreen-hero")) {
+    score += 0.16;
+  }
+  if (role === "category" && (templateId === "carousel-banner" || templateId === "fullscreen-hero" || templateId === "fullscreen-banner")) {
+    score += 0.12;
+  }
+  if (planningSignals.wantsAssortmentRotation && productLimit > 1) {
+    score += 0.16;
+  }
+  if (!planningSignals.wantsAssortmentRotation && productLimit === 1) {
+    score += 0.08;
+  }
+  if (planningSignals.wantsHeroMoment && templateId === "fullscreen-hero") {
+    score += 0.14;
+  }
+  if (screenType.includes("vertical") && (templateId === "fullscreen-hero" || templateId === "kiosk-interactive")) {
+    score += 0.05;
+  }
+  if (goalProductsForScreen.length > 1 && productLimit > 1) {
+    score += 0.05;
+  }
+  return clampNumber(score);
+}
+
+function computeGoalContinuityFit(screen, recommendedTemplateId, targetProducts, objectiveId) {
+  const currentTemplateId = readOptionalString(screen?.templateId, 80);
+  const targetSkuIds = Array.isArray(targetProducts) ? targetProducts.map((product) => normalizeSku(product?.sku)).filter(Boolean) : [];
+  let score = currentTemplateId === recommendedTemplateId ? 0.82 : 0.48;
+  if (targetSkuIds.length > 0 && screenContainsAnyTargetSku(screen, targetSkuIds)) {
+    score += 0.14;
+  }
+  if (isObjectivePreferredScreen(screen, objectiveId)) {
+    score += 0.04;
+  }
+  return clampNumber(score);
+}
+
+function computeGoalPlacementBudget(candidateCount, storeCount, goal) {
+  if (candidateCount <= 0) {
+    return 0;
+  }
+  if (candidateCount <= storeCount) {
+    return candidateCount;
+  }
+  const multiplierByObjective = {
+    awareness: { Conservative: 1, Balanced: 1.3, Aggressive: 1.8 },
+    "checkout-attach": { Conservative: 1.15, Balanced: 1.45, Aggressive: 2 },
+    clearance: { Conservative: 1.1, Balanced: 1.4, Aggressive: 1.8 },
+    premium: { Conservative: 1, Balanced: 1.2, Aggressive: 1.5 }
+  };
+  let multiplier =
+    multiplierByObjective[goal?.objective]?.[goal?.aggressiveness] ||
+    multiplierByObjective.awareness.Balanced;
+  if (goal?.requestedPageId && goal?.aggressiveness !== "Aggressive") {
+    multiplier = Math.min(multiplier, 1.05);
+  }
+  return Math.min(candidateCount, Math.max(1, Math.ceil(storeCount * multiplier)));
+}
+
+function selectGoalPlacementCandidates(candidates, goal, planningProfile) {
+  const sorted = [...(Array.isArray(candidates) ? candidates : [])].sort((left, right) => {
+    if (right.score !== left.score) {
+      return right.score - left.score;
+    }
+    return left.screenId.localeCompare(right.screenId);
+  });
+  const storeCount = new Set(sorted.map((candidate) => candidate.storeId)).size;
+  const placementBudget = computeGoalPlacementBudget(sorted.length, storeCount, goal);
+  const selected = [];
+  const selectedIds = new Set();
+  const storeCounts = new Map();
+  const storeRoles = new Set();
+
+  for (let pass = 0; pass < 2 && selected.length < placementBudget; pass += 1) {
+    for (const candidate of sorted) {
+      if (selected.length >= placementBudget || selectedIds.has(candidate.screenId)) {
+        continue;
+      }
+      const storeCountForCandidate = storeCounts.get(candidate.storeId) || 0;
+      if (pass === 0 && storeCountForCandidate > 0) {
+        continue;
+      }
+      if (pass === 1 && storeCountForCandidate >= planningProfile.maxPlacementsPerStore) {
+        continue;
+      }
+      const roleKey = `${candidate.storeId}:${candidate.placementRole}`;
+      if (pass === 1 && storeRoles.has(roleKey)) {
+        continue;
+      }
+      selected.push(candidate);
+      selectedIds.add(candidate.screenId);
+      storeCounts.set(candidate.storeId, storeCountForCandidate + 1);
+      storeRoles.add(roleKey);
+    }
+  }
+
+  return {
+    placementBudget,
+    selected: selected.sort((left, right) => {
+      if (right.score !== left.score) {
+        return right.score - left.score;
+      }
+      return left.screenId.localeCompare(right.screenId);
+    })
+  };
+}
+
+function buildGoalTemplateRationale(screen, templateId, goal, planningSignals = {}, goalProductsForScreen = []) {
+  const template = getTemplatePreset(templateId);
+  const role = getGoalScreenRole(screen);
+  if (role === "checkout" && templateId === "kiosk-interactive") {
+    return `Uses ${template.name} because checkout placements work best with assisted, high-intent creative.`;
+  }
+  if (role === "aisle" && templateId === "shelf-spotlight") {
+    return `Uses ${template.name} because aisle placements need compact, near-product messaging.`;
+  }
+  if (planningSignals.wantsAssortmentRotation && getTemplateProductLimit(templateId) > 1) {
+    return `Uses ${template.name} to rotate multiple priority SKUs across the same placement.`;
+  }
+  if (planningSignals.wantsHeroMoment && templateId === "fullscreen-hero") {
+    return `Uses ${template.name} to give the brief a stronger hero moment on a portrait-capable screen.`;
+  }
+  return `Uses ${template.name} because it best matches the ${goal?.objective || "goal"} brief for this screen.`;
+}
+
+function buildGoalRefreshRationale(refreshInterval, goal, planningSignals = {}, goalProductsForScreen = []) {
+  const seconds = Math.round(Number(refreshInterval || 0) / 1000);
+  if (goal?.aggressiveness === "Aggressive" || planningSignals.wantsFastCadence) {
+    return `Refreshes every ${seconds}s to keep the message moving at a higher-velocity planning pace.`;
+  }
+  if (goal?.aggressiveness === "Conservative") {
+    return `Refreshes every ${seconds}s to preserve stability and minimize unnecessary change.`;
+  }
+  if (goalProductsForScreen.length > 1) {
+    return `Refreshes every ${seconds}s to balance rotation across the selected assortment.`;
+  }
+  return `Refreshes every ${seconds}s for balanced in-store pacing.`;
+}
+
+function buildGoalExpectedOutcome(screen, goal) {
+  const location = titleCase(screen?.location || screen?.pageId || "store");
+  switch (goal?.objective) {
+    case "checkout-attach":
+      return `Expected outcome: lift add-on consideration close to the basket decision in ${location}.`;
+    case "clearance":
+      return `Expected outcome: accelerate sell-through where inventory pressure is highest in ${location}.`;
+    case "premium":
+      return `Expected outcome: strengthen premium storytelling before shoppers compare alternatives in ${location}.`;
+    case "awareness":
+    default:
+      return `Expected outcome: expand upper-funnel reach in ${location} using higher-footfall coverage.`;
+  }
+}
+
+function buildGoalReasonShort(screen, goal, candidate) {
+  const location = titleCase(screen?.location || screen?.pageId || "store");
+  switch (goal?.objective) {
+    case "checkout-attach":
+      return `Ranks strongly in ${location} because it connects category intent to the final basket decision.`;
+    case "clearance":
+      return `Ranks strongly in ${location} because stock depth and proximity to the shelf support faster sell-through.`;
+    case "premium":
+      return `Ranks strongly in ${location} because it gives the range a stronger hero-style premium moment.`;
+    case "awareness":
+    default:
+      return candidate?.trafficFit >= 0.7
+        ? `Ranks strongly in ${location} because this store carries the highest inferred foot traffic from modeled sales.`
+        : `Ranks strongly in ${location} because it expands in-store reach with strong shopper flow.`;
+  }
+}
+
+function summarizeGoalScopeFromPlacements(goal, recommendedPlacements, candidateInsights = {}) {
+  const requestedPageId = readOptionalString(goal?.requestedPageId || goal?.pageId, 40);
+  if (!requestedPageId) {
+    return {
+      scopeMode: "requested",
+      effectivePageId: "",
+      scopeMessage: "",
+      scopeSelectionReason: "Placement scope remained open across all mapped pages."
+    };
+  }
+
+  const selectedPageIds = [
+    ...new Set(
+      (Array.isArray(recommendedPlacements) ? recommendedPlacements : [])
+        .map((entry) => readOptionalString(entry?.pageId, 40))
+        .filter(Boolean)
+    )
+  ];
+  if (Number(candidateInsights.requestedCandidateCount || 0) === 0) {
+    return {
+      scopeMode: "missing-page",
+      effectivePageId: "",
+      scopeMessage: `No mapped placements were found for ${titleCase(requestedPageId)}, so the recommendation widened the scope automatically.`,
+      scopeSelectionReason: `The requested ${requestedPageId} scope did not exist in the selected store set, so the planner widened to mapped placements with valid inventory and screen coverage.`
+    };
+  }
+  if (selectedPageIds.length === 0) {
+    return {
+      scopeMode: "requested",
+      effectivePageId: requestedPageId,
+      scopeMessage: "",
+      scopeSelectionReason: `The requested ${requestedPageId} scope stayed in play, but no placements cleared the planning threshold.`
+    };
+  }
+  if (selectedPageIds.length === 1 && selectedPageIds[0] === requestedPageId) {
+    return {
+      scopeMode: "requested",
+      effectivePageId: requestedPageId,
+      scopeMessage: "",
+      scopeSelectionReason: `Placement scope stayed on ${requestedPageId} because those screens remained competitive under ${goal?.aggressiveness || "Balanced"} planning.`
+    };
+  }
+
+  const selectedPageId = selectedPageIds.length === 1 ? selectedPageIds[0] : "";
+  const scoreDelta = Number((Number(candidateInsights.bestSelectedScore || 0) - Number(candidateInsights.requestedPageBestScore || 0)).toFixed(2));
+  if (selectedPageId) {
+    return {
+      scopeMode: "auto-matched",
+      effectivePageId: selectedPageId,
+      scopeMessage: `Selected SKUs align more naturally with ${titleCase(selectedPageId)} placements than ${titleCase(requestedPageId)}, so the recommendation widened the scope automatically.`,
+      scopeSelectionReason: `${goal?.aggressiveness || "Balanced"} planning widened from ${requestedPageId} to ${selectedPageId} because the stronger page scored ${scoreDelta > 0 ? scoreDelta : 0.08} points higher on fit.`
+    };
+  }
+  return {
+    scopeMode: "auto-matched",
+    effectivePageId: "",
+    scopeMessage: "Selected SKUs span multiple mapped placements, so the recommendation widened the scope automatically.",
+    scopeSelectionReason: `${goal?.aggressiveness || "Balanced"} planning widened beyond ${requestedPageId} because multiple pages materially outscored the requested scope for this brief.`
+  };
+}
+
+function buildGoalStockSummary(goal, targetProducts, screens) {
+  if (goal.objective !== "clearance" || !Array.isArray(targetProducts) || targetProducts.length === 0) {
+    return {
+      requestedStoreId: readOptionalString(goal.storeId, 80),
+      effectiveStoreId: readOptionalString(goal.storeId, 80),
+      effectiveStoreIds: readOptionalString(goal.storeId, 80) ? [readOptionalString(goal.storeId, 80)] : [],
+      storeFocusLabel: readOptionalString(goal.storeId, 80),
+      stockMessage: ""
+    };
+  }
+
+  const screenStoreIds = [...new Set((Array.isArray(screens) ? screens : []).map((screen) => readOptionalString(screen.storeId, 80)).filter(Boolean))];
+  if (screenStoreIds.length === 0) {
+    return {
+      requestedStoreId: readOptionalString(goal.storeId, 80),
+      effectiveStoreId: readOptionalString(goal.storeId, 80),
+      effectiveStoreIds: readOptionalString(goal.storeId, 80) ? [readOptionalString(goal.storeId, 80)] : [],
+      storeFocusLabel: readOptionalString(goal.storeId, 80),
+      stockMessage: ""
+    };
+  }
+
+  const requestedStoreId = readOptionalString(goal.storeId, 80);
+  const consideredStoreIds = requestedStoreId ? [requestedStoreId] : screenStoreIds;
+  const totalsByStore = consideredStoreIds.map((storeId) => ({
+    storeId,
+    totalUnits: targetProducts.reduce((sum, product) => sum + Math.max(0, Number(product?.stockByStore?.[storeId]) || 0), 0)
+  }));
+  totalsByStore.sort((left, right) => right.totalUnits - left.totalUnits || left.storeId.localeCompare(right.storeId));
+  const best = totalsByStore[0] || { storeId: requestedStoreId || screenStoreIds[0] || "", totalUnits: 0 };
+  const focusLabel = describeTargetSkus(targetProducts) || `${targetProducts.length} priority SKU(s)`;
+
+  if (requestedStoreId) {
+    return {
+      requestedStoreId,
+      effectiveStoreId: requestedStoreId,
+      effectiveStoreIds: [requestedStoreId],
+      storeFocusLabel: requestedStoreId,
+      stockMessage:
+        best.totalUnits > 0
+          ? `Store focus: ${requestedStoreId} has ${best.totalUnits} unit(s) on hand for ${focusLabel}.`
+          : ""
+    };
+  }
+
+  const recommendedStoreCount = Math.max(1, Math.ceil(totalsByStore.length / 2));
+  const recommendedStoreIds = totalsByStore.slice(0, recommendedStoreCount).map((entry) => entry.storeId).filter(Boolean);
+
+  return {
+    requestedStoreId: "",
+    effectiveStoreId: "",
+    effectiveStoreIds: recommendedStoreIds,
+    storeFocusLabel: `Top ${recommendedStoreIds.length} stores`,
+    stockMessage:
+      recommendedStoreIds.length > 0
+        ? `Store focus: top ${recommendedStoreIds.length} stores by on-hand stock for ${focusLabel}.`
+        : ""
+  };
+}
+
+function summarizeGoalScope(goal, scopedScreens, compatibleScreens, requestedPageId) {
+  if (!requestedPageId) {
+    return {
+      scopeMode: "requested",
+      effectivePageId: "",
+      scopeMessage: ""
+    };
+  }
+  if (compatibleScreens.length > 0) {
+    const pageIds = [...new Set(compatibleScreens.map((screen) => readOptionalString(screen.pageId, 40)).filter(Boolean))];
+    const effectivePageId = pageIds.length === 1 ? pageIds[0] : "";
+    return {
+      scopeMode: "auto-matched",
+      effectivePageId,
+      scopeMessage: effectivePageId && effectivePageId !== requestedPageId
+        ? `Selected SKUs align more naturally with ${titleCase(effectivePageId)} placements than ${titleCase(requestedPageId)}, so the recommendation widened the scope automatically.`
+        : pageIds.length > 1
+          ? "Selected SKUs span multiple mapped placements, so the recommendation widened the scope automatically."
+          : ""
+    };
+  }
+  if (scopedScreens.length === 0) {
+    return {
+      scopeMode: "missing-page",
+      effectivePageId: "",
+      scopeMessage: `No mapped placements were found for ${titleCase(requestedPageId)}, so the recommendation widened the scope automatically.`
+    };
+  }
+  return {
+    scopeMode: "requested",
+    effectivePageId: requestedPageId,
+    scopeMessage: ""
+  };
 }
 
 function inferTargetProductsFromPrompt(prompt, feed, scopedScreens = []) {
@@ -806,6 +2653,26 @@ function screenContainsAnyTargetSku(screen, targetSkuIds) {
     }
   }
   return false;
+}
+
+function getExistingTargetProductsForScreen(screen, targetProducts) {
+  if (!Array.isArray(targetProducts) || targetProducts.length === 0) {
+    return [];
+  }
+  const targetSkuIds = targetProducts.map((product) => normalizeSku(product.sku)).filter(Boolean);
+  if (!screenContainsAnyTargetSku(screen, targetSkuIds)) {
+    return [];
+  }
+  const matchedSkuIds = new Set();
+  for (const lineItem of Array.isArray(screen.lineItems) ? screen.lineItems : []) {
+    for (const product of Array.isArray(lineItem.products) ? lineItem.products : []) {
+      const sku = normalizeSku(product.ProductId || product.productId || product.sku);
+      if (sku) {
+        matchedSkuIds.add(sku);
+      }
+    }
+  }
+  return targetProducts.filter((product) => matchedSkuIds.has(normalizeSku(product.sku)));
 }
 
 function buildStorageProductFromFeed(feedProduct, screen, templateId, objectiveId) {
@@ -932,7 +2799,9 @@ function buildLiveScreenSnapshot(screen) {
   const products = sourceProducts
     .slice(0, 3)
     .map((product) => summarizeLiveProduct(product, template.id, screen.location));
-  const screenUrl = `/screen.html?screenId=${encodeURIComponent(screen.screenId)}`;
+  const deviceHints = getScreenDeviceHints(screen);
+  const debugScreenUrl = `/screen.html?screenId=${encodeURIComponent(screen.screenId)}`;
+  const screenUrl = buildSharedPlayerUrl(deviceHints.resolverId);
 
   return {
     screenId: screen.screenId,
@@ -950,6 +2819,9 @@ function buildLiveScreenSnapshot(screen) {
     activeLineItemName: selectedLineItem?.name || "",
     productCount: sourceProducts.length,
     products,
+    sharedPlayerUrl: SHARED_PLAYER_URL,
+    debugScreenUrl,
+    resolverId: deviceHints.resolverId,
     screenUrl,
     updatedAt: screen.updatedAt || ""
   };
@@ -969,6 +2841,342 @@ function ensureAgentRunsArray(db) {
     db.agentRuns = [];
   }
   return db.agentRuns;
+}
+
+function resolveGoalRunScreenIds(run) {
+  const appliedScreenIds = readStringArray(run?.appliedScreenIds, 500, 80).map((screenId) =>
+    readOptionalString(screenId, 80)
+  );
+  if (appliedScreenIds.length > 0) {
+    return appliedScreenIds;
+  }
+  const plannedScreenIds = readStringArray(run?.plannedScreenIds, 500, 80).map((screenId) =>
+    readOptionalString(screenId, 80)
+  );
+  if (plannedScreenIds.length > 0) {
+    return plannedScreenIds;
+  }
+  const proposedChanges = Array.isArray(run?.proposedChanges) ? run.proposedChanges : [];
+  return proposedChanges.map((change) => readOptionalString(change.screenId, 80)).filter(Boolean);
+}
+
+function ensureTelemetryEventsArray(db) {
+  if (!Array.isArray(db.telemetryEvents)) {
+    db.telemetryEvents = [];
+  }
+  return db.telemetryEvents;
+}
+
+function createTelemetryEventId() {
+  const now = Date.now().toString(36);
+  const random = Math.random().toString(36).slice(2, 8);
+  return `evt-${now}-${random}`;
+}
+
+function safeDateMs(value) {
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.valueOf()) ? null : parsed.valueOf();
+}
+
+function readTelemetryTimestamp(value, fallbackIso = new Date().toISOString()) {
+  const source = readOptionalString(value, 80) || fallbackIso;
+  const parsed = new Date(source);
+  if (Number.isNaN(parsed.valueOf())) {
+    return fallbackIso;
+  }
+  return parsed.toISOString();
+}
+
+function readTelemetryEventType(value) {
+  const event = normalizeTelemetryEventType(value);
+  if (!TELEMETRY_EVENT_TYPES.includes(event)) {
+    throw new HttpError(400, `event must be one of: ${TELEMETRY_EVENT_TYPES.join(", ")}`);
+  }
+  return event;
+}
+
+function normalizeTelemetryEventType(value) {
+  const rawEvent = readOptionalString(value, 40).toLowerCase();
+  if (rawEvent === "load") {
+    return "play";
+  }
+  if (rawEvent === "view") {
+    return "exposure";
+  }
+  return rawEvent;
+}
+
+function readTelemetryExposureMs(value) {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed < 0) {
+    return 0;
+  }
+  return Math.min(Math.round(parsed), 24 * 60 * 60 * 1000);
+}
+
+function recordTelemetryEvent(db, rawInput) {
+  const input = rawInput && typeof rawInput === "object" ? rawInput : {};
+  const event = readTelemetryEventType(input.event);
+  const screenId = readRequiredString(input.screenId, "screenId", 80);
+  const screen = (db.screens || []).find((entry) => entry.screenId === screenId) || null;
+  const productId = readOptionalString(input.productId, 80) || readOptionalString(input.sku, 80);
+  const nowIso = new Date().toISOString();
+  const positionValue = Number(input.position);
+  const telemetryEvent = {
+    eventId: createTelemetryEventId(),
+    event,
+    occurredAt: readTelemetryTimestamp(input.occurredAt ?? input.timestamp, nowIso),
+    collectedAt: nowIso,
+    screenId,
+    storeId: readOptionalString(input.storeId, 80) || readOptionalString(screen?.storeId, 80),
+    pageId: readOptionalString(input.pageId, 40) || readOptionalString(screen?.pageId, 40),
+    location: readOptionalString(input.location, 80) || readOptionalString(screen?.location, 80),
+    templateId: readOptionalString(input.templateId, 80) || readOptionalString(screen?.templateId, 80),
+    lineItemId: readOptionalString(input.lineItemId, 120),
+    adid: readOptionalString(input.adid, 160),
+    productId,
+    sku: normalizeSku(input.sku || productId),
+    productName: readOptionalString(input.productName, 180),
+    productPage: readOptionalString(input.productPage, 500),
+    source: readOptionalString(input.source, 40) || "screen-player",
+    reason: readOptionalString(input.reason, 120),
+    exposureMs: readTelemetryExposureMs(input.exposureMs),
+    position: Number.isInteger(positionValue) ? Math.max(0, positionValue) : 0
+  };
+
+  const telemetryEvents = ensureTelemetryEventsArray(db);
+  telemetryEvents.push(telemetryEvent);
+  db.telemetryEvents = telemetryEvents.slice(-TELEMETRY_EVENT_LIMIT);
+  return telemetryEvent;
+}
+
+function summarizeTelemetryCounts(events) {
+  const summary = {
+    total: 0,
+    playCount: 0,
+    exposureEventCount: 0,
+    exposureMs: 0,
+    avgExposureMs: 0,
+    screenCount: 0,
+    templateCount: 0,
+    skuCount: 0,
+    lastSeenAt: ""
+  };
+  const screenIds = new Set();
+  const templateIds = new Set();
+  const skuIds = new Set();
+
+  for (const event of events) {
+    const normalizedEvent = normalizeTelemetryEventType(event.event);
+    if (!TELEMETRY_EVENT_TYPES.includes(normalizedEvent)) {
+      continue;
+    }
+    summary.total += 1;
+    if (normalizedEvent === "play") {
+      summary.playCount += 1;
+    }
+    if (normalizedEvent === "exposure") {
+      summary.exposureEventCount += 1;
+      summary.exposureMs += readTelemetryExposureMs(event.exposureMs);
+    }
+
+    const screenId = readOptionalString(event.screenId, 80);
+    const templateId = readOptionalString(event.templateId, 80);
+    const sku = normalizeSku(event.sku || event.productId);
+    if (screenId) {
+      screenIds.add(screenId);
+    }
+    if (templateId) {
+      templateIds.add(templateId);
+    }
+    if (sku) {
+      skuIds.add(sku);
+    }
+
+    const eventTimestamp = readOptionalString(event.occurredAt, 80) || readOptionalString(event.collectedAt, 80);
+    const eventMs = safeDateMs(eventTimestamp);
+    const currentLastSeenMs = safeDateMs(summary.lastSeenAt);
+    if (eventMs !== null && (currentLastSeenMs === null || eventMs > currentLastSeenMs)) {
+      summary.lastSeenAt = eventTimestamp;
+    }
+  }
+
+  summary.screenCount = screenIds.size;
+  summary.templateCount = templateIds.size;
+  summary.skuCount = skuIds.size;
+  summary.avgExposureMs =
+    summary.exposureEventCount > 0 ? Math.round(summary.exposureMs / summary.exposureEventCount) : 0;
+  return summary;
+}
+
+function buildTelemetryBreakdown(events, keySelector, decorate, limit = TELEMETRY_BREAKDOWN_LIMIT) {
+  const entries = new Map();
+
+  for (const event of events) {
+    const normalizedEvent = normalizeTelemetryEventType(event.event);
+    if (!TELEMETRY_EVENT_TYPES.includes(normalizedEvent)) {
+      continue;
+    }
+    const key = readOptionalString(keySelector(event), 120);
+    if (!key) {
+      continue;
+    }
+
+    let summary = entries.get(key);
+    if (!summary) {
+      summary = {
+        key,
+        total: 0,
+        playCount: 0,
+        exposureEventCount: 0,
+        exposureMs: 0,
+        avgExposureMs: 0,
+        lastSeenAt: "",
+        ...(typeof decorate === "function" ? decorate(event, key) : {})
+      };
+      entries.set(key, summary);
+    }
+
+    summary.total += 1;
+    if (normalizedEvent === "play") {
+      summary.playCount += 1;
+    }
+    if (normalizedEvent === "exposure") {
+      summary.exposureEventCount += 1;
+      summary.exposureMs += readTelemetryExposureMs(event.exposureMs);
+    }
+
+    const eventTimestamp = readOptionalString(event.occurredAt, 80) || readOptionalString(event.collectedAt, 80);
+    const eventMs = safeDateMs(eventTimestamp);
+    const currentLastSeenMs = safeDateMs(summary.lastSeenAt);
+    if (eventMs !== null && (currentLastSeenMs === null || eventMs > currentLastSeenMs)) {
+      summary.lastSeenAt = eventTimestamp;
+    }
+  }
+
+  return [...entries.values()]
+    .sort((left, right) => {
+      if (right.exposureMs !== left.exposureMs) {
+        return right.exposureMs - left.exposureMs;
+      }
+      if (right.playCount !== left.playCount) {
+        return right.playCount - left.playCount;
+      }
+      if (right.total !== left.total) {
+        return right.total - left.total;
+      }
+      const rightMs = safeDateMs(right.lastSeenAt) ?? 0;
+      const leftMs = safeDateMs(left.lastSeenAt) ?? 0;
+      if (rightMs !== leftMs) {
+        return rightMs - leftMs;
+      }
+      return String(left.key).localeCompare(String(right.key));
+    })
+    .map((entry) => ({
+      ...entry,
+      avgExposureMs:
+        entry.exposureEventCount > 0 ? Math.round(entry.exposureMs / entry.exposureEventCount) : 0
+    }))
+    .slice(0, limit);
+}
+
+function buildPlanTelemetryComparison(db, planId, events) {
+  const runs = ensureAgentRunsArray(db);
+  const run = runs.find((entry) => entry.planId === planId);
+  if (!run) {
+    return null;
+  }
+
+  const appliedScreenIds = readStringArray(run.appliedScreenIds, 500, 80).map((screenId) =>
+    readOptionalString(screenId, 80)
+  );
+  const proposedChanges = Array.isArray(run.proposedChanges) ? run.proposedChanges : [];
+  const fallbackScreenIds = proposedChanges.map((change) => readOptionalString(change.screenId, 80)).filter(Boolean);
+  const screenIds = [...new Set((appliedScreenIds.length > 0 ? appliedScreenIds : fallbackScreenIds).filter(Boolean))];
+  const scopedEvents = events.filter((event) => screenIds.includes(readOptionalString(event.screenId, 80)));
+  const appliedMs = safeDateMs(run.appliedAt);
+  if (appliedMs === null) {
+    return {
+      planId,
+      status: run.status || "planned",
+      createdAt: run.createdAt || "",
+      appliedAt: run.appliedAt || "",
+      screenCount: screenIds.length,
+      affectedScreens: screenIds.slice(0, TELEMETRY_BREAKDOWN_LIMIT),
+      beforeApply: null,
+      afterApply: null
+    };
+  }
+
+  const createdMs = safeDateMs(run.createdAt);
+  const beforeApplyEvents = scopedEvents.filter((event) => {
+    const eventMs =
+      safeDateMs(readOptionalString(event.occurredAt, 80) || readOptionalString(event.collectedAt, 80)) ?? 0;
+    if (createdMs !== null && eventMs < createdMs) {
+      return false;
+    }
+    return eventMs < appliedMs;
+  });
+  const afterApplyEvents = scopedEvents.filter((event) => {
+    const eventMs =
+      safeDateMs(readOptionalString(event.occurredAt, 80) || readOptionalString(event.collectedAt, 80)) ?? 0;
+    return eventMs >= appliedMs;
+  });
+
+  return {
+    planId,
+    status: run.status || "planned",
+    createdAt: run.createdAt || "",
+    appliedAt: run.appliedAt || "",
+    screenCount: screenIds.length,
+    affectedScreens: screenIds.slice(0, TELEMETRY_BREAKDOWN_LIMIT),
+    beforeApply: summarizeTelemetryCounts(beforeApplyEvents),
+    afterApply: summarizeTelemetryCounts(afterApplyEvents)
+  };
+}
+
+function buildTelemetrySummary(db, planId = "") {
+  const telemetryEvents = [...ensureTelemetryEventsArray(db)].sort((left, right) => {
+    const rightMs =
+      safeDateMs(readOptionalString(right.occurredAt, 80) || readOptionalString(right.collectedAt, 80)) ?? 0;
+    const leftMs =
+      safeDateMs(readOptionalString(left.occurredAt, 80) || readOptionalString(left.collectedAt, 80)) ?? 0;
+    return rightMs - leftMs;
+  });
+
+  return {
+    totals: summarizeTelemetryCounts(telemetryEvents),
+    byScreen: buildTelemetryBreakdown(
+      telemetryEvents,
+      (event) => event.screenId,
+      (event, key) => ({
+        screenId: key,
+        templateId: readOptionalString(event.templateId, 80),
+        storeId: readOptionalString(event.storeId, 80),
+        pageId: readOptionalString(event.pageId, 40)
+      })
+    ),
+    byTemplate: buildTelemetryBreakdown(
+      telemetryEvents,
+      (event) => event.templateId,
+      (_event, key) => {
+        const template = getTemplatePreset(key);
+        return {
+          templateId: key,
+          templateName: template.name
+        };
+      }
+    ),
+    bySku: buildTelemetryBreakdown(
+      telemetryEvents,
+      (event) => normalizeSku(event.sku || event.productId),
+      (event, key) => ({
+        sku: key,
+        productName: readOptionalString(event.productName, 180)
+      })
+    ),
+    planComparison: planId ? buildPlanTelemetryComparison(db, planId, telemetryEvents) : null
+  };
 }
 
 function generatePlanId() {
@@ -1013,6 +3221,9 @@ function readGoalRequest(input) {
     prompt: readOptionalString(raw.prompt, 280),
     storeId: readOptionalString(raw.storeId, 80),
     pageId: readOptionalString(raw.pageId, 40),
+    assortmentCategory: readOptionalString(raw.assortmentCategory, 80).toLowerCase(),
+    advertiserId: readRequiredString(raw.advertiserId, "advertiserId", 120),
+    brand: readOptionalString(raw.brand, 80),
     targetSkuIds
   };
 }
@@ -1021,6 +3232,21 @@ function resolveGoalTargetProducts(goal, feed, scopedScreens) {
   const normalizedFeed = Array.isArray(feed)
     ? feed.map((product, index) => normalizeProductFeedItem(product, index))
     : [];
+  const requestedAdvertiserId = readOptionalString(goal.advertiserId, 120);
+  const requestedBrand = readOptionalString(goal.brand, 80).toLowerCase();
+  const requestedCategory = readOptionalString(goal.assortmentCategory, 80).toLowerCase();
+  const filteredFeed = normalizedFeed.filter((product) => {
+    if (requestedAdvertiserId && product.advertiserId !== requestedAdvertiserId) {
+      return false;
+    }
+    if (requestedBrand && product.brand.toLowerCase() !== requestedBrand) {
+      return false;
+    }
+    if (requestedCategory && normalizeMatchToken(product.category) !== requestedCategory) {
+      return false;
+    }
+    return true;
+  });
   const requestedSkuIds = [
     ...new Set(
       readStringArray(goal.targetSkuIds, GOAL_TARGET_SKU_LIMIT, 80)
@@ -1030,7 +3256,7 @@ function resolveGoalTargetProducts(goal, feed, scopedScreens) {
   ];
 
   if (requestedSkuIds.length > 0) {
-    const selectedProducts = normalizedFeed.filter((product) =>
+    const selectedProducts = filteredFeed.filter((product) =>
       requestedSkuIds.includes(normalizeSku(product.sku))
     );
     const foundSkuSet = new Set(selectedProducts.map((product) => normalizeSku(product.sku)));
@@ -1046,13 +3272,24 @@ function resolveGoalTargetProducts(goal, feed, scopedScreens) {
     };
   }
 
-  const inferred = inferTargetProductsFromPrompt(goal.prompt, normalizedFeed, scopedScreens);
+  const inferenceFeed = filteredFeed.length > 0 ? filteredFeed : normalizedFeed;
+  const inferred = inferTargetProductsFromPrompt(goal.prompt, inferenceFeed, scopedScreens);
   if (inferred.products.length > 0) {
     return {
       targetSkuIds: inferred.products.map((product) => normalizeSku(product.sku)),
       targetProducts: inferred.products,
       targetSource: "prompt",
       inferredTerms: inferred.matchedTerms
+    };
+  }
+
+  if ((requestedAdvertiserId || requestedBrand) && filteredFeed.length > 0) {
+    const accountProducts = filteredFeed.slice(0, GOAL_TARGET_SKU_LIMIT);
+    return {
+      targetSkuIds: accountProducts.map((product) => normalizeSku(product.sku)),
+      targetProducts: accountProducts,
+      targetSource: "account",
+      inferredTerms: []
     };
   }
 
@@ -1064,10 +3301,14 @@ function resolveGoalTargetProducts(goal, feed, scopedScreens) {
   };
 }
 
-function computeGoalTemplateId(screen, objectiveId) {
+function computeGoalTemplateId(screen, objectiveId, context = {}) {
   const screenType = toTrimmedString(screen.screenType).toLowerCase();
   const pageId = toTrimmedString(screen.pageId).toLowerCase();
   const location = toTrimmedString(screen.location).toLowerCase();
+  const planningSignals = context?.planningSignals && typeof context.planningSignals === "object" ? context.planningSignals : {};
+  const goalProductsForScreen = Array.isArray(context?.goalProductsForScreen) ? context.goalProductsForScreen : [];
+  const wantsRotation = Boolean(planningSignals.wantsAssortmentRotation || goalProductsForScreen.length > 1);
+  const wantsHeroMoment = Boolean(planningSignals.wantsHeroMoment);
 
   if (screenType === "kiosk") {
     return "kiosk-interactive";
@@ -1086,25 +3327,31 @@ function computeGoalTemplateId(screen, objectiveId) {
   switch (objectiveId) {
     case "checkout-attach":
       if (isCheckoutContext) {
-        return isVertical ? "fullscreen-hero" : "carousel-banner";
+        return isVertical ? "fullscreen-hero" : wantsRotation ? "carousel-banner" : "fullscreen-banner";
       }
-      return isVertical ? "fullscreen-hero" : "fullscreen-banner";
+      return isVertical ? "fullscreen-hero" : wantsRotation ? "carousel-banner" : "fullscreen-banner";
     case "clearance":
       if (isAisleContext) {
         return "shelf-spotlight";
       }
-      return isVertical ? "fullscreen-hero" : "carousel-banner";
+      return isVertical ? "fullscreen-hero" : wantsRotation ? "carousel-banner" : "fullscreen-banner";
     case "premium":
-      return isVertical ? "fullscreen-hero" : "fullscreen-banner";
+      return wantsHeroMoment || isVertical ? "fullscreen-hero" : "fullscreen-banner";
     case "awareness":
     default:
-      return isVertical ? "fullscreen-hero" : "fullscreen-banner";
+      if (wantsRotation && !isVertical && !isCheckoutContext) {
+        return "carousel-banner";
+      }
+      return isVertical || wantsHeroMoment ? "fullscreen-hero" : "fullscreen-banner";
   }
 }
 
-function computeGoalRefreshInterval(templateId, aggressiveness) {
+function computeGoalRefreshInterval(templateId, aggressiveness, context = {}) {
   const template = getTemplatePreset(templateId);
   const base = readRefreshInterval(template.defaultRefreshInterval);
+  const planningSignals = context?.planningSignals && typeof context.planningSignals === "object" ? context.planningSignals : {};
+  const objectiveId = readOptionalString(context?.objectiveId, 40);
+  const goalProductsForScreen = Array.isArray(context?.goalProductsForScreen) ? context.goalProductsForScreen : [];
   let multiplier = 1;
 
   switch (aggressiveness) {
@@ -1120,16 +3367,35 @@ function computeGoalRefreshInterval(templateId, aggressiveness) {
       break;
   }
 
+  if (planningSignals.wantsFastCadence) {
+    multiplier *= 0.88;
+  }
+  if (planningSignals.wantsAssortmentRotation || goalProductsForScreen.length > 1) {
+    multiplier *= 0.92;
+  }
+  if (objectiveId === "premium" && !planningSignals.wantsFastCadence) {
+    multiplier *= 1.08;
+  }
+  if (objectiveId === "clearance") {
+    multiplier *= 0.92;
+  }
+
   const adjusted = Math.round((base * multiplier) / 1000) * 1000;
   return readRefreshInterval(adjusted);
 }
 
-function computeGoalConfidence(screen, objectiveId, productRelevance = 0.58) {
+function computeGoalConfidence(screen, objectiveId, productRelevance = 0.58, planningScore = 0.58, scoreBreakdown = {}) {
   const screenType = toTrimmedString(screen.screenType).toLowerCase();
   const pageId = toTrimmedString(screen.pageId).toLowerCase();
   const location = toTrimmedString(screen.location).toLowerCase();
 
-  let score = 0.52 + productRelevance * 0.34;
+  let score =
+    0.42 +
+    productRelevance * 0.14 +
+    clampNumber(planningScore) * 0.28 +
+    clampNumber(scoreBreakdown.objectiveFit, 0, 1) * 0.08 +
+    clampNumber(scoreBreakdown.trafficFit, 0, 1) * 0.06 +
+    clampNumber(scoreBreakdown.capabilityFit, 0, 1) * 0.04;
   if (screenType === "kiosk" || screenType === "digital menu board") {
     score += 0.08;
   }
@@ -1146,13 +3412,17 @@ function computeGoalConfidence(screen, objectiveId, productRelevance = 0.58) {
   return Math.max(0.52, Math.min(0.96, Number(score.toFixed(2))));
 }
 
-function buildGoalReason(screen, objective, targetProducts = [], productRelevance = 0.58) {
+function buildGoalReason(screen, objective, targetProducts = [], productRelevance = 0.58, context = {}) {
   const objectiveDetails = GOAL_OBJECTIVE_MAP.get(objective);
   const location = titleCase(screen.location);
   const screenType = screen.screenType || "Screen";
   const skuFocus = describeTargetSkus(targetProducts);
   const relevanceLabel =
     productRelevance >= 0.6 ? "high context relevance" : productRelevance >= 0.35 ? "medium context relevance" : "low context relevance";
+  const reasonShort = readOptionalString(context?.reasonShort, 240);
+  if (reasonShort) {
+    return `${reasonShort}${skuFocus ? ` SKU focus: ${skuFocus}.` : ""}`;
+  }
 
   switch (objective) {
     case "checkout-attach":
@@ -1179,74 +3449,221 @@ function buildGoalPlan(goal, screens) {
   const objectiveDetails = GOAL_OBJECTIVE_MAP.get(goal.objective) || GOAL_OBJECTIVE_MAP.get("awareness");
   const targetProducts = Array.isArray(goal.targetProducts) ? goal.targetProducts : [];
   const targetSkuIds = targetProducts.map((product) => normalizeSku(product.sku)).filter(Boolean);
-  const targetCategories = describeTargetCategories(targetProducts);
-  const relevanceByScreen = new Map(
-    screens.map((screen) => [screen.screenId, computeProductRelevanceForScreen(screen, targetProducts)])
+  const targetCategories = describeTargetCategories(targetProducts) || readOptionalString(goal?.assortmentCategory, 80);
+  const planningSignals = goal?.planningSignals && typeof goal.planningSignals === "object"
+    ? goal.planningSignals
+    : buildGoalPlanningSignals(goal, targetProducts);
+  const planningProfile = buildGoalPlanningProfile(goal, planningSignals);
+  const storeRankingMap = new Map(
+    (Array.isArray(goal?.storeRankings) ? goal.storeRankings : []).map((entry) => [readOptionalString(entry?.storeId, 80), entry])
   );
-  const plannedScreens = [];
+  const scoredCandidates = [];
   const proposedChanges = [];
   const excludedScreens = [];
 
   for (const screen of screens) {
-    const productRelevance = relevanceByScreen.get(screen.screenId) || 0.58;
+    const productRelevance = computeProductRelevanceForScreen(screen, targetProducts);
     const currentTemplateId = readOptionalString(screen.templateId, 80) || "fullscreen-banner";
     const currentRefreshInterval = readRefreshInterval(screen.refreshInterval);
-    const recommendedTemplateId = computeGoalTemplateId(screen, goal.objective);
-    const recommendedRefreshInterval = computeGoalRefreshInterval(recommendedTemplateId, goal.aggressiveness);
+    const placementRole = getGoalScreenRole(screen);
+    const storeSignals = storeRankingMap.get(readOptionalString(screen.storeId, 80)) || {
+      trafficFit: 0.55,
+      stockFit: 0.55
+    };
+    let recommendedTemplateId = computeGoalTemplateId(screen, goal.objective, { planningSignals });
+    let goalProductsForScreen =
+      targetProducts.length > 0
+        ? pickGoalProductsForScreenWithObjective(screen, targetProducts, recommendedTemplateId, goal.objective)
+        : [];
+    recommendedTemplateId = computeGoalTemplateId(screen, goal.objective, { planningSignals, goalProductsForScreen });
+    goalProductsForScreen =
+      targetProducts.length > 0
+        ? pickGoalProductsForScreenWithObjective(screen, targetProducts, recommendedTemplateId, goal.objective)
+        : [];
+    const recommendedRefreshInterval = computeGoalRefreshInterval(recommendedTemplateId, goal.aggressiveness, {
+      planningSignals,
+      objectiveId: goal.objective,
+      goalProductsForScreen
+    });
+    const objectiveFit = computeGoalObjectiveFit(screen, goal.objective, planningSignals);
+    const assortmentFit =
+      targetProducts.length > 0
+        ? clampNumber(Math.max(productRelevance, goalProductsForScreen.length > 0 ? 0.52 : 0))
+        : planningSignals.primaryCategory
+          ? clampNumber(
+              normalizeMatchToken(screen.pageId) === planningSignals.primaryCategory ||
+                normalizeMatchToken(screen.location) === planningSignals.primaryCategory
+                ? 0.82
+                : 0.58
+            )
+          : 0.6;
+    const stockFit = clampNumber(storeSignals.stockFit, 0, 1);
+    const trafficFit = clampNumber(storeSignals.trafficFit, 0, 1);
+    const capabilityFit = computeGoalCapabilityFit(screen, recommendedTemplateId, planningSignals, goalProductsForScreen);
+    const continuityFit = computeGoalContinuityFit(screen, recommendedTemplateId, targetProducts, goal.objective);
+    const scopeFit = computeGoalPageScopeFit(screen, goal);
+    const scoreBreakdown = {
+      objectiveFit: Number(objectiveFit.toFixed(2)),
+      assortmentFit: Number(assortmentFit.toFixed(2)),
+      stockFit: Number(stockFit.toFixed(2)),
+      trafficFit: Number(trafficFit.toFixed(2)),
+      capabilityFit: Number(capabilityFit.toFixed(2)),
+      continuityFit: Number(continuityFit.toFixed(2)),
+      scopeFit: Number(scopeFit.toFixed(2))
+    };
+    const score = Number(
+      (
+        scoreBreakdown.objectiveFit * planningProfile.weights.objectiveFit +
+        scoreBreakdown.assortmentFit * planningProfile.weights.assortmentFit +
+        scoreBreakdown.stockFit * planningProfile.weights.stockFit +
+        scoreBreakdown.trafficFit * planningProfile.weights.trafficFit +
+        scoreBreakdown.capabilityFit * planningProfile.weights.capabilityFit +
+        scoreBreakdown.continuityFit * planningProfile.weights.continuityFit +
+        scoreBreakdown.scopeFit * planningProfile.weights.scopeFit
+      ).toFixed(2)
+    );
 
-    if (targetProducts.length > 0 && productRelevance < GOAL_RELEVANCE_THRESHOLD) {
+    if (targetProducts.length > 0 && goalProductsForScreen.length === 0 && assortmentFit < planningProfile.minAssortmentFit && !isObjectivePreferredScreen(screen, goal.objective)) {
       excludedScreens.push({
         screenId: screen.screenId,
         storeId: screen.storeId,
         pageId: screen.pageId,
         location: screen.location,
+        reasonCode: "low-assortment-fit",
+        reasonShort: "Held out because the screen context did not fit the selected SKU assortment strongly enough.",
         productRelevance,
+        scoreBreakdown,
         reason: `Skipped by context guardrail. Screen context does not match target categories (${targetCategories || "selected SKUs"}).`
       });
       continue;
     }
 
-    const goalProductsForScreen =
-      targetProducts.length > 0
-        ? pickGoalProductsForScreen(screen, targetProducts, recommendedTemplateId)
-        : [];
-    if (targetProducts.length > 0 && goalProductsForScreen.length === 0) {
+    if (goal.requestedPageId && scopeFit < planningProfile.offPageScopeFit && goal.aggressiveness === "Conservative" && readOptionalString(screen.pageId, 40) !== goal.requestedPageId) {
       excludedScreens.push({
         screenId: screen.screenId,
         storeId: screen.storeId,
         pageId: screen.pageId,
         location: screen.location,
+        reasonCode: "scope-guardrail",
+        reasonShort: `Held out because Conservative planning kept the recommendation anchored to ${goal.requestedPageId}.`,
         productRelevance,
-        reason: "Skipped by context guardrail. No compatible target products were found for this screen."
+        scoreBreakdown,
+        reason: `Skipped by scope guardrail. Conservative planning kept the recommendation anchored to ${goal.requestedPageId}.`
       });
       continue;
     }
 
-    plannedScreens.push(screen);
+    if (score < planningProfile.minPlanScore) {
+      excludedScreens.push({
+        screenId: screen.screenId,
+        storeId: screen.storeId,
+        pageId: screen.pageId,
+        location: screen.location,
+        reasonCode: "score-below-threshold",
+        reasonShort: "Held out because stronger placements scored higher on the planning model.",
+        productRelevance,
+        scoreBreakdown,
+        reason: "Held out because this screen did not clear the current planning threshold."
+      });
+      continue;
+    }
+
     const templateChanged = currentTemplateId !== recommendedTemplateId;
     const refreshChanged = currentRefreshInterval !== recommendedRefreshInterval;
     const targetingChanged =
       targetSkuIds.length > 0 && !screenContainsAnyTargetSku(screen, targetSkuIds);
+    const reasonShort = buildGoalReasonShort(screen, goal, { trafficFit });
+    const expectedOutcome = buildGoalExpectedOutcome(screen, goal);
+    const templateRationale = buildGoalTemplateRationale(screen, recommendedTemplateId, goal, planningSignals, goalProductsForScreen);
+    const refreshRationale = buildGoalRefreshRationale(recommendedRefreshInterval, goal, planningSignals, goalProductsForScreen);
+    const confidence = computeGoalConfidence(screen, goal.objective, productRelevance, score, scoreBreakdown);
+    const reason = buildGoalReason(screen, goal.objective, targetProducts, productRelevance, { reasonShort });
 
-    if (!templateChanged && !refreshChanged && !targetingChanged) {
-      continue;
-    }
-
-    proposedChanges.push({
+    scoredCandidates.push({
       screenId: screen.screenId,
       storeId: screen.storeId,
       pageId: screen.pageId,
       location: screen.location,
+      placementRole,
       objective: goal.objective,
-      confidence: computeGoalConfidence(screen, goal.objective, productRelevance),
-      reason: buildGoalReason(screen, goal.objective, targetProducts, productRelevance),
+      confidence,
+      score,
+      reason,
+      reasonShort,
+      expectedOutcome,
       productRelevance,
+      scoreBreakdown,
+      objectiveFit: scoreBreakdown.objectiveFit,
+      assortmentFit: scoreBreakdown.assortmentFit,
+      stockFit: scoreBreakdown.stockFit,
+      trafficFit: scoreBreakdown.trafficFit,
+      capabilityFit: scoreBreakdown.capabilityFit,
+      continuityFit: scoreBreakdown.continuityFit,
       targetingChanged,
+      templateChanged,
+      refreshChanged,
       recommendedTargetSkus: goalProductsForScreen.map((product) => normalizeSku(product.sku)),
       currentTemplateId,
       recommendedTemplateId,
       currentRefreshInterval,
-      recommendedRefreshInterval
+      recommendedRefreshInterval,
+      templateRationale,
+      refreshRationale
+    });
+  }
+
+  const selection = selectGoalPlacementCandidates(scoredCandidates, goal, planningProfile);
+  const recommendedPlacements = selection.selected;
+  const selectedScreenIds = new Set(recommendedPlacements.map((entry) => entry.screenId));
+  for (const candidate of scoredCandidates) {
+    if (selectedScreenIds.has(candidate.screenId)) {
+      continue;
+    }
+    excludedScreens.push({
+      screenId: candidate.screenId,
+      storeId: candidate.storeId,
+      pageId: candidate.pageId,
+      location: candidate.location,
+      reasonCode: "below-cutline",
+      reasonShort: "Held out because higher-ranked placements covered the same planning scenario more efficiently.",
+      productRelevance: candidate.productRelevance,
+      scoreBreakdown: candidate.scoreBreakdown,
+      reason: "Held out because higher-ranked placements covered the same planning scenario more efficiently."
+    });
+  }
+
+  for (const candidate of recommendedPlacements) {
+    if (!candidate.templateChanged && !candidate.refreshChanged && !candidate.targetingChanged) {
+      continue;
+    }
+    proposedChanges.push({
+      screenId: candidate.screenId,
+      storeId: candidate.storeId,
+      pageId: candidate.pageId,
+      location: candidate.location,
+      placementRole: candidate.placementRole,
+      objective: candidate.objective,
+      confidence: candidate.confidence,
+      score: candidate.score,
+      reason: candidate.reason,
+      reasonShort: candidate.reasonShort,
+      expectedOutcome: candidate.expectedOutcome,
+      productRelevance: candidate.productRelevance,
+      scoreBreakdown: candidate.scoreBreakdown,
+      objectiveFit: candidate.objectiveFit,
+      assortmentFit: candidate.assortmentFit,
+      stockFit: candidate.stockFit,
+      trafficFit: candidate.trafficFit,
+      capabilityFit: candidate.capabilityFit,
+      continuityFit: candidate.continuityFit,
+      targetingChanged: candidate.targetingChanged,
+      recommendedTargetSkus: candidate.recommendedTargetSkus,
+      currentTemplateId: candidate.currentTemplateId,
+      recommendedTemplateId: candidate.recommendedTemplateId,
+      currentRefreshInterval: candidate.currentRefreshInterval,
+      recommendedRefreshInterval: candidate.recommendedRefreshInterval,
+      templateRationale: candidate.templateRationale,
+      refreshRationale: candidate.refreshRationale
     });
   }
 
@@ -1257,50 +3674,101 @@ function buildGoalPlan(goal, screens) {
     (change) => change.currentRefreshInterval !== change.recommendedRefreshInterval
   ).length;
   const skuTargetUpdates = proposedChanges.filter((change) => Boolean(change.targetingChanged)).length;
+  const averageScore = averageOf(recommendedPlacements.map((entry) => Number(entry.score || 0)), 0);
+  const averageConfidence = averageOf(recommendedPlacements.map((entry) => Number(entry.confidence || 0)), 0);
 
   const summary =
     proposedChanges.length > 0
-      ? `Goal Agent found ${proposedChanges.length} change(s) for ${objectiveDetails.label}.`
-      : `Goal Agent found no required changes for ${objectiveDetails.label}.`;
+      ? `CMax recommends ${proposedChanges.length} activation adjustment(s) across ${recommendedPlacements.length} placement(s) for ${objectiveDetails.label}.`
+      : recommendedPlacements.length > 0
+        ? `CMax recommends ${recommendedPlacements.length} placement(s) for ${objectiveDetails.label}. The current line-up is already aligned for launch.`
+        : `CMax could not identify an in-scope placement line-up for ${objectiveDetails.label}.`;
 
   const targetSourceLabel =
     goal.targetSource === "manual"
-      ? "Manual SKU selection"
+      ? "Manual SKU shortlist"
+      : goal.targetSource === "account"
+        ? "Brand-led assortment"
       : goal.targetSource === "prompt"
-        ? "Prompt-inferred SKU selection"
-        : "Objective-only optimization";
+        ? "Brief-inferred SKU shortlist"
+        : "Objective-led recommendation";
   const targetSummary =
     targetProducts.length > 0
-      ? `${targetSourceLabel} on ${targetProducts.length} SKU(s): ${describeTargetSkus(targetProducts)}.`
+      ? `${targetSourceLabel}: ${targetProducts.length} priority SKU(s), including ${describeTargetSkus(targetProducts)}.`
       : goal.prompt
-        ? "Prompt did not map confidently to product feed SKUs. Running objective-only optimization."
-        : "No SKU targeting applied.";
+        ? "The brief did not resolve to a confident SKU shortlist, so CMax used objective-led placement selection."
+        : "No priority SKU shortlist applied.";
   const inferredTermsSummary =
     goal.targetSource === "prompt" && Array.isArray(goal.inferredTerms) && goal.inferredTerms.length > 0
       ? `Prompt terms: ${goal.inferredTerms.slice(0, 6).join(", ")}.`
       : "";
   const exclusionSummary =
     excludedScreens.length > 0
-      ? `${excludedScreens.length} screen(s) were skipped by context guardrails.`
+      ? `${excludedScreens.length} placement(s) were left out because they did not fit the brief.`
       : targetProducts.length > 0
-        ? "All scoped screens passed context guardrails."
+        ? "All in-scope placements fit the brief."
         : "";
+  let strategyHeadline = "The planner selected the strongest placements for the brief.";
+  switch (goal.objective) {
+    case "awareness":
+      strategyHeadline = "Bias the buy into higher-footfall stores inferred from modeled sales, then keep the strongest entrance and category screens.";
+      break;
+    case "checkout-attach":
+      strategyHeadline = "Bias the buy into checkout and aisle bridge screens in stores with stronger sales-derived trip intent.";
+      break;
+    case "clearance":
+      strategyHeadline = "Bias the buy into stock-heavy stores and shelf-proximate screens to accelerate sell-through.";
+      break;
+    case "premium":
+      strategyHeadline = "Bias the buy into premium-demand stores and hero-capable placements to frame value earlier.";
+      break;
+    default:
+      break;
+  }
+  const summaryBullets = [
+    readOptionalString(goal.storeSelectionReason, 280),
+    planningSignals.assortmentCategory ? `Assortment category anchor: ${titleCase(planningSignals.assortmentCategory)}.` : "",
+    Array.isArray(planningSignals.briefThemes) && planningSignals.briefThemes.length > 0
+      ? `Brief themes: ${planningSignals.briefThemes.slice(0, 4).join(", ")}.`
+      : ""
+  ].filter(Boolean);
+  const requestedPageBestScore = scoredCandidates
+    .filter((candidate) => readOptionalString(candidate.pageId, 40) === readOptionalString(goal.requestedPageId || goal.pageId, 40))
+    .reduce((best, candidate) => Math.max(best, Number(candidate.score || 0)), 0);
+  const bestSelectedScore = recommendedPlacements.reduce((best, candidate) => Math.max(best, Number(candidate.score || 0)), 0);
 
   return {
     summary: `${summary} ${targetSummary} ${inferredTermsSummary} ${exclusionSummary}`.replace(/\s+/g, " ").trim(),
+    strategy: {
+      mode: planningSignals.strategyMode || "Objective-led placement plan",
+      headline: strategyHeadline,
+      summaryBullets
+    },
     totals: {
       scopedScreens: screens.length,
-      plannedScreens: plannedScreens.length,
-      compatibleScreens: plannedScreens.length,
+      plannedScreens: recommendedPlacements.length,
+      compatibleScreens: scoredCandidates.length,
       excludedScreens: excludedScreens.length,
       targetSkus: targetProducts.length,
       proposedChanges: proposedChanges.length,
       templateSwitches,
       refreshUpdates,
-      skuTargetUpdates
+      skuTargetUpdates,
+      avgScore: Number(averageScore.toFixed(2)),
+      avgConfidence: Number(averageConfidence.toFixed(2))
     },
+    plannedScreenIds: recommendedPlacements.map((entry) => readOptionalString(entry.screenId, 80)).filter(Boolean),
+    recommendedPlacements,
     proposedChanges,
-    excludedScreens
+    excludedScreens,
+    selectionInsights: {
+      placementBudget: selection.placementBudget,
+      requestedCandidateCount: (Array.isArray(screens) ? screens : []).filter(
+        (screen) => readOptionalString(screen.pageId, 40) === readOptionalString(goal.requestedPageId || goal.pageId, 40)
+      ).length,
+      requestedPageBestScore,
+      bestSelectedScore
+    }
   };
 }
 
@@ -1333,13 +3801,16 @@ function normalizeRenderingAttributes(value) {
   return "{}";
 }
 
-function buildBeaconUrl(event, screenId, adid) {
-  const base = process.env.TRACKING_BASE_URL || DEFAULT_TRACKING_BASE_URL;
+function buildBeaconUrl(event, screenId, adid, baseOverride = "") {
+  const base = readOptionalString(baseOverride, 500) || process.env.TRACKING_BASE_URL || DEFAULT_TRACKING_BASE_URL;
   try {
-    const beaconUrl = new URL(base);
+    const beaconUrl = base.startsWith("/") ? new URL(base, "http://local-tracker") : new URL(base);
     beaconUrl.searchParams.set("event", event);
     beaconUrl.searchParams.set("screenId", screenId);
     beaconUrl.searchParams.set("adid", adid);
+    if (base.startsWith("/")) {
+      return `${beaconUrl.pathname}${beaconUrl.search}`;
+    }
     return beaconUrl.toString();
   } catch {
     return `${DEFAULT_TRACKING_BASE_URL}?event=${encodeURIComponent(event)}&screenId=${encodeURIComponent(
@@ -1480,6 +3951,7 @@ function normalizeProductForDelivery(rawProduct, { screenId, lineItemId, index, 
   const template = getTemplatePreset(templateId);
   const adid =
     readOptionalString(product.adid, 120) || `${lineItemId}-${Date.now()}-${Math.max(index + 1, 1)}`;
+  const trackingBaseUrl = readOptionalString(process.env.TRACKING_BASE_URL, 500) || DEFAULT_TRACKING_BASE_URL;
   const productId =
     readOptionalString(product.ProductId, 80) ||
     readOptionalString(product.productId, 80) ||
@@ -1515,9 +3987,9 @@ function normalizeProductForDelivery(rawProduct, { screenId, lineItemId, index, 
       product.RenderingAttributes ?? product.renderingAttributes ?? { inStore: true },
       templateId
     ),
-    OnLoadBeacon: readOptionalString(product.OnLoadBeacon, 500) || buildBeaconUrl("load", screenId, adid),
-    OnViewBeacon: readOptionalString(product.OnViewBeacon, 500) || buildBeaconUrl("view", screenId, adid),
-    OnClickBeacon: readOptionalString(product.OnClickBeacon, 500) || buildBeaconUrl("click", screenId, adid),
+    OnLoadBeacon: buildBeaconUrl("play", screenId, adid, trackingBaseUrl),
+    OnViewBeacon: buildBeaconUrl("exposure", screenId, adid, trackingBaseUrl),
+    OnClickBeacon: readOptionalString(product.OnClickBeacon, 500),
     OnBasketChangeBeacon: readOptionalString(product.OnBasketChangeBeacon, 500),
     OnWishlistBeacon: readOptionalString(product.OnWishlistBeacon, 500)
   };
@@ -1552,8 +4024,479 @@ function normalizeError(error) {
   return { status: 500, message: "Unexpected error." };
 }
 
+function buildSharedPlayerUrl(resolverId = "") {
+  const params = new URLSearchParams();
+  const normalizedResolverId = readOptionalString(resolverId, 120);
+  if (normalizedResolverId) {
+    params.set("deviceId", normalizedResolverId);
+  }
+  const query = params.toString();
+  return `${SHARED_PLAYER_URL}${query ? `?${query}` : ""}`;
+}
+
+function getDemoScreenSpec(screenId) {
+  return DEMO_SCREEN_SPECS.find((screenSpec) => screenSpec.screenId === screenId) || null;
+}
+
+function buildDemoScreenUrl(screenId) {
+  const screenSpec = getDemoScreenSpec(screenId);
+  if (!screenSpec) {
+    return buildSharedPlayerUrl(screenId);
+  }
+
+  const deviceHints = buildScreenDeviceHints({
+    screenId: screenSpec.screenId,
+    storeId: screenSpec.storeId,
+    pageId: screenSpec.pageId,
+    location: screenSpec.location,
+    screenType: screenSpec.screenType,
+    screenSize: screenSpec.screenSize,
+    resolverId: screenSpec.resolverId || screenSpec.screenId
+  });
+
+  return buildSharedPlayerUrl(deviceHints.resolverId);
+}
+
+function getDemoStageDefinitions() {
+  const stageScreenIds = new Map();
+  for (const screenSpec of DEMO_SCREEN_SPECS) {
+    const current = stageScreenIds.get(screenSpec.stageId) || [];
+    current.push(screenSpec.screenId);
+    stageScreenIds.set(screenSpec.stageId, current);
+  }
+
+  return DEMO_STAGE_TEMPLATES.map((stage) => {
+    const screenIds = stage.id === "monitoring" ? DEMO_SCREEN_SPECS.map((screenSpec) => screenSpec.screenId) : stageScreenIds.get(stage.id) || [];
+    return {
+      ...stage,
+      screenIds,
+      screenCount: screenIds.length
+    };
+  });
+}
+
+function findDemoFeedProduct(feed, sku) {
+  const normalizedSku = normalizeSku(sku);
+  if (!normalizedSku) {
+    return null;
+  }
+  return (Array.isArray(feed) ? feed : []).find((product) => normalizeSku(product.sku) === normalizedSku) || null;
+}
+
+function selectDemoFeedProducts(feed, screenSpec) {
+  const requestedSkus = Array.isArray(screenSpec.productSkus) ? screenSpec.productSkus : [];
+  const minimumProducts = Math.max(1, Number(screenSpec.minimumProducts || 1));
+  const fallbackCategory = readOptionalString(screenSpec.fallbackCategory, 80).toLowerCase();
+  const selected = [];
+  const seenSkus = new Set();
+
+  for (const sku of requestedSkus) {
+    const product = findDemoFeedProduct(feed, sku);
+    const normalizedSku = normalizeSku(product?.sku);
+    if (product && normalizedSku && !seenSkus.has(normalizedSku)) {
+      selected.push(product);
+      seenSkus.add(normalizedSku);
+    }
+  }
+
+  const feedProducts = Array.isArray(feed) ? feed : [];
+  const addProduct = (product) => {
+    const normalizedSku = normalizeSku(product?.sku);
+    if (!normalizedSku || seenSkus.has(normalizedSku)) {
+      return;
+    }
+    selected.push(product);
+    seenSkus.add(normalizedSku);
+  };
+
+  if (selected.length < minimumProducts && fallbackCategory) {
+    for (const product of feedProducts) {
+      if (readOptionalString(product.category, 80).toLowerCase() !== fallbackCategory) {
+        continue;
+      }
+      addProduct(product);
+      if (selected.length >= minimumProducts) {
+        break;
+      }
+    }
+  }
+
+  if (selected.length < minimumProducts) {
+    for (const product of feedProducts) {
+      addProduct(product);
+      if (selected.length >= minimumProducts) {
+        break;
+      }
+    }
+  }
+
+  return selected;
+}
+
+function buildDemoProductInput(feedProduct, screenSpec, index) {
+  const renderingAttributes = {
+    badge: screenSpec.creative.badge,
+    promotion: screenSpec.creative.promotion,
+    cta: screenSpec.creative.cta,
+    subcopy: screenSpec.creative.subcopy,
+    legal: screenSpec.creative.legal,
+    demoPresetId: DEMO_PRESET_ID,
+    demoStageId: screenSpec.stageId,
+    demoStageLabel: screenSpec.stageLabel,
+    demoScreenId: screenSpec.screenId,
+    demoScreenLabel: screenSpec.label,
+    demoProductIndex: index + 1,
+    templateId: screenSpec.templateId
+  };
+
+  return {
+    ProductId: feedProduct.sku,
+    ProductName: feedProduct.name,
+    ProductPage: feedProduct.productPage,
+    Image: feedProduct.image,
+    Price: feedProduct.price,
+    ComparePrice: feedProduct.comparePrice,
+    Rating: feedProduct.rating,
+    adid: `${screenSpec.lineItemId}-${index + 1}`.slice(0, 120),
+    ClientAdvertiserId: feedProduct.advertiserId,
+    category: feedProduct.category,
+    brand: feedProduct.brand,
+    RenderingAttributes: renderingAttributes
+  };
+}
+
+function buildDemoScreenRecord(screenSpec, feed, nowIso) {
+  const selectedProducts = selectDemoFeedProducts(feed, screenSpec);
+  const productInputs = selectedProducts.map((product, index) => buildDemoProductInput(product, screenSpec, index));
+  const fallbackProduct =
+    productInputs[0] || buildStorageProduct({}, screenSpec.screenId, screenSpec.location, screenSpec.templateId);
+  const activeFrom = new Date(Date.parse(nowIso) - 5 * 60 * 1000).toISOString();
+  const activeTo = new Date(Date.parse(nowIso) + 365 * 24 * 60 * 60 * 1000).toISOString();
+  const lineItem = normalizeLineItemForStorage(
+    {
+      lineItemId: screenSpec.lineItemId,
+      name: screenSpec.lineItemName,
+      activeFrom,
+      activeTo,
+      templateId: screenSpec.templateId,
+      products: productInputs
+    },
+    {
+      screenId: screenSpec.screenId,
+      templateId: screenSpec.templateId,
+      location: screenSpec.location,
+      fallbackProduct
+    },
+    0
+  );
+
+  return {
+    screenId: screenSpec.screenId,
+    storeId: screenSpec.storeId,
+    location: screenSpec.location,
+    pageId: screenSpec.pageId,
+    screenType: screenSpec.screenType,
+    screenSize: screenSpec.screenSize,
+    format: buildDefaultFormat(screenSpec.templateId, screenSpec.screenSize),
+    templateId: screenSpec.templateId,
+    refreshInterval: readRefreshInterval(screenSpec.refreshInterval),
+    deviceHints: buildScreenDeviceHints({
+      screenId: screenSpec.screenId,
+      storeId: screenSpec.storeId,
+      pageId: screenSpec.pageId,
+      location: screenSpec.location,
+      screenType: screenSpec.screenType,
+      screenSize: screenSpec.screenSize,
+      resolverId: screenSpec.resolverId || screenSpec.screenId
+    }),
+    lineItems: [lineItem]
+  };
+}
+
+function upsertDemoPageRecord(db, pageSpec, nowIso) {
+  const targetId = String(pageSpec.pageId || "").toLowerCase();
+  const index = (db.pages || []).findIndex((page) => String(page.pageId || "").toLowerCase() === targetId);
+  const existing = index >= 0 ? db.pages[index] : null;
+  const record = {
+    ...pageSpec,
+    createdAt: existing?.createdAt || nowIso,
+    updatedAt: nowIso
+  };
+
+  if (index >= 0) {
+    db.pages[index] = record;
+    return { action: "updated", page: record };
+  }
+
+  db.pages.push(record);
+  return { action: "created", page: record };
+}
+
+function upsertDemoScreenRecord(db, screenSpec, feed, nowIso) {
+  const targetId = String(screenSpec.screenId || "").toLowerCase();
+  const index = (db.screens || []).findIndex((screen) => String(screen.screenId || "").toLowerCase() === targetId);
+  const existing = index >= 0 ? db.screens[index] : null;
+  const baseRecord = buildDemoScreenRecord(screenSpec, feed, nowIso);
+  const record = {
+    ...baseRecord,
+    createdAt: existing?.createdAt || nowIso,
+    updatedAt: nowIso
+  };
+
+  if (index >= 0) {
+    db.screens[index] = record;
+    return { action: "updated", screen: record };
+  }
+
+  db.screens.push(record);
+  return { action: "created", screen: record };
+}
+
+function buildDemoConfigSnapshot(db) {
+  const pages = Array.isArray(db.pages) ? db.pages : [];
+  const screens = Array.isArray(db.screens) ? db.screens : [];
+  const pageMap = new Map(pages.map((page) => [page.pageId, page]));
+  const screenMap = new Map(screens.map((screen) => [screen.screenId, screen]));
+  const stageDefinitions = getDemoStageDefinitions().map((stage) => {
+    const configuredScreenIds = stage.screenIds.filter((screenId) => screenMap.has(screenId));
+    return {
+      ...stage,
+      goalDefaults: stage.goalDefaults || null,
+      screenIds: stage.screenIds,
+      screenCount: stage.screenCount,
+      configuredScreenIds,
+      missingScreenIds: stage.screenIds.filter((screenId) => !screenMap.has(screenId)),
+      configured: configuredScreenIds.length === stage.screenIds.length,
+      completed: configuredScreenIds.length === stage.screenIds.length,
+      quickLinks: stage.screenIds.map((screenId) => {
+        const screenSpec = getDemoScreenSpec(screenId);
+        const current = screenMap.get(screenId);
+        const deviceHints = current
+          ? getScreenDeviceHints(current)
+          : buildScreenDeviceHints({
+              screenId,
+              storeId: screenSpec?.storeId || DEMO_STORE_ID,
+              pageId: screenSpec?.pageId,
+              location: screenSpec?.location,
+              screenType: screenSpec?.screenType,
+              screenSize: screenSpec?.screenSize,
+              resolverId: screenSpec?.resolverId || screenId
+            });
+
+        return {
+          screenId,
+          screenUrl: buildSharedPlayerUrl(deviceHints.resolverId),
+          resolverId: deviceHints.resolverId,
+          configured: screenMap.has(screenId)
+        };
+      })
+    };
+  });
+
+  const pageSummaries = DEMO_PAGE_SPECS.map((pageSpec) => ({
+    ...pageSpec,
+    configured: pageMap.has(pageSpec.pageId),
+    screenIds: DEMO_SCREEN_SPECS.filter((screenSpec) => screenSpec.pageId === pageSpec.pageId).map(
+      (screenSpec) => screenSpec.screenId
+    ),
+    screenCount: DEMO_SCREEN_SPECS.filter((screenSpec) => screenSpec.pageId === pageSpec.pageId).length,
+    updatedAt: pageMap.get(pageSpec.pageId)?.updatedAt || "",
+    createdAt: pageMap.get(pageSpec.pageId)?.createdAt || ""
+  }));
+
+  const screenSummaries = DEMO_SCREEN_SPECS.map((screenSpec) => {
+    const current = screenMap.get(screenSpec.screenId);
+    const deviceHints = current
+      ? getScreenDeviceHints(current)
+      : buildScreenDeviceHints({
+          screenId: screenSpec.screenId,
+          storeId: screenSpec.storeId,
+          pageId: screenSpec.pageId,
+          location: screenSpec.location,
+          screenType: screenSpec.screenType,
+          screenSize: screenSpec.screenSize,
+          resolverId: screenSpec.resolverId || screenSpec.screenId
+        });
+    const lineItems = Array.isArray(current?.lineItems) ? current.lineItems : [];
+    const products = lineItems.flatMap((lineItem) => (Array.isArray(lineItem.products) ? lineItem.products : []));
+    return {
+      screenId: screenSpec.screenId,
+      storeId: current?.storeId || screenSpec.storeId,
+      stageId: screenSpec.stageId,
+      stageLabel: screenSpec.stageLabel,
+      label: screenSpec.label,
+      pageId: screenSpec.pageId,
+      location: screenSpec.location,
+      screenType: screenSpec.screenType,
+      screenSize: screenSpec.screenSize,
+      templateId: screenSpec.templateId,
+      refreshInterval: screenSpec.refreshInterval,
+      sharedPlayerUrl: SHARED_PLAYER_URL,
+      screenUrl: buildSharedPlayerUrl(deviceHints.resolverId),
+      resolverId: deviceHints.resolverId,
+      configured: Boolean(current),
+      lineItemCount: lineItems.length,
+      productCount: products.length,
+      createdAt: current?.createdAt || "",
+      updatedAt: current?.updatedAt || ""
+    };
+  });
+
+  const counts = {
+    baselinePages: DEMO_PAGE_SPECS.length,
+    baselineScreens: DEMO_SCREEN_SPECS.length,
+    configuredPages: pageSummaries.filter((entry) => entry.configured).length,
+    configuredScreens: screenSummaries.filter((entry) => entry.configured).length,
+    agentRuns: Array.isArray(db.agentRuns) ? db.agentRuns.length : 0,
+    telemetryEvents: Array.isArray(db.telemetryEvents) ? db.telemetryEvents.length : 0
+  };
+
+  return {
+    presetId: DEMO_PRESET_ID,
+    storeId: DEMO_STORE_ID,
+    storeIds: DEMO_STORE_IDS,
+    storeCount: DEMO_STORE_IDS.length,
+    title: "CYield / CMax guided demo",
+    stageOrder: DEMO_STAGE_ORDER,
+    stages: stageDefinitions,
+    pages: pageSummaries,
+    screens: screenSummaries,
+    goalDefaults:
+      stageDefinitions.find((stage) => stage.id === "cmax-demand")?.goalDefaults || {
+        objective: "checkout-attach",
+        aggressiveness: "Balanced",
+        storeId: "",
+        pageId: "CHECKOUT",
+        advertiserId: "advertiser-northfield",
+        prompt: "Drive checkout demand for Northfield accessories in STORE_42.",
+        targetSkuIds: ["ACC-MOUSE-001"]
+      },
+    counts,
+    actions: {
+      preset: "/api/demo/preset",
+      reset: "/api/demo/reset"
+    },
+    quickLinks: screenSummaries.map((screen) => ({
+      screenId: screen.screenId,
+      label: screen.label,
+      stageId: screen.stageId,
+      screenUrl: screen.screenUrl,
+      resolverId: screen.resolverId,
+      configured: screen.configured
+    }))
+  };
+}
+
+async function applyDemoPresetToDb(db, { feed = [], reset = false } = {}) {
+  const nowIso = new Date().toISOString();
+  const result = {
+    demoId: DEMO_PRESET_ID,
+    storeId: DEMO_STORE_ID,
+    seededStoreIds: DEMO_STORE_IDS,
+    createdPageIds: [],
+    updatedPageIds: [],
+    createdScreenIds: [],
+    updatedScreenIds: [],
+    clearedAgentRuns: 0,
+    clearedTelemetryEvents: 0
+  };
+
+  if (!Array.isArray(db.pages)) {
+    db.pages = [];
+  }
+  if (!Array.isArray(db.screens)) {
+    db.screens = [];
+  }
+  if (!Array.isArray(db.agentRuns)) {
+    db.agentRuns = [];
+  }
+  if (!Array.isArray(db.telemetryEvents)) {
+    db.telemetryEvents = [];
+  }
+
+  for (const pageSpec of DEMO_PAGE_SPECS) {
+    const existingIndex = db.pages.findIndex((page) => page.pageId === pageSpec.pageId);
+    const mutation = upsertDemoPageRecord(db, pageSpec, nowIso);
+    if (mutation.action === "created") {
+      result.createdPageIds.push(pageSpec.pageId);
+    } else if (existingIndex >= 0) {
+      result.updatedPageIds.push(pageSpec.pageId);
+    }
+  }
+
+  for (const screenSpec of DEMO_SCREEN_SPECS) {
+    const existingIndex = db.screens.findIndex((screen) => screen.screenId === screenSpec.screenId);
+    const mutation = upsertDemoScreenRecord(db, screenSpec, feed, nowIso);
+    if (mutation.action === "created") {
+      result.createdScreenIds.push(screenSpec.screenId);
+    } else if (existingIndex >= 0) {
+      result.updatedScreenIds.push(screenSpec.screenId);
+    }
+  }
+
+  rotationState.clear();
+
+  if (reset) {
+    result.clearedAgentRuns = db.agentRuns.length;
+    result.clearedTelemetryEvents = db.telemetryEvents.length;
+    db.agentRuns = [];
+    db.telemetryEvents = [];
+  }
+
+  return {
+    result,
+    demo: buildDemoConfigSnapshot(db)
+  };
+}
+
+async function resetDemoInDb(db) {
+  const result = {
+    demoId: DEMO_PRESET_ID,
+    storeId: DEMO_STORE_ID,
+    removedStoreIds: DEMO_STORE_IDS,
+    removedScreenIds: [],
+    clearedAgentRuns: 0,
+    clearedTelemetryEvents: 0
+  };
+
+  if (!Array.isArray(db.screens)) {
+    db.screens = [];
+  }
+  if (!Array.isArray(db.agentRuns)) {
+    db.agentRuns = [];
+  }
+  if (!Array.isArray(db.telemetryEvents)) {
+    db.telemetryEvents = [];
+  }
+
+  const demoScreenIds = new Set(DEMO_SCREEN_SPECS.map((screenSpec) => screenSpec.screenId));
+  const retainedScreens = [];
+  for (const screen of db.screens) {
+    const screenId = readOptionalString(screen?.screenId, 80);
+    if (demoScreenIds.has(screenId)) {
+      result.removedScreenIds.push(screenId);
+      continue;
+    }
+    retainedScreens.push(screen);
+  }
+  db.screens = retainedScreens;
+
+  result.clearedAgentRuns = db.agentRuns.length;
+  result.clearedTelemetryEvents = db.telemetryEvents.length;
+  db.agentRuns = [];
+  db.telemetryEvents = [];
+  rotationState.clear();
+
+  return {
+    result,
+    demo: buildDemoConfigSnapshot(db)
+  };
+}
+
 const app = express();
-const PORT = Number(process.env.PORT) || 3000;
+const REQUESTED_PORT = Number(process.env.PORT) || 3000;
+const HAS_EXPLICIT_PORT = Boolean(process.env.PORT);
+const PORT_FALLBACK_LIMIT = 20;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -1573,8 +4516,77 @@ app.get("/api/options", (_req, res) => {
     templates: TEMPLATE_PRESETS,
     goalObjectives: GOAL_OBJECTIVES.map(({ id, label, description }) => ({ id, label, description })),
     goalAggressivenessOptions: GOAL_AGGRESSIVENESS_OPTIONS,
-    goalSupportsSkuTargeting: true
+    goalSupportsSkuTargeting: true,
+    telemetryEventTypes: TELEMETRY_EVENT_TYPES
   });
+});
+
+app.get("/api/demo/config", async (_req, res) => {
+  try {
+    const db = await readDb();
+    res.json(buildDemoConfigSnapshot(db));
+  } catch (error) {
+    const normalized = normalizeError(error);
+    res.status(normalized.status).json({ error: normalized.message });
+  }
+});
+
+app.post("/api/demo/preset", async (_req, res) => {
+  try {
+    const feed = await readProductFeed();
+    const payload = await mutateDb(async (db) => applyDemoPresetToDb(db, { feed, reset: false }));
+    res.json(payload);
+  } catch (error) {
+    const normalized = normalizeError(error);
+    res.status(normalized.status).json({ error: normalized.message });
+  }
+});
+
+app.post("/api/demo/reset", async (_req, res) => {
+  try {
+    const payload = await mutateDb(async (db) => resetDemoInDb(db));
+    res.json(payload);
+  } catch (error) {
+    const normalized = normalizeError(error);
+    res.status(normalized.status).json({ error: normalized.message });
+  }
+});
+
+async function handleTelemetryCollect(input, res, { responseMode = "json" } = {}) {
+  try {
+    const event = await mutateDb(async (db) => recordTelemetryEvent(db, input));
+    if (responseMode === "empty") {
+      res.status(204).end();
+      return;
+    }
+    res.status(202).json({ recorded: true, eventId: event.eventId });
+  } catch (error) {
+    const normalized = normalizeError(error);
+    if (responseMode === "empty") {
+      res.status(normalized.status).end();
+      return;
+    }
+    res.status(normalized.status).json({ error: normalized.message });
+  }
+}
+
+app.get("/collect", async (req, res) => {
+  await handleTelemetryCollect(req.query, res, { responseMode: "empty" });
+});
+
+app.post("/collect", async (req, res) => {
+  await handleTelemetryCollect(req.body, res);
+});
+
+app.get("/api/telemetry/summary", async (req, res) => {
+  try {
+    const db = await readDb();
+    const planId = readOptionalString(req.query.planId, 120);
+    res.json(buildTelemetrySummary(db, planId));
+  } catch (error) {
+    const normalized = normalizeError(error);
+    res.status(normalized.status).json({ error: normalized.message });
+  }
 });
 
 app.get("/api/products", async (req, res) => {
@@ -1606,10 +4618,18 @@ app.get("/api/products", async (req, res) => {
 
     products.sort((left, right) => left.name.localeCompare(right.name));
     const categories = [...new Set(feed.map((product) => product.category))].sort((a, b) => a.localeCompare(b));
+    const accounts = [
+      ...new Map(
+        feed
+          .filter((product) => product.advertiserId)
+          .map((product) => [product.advertiserId, { advertiserId: product.advertiserId, brand: product.brand }])
+      ).values()
+    ].sort((left, right) => left.brand.localeCompare(right.brand) || left.advertiserId.localeCompare(right.advertiserId));
     res.json({
       products: products.slice(0, limit),
       total: products.length,
-      categories
+      categories,
+      accounts
     });
   } catch (error) {
     const normalized = normalizeError(error);
@@ -1744,6 +4764,15 @@ app.post("/api/screens", async (req, res) => {
         format,
         templateId,
         refreshInterval,
+        deviceHints: buildScreenDeviceHints({
+          screenId,
+          storeId,
+          pageId,
+          location,
+          screenType,
+          screenSize,
+          rawHints: req.body.deviceHints
+        }),
         lineItems,
         createdAt: now,
         updatedAt: now
@@ -1847,6 +4876,15 @@ app.put("/api/screens/:screenId", async (req, res) => {
       record.templateId = template.id;
       record.format = nextFormat;
       record.refreshInterval = nextRefreshInterval;
+      record.deviceHints = buildScreenDeviceHints({
+        screenId,
+        storeId: nextStoreId,
+        pageId: nextPageId,
+        location: nextLocation,
+        screenType: nextScreenType,
+        screenSize: nextScreenSize,
+        rawHints: req.body.deviceHints || record.deviceHints
+      });
       record.lineItems = updatedLineItems;
       record.updatedAt = new Date().toISOString();
       return record;
@@ -1927,12 +4965,7 @@ app.get("/api/agent/goals/live", async (req, res) => {
       throw new HttpError(404, `Plan ${planId} was not found.`);
     }
 
-    const appliedScreenIds = readStringArray(run.appliedScreenIds, 500, 80).map((screenId) =>
-      readOptionalString(screenId, 80)
-    );
-    const proposedChanges = Array.isArray(run.proposedChanges) ? run.proposedChanges : [];
-    const fallbackScreenIds = proposedChanges.map((change) => readOptionalString(change.screenId, 80)).filter(Boolean);
-    const screenIds = appliedScreenIds.length > 0 ? appliedScreenIds : fallbackScreenIds;
+    const screenIds = resolveGoalRunScreenIds(run);
     const liveScreens = buildLiveScreensSnapshot(db, screenIds);
 
     res.json({
@@ -1954,26 +4987,58 @@ app.post("/api/agent/goals/plan", async (req, res) => {
     const feed = await readProductFeed();
 
     const run = await mutateDb(async (db) => {
-      const scopedScreens = (db.screens || []).filter((screen) => {
-        if (goal.storeId && screen.storeId !== goal.storeId) {
-          return false;
-        }
-        if (goal.pageId && screen.pageId !== goal.pageId) {
-          return false;
-        }
-        return true;
-      });
-
-      if (!scopedScreens.length) {
+      const allStoreScreens = Array.isArray(db.screens) ? db.screens : [];
+      const demoScreenIdSet = new Set(DEMO_SCREEN_SPECS.map((screen) => screen.screenId));
+      const demoCandidateScreens = allStoreScreens.filter((screen) => demoScreenIdSet.has(screen.screenId));
+      const shouldUseDemoInventory = demoCandidateScreens.length > 0 && (!goal.storeId || DEMO_STORE_ID_SET.has(goal.storeId));
+      const allScreens = shouldUseDemoInventory ? demoCandidateScreens : allStoreScreens;
+      const requestedPageId = readOptionalString(goal.pageId, 40);
+      const initialScopedScreens = filterGoalScopeScreens(allScreens, goal);
+      const targetResolution = resolveGoalTargetProducts(goal, feed, initialScopedScreens.length > 0 ? initialScopedScreens : allScreens);
+      const planningSignals = buildGoalPlanningSignals(goal, targetResolution.targetProducts);
+      const storeStrategy = buildGoalStoreStrategy(goal, targetResolution.targetProducts, allScreens, planningSignals);
+      const planningScreenPool = filterScreensByStoreIds(allScreens, storeStrategy.effectiveStoreIds);
+      const planningGoal = {
+        ...goal,
+        storeId: readOptionalString(goal.storeId, 80),
+        requestedPageId,
+        planningSignals,
+        storeSelectionReason: storeStrategy.storeSelectionReason,
+        storeRankings: storeStrategy.storeRankings
+      };
+      if (!planningScreenPool.length) {
         throw new HttpError(404, "No screens match this goal scope.");
       }
 
-      const targetResolution = resolveGoalTargetProducts(goal, feed, scopedScreens);
-      const resolvedGoal = {
-        ...goal,
-        ...targetResolution
+      const preResolvedGoal = {
+        ...planningGoal,
+        ...targetResolution,
+        requestedStoreId: readOptionalString(goal.storeId, 80),
+        effectiveStoreId: storeStrategy.effectiveStoreId || "",
+        effectiveStoreIds: Array.isArray(storeStrategy.effectiveStoreIds) ? storeStrategy.effectiveStoreIds : [],
+        storeFocusLabel: storeStrategy.storeFocusLabel || readOptionalString(goal.storeId, 80),
+        stockMessage: storeStrategy.stockMessage,
+        requestedPageId,
+        effectivePageId: requestedPageId,
+        scopeMode: "requested",
+        scopeMessage: ""
       };
-      const plan = buildGoalPlan(resolvedGoal, scopedScreens);
+      const plan = buildGoalPlan(preResolvedGoal, planningScreenPool);
+      const scopeSummary = summarizeGoalScopeFromPlacements(preResolvedGoal, plan.recommendedPlacements, plan.selectionInsights);
+      const resolvedGoal = {
+        ...preResolvedGoal,
+        effectivePageId:
+          scopeSummary.scopeMode === "auto-matched" ? scopeSummary.effectivePageId : scopeSummary.effectivePageId || requestedPageId,
+        scopeMode: scopeSummary.scopeMode,
+        scopeMessage: scopeSummary.scopeMessage,
+        scopeSelectionReason: scopeSummary.scopeSelectionReason
+      };
+      const strategy = {
+        ...(plan.strategy || {}),
+        summaryBullets: [
+          ...new Set([...(Array.isArray(plan.strategy?.summaryBullets) ? plan.strategy.summaryBullets : []), resolvedGoal.scopeSelectionReason].filter(Boolean))
+        ]
+      };
       const now = new Date().toISOString();
       const runRecord = {
         planId: generatePlanId(),
@@ -1982,7 +5047,10 @@ app.post("/api/agent/goals/plan", async (req, res) => {
         updatedAt: now,
         goal: resolvedGoal,
         summary: plan.summary,
+        strategy,
         totals: plan.totals,
+        plannedScreenIds: plan.plannedScreenIds,
+        recommendedPlacements: plan.recommendedPlacements,
         proposedChanges: plan.proposedChanges,
         excludedScreens: plan.excludedScreens
       };
@@ -2012,14 +5080,7 @@ app.post("/api/agent/goals/apply", async (req, res) => {
         throw new HttpError(404, `Plan ${planId} was not found.`);
       }
       if (run.status === "applied") {
-        const appliedScreenIds = readStringArray(run.appliedScreenIds, 500, 80).map((screenId) =>
-          readOptionalString(screenId, 80)
-        );
-        const proposedChanges = Array.isArray(run.proposedChanges) ? run.proposedChanges : [];
-        const fallbackScreenIds = proposedChanges
-          .map((change) => readOptionalString(change.screenId, 80))
-          .filter(Boolean);
-        const screenIds = appliedScreenIds.length > 0 ? appliedScreenIds : fallbackScreenIds;
+        const screenIds = resolveGoalRunScreenIds(run);
         const liveScreens = buildLiveScreensSnapshot(db, screenIds);
         run.appliedScreenIds = screenIds;
         run.liveScreens = liveScreens;
@@ -2035,6 +5096,7 @@ app.post("/api/agent/goals/apply", async (req, res) => {
       }
 
       const changes = Array.isArray(run.proposedChanges) ? run.proposedChanges : [];
+      const plannedScreenIds = resolveGoalRunScreenIds(run);
       const now = new Date().toISOString();
       const objectiveId = readOptionalString(run.goal?.objective, 40) || "awareness";
       const runTargetSkuIds = readStringArray(run.goal?.targetSkuIds, GOAL_TARGET_SKU_LIMIT, 80).map((sku) =>
@@ -2063,7 +5125,7 @@ app.post("/api/agent/goals/apply", async (req, res) => {
         const nextTemplateId = readOptionalString(change.recommendedTemplateId, 80) || screen.templateId;
         const nextTemplate = getTemplatePreset(nextTemplateId);
         const nextRefreshInterval = readRefreshInterval(change.recommendedRefreshInterval);
-        const goalProductsForScreen = pickGoalProductsForScreen(screen, runTargetProducts, nextTemplate.id);
+        const goalProductsForScreen = pickGoalProductsForScreenWithObjective(screen, runTargetProducts, nextTemplate.id, objectiveId);
         if (hasGoalTargeting && goalProductsForScreen.length === 0) {
           skippedCount += 1;
           continue;
@@ -2142,6 +5204,14 @@ app.post("/api/agent/goals/apply", async (req, res) => {
         appliedCount += 1;
       }
 
+      if (plannedScreenIds.length > 0) {
+        for (const screenId of plannedScreenIds) {
+          if ((db.screens || []).some((entry) => entry.screenId === screenId)) {
+            appliedScreenIds.push(screenId);
+          }
+        }
+      }
+
       const uniqueAppliedScreenIds = [...new Set(appliedScreenIds)];
       const liveScreens = buildLiveScreensSnapshot(db, uniqueAppliedScreenIds);
       run.status = "applied";
@@ -2176,12 +5246,10 @@ app.post("/api/agent/goals/apply", async (req, res) => {
 
 app.get("/api/screen-ad", async (req, res) => {
   try {
-    const screenId = readRequiredString(req.query.screenId, "screenId", 80);
     const db = await readDb();
-    const screen = db.screens.find((entry) => entry.screenId === screenId);
-    if (!screen) {
-      throw new HttpError(404, `Screen ${screenId} was not found.`);
-    }
+    const resolved = resolveScreenRequest(db, req);
+    const screen = resolved.screen;
+    const screenId = screen.screenId;
 
     const now = new Date();
     const activeLineItems = (screen.lineItems || []).filter((lineItem) => isLineItemActive(lineItem, now));
@@ -2249,9 +5317,17 @@ app.get("/api/screen-ad", async (req, res) => {
         templateName: selectedTemplate.name,
         loopIntervalMs: getTemplateLoopIntervalMs(selectedTemplate.id),
         refreshInterval: readRefreshInterval(screen.refreshInterval),
+        screenId: screen.screenId,
+        storeId: screen.storeId,
         screenType: screen.screenType,
         pageId: screen.pageId,
-        lineItemId: selectedLineItem.lineItemId
+        location: screen.location,
+        lineItemId: selectedLineItem.lineItemId,
+        sharedPlayerUrl: SHARED_PLAYER_URL,
+        resolverId: getScreenDeviceHints(screen).resolverId,
+        resolvedBy: resolved.resolvedBy,
+        requestViewport: resolved.requestContext.viewport.normalized || "",
+        requestOrientation: resolved.requestContext.orientation || ""
       }
     });
   } catch (error) {
@@ -2264,7 +5340,46 @@ app.get("/", (_req, res) => {
   res.redirect("/admin.html");
 });
 
-app.listen(PORT, () => {
-  // eslint-disable-next-line no-console
-  console.log(`In-store middleware listening on http://localhost:${PORT}`);
-});
+function startServer(port, attempt = 0) {
+  const server = app.listen(port);
+
+  server.on("listening", () => {
+    const address = server.address();
+    const activePort =
+      address && typeof address === "object" && "port" in address ? Number(address.port) : Number(port);
+    // eslint-disable-next-line no-console
+    console.log(`In-store middleware listening on http://localhost:${activePort}`);
+  });
+
+  server.on("error", (error) => {
+    if (error?.code === "EADDRINUSE") {
+      if (HAS_EXPLICIT_PORT) {
+        // eslint-disable-next-line no-console
+        console.error(`Port ${port} is already in use. Set PORT to a free port and restart.`);
+        process.exitCode = 1;
+        return;
+      }
+
+      if (attempt >= PORT_FALLBACK_LIMIT) {
+        // eslint-disable-next-line no-console
+        console.error(`No free port found in the range ${REQUESTED_PORT}-${REQUESTED_PORT + PORT_FALLBACK_LIMIT}.`);
+        process.exitCode = 1;
+        return;
+      }
+
+      const nextPort = port + 1;
+      // eslint-disable-next-line no-console
+      console.warn(`Port ${port} is busy. Retrying on http://localhost:${nextPort}`);
+      startServer(nextPort, attempt + 1);
+      return;
+    }
+
+    // eslint-disable-next-line no-console
+    console.error(error);
+    process.exitCode = 1;
+  });
+
+  return server;
+}
+
+startServer(REQUESTED_PORT);

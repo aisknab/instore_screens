@@ -28,7 +28,11 @@ Hackathon demo for treating physical in-store screens as retail media inventory 
   - Apply approved plans
   - View live running screens/creative snapshot after apply
   - Auto-create missing line-item creative during apply when required
+  - Compare before/after delivery telemetry for an applied plan
   - View run history
+- Telemetry dashboard:
+  - Proof-of-play summary for local fallback rendering
+  - Exposure time, average dwell, and play counts by screen, template, and SKU
 - Group configured screens by parent-child tree:
   - Parent: `Store ID`
   - Child: `Mapped Page`
@@ -312,8 +316,10 @@ Response shape:
     "templateName": "Fullscreen Hero",
     "loopIntervalMs": 0,
     "refreshInterval": 30000,
+    "storeId": "STORE_42",
     "screenType": "Vertical Screen",
     "pageId": "ELECTRONICS",
+    "location": "electronics",
     "lineItemId": "LI-ELEC-001"
   }
 }
@@ -326,6 +332,7 @@ Response shape:
 - Product images are normalized to local demo assets when remote URLs are present, to avoid broken visuals in restricted networks.
 - Looping templates are topped up from product feed at runtime when a screen is under-configured (so carousel/menu demos still rotate).
 - If `rm.js` fails to load (for example DNS/network restrictions), fallback renderer still shows full template behavior.
+- Local fallback rendering now records `play` and timed `exposure` telemetry to `/collect`, surfaced in the admin telemetry panel.
 - Tracking base URL can be changed with:
 
 `TRACKING_BASE_URL=https://your-tracker.example.com/collect`

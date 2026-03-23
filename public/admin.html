@@ -3,255 +3,701 @@
   <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>In-Store Inventory Manager</title>
+    <title>Criteo Hackathon Demo</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
-      href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap"
       rel="stylesheet"
     >
     <link rel="stylesheet" href="/admin.css">
   </head>
   <body>
-    <header class="topbar">
-      <div class="topbar__inner">
-        <div>
-          <p class="eyebrow">Criteo Retail Media</p>
-          <h1>Add Page</h1>
-          <p class="subtitle">
-            Model in-store zones as pages and screens as placements in the same inventory workflow.
+    <div class="page-noise" aria-hidden="true"></div>
+
+    <header class="hero">
+      <div class="hero__inner">
+        <div class="hero__copy">
+          <p class="eyebrow">Criteo hackathon demo</p>
+          <h1>Three acts. One click-through story.</h1>
+          <p class="hero__lede">
+            CYield treats each in-store screen like a page request: every display can hit one shared player URL, and the backend resolves which screen it is from the TV browser footprint.
           </p>
+          <div class="hero__meta" aria-label="Demo stages">
+            <span class="hero__chip">Stage 1: Supply</span>
+            <span class="hero__chip">Stage 2: Buying</span>
+            <span class="hero__chip">Stage 3: Monitoring</span>
+          </div>
         </div>
-        <a class="ghost-link" href="/screen.html?screenId=STORE_42_ELECTRONICS_V1" target="_blank" rel="noreferrer">
-          Open Demo Screen
-        </a>
+
+        <div class="hero__actions">
+          <a
+            id="demoScreenLink"
+            class="btn btn--primary hero__screen-link"
+            href="/screen.html"
+            target="_blank"
+            rel="noreferrer"
+          >
+            Open demo screen
+          </a>
+          <a
+            id="presenterNotesLink"
+            class="btn btn--ghost"
+            href="/presenter-notes.html"
+            target="_blank"
+            rel="noreferrer"
+          >
+            Open presenter notes
+          </a>
+          <div class="hero__jump-rail" aria-label="Jump to stage">
+            <button type="button" class="btn btn--ghost js-stage-jump" data-stage="supply">Supply</button>
+            <button type="button" class="btn btn--ghost js-stage-jump" data-stage="buying">Buying</button>
+            <button type="button" class="btn btn--ghost js-stage-jump" data-stage="monitoring">Monitoring</button>
+          </div>
+          <p class="hero__note">Minimal CYield change: same page model, one shared player URL, backend resolver for screen identity.</p>
+        </div>
       </div>
     </header>
 
     <main class="shell">
-      <section class="panel panel--primary">
-        <h2>Add a page from the retailer site</h2>
-        <p class="panel__hint">Enter the ad delivery settings for a page and assign its Page ID.</p>
-
-        <form id="page-form" novalidate>
-          <div class="field">
-            <label for="pageId">Page ID*</label>
-            <input id="pageId" name="pageId" maxlength="40" placeholder="Enter a unique ID for this page" required>
-            <p class="field__meta"><span id="pageIdCount">0</span>/40</p>
+      <section class="panel panel--rail">
+        <div class="panel__header panel__header--compact">
+          <div>
+            <p class="section-kicker">Demo path</p>
+            <h2>Guided flow</h2>
           </div>
-
-          <fieldset class="field">
-            <legend>Page Type*</legend>
-            <div id="pageTypeGrid" class="choice-grid"></div>
-          </fieldset>
-
-          <fieldset class="field">
-            <legend>Environment*</legend>
-            <div id="environmentGrid" class="choice-grid choice-grid--env"></div>
-          </fieldset>
-
-          <div class="toggle-list">
-            <label class="switch-row" for="firePageBeacons">
-              <span>
-                <strong>Delivery Should Fire Page Beacons</strong>
-                <small>Enables page beacons to fire for all placements on this page.</small>
-              </span>
-              <span class="switch">
-                <input id="firePageBeacons" name="firePageBeacons" type="checkbox" checked>
-                <span class="slider"></span>
-              </span>
-            </label>
-
-            <label class="switch-row" for="oneTagHybridIntegration">
-              <span>
-                <strong>OneTag Hybrid Integration</strong>
-                <small>Disable ad serving from Delivery for placements on this page.</small>
-              </span>
-              <span class="switch">
-                <input id="oneTagHybridIntegration" name="oneTagHybridIntegration" type="checkbox">
-                <span class="slider"></span>
-              </span>
-            </label>
-
-            <label class="switch-row" for="includeBidInResponse">
-              <span>
-                <strong>Include Bid In Response</strong>
-                <small>Append bid amount to the ad response payload for this page.</small>
-              </span>
-              <span class="switch">
-                <input id="includeBidInResponse" name="includeBidInResponse" type="checkbox">
-                <span class="slider"></span>
-              </span>
-            </label>
-          </div>
-
-          <div class="form-actions">
-            <button type="submit" class="btn btn--primary">Add Page</button>
-          </div>
-        </form>
-      </section>
-
-      <section class="panel">
-        <h2>Add or Edit Screen Placement</h2>
-        <p class="panel__hint">
-          Keep screen setup lean. Template presets control the visual behavior and refresh defaults.
-        </p>
-
-        <form id="screen-form" novalidate>
-          <input id="editScreenId" name="editScreenId" type="hidden">
-
-          <div class="field-row">
-            <div class="field">
-              <label for="screenId">Screen ID*</label>
-              <input id="screenId" name="screenId" placeholder="STORE_42_ELECTRONICS_V2" required>
-            </div>
-            <div class="field">
-              <label for="storeId">Store ID*</label>
-              <input id="storeId" name="storeId" value="STORE_42" required>
-            </div>
-          </div>
-
-          <div class="field-row">
-            <div class="field">
-              <label for="location">Location*</label>
-              <input id="location" name="location" placeholder="electronics" required>
-            </div>
-            <div class="field">
-              <label for="pageIdSelect">Mapped Page*</label>
-              <select id="pageIdSelect" name="pageId" required></select>
-            </div>
-          </div>
-
-          <div class="field-row">
-            <div class="field">
-              <label for="screenType">Screen Type*</label>
-              <select id="screenType" name="screenType" required></select>
-            </div>
-            <div class="field">
-              <label for="screenSize">Screen Size*</label>
-              <input id="screenSize" name="screenSize" value="1920x1080" required>
-            </div>
-          </div>
-
-          <div class="field-row">
-            <div class="field">
-              <label for="templateId">Template*</label>
-              <select id="templateId" name="templateId" required></select>
-            </div>
-            <div class="field">
-              <label for="refreshInterval">Refresh Interval (ms)</label>
-              <input id="refreshInterval" name="refreshInterval" type="number" min="5000" step="1000" value="30000">
-            </div>
-          </div>
-
-          <div class="template-preview" id="templatePreview">
-            Select a template to see recommended setup.
-          </div>
-
-          <div class="form-actions">
-            <button id="screenCancelBtn" type="button" class="btn btn--ghost is-hidden">Cancel Edit</button>
-            <button id="screenSubmitBtn" type="submit" class="btn btn--primary">Add Screen</button>
-          </div>
-        </form>
-      </section>
-
-      <section class="panel">
-        <div class="panel__header">
-          <h2>Goal Agent</h2>
-          <button id="agentRefreshBtn" class="btn btn--ghost" type="button">Refresh Runs</button>
+          <p class="panel__hint panel__hint--rail">Use the stage buttons or scroll. The flow is designed to be shown live.</p>
         </div>
-        <p class="panel__hint">
-          Define a business goal, generate a plan, then apply changes to scoped screens with one click.
-        </p>
 
-        <form id="goalAgentForm" novalidate>
-          <div class="field-row">
-            <div class="field">
-              <label for="goalObjective">Goal Objective*</label>
-              <select id="goalObjective" name="objective" required></select>
-            </div>
-            <div class="field">
-              <label for="goalAggressiveness">Optimization Style*</label>
-              <select id="goalAggressiveness" name="aggressiveness" required></select>
-            </div>
-          </div>
+        <nav class="stage-steps" aria-label="Demo stages">
+          <button type="button" class="stage-step js-stage-jump is-active" data-stage="supply">
+            <span class="stage-step__index">01</span>
+            <span class="stage-step__copy">
+              <strong>CYield Supply Setup</strong>
+              <small>Add one placement, then load the preset inventory.</small>
+            </span>
+          </button>
+          <button type="button" class="stage-step js-stage-jump" data-stage="buying">
+            <span class="stage-step__index">02</span>
+            <span class="stage-step__copy">
+              <strong>CMax Buying / Demand</strong>
+              <small>Pick the objective, generate the plan, apply it.</small>
+            </span>
+          </button>
+          <button type="button" class="stage-step js-stage-jump" data-stage="monitoring">
+            <span class="stage-step__index">03</span>
+            <span class="stage-step__copy">
+              <strong>Monitoring</strong>
+              <small>Show the live screens, telemetry, and proof of play.</small>
+            </span>
+          </button>
+        </nav>
+      </section>
 
-          <div class="field-row">
-            <div class="field">
-              <label for="goalStoreScope">Store Scope</label>
-              <select id="goalStoreScope" name="storeId"></select>
-            </div>
-            <div class="field">
-              <label for="goalPageScope">Mapped Page Scope</label>
-              <select id="goalPageScope" name="pageId"></select>
-            </div>
-          </div>
-
-          <div class="field">
-            <label for="goalPrompt">Goal Brief (Optional)</label>
-            <textarea
-              id="goalPrompt"
-              name="prompt"
-              rows="3"
-              maxlength="280"
-              placeholder="Example: Increase checkout add-on visibility in STORE_42 this afternoon."
-            ></textarea>
-          </div>
-
-          <div class="field-row">
-            <div class="field">
-              <label for="goalProductCategory">Product Category</label>
-              <select id="goalProductCategory"></select>
-            </div>
-            <div class="field">
-              <label for="goalProductSearch">Search Product Feed</label>
-              <input
-                id="goalProductSearch"
-                type="search"
-                placeholder="Search by SKU, product, brand, or tag"
-                autocomplete="off"
-              >
-            </div>
-          </div>
-
-          <div class="field">
-            <label>Target SKUs To Influence</label>
-            <p class="panel__hint goal-products__hint">
-              Select one or more SKUs from the feed. If left empty, the Goal Agent infers products from your brief and only applies to compatible screen contexts.
+      <section id="stage-supply" class="panel stage-panel" data-stage-panel="supply">
+        <div class="stage-panel__header">
+          <div>
+            <p class="section-kicker">Stage 01</p>
+            <h2>CYield Supply Setup</h2>
+            <p class="stage-panel__lede">
+              Keep this to two clicks: add one anchor placement, then apply the shared preset.
             </p>
-            <div id="goalProductList" class="goal-products"></div>
-            <p id="goalSkuCount" class="field__meta">0 SKU(s) selected.</p>
           </div>
-
-          <div class="form-actions form-actions--left">
-            <button id="goalPlanBtn" type="submit" class="btn btn--primary">Generate Plan</button>
-            <button id="goalApplyBtn" type="button" class="btn btn--ghost" disabled>Apply Plan</button>
+          <div class="stage-panel__actions">
+            <span id="supplyStagePill" class="stage-pill">Start here</span>
+            <button id="resetDemoBtn" type="button" class="btn btn--ghost">Reset demo</button>
           </div>
-        </form>
-
-        <div id="goalPlanSummary" class="goal-summary empty">No goal plan generated yet.</div>
-        <div id="goalPlanChanges" class="stack-list"></div>
-
-        <h3 class="subhead">Live After Apply</h3>
-        <div id="goalLiveSummary" class="goal-summary empty">Apply a plan to view live screens and creatives.</div>
-        <div id="goalLiveScreens" class="stack-list"></div>
-
-        <h3 class="subhead">Agent Run History</h3>
-        <div id="agentRunsList" class="stack-list"></div>
-      </section>
-
-      <section class="panel panel--split">
-        <div class="panel__header">
-          <h2>Configured Pages</h2>
-          <button id="refreshBtn" class="btn btn--ghost" type="button">Refresh</button>
         </div>
-        <div id="pagesList" class="stack-list"></div>
+
+        <div class="stage-grid stage-grid--supply">
+          <article class="card supply-flow-card">
+            <div class="card__header supply-flow-card__header">
+              <div>
+                <p class="section-kicker">Fastest demo path</p>
+                <h3>Supply setup in 2 actions</h3>
+                <p>No advanced CYield changes. One shared player URL, resolved by the backend.</p>
+              </div>
+              <div class="supply-flow-card__badges">
+                <span class="card__badge">Shared URL</span>
+                <span class="card__badge">Minimal CYield change</span>
+              </div>
+            </div>
+
+            <div class="supply-flow">
+              <section class="supply-step">
+                <div class="supply-step__index">1</div>
+                <div class="supply-step__body">
+                  <p class="section-kicker">Anchor placement</p>
+                  <h4>Create one page-screen mapping</h4>
+                  <p class="supply-step__lede">
+                    This is the only manual proof step. We prefill the entrance page and hero screen so the judge can move immediately.
+                  </p>
+                  <div class="supply-chip-row">
+                    <span class="supply-chip">Page: ENTRANCE</span>
+                    <span class="supply-chip">Screen: Entrance Hero</span>
+                    <span class="supply-chip">URL: /screen.html</span>
+                  </div>
+                </div>
+                <div class="supply-step__actions">
+                  <button id="createAnchorBtn" type="button" class="btn btn--primary btn--large">Add one anchor placement</button>
+                  <p class="supply-step__hint">Creates the CYield page and the first mapped screen in one action.</p>
+                </div>
+              </section>
+
+              <section class="supply-step">
+                <div class="supply-step__index">2</div>
+                <div class="supply-step__body">
+                  <p class="section-kicker">Preset rollout</p>
+                  <h4>Fan out the rest of the store</h4>
+                  <p class="supply-step__lede">
+                    Once the anchor exists, one preset fills the remaining supply-side screens so you can move straight into buying.
+                  </p>
+                  <div class="supply-chip-row">
+                    <span class="supply-chip">Electronics Hero</span>
+                    <span class="supply-chip">Whitegoods Loop</span>
+                    <span class="supply-chip">Aisle Edge</span>
+                    <span class="supply-chip">Checkout Kiosk</span>
+                  </div>
+                </div>
+                <div class="supply-step__actions">
+                  <button id="loadPresetBtn" type="button" class="btn btn--primary btn--large">Apply shared preset</button>
+                  <p class="supply-step__hint">Applies the shared supply preset, then moves straight into CMax.</p>
+                </div>
+              </section>
+            </div>
+
+            <div id="presetSummary" class="goal-summary">Add one anchor placement, then apply the shared preset.</div>
+          </article>
+
+          <article class="supply-advanced-card">
+            <details class="advanced-panel">
+              <summary>
+                <span class="advanced-panel__summary-copy">
+                  <span class="advanced-panel__eyebrow">Advanced reference</span>
+                  <span class="advanced-panel__summary-title">Backup config</span>
+                  <span class="advanced-panel__summary-note">Manual page and screen mapping details</span>
+                </span>
+              </summary>
+              <p class="advanced-panel__hint">Open this only if someone asks how the anchor page and screen are mapped.</p>
+
+              <div class="advanced-grid">
+                <section class="advanced-grid__panel">
+                  <div class="card__header">
+                    <div>
+                      <p class="section-kicker">Backup detail</p>
+                      <h3>Page settings</h3>
+                    </div>
+                    <span class="card__badge">CYield</span>
+                  </div>
+
+                  <form id="page-form" novalidate>
+                    <div class="form-section">
+                      <div class="form-section__head">
+                        <div>
+                          <h4 class="form-section__title">Identity</h4>
+                          <p class="form-section__hint">Use the CYield page ID for the anchor placement.</p>
+                        </div>
+                      </div>
+                      <div class="form-section__body">
+                        <div class="field">
+                          <label for="pageId">Page ID*</label>
+                          <input id="pageId" name="pageId" maxlength="40" placeholder="ELECTRONICS" required>
+                          <p class="field__meta"><span id="pageIdCount">0</span>/40</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <fieldset class="form-section">
+                      <legend class="form-section__title">Placement type</legend>
+                      <p class="form-section__hint">Choose the retailer page model this mapped placement should inherit.</p>
+                      <div class="form-section__body">
+                        <div id="pageTypeGrid" class="choice-grid choice-grid--autosize"></div>
+                      </div>
+                    </fieldset>
+
+                    <fieldset class="form-section">
+                      <legend class="form-section__title">Environment</legend>
+                      <p class="form-section__hint">Match the inventory environment used for this placement.</p>
+                      <div class="form-section__body">
+                        <div id="environmentGrid" class="choice-grid choice-grid--autosize choice-grid--env"></div>
+                      </div>
+                    </fieldset>
+
+                    <div class="form-section">
+                      <div class="form-section__head">
+                        <div>
+                          <h4 class="form-section__title">Advanced delivery options</h4>
+                          <p class="form-section__hint">Only change these if the mapping needs custom delivery behavior.</p>
+                        </div>
+                      </div>
+                      <div class="form-section__body">
+                        <div class="toggle-list">
+                          <label class="switch-row" for="firePageBeacons">
+                            <span>
+                              <strong>Delivery Should Fire Page Beacons</strong>
+                              <small>Turns on page beacons for the mapped placement.</small>
+                            </span>
+                            <span class="switch">
+                              <input id="firePageBeacons" name="firePageBeacons" type="checkbox" checked>
+                              <span class="slider"></span>
+                            </span>
+                          </label>
+
+                          <label class="switch-row" for="oneTagHybridIntegration">
+                            <span>
+                              <strong>OneTag Hybrid Integration</strong>
+                              <small>Switches delivery behavior to hybrid mode.</small>
+                            </span>
+                            <span class="switch">
+                              <input id="oneTagHybridIntegration" name="oneTagHybridIntegration" type="checkbox">
+                              <span class="slider"></span>
+                            </span>
+                          </label>
+
+                          <label class="switch-row" for="includeBidInResponse">
+                            <span>
+                              <strong>Include Bid In Response</strong>
+                              <small>Shows the bid amount in the payload for the demo.</small>
+                            </span>
+                            <span class="switch">
+                              <input id="includeBidInResponse" name="includeBidInResponse" type="checkbox">
+                              <span class="slider"></span>
+                            </span>
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="form-actions">
+                      <button type="submit" class="btn btn--primary">Save page</button>
+                    </div>
+                  </form>
+                </section>
+
+                <section class="advanced-grid__panel">
+                  <div class="card__header">
+                    <div>
+                      <p class="section-kicker">Backup detail</p>
+                      <h3>Screen settings</h3>
+                    </div>
+                    <span class="card__badge">Inventory</span>
+                  </div>
+
+                  <form id="screen-form" novalidate>
+                    <input id="editScreenId" name="editScreenId" type="hidden">
+
+                    <div class="form-section">
+                      <div class="form-section__head">
+                        <div>
+                          <h4 class="form-section__title">Identity</h4>
+                          <p class="form-section__hint">IDs used to resolve the physical display.</p>
+                        </div>
+                      </div>
+                      <div class="form-section__body">
+                        <div class="field-row">
+                          <div class="field">
+                            <label for="screenId">Screen ID*</label>
+                            <input id="screenId" name="screenId" placeholder="STORE_42_ELECTRONICS_V1" required>
+                          </div>
+                          <div class="field">
+                            <label for="storeId">Store ID*</label>
+                            <input id="storeId" name="storeId" value="STORE_42" required>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="form-section">
+                      <div class="form-section__head">
+                        <div>
+                          <h4 class="form-section__title">Mapping</h4>
+                          <p class="form-section__hint">Match the screen to the page and store location people will actually see.</p>
+                        </div>
+                      </div>
+                      <div class="form-section__body">
+                        <div class="field-row">
+                          <div class="field">
+                            <label for="location">Location*</label>
+                            <input id="location" name="location" placeholder="electronics" required>
+                          </div>
+                          <div class="field">
+                            <label for="pageIdSelect">Mapped Page*</label>
+                            <select id="pageIdSelect" name="pageId" required></select>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="form-section">
+                      <div class="form-section__head">
+                        <div>
+                          <h4 class="form-section__title">Template preset</h4>
+                          <p class="form-section__hint">Choose the template first, then adjust the recommended display defaults if needed.</p>
+                        </div>
+                      </div>
+                      <div class="form-section__body">
+                        <div class="field">
+                          <label for="templateId">Template*</label>
+                          <select id="templateId" name="templateId" required>
+                            <option value="fullscreen-banner">Fullscreen Banner</option>
+                            <option value="fullscreen-hero">Fullscreen Hero</option>
+                            <option value="carousel-banner">Carousel Banner</option>
+                            <option value="kiosk-interactive">Kiosk Assisted</option>
+                            <option value="shelf-spotlight">Shelf Spotlight</option>
+                            <option value="menu-loop">Menu Loop</option>
+                          </select>
+                        </div>
+
+                        <div class="field-row field-row--three">
+                          <div class="field">
+                            <label for="screenType">Screen Type*</label>
+                            <select id="screenType" name="screenType" required>
+                              <option value="Vertical Screen">Vertical Screen</option>
+                              <option value="Horizontal Screen">Horizontal Screen</option>
+                              <option value="Shelf Edge">Shelf Edge</option>
+                              <option value="Endcap">Endcap</option>
+                              <option value="Kiosk">Kiosk</option>
+                              <option value="Digital Menu Board">Digital Menu Board</option>
+                            </select>
+                          </div>
+                          <div class="field">
+                            <label for="screenSize">Screen Size*</label>
+                            <input id="screenSize" name="screenSize" value="1920x1080" required>
+                          </div>
+                          <div class="field">
+                            <label for="refreshInterval">Refresh Interval (ms)</label>
+                            <input id="refreshInterval" name="refreshInterval" type="number" min="5000" step="1000" value="30000">
+                          </div>
+                        </div>
+
+                        <div id="templatePreview" class="template-preview" aria-live="polite" aria-atomic="true">
+                          Select a template to see the recommended setup.
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="form-actions">
+                      <button id="screenCancelBtn" type="button" class="btn btn--ghost is-hidden">Cancel edit</button>
+                      <button id="screenSubmitBtn" type="submit" class="btn btn--primary">Create screen</button>
+                    </div>
+                  </form>
+                </section>
+              </div>
+            </details>
+          </article>
+        </div>
       </section>
 
-      <section class="panel panel--split">
-        <h2>Configured Screens</h2>
-        <p class="panel__hint">Grouped by Store ID, then mapped page. Click Store/Page rows to collapse or expand.</p>
-        <div id="screensList" class="stack-list"></div>
+      <section id="stage-buying" class="panel stage-panel" data-stage-panel="buying">
+        <div class="stage-panel__header">
+          <div>
+            <p class="section-kicker">Stage 02</p>
+            <h2>CMax Buying / Demand</h2>
+            <p class="stage-panel__lede">
+              Choose the account, set the brief, and let CMax explain the recommended in-store line-up in planner language.
+            </p>
+          </div>
+          <div class="stage-panel__actions">
+            <span id="buyingStagePill" class="stage-pill">Buying ready</span>
+            <button id="nextToMonitoringBtn" type="button" class="btn btn--ghost js-stage-jump" data-stage="monitoring">
+              Next: Monitoring
+            </button>
+          </div>
+        </div>
+
+        <div class="stage-grid stage-grid--buying">
+          <article class="card card--form">
+            <div class="card__header">
+              <div>
+                <p class="section-kicker">Retail media brief</p>
+                <h3>Build the activation brief</h3>
+              </div>
+              <span class="card__badge">Planner view</span>
+            </div>
+
+            <form id="goalAgentForm" novalidate>
+              <div class="planner-flow">
+                <section class="planner-step" data-planner-step="1" data-step-state="active">
+                  <div class="planner-step__header">
+                    <div class="planner-step__copy">
+                      <p class="planner-step__eyebrow">Step 1</p>
+                      <h4>Choose the brief basics</h4>
+                      <p class="planner-step__summary" data-planner-step-summary>
+                        Pick the account, goal, and planning style before you shape the buy.
+                      </p>
+                    </div>
+                    <div class="planner-step__meta">
+                      <span class="planner-step__status" data-planner-step-status>Required</span>
+                      <button type="button" class="btn btn--tiny js-open-planner-step" data-planner-step-target="1">Open</button>
+                    </div>
+                  </div>
+
+                  <div class="planner-step__body">
+                    <div class="field-row field-row--three">
+                      <div class="field">
+                        <label for="goalBrandAccount">Account*</label>
+                        <select id="goalBrandAccount" name="advertiserId" required></select>
+                      </div>
+                      <div class="field">
+                        <label for="goalObjective">Goal Objective*</label>
+                        <select id="goalObjective" name="objective" required>
+                          <option value="">Select a goal</option>
+                          <option value="awareness">Drive In-Store Awareness</option>
+                          <option value="checkout-attach">Increase Checkout Attach Rate</option>
+                          <option value="clearance">Clear Overstock Inventory</option>
+                          <option value="premium">Promote Premium Range</option>
+                        </select>
+                      </div>
+                      <div class="field">
+                        <label for="goalAggressiveness">Optimization Style*</label>
+                        <select id="goalAggressiveness" name="aggressiveness" required>
+                          <option value="">Select a style</option>
+                          <option value="Conservative">Conservative</option>
+                          <option value="Balanced">Balanced</option>
+                          <option value="Aggressive">Aggressive</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div class="form-actions form-actions--left planner-step__actions">
+                      <button id="goalStep1NextBtn" type="button" class="btn btn--ghost">Continue to step 2</button>
+                    </div>
+                  </div>
+                </section>
+
+                <section class="planner-step" data-planner-step="2" data-step-state="locked">
+                  <div class="planner-step__header">
+                    <div class="planner-step__copy">
+                      <p class="planner-step__eyebrow">Step 2</p>
+                      <h4>Set optional scope and brief</h4>
+                      <p class="planner-step__summary" data-planner-step-summary>
+                        Narrow the store or placement scope, or leave it open and let the planner explore the mapped inventory.
+                      </p>
+                    </div>
+                    <div class="planner-step__meta">
+                      <span class="planner-step__status" data-planner-step-status>Locked</span>
+                      <button type="button" class="btn btn--tiny js-open-planner-step" data-planner-step-target="2" disabled>Locked</button>
+                    </div>
+                  </div>
+
+                  <div class="planner-step__body">
+                    <div class="field-row">
+                      <div class="field">
+                        <label for="goalStoreScope">Store Scope</label>
+                        <select id="goalStoreScope" name="storeId">
+                          <option value="">All stores</option>
+                        </select>
+                      </div>
+                      <div class="field">
+                        <label for="goalPageScope">Placement Scope</label>
+                        <select id="goalPageScope" name="pageId">
+                          <option value="">All mapped placements</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div class="field">
+                      <label for="goalPrompt">Brand Brief (Optional)</label>
+                      <textarea
+                        id="goalPrompt"
+                        name="prompt"
+                        rows="3"
+                        maxlength="280"
+                        placeholder="Example: Drive checkout add-on visibility in STORE_42 this afternoon."
+                      ></textarea>
+                    </div>
+
+                    <div class="form-actions form-actions--left planner-step__actions">
+                      <button id="goalStep2NextBtn" type="button" class="btn btn--ghost">Continue to step 3</button>
+                    </div>
+                  </div>
+                </section>
+
+                <section class="planner-step" data-planner-step="3" data-step-state="locked">
+                  <div class="planner-step__header">
+                    <div class="planner-step__copy">
+                      <p class="planner-step__eyebrow">Step 3</p>
+                      <h4>Choose the assortment focus</h4>
+                      <p class="planner-step__summary" data-planner-step-summary>
+                        Shortlist priority SKUs, or leave the list empty and let the brief drive product inference.
+                      </p>
+                    </div>
+                    <div class="planner-step__meta">
+                      <span class="planner-step__status" data-planner-step-status>Locked</span>
+                      <button type="button" class="btn btn--tiny js-open-planner-step" data-planner-step-target="3" disabled>Locked</button>
+                    </div>
+                  </div>
+
+                  <div class="planner-step__body">
+                    <div class="field-row">
+                      <div class="field">
+                        <label for="goalProductCategory">Assortment Category</label>
+                        <select id="goalProductCategory">
+                          <option value="">All categories</option>
+                        </select>
+                      </div>
+                      <div class="field">
+                        <label for="goalProductSearch">Search Assortment</label>
+                        <input
+                          id="goalProductSearch"
+                          type="search"
+                          placeholder="Search by SKU, product, brand, or tag"
+                          autocomplete="off"
+                        >
+                      </div>
+                    </div>
+
+                    <div class="field">
+                      <label>Priority SKUs</label>
+                      <p class="panel__hint goal-products__hint">
+                        Pick the SKUs this buy should prioritize. The selected line-up stays visible while you filter the assortment.
+                      </p>
+                      <div class="goal-selected">
+                        <div class="goal-selected__header">
+                          <strong id="goalSelectedSkuHeadline">0 selected</strong>
+                          <div class="goal-selected__actions">
+                            <button id="goalSelectCategoryBtn" type="button" class="btn btn--tiny">Select category</button>
+                            <button id="goalClearSkusBtn" type="button" class="btn btn--tiny">Clear all</button>
+                          </div>
+                        </div>
+                        <div id="goalSelectedSkus" class="goal-selected__chips empty">No priority SKUs selected yet.</div>
+                      </div>
+                      <div id="goalProductList" class="goal-products"></div>
+                      <p id="goalSkuCount" class="field__meta">Choose an account in Step 1 to browse SKUs.</p>
+                    </div>
+
+                    <div class="form-actions form-actions--left">
+                      <button id="goalPlanBtn" type="submit" class="btn btn--primary">Auto-build in-store buy</button>
+                      <button id="goalApplyBtn" type="button" class="btn btn--ghost" disabled>Approve and launch</button>
+                    </div>
+                  </div>
+                </section>
+              </div>
+            </form>
+          </article>
+
+          <article class="card">
+            <div class="card__header">
+              <div>
+                <p class="section-kicker">Recommendation review</p>
+                <h3>Recommended media line-up</h3>
+              </div>
+              <span class="card__badge">Planner rationale</span>
+            </div>
+
+            <div id="goalPlanSummary" class="goal-summary empty">Build a buy to see the placement rationale.</div>
+            <div id="goalPlanChanges" class="stack-list"></div>
+          </article>
+        </div>
+      </section>
+
+      <section id="stage-monitoring" class="panel stage-panel" data-stage-panel="monitoring">
+        <div class="stage-panel__header">
+          <div>
+            <p class="section-kicker">Stage 03</p>
+            <h2>Monitoring</h2>
+            <p class="stage-panel__lede">
+              This is the payoff: live screens, telemetry, and a judge-friendly proof that the story is working.
+            </p>
+          </div>
+          <div class="stage-panel__actions">
+            <span id="monitoringStagePill" class="stage-pill">Monitoring ready</span>
+            <button id="agentRefreshBtn" class="btn btn--ghost" type="button">Refresh runs</button>
+            <button id="telemetryRefreshBtn" class="btn btn--ghost" type="button">Refresh telemetry</button>
+          </div>
+        </div>
+
+        <div id="monitoringKpis" class="kpi-grid">
+          <article class="kpi-card">
+            <p class="kpi-card__label">Plays</p>
+            <strong id="monitorKpiPlays">0</strong>
+            <span class="kpi-card__meta">Proof of play events</span>
+          </article>
+          <article class="kpi-card">
+            <p class="kpi-card__label">Exposure</p>
+            <strong id="monitorKpiExposure">0s</strong>
+            <span class="kpi-card__meta">Total visible dwell time</span>
+          </article>
+          <article class="kpi-card">
+            <p class="kpi-card__label">Live screens</p>
+            <strong id="monitorKpiScreens">0</strong>
+            <span class="kpi-card__meta">Screens on the active plan</span>
+          </article>
+          <article class="kpi-card">
+            <p class="kpi-card__label">Applied plans</p>
+            <strong id="monitorKpiPlans">0</strong>
+            <span class="kpi-card__meta">Runs that made it live</span>
+          </article>
+        </div>
+
+        <div class="stage-grid stage-grid--monitoring">
+          <article class="card card--wide">
+            <div class="card__header">
+              <div>
+                <p class="section-kicker">Live proof</p>
+                <h3>Screen snapshot</h3>
+              </div>
+              <button id="nextToMonitoringBtnSecondary" type="button" class="btn btn--ghost js-stage-jump" data-stage="monitoring">
+                Stay on monitoring
+              </button>
+            </div>
+
+            <div id="goalLiveSummary" class="goal-summary empty">Apply a plan to view live screens and creatives.</div>
+            <div id="goalLiveScreens" class="stack-list"></div>
+          </article>
+
+          <article class="card card--preview">
+            <div class="card__header">
+              <div>
+                <p class="section-kicker">Optional preview</p>
+                <h3>Monitoring preview rail</h3>
+              </div>
+              <a id="monitorPreviewLink" class="btn btn--ghost btn--compact" href="/screen.html" target="_blank" rel="noreferrer">
+                Open screen
+              </a>
+            </div>
+
+            <div id="monitorPreviewRail" class="preview-pane">
+              <p class="preview-pane__eyebrow">Live screen placeholder</p>
+              <h4>Waiting for the active plan</h4>
+              <p id="monitoringNarrative">
+                Use this area for a live iframe, a screenshot, or a short story about how one shared player URL still resolves into distinct in-store screens.
+              </p>
+            </div>
+          </article>
+
+          <article class="card card--wide">
+            <div class="card__header">
+              <div>
+                <p class="section-kicker">Telemetry</p>
+                <h3>Performance breakdowns</h3>
+              </div>
+              <span class="card__badge">Proof of delivery</span>
+            </div>
+
+            <div id="telemetrySummary" class="goal-summary empty">
+              Open a live screen to generate play and exposure data.
+            </div>
+
+            <div class="telemetry-grid">
+              <section class="telemetry-panel">
+                <h4 class="telemetry-panel__title">By Screen</h4>
+                <div id="telemetryByScreen" class="stack-list telemetry-list"></div>
+              </section>
+              <section class="telemetry-panel">
+                <h4 class="telemetry-panel__title">By Template</h4>
+                <div id="telemetryByTemplate" class="stack-list telemetry-list"></div>
+              </section>
+              <section class="telemetry-panel">
+                <h4 class="telemetry-panel__title">By SKU</h4>
+                <div id="telemetryBySku" class="stack-list telemetry-list"></div>
+              </section>
+            </div>
+
+            <h3 class="subhead">Agent run history</h3>
+            <div id="agentRunsList" class="stack-list"></div>
+          </article>
+        </div>
       </section>
     </main>
 

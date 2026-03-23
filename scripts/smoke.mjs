@@ -162,6 +162,74 @@ async function checkLiveSnapshots() {
   };
 }
 
+async function checkTelemetryLoop(screens, liveResults) {
+  const firstScreen = screens[0];
+  assert(firstScreen?.screenId, "No screen available for telemetry smoke check");
+
+  const screenId = encodeURIComponent(String(firstScreen.screenId || ""));
+  const ad = await fetchJson(`/api/screen-ad?screenId=${screenId}`);
+  const firstProduct = Array.isArray(ad.products) ? ad.products[0] : null;
+  assert(firstProduct, `No product returned for telemetry smoke on ${firstScreen.screenId}`);
+
+  const basePayload = {
+    screenId: firstScreen.screenId,
+    adid: String(firstProduct.adid || ""),
+    lineItemId: String(ad.settings?.lineItemId || ""),
+    templateId: String(ad.settings?.templateId || firstScreen.templateId || ""),
+    pageId: String(ad.settings?.pageId || firstScreen.pageId || ""),
+    storeId: String(ad.settings?.storeId || firstScreen.storeId || ""),
+    location: String(ad.settings?.location || firstScreen.location || ""),
+    productId: String(firstProduct.ProductId || ""),
+    sku: String(firstProduct.ProductId || ""),
+    productName: String(firstProduct.ProductName || ""),
+    productPage: String(firstProduct.ProductPage || ""),
+    source: "smoke"
+  };
+
+  for (const payload of [
+    {
+      ...basePayload,
+      event: "play",
+      occurredAt: new Date().toISOString()
+    },
+    {
+      ...basePayload,
+      event: "exposure",
+      exposureMs: 3500,
+      occurredAt: new Date().toISOString()
+    }
+  ]) {
+    await fetchJson("/collect", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+  }
+
+  const summaryQuery = liveResults.checked ? `?planId=${encodeURIComponent(String(liveResults.planId || ""))}` : "";
+  const summary = await fetchJson(`/api/telemetry/summary${summaryQuery}`);
+  assert(Number(summary.totals?.total || 0) >= 2, "Telemetry summary did not record smoke events");
+  assert(Number(summary.totals?.playCount || 0) >= 1, "Telemetry summary did not record play events");
+  assert(Number(summary.totals?.exposureMs || 0) >= 3500, "Telemetry summary did not record exposure duration");
+
+  const byScreen = Array.isArray(summary.byScreen) ? summary.byScreen : [];
+  const bySku = Array.isArray(summary.bySku) ? summary.bySku : [];
+  const matchingScreen = byScreen.find((entry) => String(entry.screenId || "") === String(firstScreen.screenId || ""));
+  assert(matchingScreen, `Telemetry by-screen breakdown missing ${firstScreen.screenId}`);
+
+  if (liveResults.checked) {
+    assert(summary.planComparison, "Telemetry summary missing plan comparison for applied plan");
+  }
+
+  return {
+    checked: true,
+    total: Number(summary.totals?.total || 0),
+    exposureMs: Number(summary.totals?.exposureMs || 0),
+    topScreen: matchingScreen.screenId,
+    topSku: String(bySku[0]?.sku || basePayload.sku || "")
+  };
+}
+
 async function runSmoke() {
   let spawnedServer = null;
   let ownsServer = false;
@@ -195,10 +263,16 @@ async function runSmoke() {
     await checkTemplateScreens(templates, screens);
     const screenResults = await checkScreenDelivery(screens);
     const liveResults = await checkLiveSnapshots();
+    const telemetryResults = await checkTelemetryLoop(screens, liveResults);
 
     console.log("PASS smoke checks");
     console.log(`Templates: ${templates.length}, Screens: ${screens.length}`);
     console.log(`Screen sample: ${shortList(screenResults.map((entry) => entry.screenId))}`);
+    console.log(
+      `Telemetry: ${telemetryResults.total} event(s) tracked (${Math.round(
+        telemetryResults.exposureMs / 1000
+      )}s exposure) (${telemetryResults.topScreen} / ${telemetryResults.topSku})`
+    );
     if (liveResults.checked) {
       console.log(
         `Live snapshot: ${liveResults.liveCount} screen(s) on plan ${liveResults.planId} (re-apply live: ${
