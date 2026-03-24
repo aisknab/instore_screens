@@ -358,3 +358,9 @@ Environment=HOST=0.0.0.0
 Environment=PORT=3100
 Environment=DB_FILE=/var/lib/criteoscreens/db.json
 ```
+
+Example deploy helper from the repo root:
+
+```bash
+scripts/deploy-production.sh main
+```
