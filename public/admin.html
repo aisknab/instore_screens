@@ -495,9 +495,9 @@
                   <div class="planner-step__header">
                     <div class="planner-step__copy">
                       <p class="planner-step__eyebrow">Step 2</p>
-                      <h4>Set flight, scope, and AI product hint</h4>
+                      <h4>Set flight and placement scope</h4>
                       <p class="planner-step__summary" data-planner-step-summary>
-                        Set the flight dates and optional scope filters. The optional AI product hint below is only used if you leave Step 3 without a manual SKU shortlist.
+                        Set the flight dates and optional scope filters before choosing the SKU focus in Step 3.
                       </p>
                     </div>
                     <div class="planner-step__meta">
@@ -533,21 +533,6 @@
                       </div>
                     </div>
 
-                    <div class="field">
-                      <label for="goalPrompt">AI Product Hint (Optional)</label>
-                      <p id="goalPromptHint" class="form-section__hint">
-                        Used only when Step 3 is left empty. Describe the products, category, promotion, or shopper mission CMax should prioritize. If you manually pick SKUs in Step 3, those selections override this text.
-                      </p>
-                      <textarea
-                        id="goalPrompt"
-                        name="prompt"
-                        rows="3"
-                        maxlength="280"
-                        aria-describedby="goalPromptHint"
-                        placeholder="Example: If no SKUs are selected in Step 3, prioritize checkout add-ons like batteries, cables, and phone chargers in STORE_42 this afternoon."
-                      ></textarea>
-                    </div>
-
                     <div class="form-actions form-actions--left planner-step__actions">
                       <button id="goalStep2NextBtn" type="button" class="btn btn--ghost">Continue to step 3</button>
                     </div>
@@ -560,7 +545,7 @@
                       <p class="planner-step__eyebrow">Step 3</p>
                       <h4>Choose the assortment focus</h4>
                       <p class="planner-step__summary" data-planner-step-summary>
-                        Shortlist priority SKUs. If you leave this step empty, CMax will use the Step 2 AI product hint to infer them for you.
+                        Choose SKUs yourself, or brief AI to choose relevant SKUs for you in real time.
                       </p>
                     </div>
                     <div class="planner-step__meta">
@@ -570,6 +555,21 @@
                   </div>
 
                   <div class="planner-step__body">
+                    <div class="field">
+                      <label for="goalPrompt">AI SKU Brief (Optional)</label>
+                      <p id="goalPromptHint" class="form-section__hint">
+                        Choose SKUs yourself, or brief AI to choose relevant SKUs for you in real time. Editing this brief replaces the shortlist; picking SKUs below switches back to manual selection.
+                      </p>
+                      <textarea
+                        id="goalPrompt"
+                        name="prompt"
+                        rows="3"
+                        maxlength="280"
+                        aria-describedby="goalPromptHint"
+                        placeholder="Example: Prioritize checkout add-ons like batteries, cables, and phone chargers in STORE_42 this afternoon."
+                      ></textarea>
+                    </div>
+
                     <div class="field-row">
                       <div class="field">
                         <label for="goalProductCategory">Assortment Category</label>
@@ -591,7 +591,7 @@
                     <div class="field">
                       <label>Priority SKUs</label>
                       <p class="panel__hint goal-products__hint">
-                        Pick the SKUs this buy should prioritize. The selected line-up stays visible while you filter the assortment.
+                        Pick SKUs manually, or use the AI brief above to auto-select a shortlist while you type. The selected line-up stays visible while you filter the assortment.
                       </p>
                       <div class="goal-selected">
                         <div class="goal-selected__header">

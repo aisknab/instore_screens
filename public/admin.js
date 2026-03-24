@@ -44,6 +44,68 @@ const DEFAULT_SCREEN_TYPE_CPMS = {
   "Digital Menu Board": 20
 };
 const DEFAULT_GOAL_FLIGHT_DAYS = 7;
+const GOAL_INFERRED_PRODUCT_LIMIT = 8;
+const GOAL_PROMPT_MIN_SCORE = 0.75;
+const GOAL_PROMPT_STOPWORDS = new Set([
+  "about",
+  "across",
+  "agent",
+  "all",
+  "and",
+  "brief",
+  "campaign",
+  "can",
+  "change",
+  "changes",
+  "day",
+  "days",
+  "demo",
+  "drive",
+  "for",
+  "from",
+  "goal",
+  "goals",
+  "have",
+  "improve",
+  "increase",
+  "into",
+  "inventory",
+  "line",
+  "lineup",
+  "more",
+  "new",
+  "objective",
+  "optimize",
+  "our",
+  "please",
+  "product",
+  "products",
+  "promote",
+  "push",
+  "range",
+  "sale",
+  "sales",
+  "screen",
+  "screens",
+  "section",
+  "sections",
+  "sell",
+  "show",
+  "store",
+  "stores",
+  "target",
+  "targets",
+  "that",
+  "the",
+  "their",
+  "them",
+  "this",
+  "through",
+  "today",
+  "week",
+  "weeks",
+  "with"
+]);
 
 function createDefaultStage(id, label, description, starterScreenId, actionLabel) {
   return {
@@ -124,6 +186,8 @@ const state = {
   supplyHandoffAcknowledged: false,
   goalPlanningStep: 1,
   goalScopeStepAcknowledged: false,
+  goalSkuSelectionMode: "",
+  goalPromptMatchedTerms: [],
   goalRetailerRateCard: null,
   goalPlacementSelections: new Map(),
   goalBudgetPlanId: "",
@@ -489,6 +553,260 @@ function normalizeMatchToken(value) {
     .trim();
 }
 
+function getGoalPromptText() {
+  return readTextValue(elements.goalPrompt?.value);
+}
+
+function isGoalPromptSelectionActive() {
+  return state.goalSkuSelectionMode === "prompt" && Boolean(getGoalPromptText());
+}
+
+function setGoalSkuSelectionMode(mode, matchedTerms = []) {
+  state.goalSkuSelectionMode = String(mode || "").trim();
+  state.goalPromptMatchedTerms =
+    state.goalSkuSelectionMode === "prompt"
+      ? [...new Set((matchedTerms || []).map((term) => readTextValue(term).toLowerCase()).filter(Boolean))]
+      : [];
+}
+
+function tokenizeGoalMatch(value) {
+  return readTextValue(value)
+    .toLowerCase()
+    .split(/[^a-z0-9]+/)
+    .filter((entry) => entry.length > 2);
+}
+
+function normalizeGoalMatchToken(token) {
+  const raw = readTextValue(token).toLowerCase();
+  if (!raw) {
+    return "";
+  }
+  if (raw.endsWith("ies") && raw.length > 4) {
+    return `${raw.slice(0, -3)}y`;
+  }
+  if (raw.endsWith("es") && raw.length > 4 && !raw.endsWith("ses")) {
+    return raw.slice(0, -2);
+  }
+  if (raw.endsWith("s") && raw.length > 3 && !raw.endsWith("ss")) {
+    return raw.slice(0, -1);
+  }
+  return raw;
+}
+
+function tokenizeGoalPromptMatch(value, dropStopwords = false) {
+  const normalized = tokenizeGoalMatch(value).map((token) => normalizeGoalMatchToken(token)).filter(Boolean);
+  const deduped = [...new Set(normalized)];
+  return dropStopwords ? deduped.filter((token) => !GOAL_PROMPT_STOPWORDS.has(token)) : deduped;
+}
+
+function getGoalPromptCandidateProducts() {
+  const advertiserId = getSelectedGoalAdvertiserId();
+  const category = readTextValue(elements.goalProductCategory?.value).toLowerCase();
+  return getBrandScopedProducts(advertiserId).filter(
+    (product) => !category || readTextValue(product?.category).toLowerCase() === category
+  );
+}
+
+function getGoalPromptScopedScreens() {
+  const storeId = readTextValue(elements.goalStoreScope?.value);
+  const pageId = readTextValue(elements.goalPageScope?.value);
+  return (state.screens || []).filter((screen) => {
+    if (storeId && readTextValue(screen?.storeId) !== storeId) {
+      return false;
+    }
+    if (pageId && readTextValue(screen?.pageId) !== pageId) {
+      return false;
+    }
+    return true;
+  });
+}
+
+function buildGoalPromptScreenContext(screen) {
+  const raw = [screen?.pageId, screen?.location, screen?.screenType].filter(Boolean).join(" ").toLowerCase();
+  const tokens = new Set(tokenizeGoalPromptMatch(raw));
+  const pageToken = normalizeGoalMatchToken(screen?.pageId);
+  const locationToken = normalizeGoalMatchToken(screen?.location);
+  if (pageToken) {
+    tokens.add(pageToken);
+  }
+  if (locationToken) {
+    tokens.add(locationToken);
+  }
+  return { raw, tokens };
+}
+
+function buildGoalPromptProductContext(product) {
+  const category = normalizeGoalMatchToken(product?.category);
+  const brand = readTextValue(product?.brand).toLowerCase();
+  const sku = normalizeSku(product?.sku).toLowerCase();
+  const nameTokens = tokenizeGoalPromptMatch(product?.name);
+  const categoryTokens = tokenizeGoalPromptMatch(category);
+  const brandTokens = tokenizeGoalPromptMatch(brand);
+  const tagTokens = tokenizeGoalPromptMatch((Array.isArray(product?.tags) ? product.tags : []).join(" "));
+  return {
+    category,
+    brand,
+    sku,
+    nameTokens,
+    categoryTokens,
+    brandTokens,
+    tagTokens
+  };
+}
+
+function uniqueGoalProductsBySku(products = []) {
+  const seen = new Set();
+  const output = [];
+  for (const product of products) {
+    const sku = normalizeSku(product?.sku);
+    if (!sku || seen.has(sku)) {
+      continue;
+    }
+    seen.add(sku);
+    output.push(product);
+  }
+  return output;
+}
+
+function inferGoalSkuProductsFromPrompt(
+  prompt,
+  products = getGoalPromptCandidateProducts(),
+  scopedScreens = getGoalPromptScopedScreens()
+) {
+  const promptText = readTextValue(prompt).toLowerCase();
+  const promptTokens = new Set(tokenizeGoalPromptMatch(promptText, true));
+  if (!promptText || promptTokens.size === 0 || !Array.isArray(products) || products.length === 0) {
+    return { products: [], matchedTerms: [] };
+  }
+
+  const scopedTokens = new Set();
+  for (const screen of scopedScreens) {
+    const context = buildGoalPromptScreenContext(screen);
+    for (const token of context.tokens) {
+      scopedTokens.add(token);
+    }
+  }
+
+  const scored = products.map((product) => {
+    const context = buildGoalPromptProductContext(product);
+    let score = 0;
+    const matchedTerms = new Set();
+
+    if (context.sku && promptText.includes(context.sku)) {
+      score += 3;
+      matchedTerms.add(context.sku);
+    }
+    if (context.category && promptTokens.has(context.category)) {
+      score += 1.5;
+      matchedTerms.add(context.category);
+    }
+
+    let tagMatches = 0;
+    for (const token of context.tagTokens) {
+      if (promptTokens.has(token)) {
+        tagMatches += 1;
+        matchedTerms.add(token);
+      }
+    }
+    score += Math.min(1.9, tagMatches * 0.95);
+
+    let nameMatches = 0;
+    for (const token of context.nameTokens) {
+      if (promptTokens.has(token)) {
+        nameMatches += 1;
+        matchedTerms.add(token);
+      }
+    }
+    score += Math.min(1.35, nameMatches * 0.45);
+
+    let brandMatches = 0;
+    for (const token of context.brandTokens) {
+      if (promptTokens.has(token)) {
+        brandMatches += 1;
+        matchedTerms.add(token);
+      }
+    }
+    score += Math.min(1.4, brandMatches * 0.7);
+
+    if (context.category && scopedTokens.has(context.category)) {
+      score += 0.12;
+    }
+
+    return {
+      product,
+      score: Number(score.toFixed(2)),
+      tokenMatches: tagMatches + nameMatches + brandMatches,
+      matchedTerms: [...matchedTerms]
+    };
+  });
+
+  scored.sort((left, right) => {
+    if (right.score !== left.score) {
+      return right.score - left.score;
+    }
+    return left.product.name.localeCompare(right.product.name);
+  });
+
+  const strongMatches = scored.filter((entry) => entry.score >= GOAL_PROMPT_MIN_SCORE);
+  const fallbackMatches =
+    strongMatches.length > 0
+      ? strongMatches
+      : scored.filter((entry) => entry.score >= GOAL_PROMPT_MIN_SCORE * 0.75 && entry.tokenMatches >= 2);
+  const inferredProducts = uniqueGoalProductsBySku(fallbackMatches.map((entry) => entry.product)).slice(
+    0,
+    GOAL_INFERRED_PRODUCT_LIMIT
+  );
+  const inferredSkuSet = new Set(inferredProducts.map((product) => normalizeSku(product.sku)));
+  const matchedTerms = [
+    ...new Set(
+      fallbackMatches
+        .filter((entry) => inferredSkuSet.has(normalizeSku(entry.product.sku)))
+        .flatMap((entry) => entry.matchedTerms)
+    )
+  ].slice(0, 10);
+
+  return { products: inferredProducts, matchedTerms };
+}
+
+function applyGoalPromptSelection({ passiveRender = false } = {}) {
+  const prompt = getGoalPromptText();
+  if (!prompt) {
+    if (state.goalSkuSelectionMode === "prompt") {
+      setGoalSkuSelectionMode("");
+      setSelectedGoalSkus([]);
+      return;
+    }
+    if (passiveRender) {
+      renderGoalProducts();
+    }
+    return;
+  }
+
+  const inferred = inferGoalSkuProductsFromPrompt(prompt);
+  setGoalSkuSelectionMode("prompt", inferred.matchedTerms);
+  setSelectedGoalSkus(inferred.products.map((product) => product.sku));
+}
+
+function getGoalPromptSelectionNote() {
+  const prompt = getGoalPromptText();
+  const matchedTerms = state.goalPromptMatchedTerms.slice(0, 4);
+  if (!prompt) {
+    return "";
+  }
+  if (isGoalPromptSelectionActive()) {
+    if (state.selectedGoalSkuIds.size > 0) {
+      return matchedTerms.length > 0
+        ? `AI brief matched ${matchedTerms.join(", ")}.`
+        : `AI brief selected ${state.selectedGoalSkuIds.size} SKU(s) in real time.`;
+    }
+    return "AI brief is active, but no matching SKUs were found yet.";
+  }
+  if (state.selectedGoalSkuIds.size > 0) {
+    return "Manual SKU picks are active. Edit the AI brief again to switch back to AI selection.";
+  }
+  return "Pick SKUs below, or edit the AI brief to auto-select them.";
+}
+
 function getSelectedGoalProducts() {
   return (state.productFeed || []).filter((product) => state.selectedGoalSkuIds.has(normalizeSku(product.sku)));
 }
@@ -813,7 +1131,7 @@ function goalTargetSourceLabel(source) {
     case "account":
       return "Brand-led assortment";
     case "prompt":
-      return "Brief-inferred SKU shortlist";
+      return "AI brief-selected SKU shortlist";
     default:
       return "Objective-led recommendation";
   }
@@ -1517,6 +1835,7 @@ function syncGoalFormFromRun(run) {
   }
   state.goalScopeStepAcknowledged = Boolean(run?.goal);
   state.goalPlanningStep = run?.goal ? 3 : 1;
+  setGoalSkuSelectionMode(run?.goal?.targetSource === "prompt" ? "prompt" : run?.goal ? "manual" : "", run?.goal?.inferredTerms || []);
   state.goalRetailerRateCard = sanitizeGoalRateCard(state.options?.screenTypePricingDefaults || {});
   renderGoalRateCard(state.goalRetailerRateCard);
   setSelectedGoalSkus(run?.goal?.targetSkuIds || []);
@@ -1775,6 +2094,7 @@ function syncBuyingFormDefaults(force = false) {
     }
     state.goalPlanningStep = 1;
     state.goalScopeStepAcknowledged = false;
+    setGoalSkuSelectionMode("");
     state.goalRetailerRateCard = null;
     state.goalPlacementSelections.clear();
     state.goalBudgetPlanId = "";
@@ -1794,7 +2114,11 @@ function syncBuyingFormDefaults(force = false) {
   renderGoalProductCategoryOptions();
   renderRetailerRateCard(state.options?.screenTypePricingDefaults || null);
   renderGoalRateCard();
-  renderGoalProducts();
+  if (isGoalPromptSelectionActive()) {
+    applyGoalPromptSelection();
+  } else {
+    renderGoalProducts();
+  }
 }
 
 function beginScreenEdit(screenId) {
@@ -2271,27 +2595,31 @@ function getGoalPlanningStepSummary(stepNumber) {
   if (stepNumber === 2) {
     const storeId = String(elements.goalStoreScope?.value || "").trim();
     const pageId = String(elements.goalPageScope?.value || "").trim();
-    const prompt = String(elements.goalPrompt?.value || "").trim();
-    const parts = [formatGoalFlightSummary(), storeId || "All stores", pageId || "All mapped placements"];
-    parts.push(
-      prompt ? `AI hint: ${prompt.length > 72 ? `${prompt.slice(0, 69)}...` : prompt}` : "No AI product hint"
-    );
-    return parts.join(" | ");
+    return [formatGoalFlightSummary(), storeId || "All stores", pageId || "All mapped placements"].join(" | ");
   }
 
   const advertiserId = getSelectedGoalAdvertiserId();
   const selectedCount = state.selectedGoalSkuIds.size;
   const category = String(elements.goalProductCategory?.value || "").trim();
+  const prompt = getGoalPromptText();
   if (!advertiserId) {
     return "Choose an account first to browse its assortment.";
+  }
+  if (isGoalPromptSelectionActive() && selectedCount > 0) {
+    return `AI brief selected ${selectedCount} priority SKU(s)${category ? ` in ${titleCase(category)}` : ""}.`;
   }
   if (selectedCount > 0) {
     return `${selectedCount} priority SKU(s) selected${category ? ` in ${titleCase(category)}` : ""}.`;
   }
+  if (prompt) {
+    return isGoalPromptSelectionActive()
+      ? "AI brief is active, but no matching SKUs were found yet."
+      : "No priority SKUs selected. Edit the AI brief again to let AI choose them, or pick SKUs manually.";
+  }
   if (category) {
     return `Browsing ${titleCase(category)} with no SKU shortlist yet.`;
   }
-  return "Choose priority SKUs. If you leave this step empty, CMax will use the Step 2 AI product hint to infer the shortlist.";
+  return "Choose SKUs yourself, or brief AI to choose relevant SKUs for you in real time.";
 }
 
 function getGoalPlanningStepStatus(stepNumber) {
@@ -2453,7 +2781,8 @@ function renderGoalSkuCount() {
     scopeParts.push(titleCase(category));
   }
   const scopeSuffix = scopeParts.length > 0 ? ` for ${scopeParts.join(" | ")}` : "";
-  elements.goalSkuCount.textContent = `Showing ${products.length} SKU(s)${scopeSuffix}.`;
+  const promptNote = getGoalPromptSelectionNote();
+  elements.goalSkuCount.textContent = `Showing ${products.length} SKU(s)${scopeSuffix}.${promptNote ? ` ${promptNote}` : ""}`;
 }
 
 function renderGoalSelectedSkus() {
@@ -2461,11 +2790,19 @@ function renderGoalSelectedSkus() {
     return;
   }
   const selectedProducts = getSelectedGoalProducts().sort((left, right) => left.name.localeCompare(right.name));
-  elements.goalSelectedSkuHeadline.textContent = `${selectedProducts.length} selected`;
+  elements.goalSelectedSkuHeadline.textContent = isGoalPromptSelectionActive()
+    ? `${selectedProducts.length} AI-selected`
+    : `${selectedProducts.length} selected`;
 
   if (selectedProducts.length === 0) {
     elements.goalSelectedSkus.classList.add("empty");
-    elements.goalSelectedSkus.textContent = "No priority SKUs selected yet.";
+    if (isGoalPromptSelectionActive()) {
+      elements.goalSelectedSkus.textContent = "AI brief is active, but no matching SKUs were found yet.";
+    } else if (getGoalPromptText()) {
+      elements.goalSelectedSkus.textContent = "No priority SKUs selected. Edit the AI brief to auto-select, or pick SKUs below.";
+    } else {
+      elements.goalSelectedSkus.textContent = "No priority SKUs selected yet. Pick SKUs below or add an AI brief.";
+    }
   } else {
     elements.goalSelectedSkus.classList.remove("empty");
     elements.goalSelectedSkus.innerHTML = selectedProducts
@@ -2578,6 +2915,7 @@ function selectFilteredGoalSkus() {
     showStatus("No SKUs are visible in this filter.", true);
     return;
   }
+  setGoalSkuSelectionMode("manual");
   const before = state.selectedGoalSkuIds.size;
   for (const product of products) {
     const sku = normalizeSku(product.sku);
@@ -2598,6 +2936,7 @@ function clearGoalSkuSelection() {
   if (state.selectedGoalSkuIds.size === 0) {
     return;
   }
+  setGoalSkuSelectionMode("manual");
   state.selectedGoalSkuIds.clear();
   renderGoalProducts();
   showStatus("Cleared the priority SKU selection.");
@@ -3145,6 +3484,7 @@ function renderGoalPlan() {
   const storeSelectionReason = String(plan.goal?.storeSelectionReason || "").trim();
   const scopeSelectionReason = String(plan.goal?.scopeSelectionReason || "").trim();
   const assortmentCategory = String(plan.goal?.assortmentCategory || "").trim();
+  const scopeLabel = getGoalScopeLabel(plan.goal || {});
   const storeLabel = plan.goal?.objective === "clearance" ? "Store focus" : "Store";
   const storeValue = String(plan.goal?.storeFocusLabel || plan.goal?.effectiveStoreId || plan.goal?.storeId || "All stores").trim() || "All stores";
   const primaryPillLabel =
@@ -3198,7 +3538,32 @@ function renderGoalPlan() {
       : targetProducts.length > 0
         ? formatSentenceList(targetProducts.map((product) => product.name), Math.min(targetProducts.length, 3))
         : goalTargetSourceLabel(plan.goal?.targetSource);
-  const detailGroups = [
+  const promptSignal = [
+    String(plan.goal?.prompt || "").trim() ? `Brief: ${String(plan.goal?.prompt || "").trim()}` : "",
+    inferredTerms ? `Terms: ${inferredTerms}` : ""
+  ]
+    .filter(Boolean)
+    .join(" | ");
+  const plannerInputRows = [
+    renderDetailRow(
+      "Brief scope",
+      [
+        scopeLabel,
+        `${storeLabel}: ${storeValue}`,
+        assortmentCategory ? `Category: ${assortmentCategory}` : ""
+      ]
+        .filter(Boolean)
+        .join(" | ")
+    ),
+    renderDetailRow("Priority focus", priorityLabel),
+    renderDetailRow("Prompt signal", promptSignal),
+    renderDetailRow("Store logic", storeSelectionReason),
+    renderDetailRow("Scope logic", scopeSelectionReason),
+    renderDetailRow("Scope note", scopeMessage)
+  ]
+    .filter(Boolean)
+    .join("");
+  const detailGroupList = [
     renderDetailGroup("Decision logic", [
       renderDetailRow("Strategy", strategyHeadline),
       renderDetailRow("Strategy notes", strategyBullets.length > 0 ? strategyBullets.join(" | ") : ""),
@@ -3206,37 +3571,48 @@ function renderGoalPlan() {
       renderDetailRow("Stock note", plan.goal?.stockMessage || ""),
       renderDetailRow("Flight", flightSummary),
       renderDetailRow("Pricing model", String(plan?.budget?.pricingModelLabel || "").trim())
-    ]),
-    renderDetailGroup("Brief metadata", [
-      renderDetailRow(
-        "Placement scope",
-        `${getGoalScopeLabel(plan.goal || {})} | Priority SKUs: ${priorityLabel}${inferredTerms ? ` | Prompt terms: ${inferredTerms}` : ""}`
-      ),
-      renderDetailRow("Store choice", storeSelectionReason),
-      renderDetailRow("Scope logic", scopeSelectionReason),
-      renderDetailRow("Assortment category", assortmentCategory),
-      renderDetailRow("AI product hint", plan.goal?.prompt || ""),
-      renderDetailRow("Scope note", scopeMessage),
-      renderDetailRow("Plan metadata", `Plan ID: ${plan.planId || ""} | Created: ${formatTimestamp(plan.createdAt)}`),
-      renderDetailRow(
-        "Budget",
-        `${formatMoney(budgetScenario.selectedSpend)} selected from ${formatMoney(maxSpend)} max spend${
-          Number(budgetScenario.maxEstimatedImpressions || 0) > 0
-            ? ` | ${formatCount(budgetScenario.maxEstimatedImpressions)} est. impressions`
-            : ""
-        }`
-      )
     ])
-  ]
-    .filter(Boolean)
-    .join("");
+  ].filter(Boolean);
+  const detailGroups = detailGroupList.join("");
+  const detailGroupClass = detailGroupList.length <= 1 ? " summary-split--single" : "";
+  const plannerInputsTooltip = plannerInputRows
+    ? `
+      <div class="goal-summary__info">
+        <button
+          type="button"
+          class="goal-summary__info-button"
+          aria-label="Show planner inputs"
+          aria-describedby="goalPlanInputsTooltip"
+        >
+          <span aria-hidden="true">i</span>
+        </button>
+        <div id="goalPlanInputsTooltip" class="goal-summary__tooltip" role="tooltip">
+          <p class="goal-summary__tooltip-kicker">Planner inputs</p>
+          <p class="goal-summary__tooltip-copy">Review the brief signals and scope logic behind this recommendation.</p>
+          <dl class="goal-summary__detail-list goal-summary__tooltip-list">
+            ${plannerInputRows}
+          </dl>
+        </div>
+      </div>
+    `
+    : "";
+  const detailSection = detailGroups
+    ? `
+      <div class="goal-summary__details summary-split${detailGroupClass}">
+        ${detailGroups}
+      </div>
+    `
+    : "";
 
   elements.goalPlanSummary.classList.remove("empty");
   elements.goalPlanSummary.innerHTML = `
     <div class="goal-summary__hero">
       <div class="goal-summary__hero-copy">
         <p class="section-kicker">Recommended media line-up</p>
-        <strong>${escapeHtml(objectiveLabelById(plan.goal?.objective))}</strong>
+        <div class="goal-summary__title-row">
+          <strong>${escapeHtml(objectiveLabelById(plan.goal?.objective))}</strong>
+          ${plannerInputsTooltip}
+        </div>
         <p class="goal-summary__lede">${escapeHtml(introText)}</p>
       </div>
       <div class="goal-summary__hero-status">
@@ -3263,9 +3639,7 @@ function renderGoalPlan() {
         <strong>${escapeHtml(formatMoney(maxSpend))}</strong>
       </div>
     </div>
-    <div class="goal-summary__details summary-split">
-      ${detailGroups}
-    </div>
+    ${detailSection}
   `;
 
   const describeAvailablePlacementReason = (entry, fallbackReason) => {
@@ -3964,8 +4338,12 @@ function renderAll() {
   renderGoalScopeSelects();
   renderGoalBrandOptions();
   renderGoalProductCategoryOptions();
-  renderGoalProducts();
-  renderGoalPlanningFlow();
+  if (isGoalPromptSelectionActive()) {
+    applyGoalPromptSelection();
+  } else {
+    renderGoalProducts();
+    renderGoalPlanningFlow();
+  }
   renderGoalPlan();
   renderGoalRuns();
   renderMonitoringOverview();
@@ -4670,7 +5048,7 @@ function wireEvents() {
     }
     state.goalPlanningStep = 2;
     renderGoalPlanningFlow();
-    showStatus("Step 2 unlocked. Set the flight and scope, then optionally add an AI product hint for automatic SKU selection in Step 3.");
+    showStatus("Step 2 unlocked. Set the flight and scope before moving to SKU selection in Step 3.");
     publishPresenterSnapshot();
   });
   elements.goalStep2NextBtn?.addEventListener("click", () => {
@@ -4686,19 +5064,27 @@ function wireEvents() {
     state.goalScopeStepAcknowledged = true;
     state.goalPlanningStep = 3;
     renderGoalPlanningFlow();
-    showStatus("Step 3 unlocked. Choose the SKU focus and build the buy.");
+    showStatus("Step 3 unlocked. Choose SKUs manually or use the AI brief to build the shortlist.");
     publishPresenterSnapshot();
   });
   elements.goalBrandAccount?.addEventListener("change", () => {
     const removedCount = reconcileSelectedGoalSkusToBrand();
     renderGoalProductCategoryOptions();
-    renderGoalProducts();
+    if (isGoalPromptSelectionActive()) {
+      applyGoalPromptSelection();
+    } else {
+      renderGoalProducts();
+    }
     applyGoalScopeSuggestionFromSelection();
     const account = getGoalAccountByAdvertiserId();
     if (removedCount > 0) {
       showStatus(`Account changed. Removed ${removedCount} SKU(s) from the previous account.`);
     } else if (account?.brand) {
-      showStatus(`Assortment filtered to ${getProductAccountLabel(account)}.`);
+      showStatus(
+        isGoalPromptSelectionActive()
+          ? `Assortment filtered to ${getProductAccountLabel(account)}. The AI brief refreshed the shortlist.`
+          : `Assortment filtered to ${getProductAccountLabel(account)}.`
+      );
     } else {
       showStatus("Choose an account to continue planning.");
     }
@@ -4713,11 +5099,19 @@ function wireEvents() {
     publishPresenterSnapshot();
   });
   elements.goalStoreScope?.addEventListener("change", () => {
-    renderGoalPlanningFlow();
+    if (isGoalPromptSelectionActive()) {
+      applyGoalPromptSelection();
+    } else {
+      renderGoalPlanningFlow();
+    }
     publishPresenterSnapshot();
   });
   elements.goalPageScope?.addEventListener("change", () => {
-    renderGoalPlanningFlow();
+    if (isGoalPromptSelectionActive()) {
+      applyGoalPromptSelection();
+    } else {
+      renderGoalPlanningFlow();
+    }
     publishPresenterSnapshot();
   });
   elements.goalFlightStart?.addEventListener("change", () => {
@@ -4729,7 +5123,7 @@ function wireEvents() {
     publishPresenterSnapshot();
   });
   elements.goalPrompt?.addEventListener("input", () => {
-    renderGoalPlanningFlow();
+    applyGoalPromptSelection({ passiveRender: true });
     publishPresenterSnapshot();
   });
   elements.retailerRateCard?.addEventListener("input", (event) => {
@@ -4742,7 +5136,11 @@ function wireEvents() {
     saveRetailerRateCard().catch(handleError);
   });
   elements.goalProductCategory?.addEventListener("change", () => {
-    renderGoalProducts();
+    if (isGoalPromptSelectionActive()) {
+      applyGoalPromptSelection();
+    } else {
+      renderGoalProducts();
+    }
     publishPresenterSnapshot();
   });
   elements.goalProductSearch?.addEventListener("input", () => {
@@ -4764,6 +5162,7 @@ function wireEvents() {
     if (!sku) {
       return;
     }
+    setGoalSkuSelectionMode("manual");
     state.selectedGoalSkuIds.delete(sku);
     renderGoalProducts();
     applyGoalScopeSuggestionFromSelection();
@@ -4779,6 +5178,7 @@ function wireEvents() {
     if (!sku) {
       return;
     }
+    setGoalSkuSelectionMode("manual");
     if (checkbox.checked) {
       state.selectedGoalSkuIds.add(sku);
     } else {
