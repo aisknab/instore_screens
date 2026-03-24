@@ -86,7 +86,7 @@ const DEFAULT_DEMO_CONFIG = {
     monitoring: createDefaultStage(
       "monitoring",
       "Monitoring",
-      "Show live screens, telemetry, and proof of play.",
+      "Review campaign delivery, shopper engagement, and in-store outcomes.",
       "STORE_42_CMAX_CHECKOUT_KIOSK",
       "Open monitoring"
     )
@@ -212,6 +212,17 @@ const elements = {
   telemetryByScreen: qs("#telemetryByScreen"),
   telemetryByTemplate: qs("#telemetryByTemplate"),
   telemetryBySku: qs("#telemetryBySku"),
+  monitoringOverviewKicker: qs("#monitoringOverviewKicker"),
+  monitoringOverviewTitle: qs("#monitoringOverviewTitle"),
+  monitoringOverviewLede: qs("#monitoringOverviewLede"),
+  monitoringOverviewSignals: qs("#monitoringOverviewSignals"),
+  monitoringOverviewAsideEyebrow: qs("#monitoringOverviewAsideEyebrow"),
+  monitoringOverviewAsideTitle: qs("#monitoringOverviewAsideTitle"),
+  monitoringOverviewAsideCopy: qs("#monitoringOverviewAsideCopy"),
+  monitoringMeasurementTitle: qs("#monitoringMeasurementTitle"),
+  monitoringMeasurementIntro: qs("#monitoringMeasurementIntro"),
+  measurementBriefTitle: qs("#measurementBriefTitle"),
+  measurementBriefCopy: qs("#measurementBriefCopy"),
   monitorPreviewRail: qs("#monitorPreviewRail"),
   monitoringNarrative: qs("#monitoringNarrative"),
   monitorKpiPlays: qs("#monitorKpiPlays"),
@@ -1710,7 +1721,7 @@ function buildDemoActionMessage(kind, result) {
 
   if (kind === "reset") {
     const removedScreens = Number(result?.removedScreenIds?.length || 0);
-    return `Judge baseline restored. ${removedScreens} demo screen(s)${affectedStoreCount ? ` across ${affectedStoreCount} store(s)` : ""} cleared. Telemetry and plan history cleared.`;
+    return `Demo baseline restored. ${removedScreens} demo screen(s)${affectedStoreCount ? ` across ${affectedStoreCount} store(s)` : ""} cleared. Telemetry and plan history cleared.`;
   }
 
   if (createdPages + createdScreens === 0 && updatedPages + updatedScreens === 0) {
@@ -1766,7 +1777,7 @@ function renderPresetSummary() {
   const demoStoreCount = getDemoStoreCount();
   const actionMessage = state.lastDemoAction?.message || "";
   const summaryMessage = !isManualSupplyConfirmed()
-    ? "Add one anchor placement, then apply the shared preset. That is the full Supply story for the demo."
+    ? "Add one anchor placement, then apply the shared preset to finish the supply setup."
     : state.presetLoadedInSession
       ? "Setup complete: minimal CYield change, shared backend-resolved player URL."
       : `Anchor screen saved. Load the preset to roll out the remaining ${remaining} supply-stage screen(s) across ${demoStoreCount} stores.`;
@@ -2353,6 +2364,35 @@ function getGoalPlanAccountLabel(goal = {}, targetProducts = []) {
     return pairs[0];
   }
   return pairs.length > 1 ? "Multiple brands" : "Account required";
+}
+
+function getGoalPlanBrandContext(plan = state.activeGoalPlan) {
+  const goal = plan?.goal || {};
+  const advertiserId = String(goal.advertiserId || getSelectedGoalAdvertiserId() || "").trim();
+  const account = getGoalAccountByAdvertiserId(advertiserId);
+  const brand = String(account?.brand || goal.brand || "").trim();
+  const accountLabel = brand && advertiserId ? `${brand} | ${advertiserId}` : brand || advertiserId || "";
+  return {
+    advertiserId,
+    brand,
+    accountLabel,
+    objectiveLabel: objectiveLabelById(goal.objective || "")
+  };
+}
+
+function runMatchesBrandWorkspace(run, brandContext = getGoalPlanBrandContext()) {
+  const scopedAdvertiserId = String(brandContext?.advertiserId || "").trim();
+  const scopedBrand = String(brandContext?.brand || "").trim().toLowerCase();
+  const runAdvertiserId = String(run?.goal?.advertiserId || "").trim();
+  const runBrand = String(run?.goal?.brand || "").trim().toLowerCase();
+
+  if (scopedAdvertiserId) {
+    return runAdvertiserId === scopedAdvertiserId;
+  }
+  if (scopedBrand) {
+    return runBrand === scopedBrand;
+  }
+  return false;
 }
 
 function describeGoalPlanFocus(plan, targetProducts = getGoalPlanTargetProducts(plan)) {
@@ -3118,38 +3158,107 @@ function renderGoalPlan() {
   renderGoalPlanBudget(plan, budgetScenario);
 }
 
+function renderMonitoringOverview() {
+  const brandContext = getGoalPlanBrandContext();
+  const brandName = brandContext.brand || "Selected brand";
+  const liveScreens = Number(state.activeGoalPlan?.liveCount || state.activeGoalPlan?.liveScreens?.length || 0);
+  const campaignCount = (state.agentRuns || []).length;
+
+  if (elements.monitoringOverviewKicker) {
+    elements.monitoringOverviewKicker.textContent = brandContext.brand ? `${brandName} dashboard` : "Brand dashboard";
+  }
+  if (elements.monitoringOverviewTitle) {
+    elements.monitoringOverviewTitle.textContent = brandContext.brand
+      ? `${brandName} in-store campaign performance`
+      : "Campaign delivery, engagement, and in-store sales impact";
+  }
+  if (elements.monitoringOverviewLede) {
+    elements.monitoringOverviewLede.textContent = brandContext.brand
+      ? `Delivery, shopper engagement, and in-store sales impact for ${brandName}'s active retail media campaigns.`
+      : "Review live delivery, shopper response, and retail outcomes for the selected brand.";
+  }
+  if (elements.monitoringOverviewSignals) {
+    const signals = [
+      brandContext.brand || "Brand view",
+      brandContext.objectiveLabel || "Campaign results",
+      `${formatCount(liveScreens)} live screen${liveScreens === 1 ? "" : "s"}`,
+      `${formatCount(campaignCount)} campaign${campaignCount === 1 ? "" : "s"}`
+    ].filter(Boolean);
+    elements.monitoringOverviewSignals.innerHTML = signals
+      .map((label) => `<span class="monitoring-signal">${escapeHtml(label)}</span>`)
+      .join("");
+  }
+  if (elements.monitoringOverviewAsideEyebrow) {
+    elements.monitoringOverviewAsideEyebrow.textContent = brandContext.accountLabel ? "Account view" : "Workspace";
+  }
+  if (elements.monitoringOverviewAsideTitle) {
+    elements.monitoringOverviewAsideTitle.textContent = brandContext.brand
+      ? `${brandName} campaign workspace`
+      : "Selected brand workspace";
+  }
+  if (elements.monitoringOverviewAsideCopy) {
+    elements.monitoringOverviewAsideCopy.textContent = brandContext.accountLabel
+      ? `This dashboard is scoped to ${brandContext.accountLabel}, with live placements, campaign history, and measured results for that brand only.`
+      : "The dashboard below is scoped to the active brand and surfaces only that brand's campaigns, live placements, and measured results.";
+  }
+  if (elements.monitoringMeasurementTitle) {
+    elements.monitoringMeasurementTitle.textContent = brandContext.brand
+      ? `${brandName} campaign performance`
+      : "Campaign performance";
+  }
+  if (elements.monitoringMeasurementIntro) {
+    elements.monitoringMeasurementIntro.textContent = brandContext.brand
+      ? `Delivery, shopper action, and retail outcome metrics for ${brandName}'s active campaign.`
+      : "Delivery, shopper action, and retail outcome metrics for the active brand.";
+  }
+  if (elements.measurementBriefTitle) {
+    elements.measurementBriefTitle.textContent = brandContext.brand
+      ? `How ${brandName} is performing in store`
+      : "How the selected brand is performing in store";
+  }
+  if (elements.measurementBriefCopy) {
+    elements.measurementBriefCopy.textContent = brandContext.brand
+      ? `Track live delivery, shopper action, and in-store sales impact for ${brandName} in one view.`
+      : "Track live delivery, shopper action, and in-store sales impact in one view.";
+  }
+}
+
 function renderGoalRuns() {
   if (!elements.agentRunsList) {
     return;
   }
 
   if ((state.agentRuns || []).length === 0) {
-    elements.agentRunsList.innerHTML = '<div class="empty">No agent runs yet.</div>';
+    const brandContext = getGoalPlanBrandContext();
+    elements.agentRunsList.innerHTML = `<div class="empty">${
+      brandContext.brand ? `${escapeHtml(brandContext.brand)} has no campaigns in this workspace yet.` : "No campaigns yet."
+    }</div>`;
     return;
   }
 
   elements.agentRunsList.innerHTML = state.agentRuns
     .map((run) => {
       const canApply = run.status !== "applied" && countPlannedScreens(run) > 0;
-      const pillLabel = run.status === "applied" ? "In market" : "Brief ready";
+      const pillLabel = run.status === "applied" ? "Live" : "Planned";
       const runStoreLabel = String(run.goal?.storeFocusLabel || run.goal?.requestedStoreId || run.goal?.storeId || "All stores").trim() || "All stores";
-      const primaryActionLabel = canApply ? "Review budget" : "Open brief";
+      const primaryActionLabel = canApply ? "Review budget" : "Open campaign";
       const selectedSpend =
         state.goalBudgetPlanId === run.planId ? getActiveGoalBudgetSpend(run) : Math.max(0, Math.round(Number(run?.budget?.selectedSpend || run?.budget?.maxSpend || 0)));
       const maxSpend = getPlanBudgetMaxSpend(run);
+      const brandContext = getGoalPlanBrandContext(run);
       return `<article class="record">
         <div class="record__top">
-          <strong>${escapeHtml(objectiveLabelById(run.goal?.objective))}</strong>
+          <strong>${escapeHtml(brandContext.brand ? `${brandContext.brand} | ${objectiveLabelById(run.goal?.objective)}` : objectiveLabelById(run.goal?.objective))}</strong>
           <span class="pill ${run.status === "applied" ? "pill--applied" : "pill--planned"}">${escapeHtml(pillLabel)}</span>
         </div>
-        <p>Plan ${escapeHtml(run.planId || "")} | ${escapeHtml(runStoreLabel)} | ${escapeHtml(
+        <p>${escapeHtml(runStoreLabel)} | ${escapeHtml(
           getGoalScopeLabel(run.goal || {})
         )}</p>
         <p>Placements ${escapeHtml(countPlannedScreens(run) || 0)} | Live ${escapeHtml(run.liveCount || 0)}</p>
         <p>Flight ${escapeHtml(formatGoalFlightSummary(run.goal?.flightStartDate, run.goal?.flightEndDate))} | Budget ${escapeHtml(
           maxSpend > 0 ? `${formatMoney(selectedSpend)} / ${formatMoney(maxSpend)}` : "Not priced"
         )}</p>
-        <p>Created ${escapeHtml(formatTimestamp(run.createdAt))}${run.appliedAt ? ` | Applied ${escapeHtml(formatTimestamp(run.appliedAt))}` : ""}</p>
+        <p>Campaign ${escapeHtml(run.planId || "")} | Created ${escapeHtml(formatTimestamp(run.createdAt))}${run.appliedAt ? ` | Live ${escapeHtml(formatTimestamp(run.appliedAt))}` : ""}</p>
         <span class="record__actions">
           <button type="button" class="btn btn--tiny js-load-goal-plan" data-plan-id="${escapeHtml(run.planId || "")}">${escapeHtml(primaryActionLabel)}</button>
         </span>
@@ -3183,7 +3292,7 @@ function renderTelemetryList(container, entries, type) {
   }
 
   if (!Array.isArray(entries) || entries.length === 0) {
-    container.innerHTML = '<div class="empty">No exposure data yet.</div>';
+    container.innerHTML = '<div class="empty">No campaign data yet.</div>';
     return;
   }
 
@@ -3311,8 +3420,11 @@ function renderTelemetry() {
   const totalEvents = Number(totals.total || 0);
 
   if (!telemetry || totalEvents === 0) {
+    const brandContext = getGoalPlanBrandContext();
     elements.telemetrySummary.classList.add("empty");
-    elements.telemetrySummary.textContent = "Open a live screen to generate play and exposure data.";
+    elements.telemetrySummary.textContent = brandContext.brand
+      ? `Launch ${brandContext.brand}'s campaign to populate delivery, engagement, and sales metrics.`
+      : "Launch a campaign to populate delivery, engagement, and sales metrics.";
     renderMeasurementBoard(null);
     renderTelemetryList(elements.telemetryByScreen, [], "screen");
     renderTelemetryList(elements.telemetryByTemplate, [], "template");
@@ -3324,8 +3436,10 @@ function renderTelemetry() {
   const comparison = telemetry.planComparison;
   elements.telemetrySummary.classList.remove("empty");
   if (measurementBoard?.narrative) {
+    const brandContext = getGoalPlanBrandContext();
     const scope = measurementBoard.scope || {};
     const summaryMeta = [
+      brandContext.accountLabel,
       scope.scopeLabel,
       scope.objective ? `Objective ${titleCase(scope.objective)}` : "",
       Number(scope.storeCount || 0) > 0 ? `${formatCount(scope.storeCount || 0)} store${Number(scope.storeCount || 0) === 1 ? "" : "s"}` : "",
@@ -3336,12 +3450,16 @@ function renderTelemetry() {
       Number(scope.selectedSpend || 0) > 0 ? `Budget ${formatMoney(scope.selectedSpend || 0)}` : "",
       totals.lastSeenAt ? `Last seen ${formatTimestamp(totals.lastSeenAt)}` : ""
     ].filter(Boolean);
+    const summaryHeadline = brandContext.brand
+      ? `${brandContext.brand} campaign results`
+      : measurementBoard.narrative.headline || "Campaign results";
+    const summaryCopy = brandContext.brand
+      ? `Observed delivery and shopper action for ${brandContext.brand}, with modeled QR, incrementality, new-to-brand, and in-store sales impact layered on top of live telemetry.`
+      : measurementBoard.narrative.summary || "Observed and modeled performance signals for the live activation.";
 
     elements.telemetrySummary.innerHTML = `
-      <strong>${escapeHtml(measurementBoard.narrative.headline || "Measurement board")}</strong>
-      <p class="measurement-summary__lede">${escapeHtml(
-        measurementBoard.narrative.summary || "Observed and modeled performance signals for the live activation."
-      )}</p>
+      <strong>${escapeHtml(summaryHeadline)}</strong>
+      <p class="measurement-summary__lede">${escapeHtml(summaryCopy)}</p>
       ${summaryMeta.length > 0 ? `<p class="measurement-summary__meta">${escapeHtml(summaryMeta.join(" | "))}</p>` : ""}
       ${
         measurementBoard.narrative.trend
@@ -3405,6 +3523,7 @@ function renderPreviewRail(screenIds) {
     return;
   }
 
+  const brandContext = getGoalPlanBrandContext();
   const uniqueIds = [...new Set((screenIds || []).filter(Boolean))].slice(0, 2);
   const nextKey = uniqueIds.join("|");
   if (state.previewRailKey === nextKey) {
@@ -3414,18 +3533,26 @@ function renderPreviewRail(screenIds) {
 
   if (uniqueIds.length === 0) {
     elements.monitorPreviewRail.innerHTML = `
-      <p class="preview-pane__eyebrow">Shared player URL</p>
-      <h4>${escapeHtml(SHARED_PLAYER_URL)}</h4>
-      <p id="monitoringNarrative">Each screen points to the same player URL. The backend resolves screen identity from the TV/browser footprint or an install-time resolver key.</p>
+      <p class="preview-pane__eyebrow">${escapeHtml(brandContext.brand ? `${brandContext.brand} preview` : "Campaign preview")}</p>
+      <h4>Awaiting live screens</h4>
+      <p id="monitoringNarrative">${escapeHtml(
+        brandContext.brand
+          ? `${brandContext.brand} previews will appear here once the selected campaign is live.`
+          : "Live campaign previews will appear here once the selected brand has active screens."
+      )}</p>
     `;
     elements.monitoringNarrative = qs("#monitoringNarrative");
     return;
   }
 
   elements.monitorPreviewRail.innerHTML = `
-    <p class="preview-pane__eyebrow">Shared player URL</p>
-    <h4>${escapeHtml(SHARED_PLAYER_URL)}</h4>
-    <p id="monitoringNarrative">These previews stay on the shared player path. The resolver key stands in for the TV/browser fingerprint the backend would see at install time.</p>
+    <p class="preview-pane__eyebrow">${escapeHtml(brandContext.brand ? `${brandContext.brand} live preview` : "Live campaign preview")}</p>
+    <h4>${escapeHtml(brandContext.brand ? `${brandContext.brand} creative in market` : "Creative in market")}</h4>
+    <p id="monitoringNarrative">${escapeHtml(
+      brandContext.brand
+        ? `${brandContext.brand} creative is running on the active in-store screens below.`
+        : "These previews are pulled from the same live player path used across the active in-store screens."
+    )}</p>
     <div style="display:grid;gap:12px;margin-top:6px;">
       ${uniqueIds
         .map(
@@ -3451,9 +3578,12 @@ function renderLiveScreens() {
   }
 
   const plan = state.activeGoalPlan;
+  const brandContext = getGoalPlanBrandContext(plan);
   if (!plan || plan.status !== "applied") {
     elements.goalLiveSummary.classList.add("empty");
-    elements.goalLiveSummary.textContent = "Approve and launch the recommendation to view live placements and creatives.";
+    elements.goalLiveSummary.textContent = brandContext.brand
+      ? `Launch ${brandContext.brand}'s campaign to view live placements and creatives.`
+      : "Launch the selected campaign to view live placements and creatives.";
     elements.goalLiveScreens.innerHTML = "";
     renderPreviewRail(getPreferredPreviewScreenIds());
     return;
@@ -3462,13 +3592,13 @@ function renderLiveScreens() {
   const liveScreens = Array.isArray(plan.liveScreens) ? plan.liveScreens : [];
   elements.goalLiveSummary.classList.remove("empty");
   elements.goalLiveSummary.innerHTML = `
-    <strong>Live run snapshot</strong>
+    <strong>${escapeHtml(brandContext.brand ? `${brandContext.brand} live campaign snapshot` : "Live campaign snapshot")}</strong>
     <p class="goal-change__metrics">
-      Live screens: ${escapeHtml(formatCount(plan.liveCount || liveScreens.length || 0))} | Applied:
+      ${brandContext.objectiveLabel ? `${escapeHtml(brandContext.objectiveLabel)} | ` : ""}Live screens: ${escapeHtml(formatCount(plan.liveCount || liveScreens.length || 0))} | Live since:
       ${escapeHtml(formatTimestamp(plan.appliedAt || plan.updatedAt || plan.createdAt))}
     </p>
     <p class="goal-change__metrics">
-      Shared player URL: ${escapeHtml(SHARED_PLAYER_URL)} | Plan ID: ${escapeHtml(plan.planId || "")} | Budget:
+      ${brandContext.accountLabel ? `Account: ${escapeHtml(brandContext.accountLabel)} | ` : ""}Campaign ID: ${escapeHtml(plan.planId || "")} | Budget:
       ${escapeHtml(formatMoney(plan?.budget?.selectedSpend || 0))}
     </p>
   `;
@@ -3515,15 +3645,21 @@ function updateMonitoringNarrative() {
     return;
   }
 
+  const brandContext = getGoalPlanBrandContext();
   if (state.activeGoalPlan?.status === "applied") {
-    elements.monitoringNarrative.textContent = `Applied plan ${state.activeGoalPlan.planId} across ${
-      state.activeGoalPlan.liveCount || state.activeGoalPlan.liveScreens?.length || 0
-    } screen(s). CYield still sees a page-like request model, and the resolver keeps every screen on the same player path.`;
+    elements.monitoringNarrative.textContent = brandContext.brand
+      ? `${brandContext.brand} is live across ${
+          state.activeGoalPlan.liveCount || state.activeGoalPlan.liveScreens?.length || 0
+        } in-store screen(s). The preview rail is scoped to the active campaign only.`
+      : `The active campaign is live across ${
+          state.activeGoalPlan.liveCount || state.activeGoalPlan.liveScreens?.length || 0
+        } in-store screen(s). The preview rail is scoped to the active campaign only.`;
     return;
   }
 
-  elements.monitoringNarrative.textContent =
-    "Every TV points to the same player URL. The backend decides which screen it is from the browser/device footprint, with the demo passing a resolver key that stands in for the install-time identifier.";
+  elements.monitoringNarrative.textContent = brandContext.brand
+    ? `${brandContext.brand} previews will appear here once the selected campaign is live.`
+    : "Live campaign previews will appear here once the selected brand has active screens.";
 }
 
 function renderAll() {
@@ -3538,6 +3674,7 @@ function renderAll() {
   renderGoalPlanningFlow();
   renderGoalPlan();
   renderGoalRuns();
+  renderMonitoringOverview();
   renderMonitoringKpis();
   renderTelemetry();
   renderLiveScreens();
@@ -3574,8 +3711,13 @@ async function refreshProductFeed() {
 async function refreshGoalRunsData() {
   const response = await requestJson("/api/agent/goals/runs");
   const allRuns = Array.isArray(response.runs) ? response.runs : [];
+  const brandContext = getGoalPlanBrandContext();
   const visiblePlanIds = new Set([...state.sessionPlanIds, state.activeGoalPlan?.planId].filter(Boolean));
-  state.agentRuns = visiblePlanIds.size > 0 ? allRuns.filter((run) => visiblePlanIds.has(run.planId)) : [];
+  if (brandContext.advertiserId || brandContext.brand) {
+    state.agentRuns = allRuns.filter((run) => runMatchesBrandWorkspace(run, brandContext));
+  } else {
+    state.agentRuns = visiblePlanIds.size > 0 ? allRuns.filter((run) => visiblePlanIds.has(run.planId)) : [];
+  }
 
   if (state.activeGoalPlan?.planId) {
     const latest = allRuns.find((run) => run.planId === state.activeGoalPlan.planId);
@@ -3587,7 +3729,7 @@ async function refreshGoalRunsData() {
       state.activeGoalPlan = latest;
       syncGoalPlacementSelectionFromPlan(latest, { overwrite: latest.status === "applied" });
       setGoalBudgetStateFromPlan(latest, preferredBudget);
-      if (!visiblePlanIds.has(latest.planId)) {
+      if (!state.agentRuns.some((entry) => entry.planId === latest.planId)) {
         state.agentRuns = [...state.agentRuns, latest];
       }
       return;
