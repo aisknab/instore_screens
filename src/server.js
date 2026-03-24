@@ -862,7 +862,17 @@ const GOAL_PLANNING_THEME_KEYWORDS = {
   foodcourt: ["foodcourt", "counter", "menu", "meal", "drink"],
   value: ["value", "save", "deal", "student", "budget"]
 };
-const PRODUCT_FEED_FILE = path.resolve(process.cwd(), "data", "productFeed.json");
+const DEFAULT_PRODUCT_FEED_FILE = path.resolve(process.cwd(), "data", "productFeed.json");
+const DEFAULT_PRODUCT_IMAGE_MANIFEST_FILE = path.resolve(process.cwd(), "data", "productImageManifest.json");
+const DEFAULT_PRODUCT_IMAGE_OUTPUT_DIR = path.resolve(process.cwd(), "public", "assets", "products", "generated");
+const PRODUCT_GENERATED_IMAGE_BASE_PATH =
+  toTrimmedString(process.env.PRODUCT_IMAGE_BASE_PATH) || "/assets/products/generated";
+const PRODUCT_FEED_FILE = resolvePathFromEnv("PRODUCT_FEED_FILE", DEFAULT_PRODUCT_FEED_FILE);
+const PRODUCT_IMAGE_MANIFEST_FILE = resolvePathFromEnv(
+  "PRODUCT_IMAGE_MANIFEST_FILE",
+  DEFAULT_PRODUCT_IMAGE_MANIFEST_FILE
+);
+const PRODUCT_IMAGE_OUTPUT_DIR = resolvePathFromEnv("PRODUCT_IMAGE_OUTPUT_DIR", DEFAULT_PRODUCT_IMAGE_OUTPUT_DIR);
 const PRODUCT_IMAGE_GENERATOR_SCRIPT = path.resolve(process.cwd(), "scripts", "generate-product-images.mjs");
 const PRODUCT_IMAGE_JOB_LOG_LIMIT = 200;
 const DEMO_STOCK_BY_SKU = {
@@ -1045,6 +1055,11 @@ class HttpError extends Error {
 
 function toTrimmedString(value) {
   return typeof value === "string" ? value.trim() : "";
+}
+
+function resolvePathFromEnv(envName, fallbackPath) {
+  const override = toTrimmedString(process.env[envName]);
+  return override ? path.resolve(override) : fallbackPath;
 }
 
 function readRequiredString(value, fieldName, maxLength = 120) {
@@ -1903,6 +1918,39 @@ async function readProductFeed() {
   } catch {
     return PRODUCT_FEED_DEFAULT.map((product, index) => normalizeProductFeedItem(product, index));
   }
+}
+
+async function readProductImageManifest() {
+  try {
+    const raw = await fs.readFile(PRODUCT_IMAGE_MANIFEST_FILE, "utf8");
+    const parsed = JSON.parse(raw.replace(/^\uFEFF/, ""));
+    return parsed && typeof parsed === "object" ? parsed : { items: {} };
+  } catch {
+    return { items: {} };
+  }
+}
+
+async function buildProductImageProgressSnapshot() {
+  const [feed, manifest] = await Promise.all([readProductFeed(), readProductImageManifest()]);
+  const items = manifest?.items && typeof manifest.items === "object" ? Object.values(manifest.items) : [];
+  const generated = items.filter((entry) => readOptionalString(entry?.status, 40) === "generated").length;
+  const failed = items.filter((entry) => readOptionalString(entry?.status, 40) === "failed").length;
+  const total = Array.isArray(feed) ? feed.length : 0;
+  const processed = Math.min(total, generated + failed);
+  const remaining = Math.max(0, total - processed);
+  const percentage = total > 0 ? Math.round((processed / total) * 1000) / 10 : 0;
+
+  return {
+    total,
+    generated,
+    failed,
+    processed,
+    remaining,
+    percentage,
+    running: Boolean(productImageGenerationJob?.running),
+    jobId: readOptionalString(productImageGenerationJob?.jobId, 120),
+    updatedAt: readOptionalString(manifest?.updatedAt, 80)
+  };
 }
 
 function buildProductFeedLookup(feed = []) {
@@ -5948,6 +5996,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 app.use(express.json({ limit: "1mb" }));
+app.use(PRODUCT_GENERATED_IMAGE_BASE_PATH, express.static(PRODUCT_IMAGE_OUTPUT_DIR));
 app.use(express.static(path.resolve(__dirname, "../public")));
 
 app.get("/api/health", (_req, res) => {
@@ -5956,6 +6005,18 @@ app.get("/api/health", (_req, res) => {
 
 app.get("/api/product-images/status", (_req, res) => {
   res.json({ job: buildProductImageJobSnapshot() });
+});
+
+app.get("/api/product-images/progress", async (_req, res) => {
+  try {
+    res.json({
+      progress: await buildProductImageProgressSnapshot(),
+      job: buildProductImageJobSnapshot()
+    });
+  } catch (error) {
+    const normalized = normalizeError(error);
+    res.status(normalized.status).json({ error: normalized.message });
+  }
 });
 
 app.post("/api/product-images/generate", async (req, res) => {

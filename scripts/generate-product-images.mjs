@@ -4,10 +4,10 @@ import path from "node:path";
 import process from "node:process";
 
 const ROOT_DIR = process.cwd();
-const FEED_FILE = path.join(ROOT_DIR, "data", "productFeed.json");
-const MANIFEST_FILE = path.join(ROOT_DIR, "data", "productImageManifest.json");
-const OUTPUT_DIR = path.join(ROOT_DIR, "public", "assets", "products", "generated");
-const OUTPUT_BASE_PATH = "/assets/products/generated";
+const DEFAULT_FEED_FILE = path.join(ROOT_DIR, "data", "productFeed.json");
+const DEFAULT_MANIFEST_FILE = path.join(ROOT_DIR, "data", "productImageManifest.json");
+const DEFAULT_OUTPUT_DIR = path.join(ROOT_DIR, "public", "assets", "products", "generated");
+const DEFAULT_OUTPUT_BASE_PATH = "/assets/products/generated";
 const DEFAULT_BASE_URL = "https://api.openai.com/v1";
 const DEFAULT_MODEL = "gpt-5.4";
 const DEFAULT_SIZE = "1024x1024";
@@ -27,6 +27,16 @@ function readText(value, maxLength = 500) {
   }
   return trimmed.slice(0, maxLength);
 }
+
+function resolvePathFromEnv(envName, fallbackPath) {
+  const override = readText(process.env[envName], 1000);
+  return override ? path.resolve(override) : fallbackPath;
+}
+
+const FEED_FILE = resolvePathFromEnv("PRODUCT_FEED_FILE", DEFAULT_FEED_FILE);
+const MANIFEST_FILE = resolvePathFromEnv("PRODUCT_IMAGE_MANIFEST_FILE", DEFAULT_MANIFEST_FILE);
+const OUTPUT_DIR = resolvePathFromEnv("PRODUCT_IMAGE_OUTPUT_DIR", DEFAULT_OUTPUT_DIR);
+const OUTPUT_BASE_PATH = readText(process.env.PRODUCT_IMAGE_BASE_PATH, 200) || DEFAULT_OUTPUT_BASE_PATH;
 
 function normalizeSku(value, fallback = "") {
   return readText(value, 120).toUpperCase() || fallback;
@@ -119,7 +129,11 @@ function buildUsage() {
     "  OPENAI_BASE_URL                 Optional, defaults to https://api.openai.com/v1",
     "  OPENAI_PRODUCT_IMAGE_MODEL      Optional, defaults to gpt-5.4",
     "  OPENAI_PRODUCT_IMAGE_QUALITY    Optional, defaults to medium",
-    "  OPENAI_PRODUCT_IMAGE_SIZE       Optional, defaults to 1024x1024"
+    "  OPENAI_PRODUCT_IMAGE_SIZE       Optional, defaults to 1024x1024",
+    "  PRODUCT_FEED_FILE               Optional feed path override",
+    "  PRODUCT_IMAGE_MANIFEST_FILE     Optional manifest path override",
+    "  PRODUCT_IMAGE_OUTPUT_DIR        Optional generated-image directory override",
+    "  PRODUCT_IMAGE_BASE_PATH         Optional public URL base, defaults to /assets/products/generated"
   ].join("\n");
 }
 

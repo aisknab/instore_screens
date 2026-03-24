@@ -81,7 +81,24 @@ Open:
 
 ## Generated Product Images
 
-The repo now includes a resumable SKU image generation pipeline that writes transparent PNG packshots to `public/assets/products/generated` and rewrites `data/productFeed.json` to point each product at its local generated asset.
+The repo now includes a resumable SKU image generation pipeline that writes transparent PNG packshots and rewrites the feed to point each product at its local generated asset.
+
+Defaults:
+
+- Feed file: `data/productFeed.json`
+- Manifest file: `data/productImageManifest.json`
+- Generated PNGs: `public/assets/products/generated`
+
+For production, move those out of the repo checkout with environment overrides:
+
+```ini
+Environment=PRODUCT_FEED_FILE=/var/lib/criteoscreens/productFeed.json
+Environment=PRODUCT_IMAGE_MANIFEST_FILE=/var/lib/criteoscreens/productImageManifest.json
+Environment=PRODUCT_IMAGE_OUTPUT_DIR=/var/lib/criteoscreens/product-images
+Environment=PRODUCT_IMAGE_BASE_PATH=/assets/products/generated
+```
+
+The server will still serve those external PNGs at `/assets/products/generated/...`.
 
 Typical run:
 
@@ -108,6 +125,7 @@ curl -X POST http://localhost:3000/api/product-images/generate \
 ```
 
 Check progress with `GET /api/product-images/status`.
+Get count progress with `GET /api/product-images/progress`.
 
 ## Template Showcase URLs
 
@@ -187,6 +205,19 @@ Optional JSON body:
 ### `GET /api/product-images/status`
 
 Returns the current or most recent background image-generation job, including recent stdout and stderr log lines.
+
+### `GET /api/product-images/progress`
+
+Returns count-based progress for the feed image batch:
+
+- `total`
+- `generated`
+- `failed`
+- `processed`
+- `remaining`
+- `percentage`
+
+The response also includes the current job snapshot.
 
 ### `GET /api/pages`
 
@@ -405,6 +436,8 @@ Response shape:
 - Optionally set `OPENAI_MODEL` to override the default model alias (`gpt-5-mini`).
 - Set `OPENAI_PRODUCT_IMAGE_MODEL` to override the product image generator model alias. It defaults to `gpt-5.4`.
 - Set `OPENAI_PRODUCT_IMAGE_QUALITY` and `OPENAI_PRODUCT_IMAGE_SIZE` when you want to tune batch image output.
+- Set `PRODUCT_FEED_FILE`, `PRODUCT_IMAGE_MANIFEST_FILE`, and `PRODUCT_IMAGE_OUTPUT_DIR` to move generated image state out of the git checkout.
+- Keep `PRODUCT_IMAGE_BASE_PATH` as `/assets/products/generated` unless you intentionally want a different public URL.
 
 Example `systemd` environment:
 
@@ -412,6 +445,10 @@ Example `systemd` environment:
 Environment=HOST=0.0.0.0
 Environment=PORT=3100
 Environment=DB_FILE=/var/lib/criteoscreens/db.json
+Environment=PRODUCT_FEED_FILE=/var/lib/criteoscreens/productFeed.json
+Environment=PRODUCT_IMAGE_MANIFEST_FILE=/var/lib/criteoscreens/productImageManifest.json
+Environment=PRODUCT_IMAGE_OUTPUT_DIR=/var/lib/criteoscreens/product-images
+Environment=PRODUCT_IMAGE_BASE_PATH=/assets/products/generated
 Environment=OPENAI_API_KEY=your_api_key_here
 Environment=OPENAI_MODEL=gpt-5-mini
 ```
