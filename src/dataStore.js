@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 
 const DB_FILE = path.join(process.cwd(), "data", "db.json");
-const EMPTY_DB = { pages: [], screens: [], agentRuns: [], telemetryEvents: [] };
+const EMPTY_DB = { pages: [], screens: [], agentRuns: [], telemetryEvents: [], pricing: {} };
 let dbAccessQueue = Promise.resolve();
 let lastKnownDb = null;
 
@@ -13,7 +13,8 @@ function normalizeDbShape(data) {
     pages: Array.isArray(source.pages) ? source.pages : [],
     screens: Array.isArray(source.screens) ? source.screens : [],
     agentRuns: Array.isArray(source.agentRuns) ? source.agentRuns : [],
-    telemetryEvents: Array.isArray(source.telemetryEvents) ? source.telemetryEvents : []
+    telemetryEvents: Array.isArray(source.telemetryEvents) ? source.telemetryEvents : [],
+    pricing: source.pricing && typeof source.pricing === "object" ? source.pricing : {}
   };
 }
 

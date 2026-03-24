@@ -79,6 +79,20 @@ const SCREEN_TYPES = [
   "Kiosk",
   "Digital Menu Board"
 ];
+const SCREEN_TYPE_DAILY_RATES = {
+  "Vertical Screen": 180,
+  "Horizontal Screen": 150,
+  "Shelf Edge": 65,
+  Endcap: 95,
+  Kiosk: 130,
+  "Digital Menu Board": 120
+};
+const GOAL_PRICING_MODEL = {
+  id: "daily-screen-rate",
+  label: "Retailer-set daily screen rate",
+  currencySymbol: "$"
+};
+const MAX_GOAL_FLIGHT_DAYS = 180;
 const TEMPLATE_PRESETS = [
   {
     id: "fullscreen-banner",
@@ -1037,6 +1051,128 @@ function readStringArray(value, maxItems = 20, itemMaxLength = 80) {
     .map((entry) => readOptionalString(entry, itemMaxLength))
     .filter(Boolean)
     .slice(0, maxItems);
+}
+
+function readRequiredDateInput(value, fieldName) {
+  const parsed = readRequiredString(value, fieldName, 10);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(parsed)) {
+    throw new HttpError(400, `${fieldName} must be in YYYY-MM-DD format.`);
+  }
+  const date = new Date(`${parsed}T00:00:00Z`);
+  if (Number.isNaN(date.valueOf())) {
+    throw new HttpError(400, `${fieldName} must be a valid date.`);
+  }
+  return parsed;
+}
+
+function computeInclusiveDayCount(startDate, endDate) {
+  const start = new Date(`${startDate}T00:00:00Z`);
+  const end = new Date(`${endDate}T00:00:00Z`);
+  if (Number.isNaN(start.valueOf()) || Number.isNaN(end.valueOf())) {
+    return 0;
+  }
+  const diffDays = Math.floor((end.valueOf() - start.valueOf()) / (24 * 60 * 60 * 1000));
+  return diffDays >= 0 ? diffDays + 1 : 0;
+}
+
+function buildDefaultGoalRateCard() {
+  return Object.fromEntries(
+    SCREEN_TYPES.map((screenType) => [screenType, Number(SCREEN_TYPE_DAILY_RATES[screenType] || 100)])
+  );
+}
+
+function getStoredScreenTypeRates(db) {
+  return readGoalScreenTypeRateCard(db?.pricing?.screenTypeRates);
+}
+
+function readGoalScreenTypeRateCard(value) {
+  const raw = value && typeof value === "object" ? value : {};
+  const defaults = buildDefaultGoalRateCard();
+  for (const screenType of SCREEN_TYPES) {
+    const parsed = Number(raw[screenType]);
+    defaults[screenType] = Number.isFinite(parsed) && parsed >= 0 ? Math.round(parsed) : defaults[screenType];
+  }
+  return defaults;
+}
+
+function getGoalScreenTypeDailyRate(rateCard, screenType) {
+  const defaults = buildDefaultGoalRateCard();
+  const normalizedType = readOptionalString(screenType, 80);
+  const parsed = Number(rateCard?.[normalizedType]);
+  if (Number.isFinite(parsed) && parsed >= 0) {
+    return Math.round(parsed);
+  }
+  return Number(defaults[normalizedType] || 100);
+}
+
+function computeGoalPlacementCost(dailyRate, flightDays) {
+  return Math.max(0, Math.round(Number(dailyRate || 0) * Math.max(1, Number(flightDays || 1))));
+}
+
+function rankGoalPlacementsForBudget(placements = []) {
+  return [...(Array.isArray(placements) ? placements : [])].sort((left, right) => {
+    return (
+      Number(left?.budgetRank || 0) - Number(right?.budgetRank || 0) ||
+      Number(right?.score || 0) - Number(left?.score || 0) ||
+      Number(right?.confidence || 0) - Number(left?.confidence || 0) ||
+      Number(left?.placementCost || 0) - Number(right?.placementCost || 0) ||
+      readOptionalString(left?.screenId, 80).localeCompare(readOptionalString(right?.screenId, 80))
+    );
+  });
+}
+
+function resolveGoalBudgetSelection(placements = [], selectedSpend = Number.POSITIVE_INFINITY) {
+  const orderedPlacements = rankGoalPlacementsForBudget(placements);
+  const maxSpend = Math.round(
+    orderedPlacements.reduce((sum, placement) => sum + Number(placement?.placementCost || 0), 0)
+  );
+  const normalizedSelectedSpend = Number.isFinite(Number(selectedSpend))
+    ? Math.max(0, Math.min(maxSpend, Math.round(Number(selectedSpend))))
+    : maxSpend;
+  const fundedPlacements = [];
+  const heldBackPlacements = [];
+  const fundedScreenIds = [];
+  const heldBackScreenIds = [];
+  let fundedSpend = 0;
+
+  for (const placement of orderedPlacements) {
+    const placementCost = Math.max(0, Math.round(Number(placement?.placementCost || 0)));
+    if (fundedSpend + placementCost <= normalizedSelectedSpend) {
+      fundedPlacements.push(placement);
+      fundedScreenIds.push(readOptionalString(placement?.screenId, 80));
+      fundedSpend += placementCost;
+    } else {
+      heldBackPlacements.push(placement);
+      heldBackScreenIds.push(readOptionalString(placement?.screenId, 80));
+    }
+  }
+
+  return {
+    maxSpend,
+    selectedSpend: normalizedSelectedSpend,
+    fundedSpend,
+    fundedPlacements,
+    heldBackPlacements,
+    fundedScreenIds: fundedScreenIds.filter(Boolean),
+    heldBackScreenIds: heldBackScreenIds.filter(Boolean)
+  };
+}
+
+function buildGoalBudget(goal, placements = [], selectedSpend = Number.POSITIVE_INFINITY) {
+  const selection = resolveGoalBudgetSelection(placements, selectedSpend);
+  return {
+    pricingModelId: GOAL_PRICING_MODEL.id,
+    pricingModelLabel: GOAL_PRICING_MODEL.label,
+    currencySymbol: GOAL_PRICING_MODEL.currencySymbol,
+    flightDays: Number(goal?.flightDays || 0),
+    maxSpend: selection.maxSpend,
+    selectedSpend: selection.selectedSpend,
+    fundedSpend: selection.fundedSpend,
+    fundedPlacementCount: selection.fundedPlacements.length,
+    heldBackPlacementCount: selection.heldBackPlacements.length,
+    fundedScreenIds: selection.fundedScreenIds,
+    heldBackScreenIds: selection.heldBackScreenIds
+  };
 }
 
 function slugify(value) {
@@ -2722,11 +2858,26 @@ function parseJsonObject(value) {
   }
 }
 
-function buildGoalLineItemForScreen(screen, templateId, objectiveId, goalProductsForScreen, fallbackFeedProduct = null) {
-  const nextTemplate = getTemplatePreset(templateId);
+function resolveGoalFlightWindow(goal = null) {
+  const flightStartDate = readOptionalString(goal?.flightStartDate, 10);
+  const flightEndDate = readOptionalString(goal?.flightEndDate, 10);
+  if (flightStartDate && flightEndDate) {
+    return {
+      activeFrom: new Date(`${flightStartDate}T00:00:00.000Z`).toISOString(),
+      activeTo: new Date(`${flightEndDate}T23:59:59.999Z`).toISOString()
+    };
+  }
+
   const now = new Date();
-  const activeFrom = new Date(now.valueOf() - 60 * 1000).toISOString();
-  const activeTo = new Date(now.valueOf() + 365 * 24 * 60 * 60 * 1000).toISOString();
+  return {
+    activeFrom: new Date(now.valueOf() - 60 * 1000).toISOString(),
+    activeTo: new Date(now.valueOf() + 365 * 24 * 60 * 60 * 1000).toISOString()
+  };
+}
+
+function buildGoalLineItemForScreen(screen, templateId, objectiveId, goalProductsForScreen, fallbackFeedProduct = null, goal = null) {
+  const nextTemplate = getTemplatePreset(templateId);
+  const { activeFrom, activeTo } = resolveGoalFlightWindow(goal);
   let products = [];
   if (Array.isArray(goalProductsForScreen) && goalProductsForScreen.length > 0) {
     products = goalProductsForScreen.map((product) =>
@@ -3214,6 +3365,15 @@ function readGoalRequest(input) {
         .filter(Boolean)
     )
   ];
+  const flightStartDate = readRequiredDateInput(raw.flightStartDate, "flightStartDate");
+  const flightEndDate = readRequiredDateInput(raw.flightEndDate, "flightEndDate");
+  const flightDays = computeInclusiveDayCount(flightStartDate, flightEndDate);
+  if (!flightDays) {
+    throw new HttpError(400, "flightEndDate must be on or after flightStartDate.");
+  }
+  if (flightDays > MAX_GOAL_FLIGHT_DAYS) {
+    throw new HttpError(400, `flight range must be ${MAX_GOAL_FLIGHT_DAYS} days or fewer.`);
+  }
 
   return {
     objective,
@@ -3221,9 +3381,14 @@ function readGoalRequest(input) {
     prompt: readOptionalString(raw.prompt, 280),
     storeId: readOptionalString(raw.storeId, 80),
     pageId: readOptionalString(raw.pageId, 40),
+    flightStartDate,
+    flightEndDate,
+    flightDays,
     assortmentCategory: readOptionalString(raw.assortmentCategory, 80).toLowerCase(),
     advertiserId: readRequiredString(raw.advertiserId, "advertiserId", 120),
     brand: readOptionalString(raw.brand, 80),
+    pricingModelId: GOAL_PRICING_MODEL.id,
+    pricingModelLabel: GOAL_PRICING_MODEL.label,
     targetSkuIds
   };
 }
@@ -3466,6 +3631,9 @@ function buildGoalPlan(goal, screens) {
     const currentTemplateId = readOptionalString(screen.templateId, 80) || "fullscreen-banner";
     const currentRefreshInterval = readRefreshInterval(screen.refreshInterval);
     const placementRole = getGoalScreenRole(screen);
+    const screenType = readOptionalString(screen.screenType, 80) || "Horizontal Screen";
+    const dailyRate = getGoalScreenTypeDailyRate(goal.screenTypeRates, screenType);
+    const placementCost = computeGoalPlacementCost(dailyRate, goal.flightDays);
     const storeSignals = storeRankingMap.get(readOptionalString(screen.storeId, 80)) || {
       trafficFit: 0.55,
       stockFit: 0.55
@@ -3522,52 +3690,6 @@ function buildGoalPlan(goal, screens) {
         scoreBreakdown.scopeFit * planningProfile.weights.scopeFit
       ).toFixed(2)
     );
-
-    if (targetProducts.length > 0 && goalProductsForScreen.length === 0 && assortmentFit < planningProfile.minAssortmentFit && !isObjectivePreferredScreen(screen, goal.objective)) {
-      excludedScreens.push({
-        screenId: screen.screenId,
-        storeId: screen.storeId,
-        pageId: screen.pageId,
-        location: screen.location,
-        reasonCode: "low-assortment-fit",
-        reasonShort: "Held out because the screen context did not fit the selected SKU assortment strongly enough.",
-        productRelevance,
-        scoreBreakdown,
-        reason: `Skipped by context guardrail. Screen context does not match target categories (${targetCategories || "selected SKUs"}).`
-      });
-      continue;
-    }
-
-    if (goal.requestedPageId && scopeFit < planningProfile.offPageScopeFit && goal.aggressiveness === "Conservative" && readOptionalString(screen.pageId, 40) !== goal.requestedPageId) {
-      excludedScreens.push({
-        screenId: screen.screenId,
-        storeId: screen.storeId,
-        pageId: screen.pageId,
-        location: screen.location,
-        reasonCode: "scope-guardrail",
-        reasonShort: `Held out because Conservative planning kept the recommendation anchored to ${goal.requestedPageId}.`,
-        productRelevance,
-        scoreBreakdown,
-        reason: `Skipped by scope guardrail. Conservative planning kept the recommendation anchored to ${goal.requestedPageId}.`
-      });
-      continue;
-    }
-
-    if (score < planningProfile.minPlanScore) {
-      excludedScreens.push({
-        screenId: screen.screenId,
-        storeId: screen.storeId,
-        pageId: screen.pageId,
-        location: screen.location,
-        reasonCode: "score-below-threshold",
-        reasonShort: "Held out because stronger placements scored higher on the planning model.",
-        productRelevance,
-        scoreBreakdown,
-        reason: "Held out because this screen did not clear the current planning threshold."
-      });
-      continue;
-    }
-
     const templateChanged = currentTemplateId !== recommendedTemplateId;
     const refreshChanged = currentRefreshInterval !== recommendedRefreshInterval;
     const targetingChanged =
@@ -3578,12 +3700,13 @@ function buildGoalPlan(goal, screens) {
     const refreshRationale = buildGoalRefreshRationale(recommendedRefreshInterval, goal, planningSignals, goalProductsForScreen);
     const confidence = computeGoalConfidence(screen, goal.objective, productRelevance, score, scoreBreakdown);
     const reason = buildGoalReason(screen, goal.objective, targetProducts, productRelevance, { reasonShort });
-
-    scoredCandidates.push({
+    const recommendedTargetSkus = goalProductsForScreen.map((product) => normalizeSku(product.sku));
+    const candidateBase = {
       screenId: screen.screenId,
       storeId: screen.storeId,
       pageId: screen.pageId,
       location: screen.location,
+      screenType,
       placementRole,
       objective: goal.objective,
       confidence,
@@ -3596,34 +3719,78 @@ function buildGoalPlan(goal, screens) {
       objectiveFit: scoreBreakdown.objectiveFit,
       assortmentFit: scoreBreakdown.assortmentFit,
       stockFit: scoreBreakdown.stockFit,
-      trafficFit: scoreBreakdown.trafficFit,
+      trafficFit,
       capabilityFit: scoreBreakdown.capabilityFit,
       continuityFit: scoreBreakdown.continuityFit,
       targetingChanged,
       templateChanged,
       refreshChanged,
-      recommendedTargetSkus: goalProductsForScreen.map((product) => normalizeSku(product.sku)),
+      recommendedTargetSkus,
       currentTemplateId,
       recommendedTemplateId,
       currentRefreshInterval,
       recommendedRefreshInterval,
+      dailyRate,
+      placementCost,
       templateRationale,
       refreshRationale
-    });
+    };
+
+    if (targetProducts.length > 0 && goalProductsForScreen.length === 0 && assortmentFit < planningProfile.minAssortmentFit && !isObjectivePreferredScreen(screen, goal.objective)) {
+      excludedScreens.push({
+        ...candidateBase,
+        reasonCode: "low-assortment-fit",
+        reasonShort: "Held out because the screen context did not fit the selected SKU assortment strongly enough.",
+        productRelevance,
+        scoreBreakdown,
+        reason: `Skipped by context guardrail. Screen context does not match target categories (${targetCategories || "selected SKUs"}).`
+      });
+      continue;
+    }
+
+    if (goal.requestedPageId && scopeFit < planningProfile.offPageScopeFit && goal.aggressiveness === "Conservative" && readOptionalString(screen.pageId, 40) !== goal.requestedPageId) {
+      excludedScreens.push({
+        ...candidateBase,
+        reasonCode: "scope-guardrail",
+        reasonShort: `Held out because Conservative planning kept the recommendation anchored to ${goal.requestedPageId}.`,
+        productRelevance,
+        scoreBreakdown,
+        reason: `Skipped by scope guardrail. Conservative planning kept the recommendation anchored to ${goal.requestedPageId}.`
+      });
+      continue;
+    }
+
+    if (score < planningProfile.minPlanScore) {
+      excludedScreens.push({
+        ...candidateBase,
+        reasonCode: "score-below-threshold",
+        reasonShort: "Held out because stronger placements scored higher on the planning model.",
+        productRelevance,
+        scoreBreakdown,
+        reason: "Held out because this screen did not clear the current planning threshold."
+      });
+      continue;
+    }
+
+    scoredCandidates.push(candidateBase);
   }
 
   const selection = selectGoalPlacementCandidates(scoredCandidates, goal, planningProfile);
   const recommendedPlacements = selection.selected;
-  const selectedScreenIds = new Set(recommendedPlacements.map((entry) => entry.screenId));
+  const budgetRankMap = new Map(
+    rankGoalPlacementsForBudget(recommendedPlacements).map((candidate, index) => [candidate.screenId, index + 1])
+  );
+  const rankedRecommendedPlacements = recommendedPlacements.map((candidate) => ({
+    ...candidate,
+    budgetRank: Number(budgetRankMap.get(candidate.screenId) || 0)
+  }));
+  const selectedScreenIds = new Set(rankedRecommendedPlacements.map((entry) => entry.screenId));
   for (const candidate of scoredCandidates) {
     if (selectedScreenIds.has(candidate.screenId)) {
       continue;
     }
     excludedScreens.push({
-      screenId: candidate.screenId,
-      storeId: candidate.storeId,
-      pageId: candidate.pageId,
-      location: candidate.location,
+      ...candidate,
       reasonCode: "below-cutline",
       reasonShort: "Held out because higher-ranked placements covered the same planning scenario more efficiently.",
       productRelevance: candidate.productRelevance,
@@ -3632,7 +3799,7 @@ function buildGoalPlan(goal, screens) {
     });
   }
 
-  for (const candidate of recommendedPlacements) {
+  for (const candidate of rankedRecommendedPlacements) {
     if (!candidate.templateChanged && !candidate.refreshChanged && !candidate.targetingChanged) {
       continue;
     }
@@ -3641,10 +3808,12 @@ function buildGoalPlan(goal, screens) {
       storeId: candidate.storeId,
       pageId: candidate.pageId,
       location: candidate.location,
+      screenType: candidate.screenType,
       placementRole: candidate.placementRole,
       objective: candidate.objective,
       confidence: candidate.confidence,
       score: candidate.score,
+      budgetRank: candidate.budgetRank,
       reason: candidate.reason,
       reasonShort: candidate.reasonShort,
       expectedOutcome: candidate.expectedOutcome,
@@ -3662,6 +3831,8 @@ function buildGoalPlan(goal, screens) {
       recommendedTemplateId: candidate.recommendedTemplateId,
       currentRefreshInterval: candidate.currentRefreshInterval,
       recommendedRefreshInterval: candidate.recommendedRefreshInterval,
+      dailyRate: candidate.dailyRate,
+      placementCost: candidate.placementCost,
       templateRationale: candidate.templateRationale,
       refreshRationale: candidate.refreshRationale
     });
@@ -3674,14 +3845,15 @@ function buildGoalPlan(goal, screens) {
     (change) => change.currentRefreshInterval !== change.recommendedRefreshInterval
   ).length;
   const skuTargetUpdates = proposedChanges.filter((change) => Boolean(change.targetingChanged)).length;
-  const averageScore = averageOf(recommendedPlacements.map((entry) => Number(entry.score || 0)), 0);
-  const averageConfidence = averageOf(recommendedPlacements.map((entry) => Number(entry.confidence || 0)), 0);
+  const averageScore = averageOf(rankedRecommendedPlacements.map((entry) => Number(entry.score || 0)), 0);
+  const averageConfidence = averageOf(rankedRecommendedPlacements.map((entry) => Number(entry.confidence || 0)), 0);
+  const budget = buildGoalBudget(goal, rankedRecommendedPlacements);
 
   const summary =
     proposedChanges.length > 0
-      ? `CMax recommends ${proposedChanges.length} activation adjustment(s) across ${recommendedPlacements.length} placement(s) for ${objectiveDetails.label}.`
-      : recommendedPlacements.length > 0
-        ? `CMax recommends ${recommendedPlacements.length} placement(s) for ${objectiveDetails.label}. The current line-up is already aligned for launch.`
+      ? `CMax recommends ${proposedChanges.length} activation adjustment(s) across ${rankedRecommendedPlacements.length} placement(s) for ${objectiveDetails.label}.`
+      : rankedRecommendedPlacements.length > 0
+        ? `CMax recommends ${rankedRecommendedPlacements.length} placement(s) for ${objectiveDetails.label}. The current line-up is already aligned for launch.`
         : `CMax could not identify an in-scope placement line-up for ${objectiveDetails.label}.`;
 
   const targetSourceLabel =
@@ -3708,6 +3880,10 @@ function buildGoalPlan(goal, screens) {
       : targetProducts.length > 0
         ? "All in-scope placements fit the brief."
         : "";
+  const spendSummary =
+    budget.maxSpend > 0
+      ? `Estimated max spend ${GOAL_PRICING_MODEL.currencySymbol}${budget.maxSpend.toLocaleString()} over ${goal.flightDays} day(s).`
+      : "";
   let strategyHeadline = "The planner selected the strongest placements for the brief.";
   switch (goal.objective) {
     case "awareness":
@@ -3728,6 +3904,7 @@ function buildGoalPlan(goal, screens) {
   const summaryBullets = [
     readOptionalString(goal.storeSelectionReason, 280),
     planningSignals.assortmentCategory ? `Assortment category anchor: ${titleCase(planningSignals.assortmentCategory)}.` : "",
+    "Pricing: retailer-set daily rate by screen type.",
     Array.isArray(planningSignals.briefThemes) && planningSignals.briefThemes.length > 0
       ? `Brief themes: ${planningSignals.briefThemes.slice(0, 4).join(", ")}.`
       : ""
@@ -3735,10 +3912,10 @@ function buildGoalPlan(goal, screens) {
   const requestedPageBestScore = scoredCandidates
     .filter((candidate) => readOptionalString(candidate.pageId, 40) === readOptionalString(goal.requestedPageId || goal.pageId, 40))
     .reduce((best, candidate) => Math.max(best, Number(candidate.score || 0)), 0);
-  const bestSelectedScore = recommendedPlacements.reduce((best, candidate) => Math.max(best, Number(candidate.score || 0)), 0);
+  const bestSelectedScore = rankedRecommendedPlacements.reduce((best, candidate) => Math.max(best, Number(candidate.score || 0)), 0);
 
   return {
-    summary: `${summary} ${targetSummary} ${inferredTermsSummary} ${exclusionSummary}`.replace(/\s+/g, " ").trim(),
+    summary: `${summary} ${targetSummary} ${inferredTermsSummary} ${exclusionSummary} ${spendSummary}`.replace(/\s+/g, " ").trim(),
     strategy: {
       mode: planningSignals.strategyMode || "Objective-led placement plan",
       headline: strategyHeadline,
@@ -3746,7 +3923,7 @@ function buildGoalPlan(goal, screens) {
     },
     totals: {
       scopedScreens: screens.length,
-      plannedScreens: recommendedPlacements.length,
+      plannedScreens: rankedRecommendedPlacements.length,
       compatibleScreens: scoredCandidates.length,
       excludedScreens: excludedScreens.length,
       targetSkus: targetProducts.length,
@@ -3754,13 +3931,16 @@ function buildGoalPlan(goal, screens) {
       templateSwitches,
       refreshUpdates,
       skuTargetUpdates,
+      flightDays: goal.flightDays,
+      maxSpend: budget.maxSpend,
       avgScore: Number(averageScore.toFixed(2)),
       avgConfidence: Number(averageConfidence.toFixed(2))
     },
-    plannedScreenIds: recommendedPlacements.map((entry) => readOptionalString(entry.screenId, 80)).filter(Boolean),
-    recommendedPlacements,
+    plannedScreenIds: rankedRecommendedPlacements.map((entry) => readOptionalString(entry.screenId, 80)).filter(Boolean),
+    recommendedPlacements: rankedRecommendedPlacements,
     proposedChanges,
     excludedScreens,
+    budget,
     selectionInsights: {
       placementBudget: selection.placementBudget,
       requestedCandidateCount: (Array.isArray(screens) ? screens : []).filter(
@@ -4507,18 +4687,46 @@ app.get("/api/health", (_req, res) => {
   res.json({ status: "ok", timestamp: new Date().toISOString() });
 });
 
-app.get("/api/options", (_req, res) => {
-  res.json({
-    pageTypes: PAGE_TYPES,
-    environments: ENVIRONMENTS,
-    verbosityOptions: VERBOSITY_OPTIONS,
-    screenTypes: SCREEN_TYPES,
-    templates: TEMPLATE_PRESETS,
-    goalObjectives: GOAL_OBJECTIVES.map(({ id, label, description }) => ({ id, label, description })),
-    goalAggressivenessOptions: GOAL_AGGRESSIVENESS_OPTIONS,
-    goalSupportsSkuTargeting: true,
-    telemetryEventTypes: TELEMETRY_EVENT_TYPES
-  });
+app.get("/api/options", async (_req, res) => {
+  try {
+    const db = await readDb();
+    res.json({
+      pageTypes: PAGE_TYPES,
+      environments: ENVIRONMENTS,
+      verbosityOptions: VERBOSITY_OPTIONS,
+      screenTypes: SCREEN_TYPES,
+      screenTypePricingDefaults: getStoredScreenTypeRates(db),
+      goalPricingModel: GOAL_PRICING_MODEL,
+      templates: TEMPLATE_PRESETS,
+      goalObjectives: GOAL_OBJECTIVES.map(({ id, label, description }) => ({ id, label, description })),
+      goalAggressivenessOptions: GOAL_AGGRESSIVENESS_OPTIONS,
+      goalSupportsSkuTargeting: true,
+      telemetryEventTypes: TELEMETRY_EVENT_TYPES
+    });
+  } catch (error) {
+    const normalized = normalizeError(error);
+    res.status(normalized.status).json({ error: normalized.message });
+  }
+});
+
+app.put("/api/pricing/screen-types", async (req, res) => {
+  try {
+    const screenTypeRates = readGoalScreenTypeRateCard(req.body?.screenTypeRates);
+    const pricing = await mutateDb(async (db) => {
+      if (!db.pricing || typeof db.pricing !== "object") {
+        db.pricing = {};
+      }
+      db.pricing.screenTypeRates = screenTypeRates;
+      return {
+        screenTypeRates: db.pricing.screenTypeRates
+      };
+    });
+
+    res.json(pricing);
+  } catch (error) {
+    const normalized = normalizeError(error);
+    res.status(normalized.status).json({ error: normalized.message });
+  }
 });
 
 app.get("/api/demo/config", async (_req, res) => {
@@ -4988,6 +5196,7 @@ app.post("/api/agent/goals/plan", async (req, res) => {
 
     const run = await mutateDb(async (db) => {
       const allStoreScreens = Array.isArray(db.screens) ? db.screens : [];
+      const screenTypeRates = getStoredScreenTypeRates(db);
       const demoScreenIdSet = new Set(DEMO_SCREEN_SPECS.map((screen) => screen.screenId));
       const demoCandidateScreens = allStoreScreens.filter((screen) => demoScreenIdSet.has(screen.screenId));
       const shouldUseDemoInventory = demoCandidateScreens.length > 0 && (!goal.storeId || DEMO_STORE_ID_SET.has(goal.storeId));
@@ -5000,6 +5209,7 @@ app.post("/api/agent/goals/plan", async (req, res) => {
       const planningScreenPool = filterScreensByStoreIds(allScreens, storeStrategy.effectiveStoreIds);
       const planningGoal = {
         ...goal,
+        screenTypeRates,
         storeId: readOptionalString(goal.storeId, 80),
         requestedPageId,
         planningSignals,
@@ -5050,9 +5260,11 @@ app.post("/api/agent/goals/plan", async (req, res) => {
         strategy,
         totals: plan.totals,
         plannedScreenIds: plan.plannedScreenIds,
+        selectedPlacementScreenIds: plan.plannedScreenIds,
         recommendedPlacements: plan.recommendedPlacements,
         proposedChanges: plan.proposedChanges,
-        excludedScreens: plan.excludedScreens
+        excludedScreens: plan.excludedScreens,
+        budget: plan.budget
       };
 
       const runs = ensureAgentRunsArray(db);
@@ -5071,6 +5283,10 @@ app.post("/api/agent/goals/plan", async (req, res) => {
 app.post("/api/agent/goals/apply", async (req, res) => {
   try {
     const planId = readRequiredString(req.body.planId, "planId", 120);
+    const requestedBudgetSpend = Number(req.body.budgetSpend);
+    const requestedSelectedScreenIds = readStringArray(req.body.selectedScreenIds, 500, 80).map((screenId) =>
+      readOptionalString(screenId, 80)
+    );
     const feed = await readProductFeed();
 
     const result = await mutateDb(async (db) => {
@@ -5095,10 +5311,64 @@ app.post("/api/agent/goals/apply", async (req, res) => {
         };
       }
 
-      const changes = Array.isArray(run.proposedChanges) ? run.proposedChanges : [];
-      const plannedScreenIds = resolveGoalRunScreenIds(run);
+      const placementPool = new Map();
+      for (const placement of [
+        ...(Array.isArray(run.recommendedPlacements) ? run.recommendedPlacements : []),
+        ...(Array.isArray(run.excludedScreens) ? run.excludedScreens : [])
+      ]) {
+        const screenId = readOptionalString(placement?.screenId, 80);
+        if (screenId && !placementPool.has(screenId)) {
+          placementPool.set(screenId, placement);
+        }
+      }
+      const persistedSelectedScreenIds = readStringArray(run.selectedPlacementScreenIds, 500, 80)
+        .map((screenId) => readOptionalString(screenId, 80))
+        .filter((screenId) => placementPool.has(screenId));
+      const fallbackSelectedScreenIds = (Array.isArray(run.recommendedPlacements) ? run.recommendedPlacements : [])
+        .map((placement) => readOptionalString(placement?.screenId, 80))
+        .filter((screenId) => placementPool.has(screenId));
+      const selectedPlacementScreenIds = [
+        ...new Set(
+          (
+            requestedSelectedScreenIds.length > 0
+              ? requestedSelectedScreenIds
+              : persistedSelectedScreenIds.length > 0
+                ? persistedSelectedScreenIds
+                : fallbackSelectedScreenIds
+          ).filter((screenId) => placementPool.has(screenId))
+        )
+      ];
+      const selectedPlacements = selectedPlacementScreenIds
+        .map((screenId, index) => {
+          const placement = placementPool.get(screenId);
+          if (!placement) {
+            return null;
+          }
+          return {
+            ...placement,
+            screenId,
+            budgetRank: index + 1
+          };
+        })
+        .filter(Boolean);
+      const budgetSelection = buildGoalBudget(run.goal || {}, selectedPlacements, requestedBudgetSpend);
+      if (budgetSelection.fundedScreenIds.length === 0) {
+        throw new HttpError(400, "The selected budget does not fund any placements.");
+      }
+
+      const fundedScreenIdSet = new Set(budgetSelection.fundedScreenIds);
+      const changeMap = new Map(
+        (Array.isArray(run.proposedChanges) ? run.proposedChanges : [])
+          .filter((change) => fundedScreenIdSet.has(readOptionalString(change?.screenId, 80)))
+          .map((change) => [readOptionalString(change?.screenId, 80), change])
+      );
+      const manualSelectionScreenIdSet = new Set(
+        selectedPlacementScreenIds.filter((screenId) => fundedScreenIdSet.has(screenId) && !changeMap.has(screenId))
+      );
+      const plannedScreenIds = budgetSelection.fundedScreenIds;
       const now = new Date().toISOString();
       const objectiveId = readOptionalString(run.goal?.objective, 40) || "awareness";
+      const flightWindow = resolveGoalFlightWindow(run.goal || {});
       const runTargetSkuIds = readStringArray(run.goal?.targetSkuIds, GOAL_TARGET_SKU_LIMIT, 80).map((sku) =>
         normalizeSku(sku)
       );
@@ -5115,18 +5385,21 @@ app.post("/api/agent/goals/apply", async (req, res) => {
       let creativeGeneratedCount = 0;
       const appliedScreenIds = [];
 
-      for (const change of changes) {
-        const screen = (db.screens || []).find((entry) => entry.screenId === change.screenId);
+      for (const screenId of plannedScreenIds) {
+        const screen = (db.screens || []).find((entry) => entry.screenId === screenId);
         if (!screen) {
           skippedCount += 1;
           continue;
         }
 
-        const nextTemplateId = readOptionalString(change.recommendedTemplateId, 80) || screen.templateId;
+        const change = changeMap.get(screenId) || null;
+        const nextTemplateId = readOptionalString(change?.recommendedTemplateId, 80) || screen.templateId;
         const nextTemplate = getTemplatePreset(nextTemplateId);
-        const nextRefreshInterval = readRefreshInterval(change.recommendedRefreshInterval);
+        const nextRefreshInterval = change
+          ? readRefreshInterval(change.recommendedRefreshInterval)
+          : readRefreshInterval(screen.refreshInterval);
         const goalProductsForScreen = pickGoalProductsForScreenWithObjective(screen, runTargetProducts, nextTemplate.id, objectiveId);
-        if (hasGoalTargeting && goalProductsForScreen.length === 0) {
+        if (hasGoalTargeting && goalProductsForScreen.length === 0 && !manualSelectionScreenIdSet.has(screenId)) {
           skippedCount += 1;
           continue;
         }
@@ -5143,12 +5416,19 @@ app.post("/api/agent/goals/apply", async (req, res) => {
               nextTemplate.id,
               objectiveId,
               goalProductsForScreen,
-              fallbackFeedProduct
+              fallbackFeedProduct,
+              run.goal
             )
           ];
           creativeGeneratedCount += 1;
         } else {
           screen.lineItems = existingLineItems.map((lineItem) => {
+            const nextLineItemBase = {
+              ...lineItem,
+              activeFrom: flightWindow.activeFrom,
+              activeTo: flightWindow.activeTo,
+              templateId: nextTemplate.id
+            };
             const products = Array.isArray(lineItem.products) ? lineItem.products : [];
             const mappedGoalProducts =
               goalProductsForScreen.length > 0
@@ -5158,15 +5438,13 @@ app.post("/api/agent/goals/apply", async (req, res) => {
                 : [];
             if (mappedGoalProducts.length > 0) {
               return {
-                ...lineItem,
-                templateId: nextTemplate.id,
+                ...nextLineItemBase,
                 products: mappedGoalProducts
               };
             }
             if (products.length > 0) {
               return {
-                ...lineItem,
-                templateId: nextTemplate.id,
+                ...nextLineItemBase,
                 products: products.map((product) => {
                   const normalizedProduct = buildStorageProduct(
                     product,
@@ -5189,12 +5467,12 @@ app.post("/api/agent/goals/apply", async (req, res) => {
               nextTemplate.id,
               objectiveId,
               goalProductsForScreen,
-              fallbackFeedProduct
+              fallbackFeedProduct,
+              run.goal
             );
             creativeGeneratedCount += 1;
             return {
-              ...lineItem,
-              templateId: nextTemplate.id,
+              ...nextLineItemBase,
               products: generated.products
             };
           });
@@ -5220,10 +5498,12 @@ app.post("/api/agent/goals/apply", async (req, res) => {
       run.appliedCount = appliedCount;
       run.skippedCount = skippedCount;
       run.creativeGeneratedCount = creativeGeneratedCount;
+      run.selectedPlacementScreenIds = selectedPlacementScreenIds;
+      run.budget = budgetSelection;
       run.appliedScreenIds = uniqueAppliedScreenIds;
       run.liveScreens = liveScreens;
       run.liveCount = liveScreens.length;
-      run.summary = `${run.summary} Applied ${appliedCount} screen update(s).${
+      run.summary = `${run.summary} Approved ${GOAL_PRICING_MODEL.currencySymbol}${budgetSelection.selectedSpend.toLocaleString()} across ${budgetSelection.fundedPlacementCount} placement(s). Applied ${appliedCount} screen update(s).${
         skippedCount > 0 ? ` Skipped ${skippedCount} screen(s) due to context guardrails.` : ""
       }${creativeGeneratedCount > 0 ? ` Auto-created creative on ${creativeGeneratedCount} screen(s).` : ""}`;
 

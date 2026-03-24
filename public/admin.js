@@ -35,6 +35,16 @@ const DEFAULT_GOAL_DEFAULTS = {
   targetSkuIds: ["ACC-MOUSE-001"]
 };
 
+const DEFAULT_SCREEN_TYPE_DAILY_RATES = {
+  "Vertical Screen": 180,
+  "Horizontal Screen": 150,
+  "Shelf Edge": 65,
+  Endcap: 95,
+  Kiosk: 130,
+  "Digital Menu Board": 120
+};
+const DEFAULT_GOAL_FLIGHT_DAYS = 7;
+
 function createDefaultStage(id, label, description, starterScreenId, actionLabel) {
   return {
     id,
@@ -113,6 +123,10 @@ const state = {
   presetLoadedInSession: false,
   goalPlanningStep: 1,
   goalScopeStepAcknowledged: false,
+  goalRetailerRateCard: null,
+  goalPlacementSelections: new Map(),
+  goalBudgetPlanId: "",
+  goalBudgetSpend: null,
   sessionPlanIds: new Set(),
   toastTimeoutId: null,
   previewRailKey: ""
@@ -162,13 +176,18 @@ const elements = {
   templateId: qs("#templateId"),
   refreshInterval: qs("#refreshInterval"),
   templatePreview: qs("#templatePreview"),
+  retailerRateCard: qs("#retailerRateCard"),
+  saveRetailerRatesBtn: qs("#saveRetailerRatesBtn"),
   screenSubmitBtn: qs("#screenSubmitBtn"),
   screenCancelBtn: qs("#screenCancelBtn"),
   goalAgentForm: qs("#goalAgentForm"),
   goalObjective: qs("#goalObjective"),
   goalAggressiveness: qs("#goalAggressiveness"),
+  goalRateCard: qs("#goalRateCard"),
   goalStoreScope: qs("#goalStoreScope"),
   goalPageScope: qs("#goalPageScope"),
+  goalFlightStart: qs("#goalFlightStart"),
+  goalFlightEnd: qs("#goalFlightEnd"),
   goalPrompt: qs("#goalPrompt"),
   goalBrandAccount: qs("#goalBrandAccount"),
   goalProductCategory: qs("#goalProductCategory"),
@@ -185,6 +204,7 @@ const elements = {
   goalApplyBtn: qs("#goalApplyBtn"),
   goalPlanSummary: qs("#goalPlanSummary"),
   goalPlanChanges: qs("#goalPlanChanges"),
+  goalPlanBudget: qs("#goalPlanBudget"),
   goalLiveSummary: qs("#goalLiveSummary"),
   goalLiveScreens: qs("#goalLiveScreens"),
   telemetrySummary: qs("#telemetrySummary"),
@@ -220,6 +240,179 @@ function defaultValue(options, preferred) {
 
 function formatCount(value) {
   return Number(value || 0).toLocaleString();
+}
+
+function formatMoney(value) {
+  return `$${Math.round(Number(value || 0)).toLocaleString()}`;
+}
+
+function parseDateInputValue(value) {
+  const raw = String(value || "").trim();
+  const match = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) {
+    return null;
+  }
+  const date = new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3])));
+  return Number.isNaN(date.valueOf()) ? null : date;
+}
+
+function formatDateInputValue(date) {
+  if (!(date instanceof Date) || Number.isNaN(date.valueOf())) {
+    return "";
+  }
+  const year = date.getUTCFullYear();
+  const month = String(date.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(date.getUTCDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function getTodayDateInputValue() {
+  const today = new Date();
+  return formatDateInputValue(new Date(Date.UTC(today.getFullYear(), today.getMonth(), today.getDate())));
+}
+
+function shiftDateInputValue(value, dayOffset) {
+  const date = parseDateInputValue(value) || parseDateInputValue(getTodayDateInputValue());
+  if (!date) {
+    return "";
+  }
+  date.setUTCDate(date.getUTCDate() + Number(dayOffset || 0));
+  return formatDateInputValue(date);
+}
+
+function formatDateLabel(value) {
+  const parsed = parseDateInputValue(value);
+  if (!parsed) {
+    return "";
+  }
+  return parsed.toLocaleDateString(undefined, {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    timeZone: "UTC"
+  });
+}
+
+function getGoalFlightDayCount(startValue, endValue) {
+  const start = parseDateInputValue(startValue);
+  const end = parseDateInputValue(endValue);
+  if (!start || !end) {
+    return 0;
+  }
+  const diffDays = Math.floor((end.valueOf() - start.valueOf()) / (24 * 60 * 60 * 1000));
+  return diffDays >= 0 ? diffDays + 1 : 0;
+}
+
+function hasValidGoalFlightDates() {
+  return getGoalFlightDayCount(elements.goalFlightStart?.value, elements.goalFlightEnd?.value) > 0;
+}
+
+function formatGoalFlightSummary(startValue = elements.goalFlightStart?.value, endValue = elements.goalFlightEnd?.value) {
+  const flightDays = getGoalFlightDayCount(startValue, endValue);
+  if (!flightDays) {
+    return "Choose a start and end date.";
+  }
+  return `${formatDateLabel(startValue)} - ${formatDateLabel(endValue)} (${flightDays} day${flightDays === 1 ? "" : "s"})`;
+}
+
+function getGoalRateCardScreenTypes() {
+  return Array.isArray(state.options?.screenTypes) && state.options.screenTypes.length > 0
+    ? state.options.screenTypes
+    : Object.keys(DEFAULT_SCREEN_TYPE_DAILY_RATES);
+}
+
+function getGoalRateCardDefaults() {
+  const serverDefaults = state.options?.screenTypePricingDefaults || {};
+  return Object.fromEntries(
+    getGoalRateCardScreenTypes().map((screenType) => {
+      const fallback = Number(DEFAULT_SCREEN_TYPE_DAILY_RATES[screenType] || 100);
+      const configured = Number(serverDefaults?.[screenType]);
+      return [screenType, Number.isFinite(configured) ? Math.max(0, Math.round(configured)) : fallback];
+    })
+  );
+}
+
+function sanitizeGoalRateCard(rateCard = {}) {
+  const defaults = getGoalRateCardDefaults();
+  const normalized = {};
+  for (const screenType of getGoalRateCardScreenTypes()) {
+    const candidate = Number(rateCard?.[screenType]);
+    normalized[screenType] = Number.isFinite(candidate) && candidate >= 0 ? Math.round(candidate) : defaults[screenType];
+  }
+  return normalized;
+}
+
+function readGoalRateCard() {
+  return sanitizeGoalRateCard(state.goalRetailerRateCard || state.options?.screenTypePricingDefaults || {});
+}
+
+function readRetailerRateCardInputs() {
+  const raw = {};
+  for (const input of qsa(".js-retailer-rate-input")) {
+    const screenType = String(input.dataset.screenType || "").trim();
+    if (screenType) {
+      raw[screenType] = Number(input.value);
+    }
+  }
+  return sanitizeGoalRateCard(raw);
+}
+
+function renderGoalRateCard(rateCardSeed = null) {
+  const rateCard = sanitizeGoalRateCard(
+    rateCardSeed && typeof rateCardSeed === "object" ? rateCardSeed : readGoalRateCard()
+  );
+  state.goalRetailerRateCard = rateCard;
+  if (!elements.goalRateCard) {
+    return;
+  }
+  elements.goalRateCard.innerHTML = getGoalRateCardScreenTypes()
+    .map(
+      (screenType) => `<article class="summary-card">
+        <span class="kpi-card__label">${escapeHtml(screenType)}</span>
+        <strong>${escapeHtml(formatMoney(rateCard[screenType] || 0))}</strong>
+        <span>Per screen / day</span>
+      </article>`
+    )
+    .join("");
+}
+
+function renderRetailerRateCard(rateCardSeed = null) {
+  if (!elements.retailerRateCard) {
+    return;
+  }
+  const rateCard = sanitizeGoalRateCard(
+    rateCardSeed && typeof rateCardSeed === "object" ? rateCardSeed : state.options?.screenTypePricingDefaults || {}
+  );
+  elements.retailerRateCard.innerHTML = getGoalRateCardScreenTypes()
+    .map(
+      (screenType, index) => `<div class="field">
+        <label for="retailerRateCard-${escapeHtml(String(index))}">${escapeHtml(screenType)}</label>
+        <span class="goal-money-input">
+          <input
+            id="retailerRateCard-${escapeHtml(String(index))}"
+            type="number"
+            min="0"
+            step="5"
+            inputmode="numeric"
+            class="js-retailer-rate-input"
+            data-screen-type="${escapeHtml(screenType)}"
+            value="${escapeHtml(String(rateCard[screenType] || 0))}"
+          >
+        </span>
+        <p class="field__meta">Per screen / day</p>
+      </div>`
+    )
+    .join("");
+}
+
+function summarizeGoalRateCard() {
+  const rates = Object.values(readGoalRateCard()).filter((value) => Number.isFinite(value));
+  if (rates.length === 0) {
+    return "Rate card not set.";
+  }
+  const min = Math.min(...rates);
+  const max = Math.max(...rates);
+  return `${formatMoney(min)}-${formatMoney(max)} per screen / day`;
 }
 
 function getDemoStoreCount() {
@@ -543,6 +736,8 @@ function getGoalDraftForDisplay() {
   const account = getGoalAccountByAdvertiserId(advertiserId);
   const pageId = String(elements.goalPageScope?.value || "").trim();
   const storeId = String(elements.goalStoreScope?.value || "").trim();
+  const flightStartDate = String(elements.goalFlightStart?.value || "").trim();
+  const flightEndDate = String(elements.goalFlightEnd?.value || "").trim();
   return {
     advertiserId,
     brand: account?.brand || "",
@@ -553,6 +748,9 @@ function getGoalDraftForDisplay() {
     pageId,
     requestedPageId: pageId,
     effectivePageId: pageId,
+    flightStartDate,
+    flightEndDate,
+    flightDays: getGoalFlightDayCount(flightStartDate, flightEndDate),
     prompt: String(elements.goalPrompt?.value || "").trim(),
     targetSkuIds: [...state.selectedGoalSkuIds]
   };
@@ -729,7 +927,149 @@ function buildDebugScreenUrl(screenId) {
 }
 
 function countPlannedScreens(plan) {
+  if (!plan) {
+    return 0;
+  }
+  const selectedIds = getGoalPlacementSelectionIds(plan);
+  if (selectedIds.length > 0 || state.goalPlacementSelections.has(plan.planId || "")) {
+    return selectedIds.length;
+  }
   return Array.isArray(plan?.plannedScreenIds) ? plan.plannedScreenIds.length : Number(plan?.totals?.compatibleScreens || 0);
+}
+
+function sanitizeGoalPlacementIds(values = []) {
+  return [...new Set((Array.isArray(values) ? values : []).map((value) => String(value || "").trim()).filter(Boolean))];
+}
+
+function normalizeGoalPlacementEntry(entry = {}, index = 0) {
+  const screenId = String(entry?.screenId || "").trim();
+  return {
+    ...(entry || {}),
+    screenId,
+    placementCost: Math.max(0, Math.round(Number(entry?.placementCost || 0))),
+    budgetRank: Number(entry?.budgetRank || 0),
+    score: Number(entry?.score || 0),
+    confidence: Number(entry?.confidence || 0),
+    recommendedTargetSkus: Array.isArray(entry?.recommendedTargetSkus) ? entry.recommendedTargetSkus : [],
+    _fallbackIndex: index
+  };
+}
+
+function sortGoalPlacementEntries(entries = []) {
+  return entries
+    .slice()
+    .sort((left, right) => {
+      const leftRank = Number(left?.budgetRank || 0);
+      const rightRank = Number(right?.budgetRank || 0);
+      const normalizedLeftRank = leftRank > 0 ? leftRank : Number.MAX_SAFE_INTEGER;
+      const normalizedRightRank = rightRank > 0 ? rightRank : Number.MAX_SAFE_INTEGER;
+      return (
+        normalizedLeftRank - normalizedRightRank ||
+        Number(right?.score || 0) - Number(left?.score || 0) ||
+        Number(right?.confidence || 0) - Number(left?.confidence || 0) ||
+        Number(left?.placementCost || 0) - Number(right?.placementCost || 0) ||
+        String(left?.screenId || "").localeCompare(String(right?.screenId || "")) ||
+        Number(left?._fallbackIndex || 0) - Number(right?._fallbackIndex || 0)
+      );
+    });
+}
+
+function getGoalPlacementPool(plan = {}) {
+  const pool = new Map();
+  const sourceEntries = [
+    ...resolveGoalPlacements(plan),
+    ...(Array.isArray(plan?.excludedScreens) ? plan.excludedScreens : [])
+  ];
+
+  sourceEntries.forEach((entry, index) => {
+    const normalized = normalizeGoalPlacementEntry(entry, index);
+    if (normalized.screenId && !pool.has(normalized.screenId)) {
+      pool.set(normalized.screenId, normalized);
+    }
+  });
+
+  return [...pool.values()];
+}
+
+function getDefaultGoalPlacementSelectionIds(plan = {}) {
+  const explicitSelection = sanitizeGoalPlacementIds(plan?.selectedPlacementScreenIds);
+  if (explicitSelection.length > 0) {
+    return explicitSelection;
+  }
+  return sortGoalPlacementEntries(resolveGoalPlacements(plan).map((entry, index) => normalizeGoalPlacementEntry(entry, index)))
+    .map((entry) => entry.screenId)
+    .filter(Boolean);
+}
+
+function syncGoalPlacementSelectionFromPlan(plan, { overwrite = false } = {}) {
+  const planId = String(plan?.planId || "").trim();
+  if (!planId) {
+    return;
+  }
+  if (!overwrite && state.goalPlacementSelections.has(planId)) {
+    return;
+  }
+  state.goalPlacementSelections.set(planId, getDefaultGoalPlacementSelectionIds(plan));
+}
+
+function getGoalPlacementSelectionIds(plan = state.activeGoalPlan) {
+  const planId = String(plan?.planId || "").trim();
+  if (!planId) {
+    return [];
+  }
+  if (!state.goalPlacementSelections.has(planId)) {
+    syncGoalPlacementSelectionFromPlan(plan);
+  }
+  return sanitizeGoalPlacementIds(state.goalPlacementSelections.get(planId) || []);
+}
+
+function getSelectedGoalPlacements(plan = state.activeGoalPlan) {
+  const selectionIds = getGoalPlacementSelectionIds(plan);
+  const pool = new Map(getGoalPlacementPool(plan).map((entry) => [entry.screenId, entry]));
+  return selectionIds
+    .map((screenId, index) => {
+      const entry = pool.get(screenId);
+      if (!entry) {
+        return null;
+      }
+      return {
+        ...entry,
+        selectionRank: index + 1
+      };
+    })
+    .filter(Boolean);
+}
+
+function getAvailableGoalPlacements(plan = state.activeGoalPlan) {
+  const selectedIds = new Set(getGoalPlacementSelectionIds(plan));
+  return sortGoalPlacementEntries(getGoalPlacementPool(plan).filter((entry) => !selectedIds.has(entry.screenId)));
+}
+
+function setGoalPlacementSelection(plan, nextScreenIds) {
+  const planId = String(plan?.planId || "").trim();
+  if (!planId) {
+    return [];
+  }
+  const poolIds = new Set(getGoalPlacementPool(plan).map((entry) => entry.screenId));
+  const selection = sanitizeGoalPlacementIds(nextScreenIds).filter((screenId) => poolIds.has(screenId));
+  state.goalPlacementSelections.set(planId, selection);
+  state.goalBudgetPlanId = planId;
+  state.goalBudgetSpend = normalizeGoalBudgetSpend(
+    plan,
+    state.goalBudgetPlanId === planId && Number.isFinite(Number(state.goalBudgetSpend))
+      ? state.goalBudgetSpend
+      : plan?.budget?.selectedSpend
+  );
+  return selection;
+}
+
+function isGoalPlacementSelectionEdited(plan = state.activeGoalPlan) {
+  const current = getGoalPlacementSelectionIds(plan);
+  const baseline = getDefaultGoalPlacementSelectionIds(plan);
+  if (current.length !== baseline.length) {
+    return true;
+  }
+  return current.some((screenId, index) => screenId !== baseline[index]);
 }
 
 function getGoalScopeLabel(goal = {}) {
@@ -900,6 +1240,7 @@ function resolveGoalScopeSuggestion(payload, selectedProducts) {
 }
 
 function syncGoalFormFromRun(run) {
+  syncGoalPlacementSelectionFromPlan(run, { overwrite: run?.status === "applied" });
   if (elements.goalObjective && run?.goal?.objective) {
     elements.goalObjective.value = run.goal.objective;
   }
@@ -915,6 +1256,15 @@ function syncGoalFormFromRun(run) {
   if (elements.goalPageScope) {
     elements.goalPageScope.value = run?.goal?.requestedPageId || run?.goal?.pageId || "";
   }
+  if (elements.goalFlightStart) {
+    elements.goalFlightStart.value = run?.goal?.flightStartDate || elements.goalFlightStart.value || getTodayDateInputValue();
+  }
+  if (elements.goalFlightEnd) {
+    elements.goalFlightEnd.value =
+      run?.goal?.flightEndDate ||
+      elements.goalFlightEnd.value ||
+      shiftDateInputValue(elements.goalFlightStart?.value || getTodayDateInputValue(), DEFAULT_GOAL_FLIGHT_DAYS - 1);
+  }
   if (elements.goalProductCategory) {
     elements.goalProductCategory.value = run?.goal?.assortmentCategory || "";
   }
@@ -923,7 +1273,10 @@ function syncGoalFormFromRun(run) {
   }
   state.goalScopeStepAcknowledged = Boolean(run?.goal);
   state.goalPlanningStep = run?.goal ? 3 : 1;
+  state.goalRetailerRateCard = sanitizeGoalRateCard(state.options?.screenTypePricingDefaults || {});
+  renderGoalRateCard(state.goalRetailerRateCard);
   setSelectedGoalSkus(run?.goal?.targetSkuIds || []);
+  setGoalBudgetStateFromPlan(run);
 }
 
 function renderRadioGroup(container, groupName, options, selected, labelMap = {}) {
@@ -1082,6 +1435,9 @@ function renderOptions() {
     {},
     "Select a style"
   );
+
+  renderRetailerRateCard(state.options?.screenTypePricingDefaults || null);
+  renderGoalRateCard();
 }
 
 function syncSupplyFormDefaults() {
@@ -1140,6 +1496,8 @@ function syncSupplyFormDefaults() {
 }
 
 function syncBuyingFormDefaults(force = false) {
+  const defaultFlightStart = getTodayDateInputValue();
+  const defaultFlightEnd = shiftDateInputValue(defaultFlightStart, DEFAULT_GOAL_FLIGHT_DAYS - 1);
   if (force) {
     if (elements.goalBrandAccount) {
       elements.goalBrandAccount.value = "";
@@ -1156,6 +1514,12 @@ function syncBuyingFormDefaults(force = false) {
     if (elements.goalPageScope) {
       elements.goalPageScope.value = "";
     }
+    if (elements.goalFlightStart) {
+      elements.goalFlightStart.value = defaultFlightStart;
+    }
+    if (elements.goalFlightEnd) {
+      elements.goalFlightEnd.value = defaultFlightEnd;
+    }
     if (elements.goalPrompt) {
       elements.goalPrompt.value = "";
     }
@@ -1167,12 +1531,25 @@ function syncBuyingFormDefaults(force = false) {
     }
     state.goalPlanningStep = 1;
     state.goalScopeStepAcknowledged = false;
+    state.goalRetailerRateCard = null;
+    state.goalPlacementSelections.clear();
+    state.goalBudgetPlanId = "";
+    state.goalBudgetSpend = null;
     setSelectedGoalSkus([]);
+  }
+
+  if (elements.goalFlightStart && !elements.goalFlightStart.value) {
+    elements.goalFlightStart.value = defaultFlightStart;
+  }
+  if (elements.goalFlightEnd && !elements.goalFlightEnd.value) {
+    elements.goalFlightEnd.value = defaultFlightEnd;
   }
 
   renderGoalBrandOptions();
   renderGoalScopeSelects();
   renderGoalProductCategoryOptions();
+  renderRetailerRateCard(state.options?.screenTypePricingDefaults || null);
+  renderGoalRateCard();
   renderGoalProducts();
 }
 
@@ -1395,6 +1772,7 @@ function renderPresetSummary() {
   elements.presetSummary.innerHTML = `
     <strong>Shared player URL: ${escapeHtml(SHARED_PLAYER_URL)}</strong>
     <p>${escapeHtml(summaryMessage)}</p>
+    <p class="goal-change__metrics">Retailer rate card: ${escapeHtml(summarizeGoalRateCard())}</p>
     <p class="goal-change__metrics">
       ${escapeHtml(
         state.presetLoadedInSession
@@ -1565,7 +1943,7 @@ function getGoalPlanningMaxStep() {
   if (!isGoalBriefStepComplete()) {
     return 1;
   }
-  if (!state.goalScopeStepAcknowledged) {
+  if (!state.goalScopeStepAcknowledged || !hasValidGoalFlightDates()) {
     return 2;
   }
   return 3;
@@ -1599,7 +1977,7 @@ function getGoalPlanningStepSummary(stepNumber) {
     const storeId = String(elements.goalStoreScope?.value || "").trim();
     const pageId = String(elements.goalPageScope?.value || "").trim();
     const prompt = String(elements.goalPrompt?.value || "").trim();
-    const parts = [storeId || "All stores", pageId || "All mapped placements"];
+    const parts = [formatGoalFlightSummary(), storeId || "All stores", pageId || "All mapped placements"];
     if (prompt) {
       parts.push(prompt.length > 72 ? `${prompt.slice(0, 69)}...` : prompt);
     }
@@ -1630,12 +2008,15 @@ function getGoalPlanningStepStatus(stepNumber) {
     if (!briefComplete) {
       return "Locked";
     }
+    if (!hasValidGoalFlightDates()) {
+      return state.goalPlanningStep === 2 ? "Required" : "Required";
+    }
     if (state.goalScopeStepAcknowledged) {
       return state.goalPlanningStep > 2 ? "Complete" : "Ready";
     }
     return state.goalPlanningStep === 2 ? "Active" : "Optional";
   }
-  if (!briefComplete || !state.goalScopeStepAcknowledged) {
+  if (!briefComplete || !state.goalScopeStepAcknowledged || !hasValidGoalFlightDates()) {
     return "Locked";
   }
   return state.goalPlanningStep === 3 ? "Active" : "Ready";
@@ -1682,10 +2063,10 @@ function renderGoalPlanningFlow() {
     elements.goalStep1NextBtn.disabled = !briefComplete;
   }
   if (elements.goalStep2NextBtn) {
-    elements.goalStep2NextBtn.disabled = !briefComplete;
+    elements.goalStep2NextBtn.disabled = !briefComplete || !hasValidGoalFlightDates();
   }
   if (elements.goalPlanBtn) {
-    elements.goalPlanBtn.disabled = !briefComplete || !state.goalScopeStepAcknowledged;
+    elements.goalPlanBtn.disabled = !briefComplete || !state.goalScopeStepAcknowledged || !hasValidGoalFlightDates();
   }
 }
 
@@ -1704,10 +2085,16 @@ function ensureGoalPlanningReadyForSubmit() {
   if (!ensureGoalBriefStepComplete()) {
     return false;
   }
+  if (!hasValidGoalFlightDates()) {
+    state.goalPlanningStep = 2;
+    renderGoalPlanningFlow();
+    showStatus("Add a valid flight date range before building the buy.", true);
+    return false;
+  }
   if (!state.goalScopeStepAcknowledged) {
     state.goalPlanningStep = 2;
     renderGoalPlanningFlow();
-    showStatus("Continue through step 2 to confirm the scope before building the buy.", true);
+    showStatus("Continue through step 2 to confirm the flight and scope before building the buy.", true);
     return false;
   }
   return true;
@@ -2156,6 +2543,227 @@ function resolveGoalPlacements(plan = {}) {
   });
 }
 
+function getPlanBudgetMaxSpend(plan = {}) {
+  const selectedPlacements = getSelectedGoalPlacements(plan);
+  if (selectedPlacements.length > 0 || state.goalPlacementSelections.has(String(plan?.planId || "").trim())) {
+    return Math.max(
+      0,
+      Math.round(
+        selectedPlacements.reduce((sum, placement) => sum + Number(placement?.placementCost || 0), 0)
+      )
+    );
+  }
+  return Math.max(0, Math.round(Number(plan?.budget?.maxSpend || plan?.totals?.maxSpend || 0)));
+}
+
+function getGoalBudgetSliderStep(maxSpend) {
+  const normalizedMax = Math.max(0, Math.round(Number(maxSpend) || 0));
+  if (normalizedMax <= 0) {
+    return 1;
+  }
+  const preferredSteps = normalizedMax > 2000 ? [25, 10, 5, 1] : [5, 1];
+  return preferredSteps.find((step) => normalizedMax % step === 0) || 1;
+}
+
+function normalizeGoalBudgetSpend(plan, value) {
+  const maxSpend = getPlanBudgetMaxSpend(plan);
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) {
+    return maxSpend;
+  }
+  return Math.max(0, Math.min(maxSpend, Math.round(parsed)));
+}
+
+function setGoalBudgetStateFromPlan(plan, preferredSpend = null) {
+  if (!plan?.planId) {
+    state.goalBudgetPlanId = "";
+    state.goalBudgetSpend = null;
+    return;
+  }
+  state.goalBudgetPlanId = plan.planId;
+  state.goalBudgetSpend = normalizeGoalBudgetSpend(
+    plan,
+    preferredSpend ?? plan?.budget?.selectedSpend ?? getPlanBudgetMaxSpend(plan)
+  );
+}
+
+function getActiveGoalBudgetSpend(plan = state.activeGoalPlan) {
+  if (!plan) {
+    return 0;
+  }
+  if (state.goalBudgetPlanId === plan.planId && Number.isFinite(Number(state.goalBudgetSpend))) {
+    return normalizeGoalBudgetSpend(plan, state.goalBudgetSpend);
+  }
+  return normalizeGoalBudgetSpend(plan, plan?.budget?.selectedSpend ?? getPlanBudgetMaxSpend(plan));
+}
+
+function buildGoalBudgetScenario(plan = state.activeGoalPlan) {
+  if (!plan) {
+    return {
+      maxSpend: 0,
+      selectedSpend: 0,
+      fundedSpend: 0,
+      fundedIds: new Set(),
+      heldBackIds: new Set(),
+      fundedPlacements: [],
+      heldBackPlacements: [],
+      flightDays: 0
+    };
+  }
+
+  const placements = getSelectedGoalPlacements(plan).map((entry, index) => ({
+    ...normalizeGoalPlacementEntry(entry, index),
+    selectionRank: Number(entry?.selectionRank || index + 1)
+  }));
+  const maxSpend = Math.max(
+    0,
+    Math.round(placements.reduce((sum, placement) => sum + Number(placement?.placementCost || 0), 0))
+  );
+  const selectedSpend = Math.max(0, Math.min(maxSpend, getActiveGoalBudgetSpend(plan)));
+  const fundedPlacements = [];
+  const heldBackPlacements = [];
+  const fundedIds = new Set();
+  const heldBackIds = new Set();
+  let fundedSpend = 0;
+
+  for (const placement of placements) {
+    const nextCost = Math.max(0, placement.placementCost);
+    if (fundedSpend + nextCost <= selectedSpend) {
+      fundedPlacements.push(placement);
+      fundedSpend += nextCost;
+      fundedIds.add(placement.screenId);
+    } else {
+      heldBackPlacements.push(placement);
+      heldBackIds.add(placement.screenId);
+    }
+  }
+
+  return {
+    maxSpend,
+    selectedSpend,
+    fundedSpend,
+    fundedIds,
+    heldBackIds,
+    fundedPlacements,
+    heldBackPlacements,
+    selectedPlacementCount: placements.length,
+    flightDays: Number(plan?.goal?.flightDays || plan?.budget?.flightDays || 0)
+  };
+}
+
+function renderGoalPlanBudget(plan, budgetScenario) {
+  if (!elements.goalPlanBudget) {
+    return;
+  }
+
+  if (!plan) {
+    elements.goalPlanBudget.innerHTML = "";
+    elements.goalPlanBudget.classList.add("empty");
+    return;
+  }
+
+  const maxSpend = budgetScenario.maxSpend;
+  const selectedSpend = budgetScenario.selectedSpend;
+  const fundedCount = budgetScenario.fundedPlacements.length;
+  const heldBackCount = budgetScenario.heldBackPlacements.length;
+  const selectedCount = getGoalPlacementSelectionIds(plan).length;
+  const availableCount = getAvailableGoalPlacements(plan).length;
+  const flightSummary = formatGoalFlightSummary(plan.goal?.flightStartDate, plan.goal?.flightEndDate);
+  const pricingModelLabel = String(plan?.budget?.pricingModelLabel || plan?.goal?.pricingModelLabel || "Retailer-set daily screen rate").trim();
+  const sliderStep = getGoalBudgetSliderStep(maxSpend);
+  const sliderDisabled = plan.status === "applied" || selectedCount === 0;
+  const maxShortcutDisabled = sliderDisabled || selectedSpend >= maxSpend;
+  const launchDisabled = plan.status === "applied" || fundedCount === 0 || selectedCount === 0;
+  const sliderProgress = maxSpend > 0 ? ((selectedSpend / maxSpend) * 100).toFixed(2) : "0";
+
+  elements.goalPlanBudget.classList.remove("empty");
+  elements.goalPlanBudget.innerHTML = `
+    <section class="goal-budget">
+      <div class="goal-budget__header">
+        <div class="goal-budget__copy">
+          <p class="section-kicker">Budget control</p>
+          <h4>${escapeHtml(plan.status === "applied" ? "Approved budget" : "Set budget after editing the plan")}</h4>
+        </div>
+        <span class="card__badge">${escapeHtml(plan.status === "applied" ? "Budget locked" : `${selectedCount} in plan`)}</span>
+      </div>
+      <p class="goal-budget__lede">
+        ${escapeHtml(
+          `${pricingModelLabel}. Finalize the placement mix on the right, then choose how much of the edited plan to fund.`
+        )}
+      </p>
+      <div class="goal-budget__row">
+        <div class="goal-budget__range">
+          <div class="goal-budget__range-head">
+          <label for="goalBudgetSlider">Budget slider</label>
+            <button
+              type="button"
+              class="btn btn--ghost btn--compact js-goal-budget-max"
+              data-plan-id="${escapeHtml(plan.planId || "")}"
+              ${maxShortcutDisabled ? "disabled" : ""}
+            >Use max budget</button>
+          </div>
+          <input
+            id="goalBudgetSlider"
+            type="range"
+            min="0"
+            max="${escapeHtml(String(maxSpend))}"
+            step="${escapeHtml(String(sliderStep))}"
+            value="${escapeHtml(String(selectedSpend))}"
+            style="--goal-budget-progress: ${escapeHtml(sliderProgress)}%;"
+            ${sliderDisabled ? "disabled" : ""}
+          >
+          <div class="goal-budget__range-meta">
+            <span>${escapeHtml(formatMoney(0))}</span>
+            <strong>${escapeHtml(formatMoney(selectedSpend))}</strong>
+            <span>${escapeHtml(formatMoney(maxSpend))}</span>
+          </div>
+        </div>
+        <div class="goal-budget__cta">
+          <button
+            type="button"
+            class="btn btn--primary js-goal-budget-apply"
+            data-plan-id="${escapeHtml(plan.planId || "")}"
+            ${launchDisabled ? "disabled" : ""}
+          >Approve and launch</button>
+        </div>
+      </div>
+      <div class="goal-budget__totals">
+        <div class="goal-budget__total">
+          <span>Flight</span>
+          <strong>${escapeHtml(flightSummary)}</strong>
+        </div>
+        <div class="goal-budget__total">
+          <span>Max spend</span>
+          <strong>${escapeHtml(formatMoney(maxSpend))}</strong>
+        </div>
+        <div class="goal-budget__total">
+          <span>Selected budget</span>
+          <strong>${escapeHtml(formatMoney(selectedSpend))}</strong>
+        </div>
+        <div class="goal-budget__total">
+          <span>Funded placements</span>
+          <strong>${escapeHtml(`${fundedCount}${selectedCount > 0 ? ` of ${selectedCount}` : ""}`)}</strong>
+        </div>
+      </div>
+      <p class="goal-budget__note">
+        ${escapeHtml(
+          selectedCount === 0
+            ? "Add at least one placement from the dropdown before setting a budget."
+            : fundedCount > 0
+              ? `${fundedCount} placement(s) are currently funded. ${
+                  heldBackCount > 0
+                    ? `${heldBackCount} sit below the budget line.${
+                        selectedSpend < maxSpend ? " Use Max budget to fund the full line-up instantly." : ""
+                      }`
+                    : "The edited plan is fully funded."
+                }${availableCount > 0 ? ` ${availableCount} more placement(s) remain available in the dropdown.` : ""}`
+              : "Increase the budget to fund at least one placement."
+        )}
+      </p>
+    </section>
+  `;
+}
+
 function renderGoalPlan() {
   if (!elements.goalPlanSummary || !elements.goalPlanChanges) {
     return;
@@ -2166,21 +2774,20 @@ function renderGoalPlan() {
     elements.goalPlanSummary.classList.add("empty");
     elements.goalPlanSummary.textContent = "Build a buy to see the placement rationale.";
     elements.goalPlanChanges.innerHTML = "";
-    if (elements.goalApplyBtn) {
-      elements.goalApplyBtn.disabled = true;
-    }
+    renderGoalPlanBudget(null, buildGoalBudgetScenario(null));
     return;
   }
 
-  const totals = plan.totals || {};
   const compatibleScreens = countPlannedScreens(plan);
-  const plannedScreenIds = Array.isArray(plan.plannedScreenIds) ? plan.plannedScreenIds : [];
-  const placementEntries = resolveGoalPlacements(plan);
+  const placementEntries = getSelectedGoalPlacements(plan);
+  const availablePlacements = getAvailableGoalPlacements(plan);
+  const budgetScenario = buildGoalBudgetScenario(plan);
   const targetProducts = getGoalPlanTargetProducts(plan);
   const accountLabel = getGoalPlanAccountLabel(plan.goal || {}, targetProducts);
   const focusLabel = describeGoalPlanFocus(plan, targetProducts);
+  const selectionEdited = isGoalPlacementSelectionEdited(plan);
   const placementNames = placementEntries
-    .map((entry, index) => getScreenDisplayLabel(entry?.screenId || plannedScreenIds[index] || ""))
+    .map((entry) => getScreenDisplayLabel(entry?.screenId || ""))
     .filter(Boolean);
   const placementSummary =
     placementNames.length > 2
@@ -2200,8 +2807,11 @@ function renderGoalPlan() {
   const assortmentCategory = String(plan.goal?.assortmentCategory || "").trim();
   const storeLabel = plan.goal?.objective === "clearance" ? "Store focus" : "Store";
   const storeValue = String(plan.goal?.storeFocusLabel || plan.goal?.effectiveStoreId || plan.goal?.storeId || "All stores").trim() || "All stores";
-  const primaryPillLabel = plan.status === "applied" ? "In market" : compatibleScreens > 0 ? "Brief ready" : "Needs revision";
-  const planPlacements = placementEntries.length > 0 ? placementEntries : plannedScreenIds.map((screenId) => ({ screenId }));
+  const primaryPillLabel =
+    plan.status === "applied" ? "In market" : selectionEdited ? "Plan edited" : compatibleScreens > 0 ? "Brief ready" : "Needs revision";
+  const planPlacements = placementEntries;
+  const flightSummary = formatGoalFlightSummary(plan.goal?.flightStartDate, plan.goal?.flightEndDate);
+  const maxSpend = getPlanBudgetMaxSpend(plan);
   const renderDetailRow = (label, value, className = "") => {
     const text = String(value || "").trim();
     if (!text) {
@@ -2231,13 +2841,17 @@ function renderGoalPlan() {
   const introText =
     compatibleScreens === 0
       ? "We could not find a strong in-store line-up for this brief. Try widening the placement focus or selecting a different account/category."
-      : `We recommend ${placementSummary || `${compatibleScreens} placement(s)`}${focusLabel && focusLabel !== "the selected brief" ? ` for ${focusLabel}` : ""}.`;
+      : selectionEdited
+        ? `The editable line-up currently includes ${placementSummary || `${compatibleScreens} placement(s)`}.`
+        : `We recommend ${placementSummary || `${compatibleScreens} placement(s)`}${
+            focusLabel && focusLabel !== "the selected brief" ? ` for ${focusLabel}` : ""
+          }.`;
   const readinessText =
     compatibleScreens === 0
       ? ""
       : plan.status === "applied"
-        ? "This recommendation is now live in monitoring."
-        : "Approve and launch to move this recommendation into monitoring.";
+        ? `This recommendation is now live in monitoring with ${formatMoney(budgetScenario.fundedSpend)} approved.`
+        : "Edit the placement mix if needed, then set the budget in the left column and launch.";
   const priorityLabel =
     focusLabel && focusLabel !== "the selected brief"
       ? focusLabel
@@ -2249,7 +2863,9 @@ function renderGoalPlan() {
       renderDetailRow("Strategy", strategyHeadline),
       renderDetailRow("Strategy notes", strategyBullets.length > 0 ? strategyBullets.join(" | ") : ""),
       renderDetailRow("Readiness", readinessText),
-      renderDetailRow("Stock note", plan.goal?.stockMessage || "")
+      renderDetailRow("Stock note", plan.goal?.stockMessage || ""),
+      renderDetailRow("Flight", flightSummary),
+      renderDetailRow("Pricing model", String(plan?.budget?.pricingModelLabel || "").trim())
     ]),
     renderDetailGroup("Brief metadata", [
       renderDetailRow(
@@ -2261,7 +2877,8 @@ function renderGoalPlan() {
       renderDetailRow("Assortment category", assortmentCategory),
       renderDetailRow("Campaign brief", plan.goal?.prompt || ""),
       renderDetailRow("Scope note", scopeMessage),
-      renderDetailRow("Plan metadata", `Plan ID: ${plan.planId || ""} | Created: ${formatTimestamp(plan.createdAt)}`)
+      renderDetailRow("Plan metadata", `Plan ID: ${plan.planId || ""} | Created: ${formatTimestamp(plan.createdAt)}`),
+      renderDetailRow("Budget", `${formatMoney(budgetScenario.selectedSpend)} selected from ${formatMoney(maxSpend)} max spend`)
     ])
   ]
     .filter(Boolean)
@@ -2294,15 +2911,29 @@ function renderGoalPlan() {
         <span class="kpi-card__label">Placements</span>
         <strong>${escapeHtml(String(compatibleScreens || 0))}</strong>
       </div>
+      <div class="summary-card">
+        <span class="kpi-card__label">Max spend</span>
+        <strong>${escapeHtml(formatMoney(maxSpend))}</strong>
+      </div>
     </div>
     <div class="goal-summary__details summary-split">
       ${detailGroups}
     </div>
   `;
 
-  const recommendedPlacementMarkup = planPlacements
-    .map((entry, index) => {
-      const screenId = String(entry?.screenId || plannedScreenIds[index] || "").trim();
+  const describeAvailablePlacementReason = (entry, fallbackReason) => {
+    const raw = String(entry?.reasonShort || entry?.reason || "").trim();
+    if (!raw) {
+      return fallbackReason;
+    }
+    return raw
+      .replace(/^Skipped by context guardrail\.?\s*/i, "")
+      .replace(/^Skipped by context guardrail/i, "")
+      .replace(/^No compatible target products were found for this screen\.?/i, "it does not fit the current SKU brief.");
+  };
+
+  const renderPlacementCard = (entry, index, { funded = true, available = false } = {}) => {
+      const screenId = String(entry?.screenId || "").trim();
       const screen = { ...(getGoalPlanScreen(screenId) || {}), ...(entry || {}), screenId };
       const recommendedSkus = Array.isArray(entry?.recommendedTargetSkus)
         ? entry.recommendedTargetSkus
@@ -2312,14 +2943,33 @@ function renderGoalPlan() {
           ? (plan.proposedChanges || []).find((change) => String(change.screenId || "") === screenId)?.recommendedTargetSkus
           : [];
       const recommendedSkuLabels = recommendedSkus.map((sku) => getProductLabelBySku(sku)).filter(Boolean);
-      const placementLabel = plan.status === "applied" ? "Live" : "Recommended";
-      const placementReason = getGoalPlacementReason(entry || {}, screen, plan, targetProducts);
+      const placementLabel = available
+        ? "Available"
+        : plan.status === "applied"
+          ? funded
+            ? "Live"
+            : "Budget hold"
+          : funded
+            ? "Funded"
+            : "Held by budget";
+      const placementReason = available
+        ? describeAvailablePlacementReason(entry, getGoalPlacementReason(entry || {}, screen, plan, targetProducts))
+        : getGoalPlacementReason(entry || {}, screen, plan, targetProducts);
       const scoreLine = getGoalPlacementScoreLine(entry || {});
       const templateRationale = String(entry?.templateRationale || "").trim();
       const refreshRationale = String(entry?.refreshRationale || "").trim();
       const placementRole = String(entry?.placementRole || "").trim();
       const expectedOutcome = String(entry?.expectedOutcome || "").trim();
+      const placementCost = Math.max(0, Math.round(Number(entry?.placementCost || 0)));
+      const dailyRate = Math.max(0, Math.round(Number(entry?.dailyRate || 0)));
+      const screenType = String(entry?.screenType || screen?.screenType || "").trim();
       const normalizedExpectedOutcome = expectedOutcome.replace(/^Expected outcome:\s*/i, "");
+      const actionButton =
+        plan.status === "applied"
+          ? ""
+          : available
+            ? `<button type="button" class="btn btn--tiny js-goal-placement-add" data-plan-id="${escapeHtml(plan.planId || "")}" data-screen-id="${escapeHtml(screenId)}">Add placement</button>`
+            : `<button type="button" class="btn btn--tiny js-goal-placement-remove" data-plan-id="${escapeHtml(plan.planId || "")}" data-screen-id="${escapeHtml(screenId)}">Remove</button>`;
       const placementMetaRows = [
         placementRole
           ? `<div class="goal-placement-card__meta-block">
@@ -2338,6 +2988,13 @@ function renderGoalPlan() {
               <strong>${escapeHtml(scoreLine)}</strong>
             </div>`
           : "",
+        placementCost > 0
+          ? `<div class="goal-placement-card__meta-block">
+              <span class="goal-placement-card__meta-label">Cost</span>
+              <strong>${escapeHtml(formatMoney(placementCost))}</strong>
+              <span class="goal-placement-card__meta-copy">${escapeHtml(`${formatMoney(dailyRate)} / day${screenType ? ` | ${screenType}` : ""}`)}</span>
+            </div>`
+          : "",
         templateRationale || refreshRationale
           ? `<div class="goal-placement-card__meta-block">
               <span class="goal-placement-card__meta-label">Creative logic</span>
@@ -2346,6 +3003,13 @@ function renderGoalPlan() {
                   .filter(Boolean)
                   .join(" | ")
               )}</strong>
+            </div>`
+          : "",
+        available && String(entry?.reasonCode || "").trim()
+          ? `<div class="goal-placement-card__meta-block goal-placement-card__meta-block--muted">
+              <span class="goal-placement-card__meta-label">Status</span>
+              <strong>${escapeHtml(String(entry.reasonCode).trim())}</strong>
+              <span class="goal-placement-card__meta-copy">This placement is currently outside the active plan.</span>
             </div>`
           : "",
         `<div class="goal-placement-card__meta-block">
@@ -2357,87 +3021,97 @@ function renderGoalPlan() {
                   ? goalTargetSourceLabel(plan.goal?.targetSource)
                   : focusLabel
             )}</strong>
+            ${
+              available
+                ? '<span class="goal-placement-card__meta-copy">Add this placement to include it before budgeting.</span>'
+                : funded
+                  ? ""
+                  : '<span class="goal-placement-card__meta-copy">This placement drops below the current budget cut line.</span>'
+            }
           </div>`
       ]
         .filter(Boolean)
         .join("");
-      return `<article class="record goal-placement-card">
+      const placementNumber = Number(entry?.budgetRank || entry?.selectionRank || index + 1);
+      const eyebrow = available && Number(entry?.budgetRank || 0) <= 0
+        ? "Available placement"
+        : `Placement ${String(placementNumber).padStart(2, "0")}`;
+      return `<article class="record goal-placement-card${funded && !available ? "" : " record--muted"}${available ? " goal-placement-card--available" : ""}">
         <div class="record__top goal-placement-card__top">
           <div class="goal-placement-card__headline">
-            <p class="goal-placement-card__eyebrow">Placement ${escapeHtml(String(index + 1).padStart(2, "0"))}</p>
+            <p class="goal-placement-card__eyebrow">${escapeHtml(eyebrow)}</p>
             <strong>${escapeHtml(getScreenDisplayLabel(screenId) || screenId || "")}</strong>
           </div>
-          <span class="goal-placement__status pill ${plan.status === "applied" ? "pill--applied" : "pill--planned"}">${escapeHtml(placementLabel)}</span>
+          <div class="goal-placement-card__actions">
+            <span class="goal-placement__status pill ${available ? "" : plan.status === "applied" ? "pill--applied" : "pill--planned"}">${escapeHtml(placementLabel)}</span>
+            ${actionButton}
+          </div>
         </div>
         <p class="goal-placement-card__reason">${escapeHtml(placementReason)}</p>
         <div class="goal-placement-card__meta-grid">
           ${placementMetaRows}
         </div>
       </article>`;
-    })
+    };
+
+  const fundedPlacementMarkup = planPlacements
+    .filter((entry) => budgetScenario.fundedIds.has(String(entry?.screenId || "").trim()))
+    .map((entry, index) => renderPlacementCard(entry, index, { funded: true }))
     .join("");
 
-  const excludedMarkup = (plan.excludedScreens || [])
-    .map(
-      (entry) => `<article class="record record--muted goal-placement-card goal-placement-card--excluded">
-        <div class="record__top goal-placement-card__top">
-          <div class="goal-placement-card__headline">
-            <p class="goal-placement-card__eyebrow">Excluded placement</p>
-            <strong>${escapeHtml(getScreenDisplayLabel(entry.screenId) || entry.screenId || "")}</strong>
-          </div>
-          <span class="goal-placement__status">Not recommended</span>
-        </div>
-        <p class="goal-placement-card__reason">${escapeHtml(
-          String(entry.reasonShort || entry.reason || "")
-            .trim()
-            .replace(/^Skipped by context guardrail\.?\s*/i, "")
-            .replace(/^Skipped by context guardrail/i, "")
-            .replace(/^No compatible target products were found for this screen\.?/i, "it does not fit the current SKU brief.") ||
-            "It does not fit the current brief."
-        )}</p>
-        <div class="goal-placement-card__meta-grid">
-          ${String(entry.reasonCode || "").trim() ? `<div class="goal-placement-card__meta-block"><span class="goal-placement-card__meta-label">Reason code</span><strong>${escapeHtml(String(entry.reasonCode).trim())}</strong></div>` : ""}
-          <div class="goal-placement-card__meta-block goal-placement-card__meta-block--muted">
-            <span class="goal-placement-card__meta-label">Status</span>
-            <strong>This placement sits outside the current brief.</strong>
-            <span class="goal-placement-card__meta-copy">It is being held out of the recommended buy.</span>
-          </div>
-        </div>
-      </article>`
-    )
+  const heldPlacementMarkup = planPlacements
+    .filter((entry) => budgetScenario.heldBackIds.has(String(entry?.screenId || "").trim()))
+    .map((entry, index) => renderPlacementCard(entry, index, { funded: false }))
+    .join("");
+
+  const availablePlacementMarkup = availablePlacements
+    .map((entry, index) => renderPlacementCard(entry, index, { available: true }))
     .join("");
 
   elements.goalPlanChanges.innerHTML =
     [
-      recommendedPlacementMarkup
+      fundedPlacementMarkup
         ? `<section class="goal-placement-group goal-placement-group--recommended">
             <div class="goal-placement-group__header">
-              <p class="section-kicker">Recommended line-up</p>
-              <h3>Primary placements</h3>
+              <p class="section-kicker">${escapeHtml(plan.status === "applied" ? "Approved line-up" : "Funded line-up")}</p>
+              <h3>${escapeHtml(plan.status === "applied" ? "Live placements" : "Placements within budget")}</h3>
             </div>
             <div class="stack-list">
-              ${recommendedPlacementMarkup}
+              ${fundedPlacementMarkup}
             </div>
           </section>`
         : "",
-      excludedMarkup
+      heldPlacementMarkup
         ? `<section class="goal-placement-group goal-placement-group--excluded">
             <div class="goal-placement-group__header">
-              <p class="section-kicker">Held back</p>
-              <h3>Excluded placements</h3>
+              <p class="section-kicker">Budget hold</p>
+              <h3>Selected placements below the cut line</h3>
             </div>
             <div class="stack-list">
-              ${excludedMarkup}
+              ${heldPlacementMarkup}
             </div>
           </section>`
+        : "",
+      availablePlacementMarkup
+        ? `<details class="goal-placement-group goal-placement-group--available goal-placement-dropdown"${compatibleScreens === 0 ? " open" : ""}>
+            <summary class="goal-placement-dropdown__summary">
+              <div class="goal-placement-dropdown__summary-copy">
+                <p class="section-kicker">Available placements</p>
+                <h3>${escapeHtml(`${availablePlacements.length} placement${availablePlacements.length === 1 ? "" : "s"} not in the current plan`)}</h3>
+                <p>Add or restore placements here before setting the budget and sending the plan live.</p>
+              </div>
+              <span class="card__badge">${escapeHtml(`${availablePlacements.length} available`)}</span>
+            </summary>
+            <div class="stack-list">
+              ${availablePlacementMarkup}
+            </div>
+          </details>`
         : ""
     ]
       .filter(Boolean)
       .join("") || '<div class="empty">No placements are ready for this brief yet.</div>';
 
-  if (elements.goalApplyBtn) {
-    elements.goalApplyBtn.disabled = plan.status === "applied" || compatibleScreens === 0;
-  }
+  renderGoalPlanBudget(plan, budgetScenario);
 }
 
 function renderGoalRuns() {
@@ -2455,6 +3129,10 @@ function renderGoalRuns() {
       const canApply = run.status !== "applied" && countPlannedScreens(run) > 0;
       const pillLabel = run.status === "applied" ? "In market" : "Brief ready";
       const runStoreLabel = String(run.goal?.storeFocusLabel || run.goal?.requestedStoreId || run.goal?.storeId || "All stores").trim() || "All stores";
+      const primaryActionLabel = canApply ? "Review budget" : "Open brief";
+      const selectedSpend =
+        state.goalBudgetPlanId === run.planId ? getActiveGoalBudgetSpend(run) : Math.max(0, Math.round(Number(run?.budget?.selectedSpend || run?.budget?.maxSpend || 0)));
+      const maxSpend = getPlanBudgetMaxSpend(run);
       return `<article class="record">
         <div class="record__top">
           <strong>${escapeHtml(objectiveLabelById(run.goal?.objective))}</strong>
@@ -2464,10 +3142,12 @@ function renderGoalRuns() {
           getGoalScopeLabel(run.goal || {})
         )}</p>
         <p>Placements ${escapeHtml(countPlannedScreens(run) || 0)} | Live ${escapeHtml(run.liveCount || 0)}</p>
+        <p>Flight ${escapeHtml(formatGoalFlightSummary(run.goal?.flightStartDate, run.goal?.flightEndDate))} | Budget ${escapeHtml(
+          maxSpend > 0 ? `${formatMoney(selectedSpend)} / ${formatMoney(maxSpend)}` : "Not priced"
+        )}</p>
         <p>Created ${escapeHtml(formatTimestamp(run.createdAt))}${run.appliedAt ? ` | Applied ${escapeHtml(formatTimestamp(run.appliedAt))}` : ""}</p>
         <span class="record__actions">
-          <button type="button" class="btn btn--tiny js-load-goal-plan" data-plan-id="${escapeHtml(run.planId || "")}">Open brief</button>
-          ${canApply ? `<button type="button" class="btn btn--tiny js-apply-goal-plan" data-plan-id="${escapeHtml(run.planId || "")}">Launch</button>` : ""}
+          <button type="button" class="btn btn--tiny js-load-goal-plan" data-plan-id="${escapeHtml(run.planId || "")}">${escapeHtml(primaryActionLabel)}</button>
         </span>
       </article>`;
     })
@@ -2655,7 +3335,8 @@ function renderLiveScreens() {
       ${escapeHtml(formatTimestamp(plan.appliedAt || plan.updatedAt || plan.createdAt))}
     </p>
     <p class="goal-change__metrics">
-      Shared player URL: ${escapeHtml(SHARED_PLAYER_URL)} | Plan ID: ${escapeHtml(plan.planId || "")}
+      Shared player URL: ${escapeHtml(SHARED_PLAYER_URL)} | Plan ID: ${escapeHtml(plan.planId || "")} | Budget:
+      ${escapeHtml(formatMoney(plan?.budget?.selectedSpend || 0))}
     </p>
   `;
 
@@ -2766,7 +3447,13 @@ async function refreshGoalRunsData() {
   if (state.activeGoalPlan?.planId) {
     const latest = allRuns.find((run) => run.planId === state.activeGoalPlan.planId);
     if (latest) {
+      const preferredBudget =
+        state.goalBudgetPlanId === latest.planId && Number.isFinite(Number(state.goalBudgetSpend))
+          ? state.goalBudgetSpend
+          : latest?.budget?.selectedSpend;
       state.activeGoalPlan = latest;
+      syncGoalPlacementSelectionFromPlan(latest, { overwrite: latest.status === "applied" });
+      setGoalBudgetStateFromPlan(latest, preferredBudget);
       if (!visiblePlanIds.has(latest.planId)) {
         state.agentRuns = [...state.agentRuns, latest];
       }
@@ -2840,6 +3527,8 @@ function readGoalPayload() {
     aggressiveness: String(formData.get("aggressiveness") || "").trim(),
     storeId: String(formData.get("storeId") || "").trim(),
     pageId: String(formData.get("pageId") || "").trim(),
+    flightStartDate: String(elements.goalFlightStart?.value || "").trim(),
+    flightEndDate: String(elements.goalFlightEnd?.value || "").trim(),
     assortmentCategory: String(elements.goalProductCategory?.value || "").trim().toLowerCase(),
     prompt: String(formData.get("prompt") || "").trim(),
     advertiserId,
@@ -2854,6 +3543,54 @@ function prepareGoalPayloadForDemo() {
     payload,
     scopeMessage: ""
   };
+}
+
+async function saveRetailerRateCard() {
+  const rateCard = readRetailerRateCardInputs();
+  const response = await requestJson("/api/pricing/screen-types", {
+    method: "PUT",
+    body: JSON.stringify({ screenTypeRates: rateCard })
+  });
+
+  if (!state.options || typeof state.options !== "object") {
+    state.options = {};
+  }
+  state.options.screenTypePricingDefaults = sanitizeGoalRateCard(response.screenTypeRates || rateCard);
+  renderRetailerRateCard(state.options.screenTypePricingDefaults);
+  state.goalRetailerRateCard = sanitizeGoalRateCard(state.options.screenTypePricingDefaults);
+  renderGoalRateCard(state.goalRetailerRateCard);
+  renderGoalPlanningFlow();
+  renderPresetSummary();
+  showToast("Retailer rate card saved.");
+  showStatus("Retailer pricing updated. New buying plans will use the saved daily rates.");
+}
+
+function updateGoalPlacementSelection(screenId, include) {
+  const plan = state.activeGoalPlan;
+  const normalizedScreenId = String(screenId || "").trim();
+  if (!plan?.planId || !normalizedScreenId || plan.status === "applied") {
+    return;
+  }
+
+  const currentSelection = getGoalPlacementSelectionIds(plan);
+  const nextSelection = include
+    ? currentSelection.includes(normalizedScreenId)
+      ? currentSelection
+      : [...currentSelection, normalizedScreenId]
+    : currentSelection.filter((entry) => entry !== normalizedScreenId);
+
+  if (nextSelection.length === currentSelection.length && nextSelection.every((entry, index) => entry === currentSelection[index])) {
+    return;
+  }
+
+  setGoalPlacementSelection(plan, nextSelection);
+  renderGoalPlan();
+  publishPresenterSnapshot();
+  showStatus(
+    include
+      ? `${getScreenDisplayLabel(normalizedScreenId) || normalizedScreenId} added to the editable plan.`
+      : `${getScreenDisplayLabel(normalizedScreenId) || normalizedScreenId} removed from the editable plan.`
+  );
 }
 
 async function handlePageSubmit(event) {
@@ -3001,6 +3738,9 @@ async function deleteScreen(screenId) {
     state.manualSupplyConfirmed = false;
     state.presetLoadedInSession = false;
     state.activeGoalPlan = null;
+    state.goalPlacementSelections.clear();
+    state.goalBudgetPlanId = "";
+    state.goalBudgetSpend = null;
     state.agentRuns = [];
     state.telemetrySummary = null;
     state.sessionPlanIds.clear();
@@ -3024,6 +3764,8 @@ async function handleGoalPlanSubmit(event) {
   if (state.activeGoalPlan?.planId) {
     state.sessionPlanIds.add(state.activeGoalPlan.planId);
   }
+  syncGoalPlacementSelectionFromPlan(state.activeGoalPlan, { overwrite: true });
+  setGoalBudgetStateFromPlan(state.activeGoalPlan);
   syncGoalFormFromRun(state.activeGoalPlan);
   await Promise.all([refreshGoalRunsData(), refreshTelemetryData(state.activeGoalPlan?.planId || "")]);
   renderAll();
@@ -3033,7 +3775,7 @@ async function handleGoalPlanSubmit(event) {
     state.activeGoalPlan?.goal?.scopeMessage ||
       state.activeGoalPlan?.goal?.stockMessage ||
       prepared.scopeMessage ||
-      "In-store buy ready. Approve and launch to move into monitoring."
+      "In-store buy ready. Edit placements if needed, then set the budget and launch."
   );
 }
 
@@ -3042,14 +3784,22 @@ async function applyGoalPlan(planId = "") {
   if (!chosenPlanId) {
     throw new Error("No plan selected.");
   }
+  const targetPlan =
+    chosenPlanId === state.activeGoalPlan?.planId
+      ? state.activeGoalPlan
+      : state.agentRuns.find((entry) => entry.planId === chosenPlanId) || state.activeGoalPlan;
+  const budgetSpend = getActiveGoalBudgetSpend(targetPlan);
+  const selectedScreenIds = getGoalPlacementSelectionIds(targetPlan);
 
   const response = await requestJson("/api/agent/goals/apply", {
     method: "POST",
-    body: JSON.stringify({ planId: chosenPlanId })
+    body: JSON.stringify({ planId: chosenPlanId, budgetSpend, selectedScreenIds })
   });
 
   state.activeGoalPlan = response.run || state.activeGoalPlan;
   state.sessionPlanIds.add(chosenPlanId);
+  syncGoalPlacementSelectionFromPlan(state.activeGoalPlan, { overwrite: true });
+  setGoalBudgetStateFromPlan(state.activeGoalPlan, state.activeGoalPlan?.budget?.selectedSpend ?? budgetSpend);
   await Promise.all([
     refreshDemoConfig(),
     refreshInventory(),
@@ -3061,7 +3811,9 @@ async function applyGoalPlan(planId = "") {
   renderAll();
   setStage("monitoring", true);
   showToast(`Activation live on ${response.liveCount || response.appliedCount || 0} placement(s).`);
-  showStatus(`Activation ${chosenPlanId} is live. Monitoring is ready.`);
+  showStatus(
+    `Activation ${chosenPlanId} is live at ${formatMoney(response.run?.budget?.selectedSpend || budgetSpend)}. Monitoring is ready.`
+  );
 }
 
 async function loadGoalPlan(planId) {
@@ -3075,6 +3827,8 @@ async function loadGoalPlan(planId) {
   if (run.planId) {
     state.sessionPlanIds.add(run.planId);
   }
+  syncGoalPlacementSelectionFromPlan(run, { overwrite: run.status === "applied" });
+  setGoalBudgetStateFromPlan(run);
   syncGoalFormFromRun(run);
 
   if (run.status === "applied") {
@@ -3180,6 +3934,9 @@ async function loadPreset() {
 
   state.presetLoadedInSession = true;
   state.activeGoalPlan = null;
+  state.goalPlacementSelections.clear();
+  state.goalBudgetPlanId = "";
+  state.goalBudgetSpend = null;
   state.agentRuns = [];
   state.telemetrySummary = null;
   state.sessionPlanIds.clear();
@@ -3206,6 +3963,9 @@ async function resetDemo() {
   state.manualSupplyConfirmed = false;
   state.presetLoadedInSession = false;
   state.activeGoalPlan = null;
+  state.goalPlacementSelections.clear();
+  state.goalBudgetPlanId = "";
+  state.goalBudgetSpend = null;
   state.agentRuns = [];
   state.telemetrySummary = null;
   state.selectedGoalSkuIds.clear();
@@ -3268,6 +4028,36 @@ function wireEvents() {
       return;
     }
 
+    const budgetApplyButton = event.target.closest(".js-goal-budget-apply");
+    if (budgetApplyButton) {
+      applyGoalPlan(budgetApplyButton.dataset.planId || "").catch(handleError);
+      return;
+    }
+
+    const budgetMaxButton = event.target.closest(".js-goal-budget-max");
+    if (budgetMaxButton) {
+      if (!state.activeGoalPlan) {
+        return;
+      }
+      state.goalBudgetPlanId = state.activeGoalPlan.planId || budgetMaxButton.dataset.planId || "";
+      state.goalBudgetSpend = getPlanBudgetMaxSpend(state.activeGoalPlan);
+      renderGoalPlan();
+      publishPresenterSnapshot();
+      return;
+    }
+
+    const addPlacementButton = event.target.closest(".js-goal-placement-add");
+    if (addPlacementButton) {
+      updateGoalPlacementSelection(addPlacementButton.dataset.screenId || "", true);
+      return;
+    }
+
+    const removePlacementButton = event.target.closest(".js-goal-placement-remove");
+    if (removePlacementButton) {
+      updateGoalPlacementSelection(removePlacementButton.dataset.screenId || "", false);
+      return;
+    }
+
     const editScreenButton = event.target.closest(".js-edit-screen");
     if (editScreenButton) {
       beginScreenEdit(editScreenButton.dataset.screenId || "");
@@ -3290,20 +4080,23 @@ function wireEvents() {
   elements.goalAgentForm?.addEventListener("submit", (event) => {
     handleGoalPlanSubmit(event).catch(handleError);
   });
-  elements.goalApplyBtn?.addEventListener("click", () => {
-    applyGoalPlan().catch(handleError);
-  });
   elements.goalStep1NextBtn?.addEventListener("click", () => {
     if (!ensureGoalBriefStepComplete()) {
       return;
     }
     state.goalPlanningStep = 2;
     renderGoalPlanningFlow();
-    showStatus("Step 2 unlocked. Optional scope and brief filters are ready.");
+    showStatus("Step 2 unlocked. Set the flight window and optional scope filters.");
     publishPresenterSnapshot();
   });
   elements.goalStep2NextBtn?.addEventListener("click", () => {
     if (!ensureGoalBriefStepComplete()) {
+      return;
+    }
+    if (!hasValidGoalFlightDates()) {
+      state.goalPlanningStep = 2;
+      renderGoalPlanningFlow();
+      showStatus("Add a valid flight date range before moving to Step 3.", true);
       return;
     }
     state.goalScopeStepAcknowledged = true;
@@ -3343,9 +4136,26 @@ function wireEvents() {
     renderGoalPlanningFlow();
     publishPresenterSnapshot();
   });
+  elements.goalFlightStart?.addEventListener("change", () => {
+    renderGoalPlanningFlow();
+    publishPresenterSnapshot();
+  });
+  elements.goalFlightEnd?.addEventListener("change", () => {
+    renderGoalPlanningFlow();
+    publishPresenterSnapshot();
+  });
   elements.goalPrompt?.addEventListener("input", () => {
     renderGoalPlanningFlow();
     publishPresenterSnapshot();
+  });
+  elements.retailerRateCard?.addEventListener("input", (event) => {
+    if (!event.target.closest(".js-retailer-rate-input")) {
+      return;
+    }
+    publishPresenterSnapshot();
+  });
+  elements.saveRetailerRatesBtn?.addEventListener("click", () => {
+    saveRetailerRateCard().catch(handleError);
   });
   elements.goalProductCategory?.addEventListener("change", () => {
     renderGoalProducts();
@@ -3392,6 +4202,16 @@ function wireEvents() {
     }
     renderGoalProducts();
     applyGoalScopeSuggestionFromSelection();
+    publishPresenterSnapshot();
+  });
+  elements.goalPlanBudget?.addEventListener("input", (event) => {
+    const slider = event.target.closest("#goalBudgetSlider");
+    if (!slider || !state.activeGoalPlan) {
+      return;
+    }
+    state.goalBudgetPlanId = state.activeGoalPlan.planId || "";
+    state.goalBudgetSpend = normalizeGoalBudgetSpend(state.activeGoalPlan, slider.value);
+    renderGoalPlan();
     publishPresenterSnapshot();
   });
   elements.screenCancelBtn?.addEventListener("click", () => {

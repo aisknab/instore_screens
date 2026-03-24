@@ -21,13 +21,8 @@
           <p class="eyebrow">Criteo hackathon demo</p>
           <h1>Three acts. One click-through story.</h1>
           <p class="hero__lede">
-            CYield treats each in-store screen like a page request: every display can hit one shared player URL, and the backend resolves which screen it is from the TV browser footprint.
+            CYield treats each in-store screen like a page request: every display can hit one shared player URL, and the backend resolves which screen it is from the TV browser footprint. The demo stays on the existing page model.
           </p>
-          <div class="hero__meta" aria-label="Demo stages">
-            <span class="hero__chip">Stage 1: Supply</span>
-            <span class="hero__chip">Stage 2: Buying</span>
-            <span class="hero__chip">Stage 3: Monitoring</span>
-          </div>
         </div>
 
         <div class="hero__actions">
@@ -42,31 +37,22 @@
           </a>
           <a
             id="presenterNotesLink"
-            class="btn btn--ghost"
+            class="hero__aux-link"
             href="/presenter-notes.html"
             target="_blank"
             rel="noreferrer"
           >
             Open presenter notes
           </a>
-          <div class="hero__jump-rail" aria-label="Jump to stage">
-            <button type="button" class="btn btn--ghost js-stage-jump" data-stage="supply">Supply</button>
-            <button type="button" class="btn btn--ghost js-stage-jump" data-stage="buying">Buying</button>
-            <button type="button" class="btn btn--ghost js-stage-jump" data-stage="monitoring">Monitoring</button>
-          </div>
-          <p class="hero__note">Minimal CYield change: same page model, one shared player URL, backend resolver for screen identity.</p>
         </div>
       </div>
     </header>
 
     <main class="shell">
-      <section class="panel panel--rail">
+      <section class="panel panel--stage-nav">
         <div class="panel__header panel__header--compact">
-          <div>
-            <p class="section-kicker">Demo path</p>
-            <h2>Guided flow</h2>
-          </div>
-          <p class="panel__hint panel__hint--rail">Use the stage buttons or scroll. The flow is designed to be shown live.</p>
+          <p class="section-kicker">Demo path</p>
+          <p class="panel__hint">Use the flow below or scroll. The demo is designed to be shown live.</p>
         </div>
 
         <nav class="stage-steps" aria-label="Demo stages">
@@ -97,7 +83,7 @@
       <section id="stage-supply" class="panel stage-panel" data-stage-panel="supply">
         <div class="stage-panel__header">
           <div>
-            <p class="section-kicker">Stage 01</p>
+            <p class="section-kicker">Start here</p>
             <h2>CYield Supply Setup</h2>
             <p class="stage-panel__lede">
               Keep this to two clicks: add one anchor placement, then apply the shared preset.
@@ -376,6 +362,30 @@
                       </div>
                     </div>
 
+                    <div class="form-section">
+                      <div class="form-section__head">
+                        <div>
+                          <h4 class="form-section__title">Retailer pricing</h4>
+                          <p class="form-section__hint">Set the daily rate by screen type. These rates are used later to cost buying plans.</p>
+                        </div>
+                      </div>
+                      <div class="form-section__body">
+                        <section class="goal-rate-card" aria-labelledby="retailerRateCardTitle">
+                          <div class="goal-rate-card__copy">
+                            <p class="section-kicker">Retailer-owned rate card</p>
+                            <h5 id="retailerRateCardTitle">Set prices once on the supply side</h5>
+                            <p class="goal-rate-card__lede">
+                              Applies globally by screen type. Demand planning can read these rates, but cannot change them.
+                            </p>
+                          </div>
+                          <div id="retailerRateCard" class="goal-rate-card__grid" aria-live="polite"></div>
+                          <div class="form-actions form-actions--left">
+                            <button id="saveRetailerRatesBtn" type="button" class="btn btn--ghost">Save retailer rate card</button>
+                          </div>
+                        </section>
+                      </div>
+                    </div>
+
                     <div class="form-actions">
                       <button id="screenCancelBtn" type="button" class="btn btn--ghost is-hidden">Cancel edit</button>
                       <button id="screenSubmitBtn" type="submit" class="btn btn--primary">Create screen</button>
@@ -391,7 +401,7 @@
       <section id="stage-buying" class="panel stage-panel" data-stage-panel="buying">
         <div class="stage-panel__header">
           <div>
-            <p class="section-kicker">Stage 02</p>
+            <p class="section-kicker">Build the buy</p>
             <h2>CMax Buying / Demand</h2>
             <p class="stage-panel__lede">
               Choose the account, set the brief, and let CMax explain the recommended in-store line-up in planner language.
@@ -469,9 +479,9 @@
                   <div class="planner-step__header">
                     <div class="planner-step__copy">
                       <p class="planner-step__eyebrow">Step 2</p>
-                      <h4>Set optional scope and brief</h4>
+                      <h4>Set flight, scope, and brief</h4>
                       <p class="planner-step__summary" data-planner-step-summary>
-                        Narrow the store or placement scope, or leave it open and let the planner explore the mapped inventory.
+                        Start with the campaign flight, then narrow the store or placement scope, or leave it open and let the planner explore the mapped inventory.
                       </p>
                     </div>
                     <div class="planner-step__meta">
@@ -493,6 +503,17 @@
                         <select id="goalPageScope" name="pageId">
                           <option value="">All mapped placements</option>
                         </select>
+                      </div>
+                    </div>
+
+                    <div class="field-row field-row--date">
+                      <div class="field">
+                        <label for="goalFlightStart">Flight Start*</label>
+                        <input id="goalFlightStart" name="flightStart" type="date" required>
+                      </div>
+                      <div class="field">
+                        <label for="goalFlightEnd">Flight End*</label>
+                        <input id="goalFlightEnd" name="flightEnd" type="date" required>
                       </div>
                     </div>
 
@@ -568,12 +589,12 @@
 
                     <div class="form-actions form-actions--left">
                       <button id="goalPlanBtn" type="submit" class="btn btn--primary">Auto-build in-store buy</button>
-                      <button id="goalApplyBtn" type="button" class="btn btn--ghost" disabled>Approve and launch</button>
                     </div>
                   </div>
                 </section>
               </div>
             </form>
+            <div id="goalPlanBudget"></div>
           </article>
 
           <article class="card">
@@ -594,7 +615,7 @@
       <section id="stage-monitoring" class="panel stage-panel" data-stage-panel="monitoring">
         <div class="stage-panel__header">
           <div>
-            <p class="section-kicker">Stage 03</p>
+            <p class="section-kicker">Show it live</p>
             <h2>Monitoring</h2>
             <p class="stage-panel__lede">
               This is the payoff: live screens, telemetry, and a judge-friendly proof that the story is working.
