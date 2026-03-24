@@ -26,6 +26,7 @@
         </div>
         <p id="notesSpeakerSummary" class="notes-speaker">Open the demo page and this tab will follow the active stage automatically.</p>
         <p id="notesStatusText" class="notes-status">Waiting for the shared demo tab.</p>
+        <p id="notesUpdatedAt" class="notes-updated">Last sync pending.</p>
       </header>
 
       <section class="notes-grid">
@@ -38,9 +39,27 @@
         </article>
 
         <article class="notes-card">
+          <p class="notes-card__kicker">Demo moves</p>
+          <h2>What to click or show</h2>
+          <ol id="notesActionsList" class="notes-list">
+            <li>Open the shared demo page and move through the stage flow.</li>
+          </ol>
+        </article>
+
+        <article class="notes-card">
           <p class="notes-card__kicker">Proof points</p>
           <h2>What this stage proves</h2>
           <div id="proofPoints" class="proof-points"></div>
+          <p class="notes-card__subhead">Stage modules</p>
+          <div id="notesModules" class="proof-points proof-points--soft"></div>
+        </article>
+
+        <article class="notes-card">
+          <p class="notes-card__kicker">Q&A</p>
+          <h2>If someone asks</h2>
+          <ul id="notesQaList" class="notes-list notes-list--plain">
+            <li>Use the live demo state to answer implementation questions.</li>
+          </ul>
         </article>
 
         <article class="notes-card notes-card--wide">
@@ -53,6 +72,10 @@
               <p id="notesStageDescription">The companion notes update as the active stage changes.</p>
             </div>
             <div class="snapshot-panel">
+              <strong>Live story</strong>
+              <p id="notesLiveNarrative">The live presenter story updates as the demo state changes.</p>
+            </div>
+            <div class="snapshot-panel">
               <strong>Plan context</strong>
               <p id="notesPlanSummary">No buying plan loaded yet.</p>
             </div>
@@ -61,6 +84,7 @@
               <p id="notesTelemetry">Plays 0 | Exposure 0s</p>
             </div>
           </div>
+          <div id="notesDetailRows" class="notes-detail-list"></div>
         </article>
       </section>
     </main>

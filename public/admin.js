@@ -114,6 +114,9 @@ function createDefaultStage(id, label, description, starterScreenId, actionLabel
     description,
     starterScreenId,
     actionLabel,
+    supportingModules: [],
+    demoActions: [],
+    qaPrompts: [],
     goalDefaults: null,
     screenIds: [],
     configuredScreenIds: [],
@@ -193,6 +196,8 @@ const state = {
   goalPromptInferenceRequestId: 0,
   goalPromptInferenceProvider: "",
   goalPromptInferenceModel: "",
+  goalPromptInferenceReasoning: "",
+  goalPromptInferenceTargetSource: "",
   goalRetailerRateCard: null,
   goalPlacementSelections: new Map(),
   goalBudgetPlanId: "",
@@ -801,6 +806,8 @@ function applyGoalPromptSelection({ passiveRender = false } = {}) {
   if (!prompt) {
     state.goalPromptInferenceRequestId += 1;
     state.goalPromptInferencePending = false;
+    state.goalPromptInferenceReasoning = "";
+    state.goalPromptInferenceTargetSource = "";
     if (state.goalSkuSelectionMode === "prompt") {
       setGoalSkuSelectionMode("");
       setSelectedGoalSkus([]);
@@ -814,6 +821,8 @@ function applyGoalPromptSelection({ passiveRender = false } = {}) {
   if (!payload.advertiserId) {
     state.goalPromptInferenceRequestId += 1;
     state.goalPromptInferencePending = false;
+    state.goalPromptInferenceReasoning = "";
+    state.goalPromptInferenceTargetSource = "";
     if (state.goalSkuSelectionMode === "prompt") {
       setGoalSkuSelectionMode("");
       setSelectedGoalSkus([]);
@@ -844,13 +853,21 @@ function applyGoalPromptSelection({ passiveRender = false } = {}) {
       state.goalPromptInferenceModel = readTextValue(
         response?.inferenceModel || state.options?.goalPromptInferenceModel || ""
       );
+      state.goalPromptInferenceReasoning = readTextValue(response?.inferenceReasoning || "");
+      state.goalPromptInferenceTargetSource = readTextValue(response?.targetSource || "");
       setGoalSkuSelectionMode("prompt", response?.matchedTerms || []);
-      setSelectedGoalSkus(response?.targetSkuIds || []);
+      if (String(response?.targetSource || "").startsWith("prompt")) {
+        setSelectedGoalSkus(response?.targetSkuIds || []);
+      } else {
+        setSelectedGoalSkus([]);
+      }
     } catch (error) {
       if (requestId !== state.goalPromptInferenceRequestId) {
         return;
       }
       state.goalPromptInferencePending = false;
+      state.goalPromptInferenceTargetSource = "prompt";
+      state.goalPromptInferenceReasoning = "";
       const inferred = inferGoalSkuProductsFromPrompt(payload.prompt);
       setGoalSkuSelectionMode("prompt", inferred.matchedTerms);
       setSelectedGoalSkus(inferred.products.map((product) => product.sku));
@@ -871,6 +888,7 @@ function applyGoalPromptSelection({ passiveRender = false } = {}) {
 function getGoalPromptSelectionNote() {
   const prompt = getGoalPromptText();
   const matchedTerms = state.goalPromptMatchedTerms.slice(0, 4);
+  const reasoning = readTextValue(state.goalPromptInferenceReasoning);
   if (!prompt) {
     return "";
   }
@@ -879,9 +897,15 @@ function getGoalPromptSelectionNote() {
   }
   if (isGoalPromptSelectionActive()) {
     if (state.selectedGoalSkuIds.size > 0) {
+      if (reasoning) {
+        return `Why these SKUs: ${reasoning}`;
+      }
       return matchedTerms.length > 0
         ? `AI brief matched ${matchedTerms.join(", ")}.`
         : `AI brief selected ${state.selectedGoalSkuIds.size} SKU(s) in real time.`;
+    }
+    if (reasoning) {
+      return reasoning;
     }
     return "AI brief is active, but no matching SKUs were found yet.";
   }
@@ -1785,10 +1809,14 @@ function buildPresenterCards() {
   const draftGoal = getGoalDraftForDisplay();
   const telemetryTotals = state.telemetrySummary?.totals || {};
   if (state.stage === "buying") {
+    const budgetScenario = buildGoalBudgetScenario(plan);
     return [
       { label: "Scope", value: getGoalScopeLabel(plan?.goal || draftGoal) },
       { label: "SKUs", value: String((plan?.goal?.targetSkuIds || [...state.selectedGoalSkuIds]).length || 0) },
-      { label: "Compatible screens", value: String(countPlannedScreens(plan) || 0) }
+      {
+        label: plan ? "Budget" : "Compatible screens",
+        value: plan ? formatMoney(budgetScenario.selectedSpend || budgetScenario.maxSpend || 0) : String(countPlannedScreens(plan) || 0)
+      }
     ];
   }
   if (state.stage === "monitoring") {
@@ -1805,6 +1833,316 @@ function buildPresenterCards() {
   ];
 }
 
+function readPresenterStringList(values = [], fallback = []) {
+  const source = Array.isArray(values) && values.length > 0 ? values : fallback;
+  return source.map((value) => readTextValue(value)).filter(Boolean);
+}
+
+function buildPresenterDetailRow(label, value) {
+  const normalizedLabel = readTextValue(label);
+  const normalizedValue = readTextValue(value);
+  if (!normalizedLabel || !normalizedValue) {
+    return null;
+  }
+  return { label: normalizedLabel, value: normalizedValue };
+}
+
+function formatPresenterPlacementSummary(entries = [], limit = 2) {
+  const labels = entries
+    .map((entry) => getScreenDisplayLabel(entry?.screenId || ""))
+    .filter(Boolean);
+  if (labels.length === 0) {
+    return "";
+  }
+  if (labels.length > limit) {
+    return `${formatSentenceList(labels.slice(0, limit), limit)} +${labels.length - limit} more`;
+  }
+  return formatSentenceList(labels, labels.length);
+}
+
+function formatPresenterTelemetryLeader(entries = [], type) {
+  const entry = Array.isArray(entries) && entries.length > 0 ? entries[0] : null;
+  if (!entry) {
+    return "";
+  }
+
+  if (type === "screen") {
+    const locationMeta = [entry.storeId, entry.pageId].filter(Boolean).join(" | ");
+    return `Top screen ${entry.screenId}${locationMeta ? ` (${locationMeta})` : ""}`;
+  }
+  if (type === "template") {
+    return `Top template ${entry.templateName || entry.templateId || "Template"} (${formatCount(entry.playCount || 0)} plays)`;
+  }
+  return `Top SKU ${entry.productName || entry.sku || "Tracked item"} (${formatCount(entry.playCount || 0)} plays)`;
+}
+
+function buildSupplyPresenterPayload(stageConfig) {
+  const supplyStage = getSupplyStage();
+  const configured = Number(supplyStage.configuredScreenIds?.length || 0);
+  const total = Number(supplyStage.screenCount || supplyStage.screenIds?.length || configured);
+  const remaining = Math.max(total - configured, 0);
+  const demoStoreCount = getDemoStoreCount();
+  const manual = getManualSupplyConfig();
+  const actionMessage = readTextValue(state.lastDemoAction?.message);
+  const summaryMessage = !isManualSupplyConfirmed()
+    ? "Add one anchor placement, then apply the shared preset to finish the supply setup."
+    : state.presetLoadedInSession
+      ? state.supplyHandoffAcknowledged
+        ? "Setup complete: minimal CYield change, shared backend-resolved player URL, and the handoff into CMax is open."
+        : "Setup complete. Review the rollout handoff below, then continue into CMax when you're ready."
+      : `Anchor screen saved. Load the preset to roll out the remaining ${remaining} supply-stage screen(s) across ${demoStoreCount} stores.`;
+  const mappedPlacements = total || configured;
+  const handoffMessage = isSupplyPresetReady()
+    ? `The shared player is mapped across ${mappedPlacements} supply placement${
+        mappedPlacements === 1 ? "" : "s"
+      } spanning ${demoStoreCount} store${demoStoreCount === 1 ? "" : "s"} and multiple inventory zones.`
+    : "";
+  const backupConfigSummary = [
+    `${manual.page.pageId} (${manual.page.pageType}, ${manual.page.environment})`,
+    `${manual.screen.screenId} (${manual.screen.screenType}, ${manual.screen.screenSize})`
+  ].join(" -> ");
+
+  return {
+    supportingModules: readPresenterStringList(stageConfig.supportingModules, [
+      "2-action supply flow",
+      "Supply handoff",
+      "Retailer CPM card",
+      "Backup config"
+    ]),
+    demoActions: readPresenterStringList(stageConfig.demoActions, [
+      "Create the anchor placement.",
+      "Apply the shared preset.",
+      "Use the handoff card if someone wants rollout scale."
+    ]),
+    qaPrompts: readPresenterStringList(stageConfig.qaPrompts, [
+      "Open Backup config if someone asks how the page and screen are mapped."
+    ]),
+    liveNarrative: summaryMessage,
+    detailRows: [
+      buildPresenterDetailRow(
+        "Rollout status",
+        `${configured} of ${mappedPlacements || configured || 0} supply placement(s) are configured across ${demoStoreCount} store(s).`
+      ),
+      buildPresenterDetailRow("Shared player", `${SHARED_PLAYER_URL} is reused across the whole supply footprint.`),
+      buildPresenterDetailRow("Retailer CPM card", summarizeGoalRateCard()),
+      buildPresenterDetailRow(
+        "Handoff",
+        handoffMessage ||
+          actionMessage ||
+          (isManualSupplyConfirmed()
+            ? `Anchor is live. ${remaining} supply-stage screen(s) remain before full preset rollout.`
+            : "Anchor placement still needs to be created.")
+      ),
+      buildPresenterDetailRow("Backup config", backupConfigSummary)
+    ].filter(Boolean)
+  };
+}
+
+function buildBuyingPresenterPayload(stageConfig) {
+  const plan = state.activeGoalPlan;
+  const draftGoal = getGoalDraftForDisplay();
+  const goal = plan?.goal || draftGoal;
+  const targetProducts = plan ? getGoalPlanTargetProducts(plan) : getSelectedGoalProducts();
+  const compatibleScreens = countPlannedScreens(plan);
+  const placementEntries = getSelectedGoalPlacements(plan);
+  const availablePlacements = getAvailableGoalPlacements(plan);
+  const budgetScenario = buildGoalBudgetScenario(plan);
+  const objectiveLabel = objectiveLabelById(goal.objective || "");
+  const scopeLabel = getGoalScopeLabel(goal);
+  const storeLabel = goal.objective === "clearance" ? "Store focus" : "Store";
+  const storeValue = readTextValue(goal.storeFocusLabel || goal.effectiveStoreId || goal.storeId || "All stores") || "All stores";
+  const focusLabel =
+    targetProducts.length === 1
+      ? targetProducts[0].name
+      : targetProducts.length > 1
+        ? formatSentenceList(
+            targetProducts.map((product) => product.name),
+            Math.min(targetProducts.length, 2)
+          )
+        : goalTargetSourceLabel(goal.targetSource || state.goalPromptInferenceTargetSource);
+  const placementSummary = formatPresenterPlacementSummary(placementEntries, 2);
+  const promptTerms =
+    Array.isArray(goal.inferredTerms) && goal.inferredTerms.length > 0 ? goal.inferredTerms.join(", ") : "";
+  const promptSignal = [
+    readTextValue(goal.prompt) ? `Brief: ${readTextValue(goal.prompt)}` : "",
+    promptTerms ? `Terms: ${promptTerms}` : ""
+  ]
+    .filter(Boolean)
+    .join(" | ");
+  const reasoning = readTextValue(goal.inferenceReasoning || state.goalPromptInferenceReasoning);
+  const strategyHeadline = readTextValue(plan?.strategy?.headline);
+  const strategyNotes = Array.isArray(plan?.strategy?.summaryBullets)
+    ? plan.strategy.summaryBullets.map((bullet) => readTextValue(bullet)).filter(Boolean).join(" | ")
+    : "";
+  const lineUpSummary = plan
+    ? `${placementSummary || `${compatibleScreens} placement(s)`}${
+        availablePlacements.length > 0 ? `. ${availablePlacements.length} more placement(s) remain available to add back.` : "."
+      }`
+    : "Generate a plan to show the editable placement line-up and budget cut line.";
+  const liveNarrative = !plan
+    ? "Choose the account, objective, and assortment focus to build the in-store buy."
+    : compatibleScreens === 0
+      ? "No strong in-scope line-up is ready yet. Adjust the brief or widen the placement focus."
+      : plan.status === "applied"
+        ? `The funded line-up is live with ${formatMoney(budgetScenario.fundedSpend)} approved.`
+        : `The editable line-up currently includes ${placementSummary || `${compatibleScreens} placement(s)`}.`;
+
+  return {
+    supportingModules: readPresenterStringList(stageConfig.supportingModules, [
+      "Planner steps",
+      "AI brief reasoning",
+      "Decision logic",
+      "Budget control"
+    ]),
+    demoActions: readPresenterStringList(stageConfig.demoActions, [
+      "Set the brief, build the line-up, then approve the funded plan."
+    ]),
+    qaPrompts: readPresenterStringList(stageConfig.qaPrompts, [
+      "Use store logic and scope logic if someone asks why a placement is included or excluded."
+    ]),
+    liveNarrative,
+    detailRows: [
+      buildPresenterDetailRow(
+        "Planner brief",
+        [objectiveLabel, scopeLabel, `${storeLabel}: ${storeValue}`].filter(Boolean).join(" | ")
+      ),
+      buildPresenterDetailRow(
+        "Account focus",
+        getGoalPlanAccountLabel(goal, targetProducts) === "Account required"
+          ? "Select an account to scope the planner."
+          : getGoalPlanAccountLabel(goal, targetProducts)
+      ),
+      buildPresenterDetailRow("Priority focus", focusLabel),
+      buildPresenterDetailRow(
+        "AI / prompt",
+        reasoning || promptSignal || goalTargetSourceLabel(goal.targetSource || state.goalPromptInferenceTargetSource)
+      ),
+      buildPresenterDetailRow(
+        "Decision logic",
+        strategyHeadline || readTextValue(goal.storeSelectionReason) || readTextValue(goal.scopeSelectionReason) || readTextValue(goal.scopeMessage)
+      ),
+      buildPresenterDetailRow("Strategy notes", strategyNotes),
+      buildPresenterDetailRow(
+        "Budget state",
+        plan
+          ? `${formatMoney(budgetScenario.selectedSpend)} of ${formatMoney(budgetScenario.maxSpend)} currently funds ${
+              budgetScenario.fundedPlacements.length
+            } of ${Math.max(budgetScenario.selectedPlacementCount, placementEntries.length)} selected placement(s).`
+          : "Build a plan to expose selected spend, max spend, and funded impressions."
+      ),
+      buildPresenterDetailRow("Line-up", lineUpSummary),
+      buildPresenterDetailRow("Flight", formatGoalFlightSummary(goal.flightStartDate, goal.flightEndDate))
+    ].filter(Boolean)
+  };
+}
+
+function buildMonitoringPresenterPayload(stageConfig) {
+  const plan = state.activeGoalPlan;
+  const telemetry = state.telemetrySummary;
+  const totals = telemetry?.totals || {};
+  const measurementBoard = telemetry?.measurementBoard;
+  const narrative = measurementBoard?.narrative || {};
+  const metrics = Array.isArray(measurementBoard?.metrics) ? measurementBoard.metrics : [];
+  const brandContext = getGoalPlanBrandContext(plan);
+  const liveScreens = Array.isArray(plan?.liveScreens) ? plan.liveScreens : [];
+  const campaignRuns = (state.agentRuns || []).filter((run) => {
+    if (brandContext.advertiserId || brandContext.brand) {
+      return runMatchesBrandWorkspace(run, brandContext);
+    }
+    return true;
+  });
+  const latestRun = campaignRuns[0] || plan || null;
+  const dashboardSummary = [
+    brandContext.accountLabel || brandContext.brand || "Selected brand",
+    brandContext.objectiveLabel || "Campaign results",
+    `${formatCount(plan?.liveCount || liveScreens.length || 0)} live screen${Number(plan?.liveCount || liveScreens.length || 0) === 1 ? "" : "s"}`,
+    `${formatCount(campaignRuns.length || (state.agentRuns || []).length)} campaign${(campaignRuns.length || (state.agentRuns || []).length) === 1 ? "" : "s"}`
+  ].join(" | ");
+  const measurementSummary = metrics
+    .slice(0, 3)
+    .map((metric) => `${readTextValue(metric?.label || "Metric")}: ${readTextValue(metric?.valueText || formatCount(metric?.value || 0))}`)
+    .filter(Boolean)
+    .join(" | ");
+  const telemetryLeaderSummary = [
+    formatPresenterTelemetryLeader(telemetry?.byScreen || [], "screen"),
+    formatPresenterTelemetryLeader(telemetry?.byTemplate || [], "template"),
+    formatPresenterTelemetryLeader(telemetry?.bySku || [], "sku")
+  ]
+    .filter(Boolean)
+    .join(" | ");
+  const previewNarrative = plan?.status === "applied"
+    ? `${brandContext.brand || "The active campaign"} is live across ${
+        plan?.liveCount || liveScreens.length || 0
+      } in-store screen(s). The preview rail is scoped to the active campaign only.`
+    : brandContext.brand
+      ? `${brandContext.brand} previews will appear here once the selected campaign is live.`
+      : "Live campaign previews will appear here once the selected brand has active screens.";
+  const timelineSummary = latestRun
+    ? [
+        latestRun.planId ? `Campaign ${latestRun.planId}` : "",
+        latestRun.status === "applied" ? "Live" : "Planned",
+        latestRun.createdAt ? `Created ${formatTimestamp(latestRun.createdAt)}` : "",
+        latestRun.appliedAt ? `Live ${formatTimestamp(latestRun.appliedAt)}` : ""
+      ]
+        .filter(Boolean)
+        .join(" | ")
+    : "";
+  const liveNarrative =
+    readTextValue(narrative.summary) ||
+    (brandContext.brand
+      ? `Observed delivery and shopper action for ${brandContext.brand}, with modeled QR, incrementality, new-to-brand, and in-store sales impact layered on top of live telemetry.`
+      : "Launch a campaign to populate delivery, engagement, and sales metrics.");
+
+  return {
+    supportingModules: readPresenterStringList(stageConfig.supportingModules, [
+      "Brand dashboard",
+      "Measurement board",
+      "Telemetry breakdowns",
+      "Preview rail"
+    ]),
+    demoActions: readPresenterStringList(stageConfig.demoActions, [
+      "Use the brand dashboard, then show the preview rail and measurement board."
+    ]),
+    qaPrompts: readPresenterStringList(stageConfig.qaPrompts, [
+      "Separate observed telemetry from modeled retail outcomes if someone asks how the measurement board works."
+    ]),
+    liveNarrative,
+    detailRows: [
+      buildPresenterDetailRow("Brand workspace", dashboardSummary),
+      buildPresenterDetailRow(
+        "Measurement story",
+        [
+          readTextValue(narrative.headline),
+          readTextValue(narrative.trend),
+          readTextValue(narrative.comparisonStory)
+        ]
+          .filter(Boolean)
+          .join(" | ")
+      ),
+      buildPresenterDetailRow("Metric families", measurementSummary),
+      buildPresenterDetailRow(
+        "Delivery summary",
+        `Events ${formatCount(totals.total || 0)} | Plays ${formatCount(totals.playCount || 0)} | Exposure ${formatDuration(
+          totals.exposureMs || 0
+        )}`
+      ),
+      buildPresenterDetailRow("Telemetry leaders", telemetryLeaderSummary),
+      buildPresenterDetailRow("Live preview", previewNarrative),
+      buildPresenterDetailRow("Campaign timeline", timelineSummary)
+    ].filter(Boolean)
+  };
+}
+
+function buildPresenterStagePayload(stageConfig) {
+  if (state.stage === "buying") {
+    return buildBuyingPresenterPayload(stageConfig);
+  }
+  if (state.stage === "monitoring") {
+    return buildMonitoringPresenterPayload(stageConfig);
+  }
+  return buildSupplyPresenterPayload(stageConfig);
+}
+
 function buildPresenterSnapshot() {
   const stageConfig = getStageConfig(state.stage);
   const plan = state.activeGoalPlan;
@@ -1812,8 +2150,10 @@ function buildPresenterSnapshot() {
   const plannedScreens = countPlannedScreens(plan);
   const telemetryTotals = state.telemetrySummary?.totals || {};
   const primaryScreenId = getPrimaryScreenId();
+  const stagePayload = buildPresenterStagePayload(stageConfig);
   return {
     updatedAt: new Date().toISOString(),
+    updatedAtText: formatTimestamp(new Date()),
     stage: state.stage,
     stageLabel: stageConfig.label || titleCase(state.stage),
     stageDescription: stageConfig.description || "",
@@ -1821,7 +2161,12 @@ function buildPresenterSnapshot() {
     speakerSummary: String(stageConfig.speakerSummary || "").trim(),
     presenterNotes: Array.isArray(stageConfig.presenterNotes) ? stageConfig.presenterNotes : [],
     proofPoints: Array.isArray(stageConfig.proofPoints) ? stageConfig.proofPoints : [],
+    supportingModules: Array.isArray(stagePayload.supportingModules) ? stagePayload.supportingModules : [],
+    demoActions: Array.isArray(stagePayload.demoActions) ? stagePayload.demoActions : [],
+    qaPrompts: Array.isArray(stagePayload.qaPrompts) ? stagePayload.qaPrompts : [],
     cards: buildPresenterCards(),
+    liveNarrative: readTextValue(stagePayload.liveNarrative),
+    detailRows: Array.isArray(stagePayload.detailRows) ? stagePayload.detailRows : [],
     planSummary: String(plan?.summary || "").trim(),
     planScope: getGoalScopeLabel(plan?.goal || draftGoal),
     planScopeMessage: String(plan?.goal?.scopeMessage || "").trim(),
@@ -1921,6 +2266,8 @@ function syncGoalFormFromRun(run) {
   }
   clearGoalPromptInferenceTimer();
   state.goalPromptInferencePending = false;
+  state.goalPromptInferenceReasoning = "";
+  state.goalPromptInferenceTargetSource = "";
   state.goalScopeStepAcknowledged = Boolean(run?.goal);
   state.goalPlanningStep = run?.goal ? 3 : 1;
   setGoalSkuSelectionMode(
@@ -2884,6 +3231,7 @@ function renderGoalSelectedSkus() {
     return;
   }
   const selectedProducts = getSelectedGoalProducts().sort((left, right) => left.name.localeCompare(right.name));
+  const reasoning = readTextValue(state.goalPromptInferenceReasoning);
   elements.goalSelectedSkuHeadline.textContent =
     state.goalPromptInferencePending && getGoalPromptText()
       ? "AI reviewing"
@@ -2896,7 +3244,7 @@ function renderGoalSelectedSkus() {
     if (state.goalPromptInferencePending && getGoalPromptText()) {
       elements.goalSelectedSkus.textContent = "AI is reviewing the assortment for the current brief.";
     } else if (isGoalPromptSelectionActive()) {
-      elements.goalSelectedSkus.textContent = "AI brief is active, but no matching SKUs were found yet.";
+      elements.goalSelectedSkus.textContent = reasoning || "AI brief is active, but no matching SKUs were found yet.";
     } else if (getGoalPromptText()) {
       elements.goalSelectedSkus.textContent = "No priority SKUs selected. Edit the AI brief to auto-select, or pick SKUs below.";
     } else {
@@ -2904,7 +3252,10 @@ function renderGoalSelectedSkus() {
     }
   } else {
     elements.goalSelectedSkus.classList.remove("empty");
-    elements.goalSelectedSkus.innerHTML = selectedProducts
+    const reasoningMarkup = isGoalPromptSelectionActive() && reasoning
+      ? `<div class="goal-selection-reason">${escapeHtml(reasoning)}</div>`
+      : "";
+    const chipsMarkup = selectedProducts
       .map((product) => {
         const sku = normalizeSku(product.sku);
         return `<button type="button" class="goal-chip js-remove-goal-sku" data-sku="${escapeHtml(sku)}">
@@ -2916,6 +3267,7 @@ function renderGoalSelectedSkus() {
         </button>`;
       })
       .join("");
+    elements.goalSelectedSkus.innerHTML = `${reasoningMarkup}${chipsMarkup}`;
   }
 }
 

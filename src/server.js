@@ -704,25 +704,45 @@ const DEMO_STAGE_TEMPLATES = [
   {
     id: "cyield-supply",
     label: "CYield Supply Setup",
-    description: "Add one placement manually, then load the preset to complete the supply setup story.",
+    description: "Use the two-action supply flow to show one manual CYield anchor, then fan the shared player across the rest of the store.",
     actionLabel: "Load supply preset",
     starterScreenId: "STORE_42_CYIELD_ENTRANCE_HERO",
-    speakerSummary: "One manual CYield-style mapping proves the integration point, then the preset fills the rest of the store.",
+    speakerSummary:
+      "Keep supply tight: one manual CYield-style mapping proves the integration point, then the preset, rate card, and handoff show how the same shared player scales across stores.",
     presenterNotes: [
-      "Start with one anchor placement so the workflow still looks like CYield page setup.",
-      "Every screen still calls the same shared player URL.",
-      "The only extra layer is backend resolution of which installed screen is asking for the ad."
+      "Start with one anchor placement so the workflow still looks like a normal CYield page-to-screen setup.",
+      "Call out that every physical screen still uses the same /screen.html player path.",
+      "The extra logic is backend resolution of which installed screen is calling the shared player.",
+      "Use the preset summary and handoff state to show rollout scale, not a pile of manual page creation."
     ],
     proofPoints: [
       "Minimal CYield change",
       "One shared player URL",
-      "Preset rolls out the store fast"
+      "Preset rolls out the store fast",
+      "Retailer pricing stays on the supply side"
+    ],
+    supportingModules: [
+      "2-action supply flow",
+      "Preset summary plus retailer CPM card",
+      "Supply handoff across stores and placements",
+      "Backup page and screen mapping details"
+    ],
+    demoActions: [
+      "Click Add one anchor placement to show the only manual CYield step.",
+      "Point to the shared player URL and explain that the resolver, not the retailer page model, identifies the installed screen.",
+      "Click Apply shared preset to fan out entrance, electronics, whitegoods, aisle, and checkout coverage.",
+      "Use the handoff card only if needed to quantify mapped placements, stores, and the shared player path."
+    ],
+    qaPrompts: [
+      "If someone asks about implementation, open Backup config and show the page and screen fields behind the anchor placement.",
+      "If someone asks about retailer control, point to the CPM card and explain that pricing still lives on the supply side.",
+      "If someone asks about scale, use the handoff stats instead of walking screen by screen."
     ]
   },
   {
     id: "cmax-demand",
     label: "CMax Buying / Demand",
-    description: "Switch to the buying plan, generate demand, and apply it at checkout.",
+    description: "Switch into the planner, generate a goal-led line-up, edit the mix if needed, then fund the final activation.",
     actionLabel: "Generate buying plan",
     starterScreenId: "STORE_42_CMAX_CHECKOUT_KIOSK",
     goalDefaults: {
@@ -734,34 +754,75 @@ const DEMO_STAGE_TEMPLATES = [
       prompt: "Drive checkout demand for Northfield accessories in STORE_42.",
       targetSkuIds: ["ACC-MOUSE-001"]
     },
-    speakerSummary: "CMax turns the configured supply into a demand brief, and the demo can automatically pivot to the best matching mapped screens for the selected SKUs.",
+    speakerSummary:
+      "CMax turns configured supply into a planner workflow: goal, brief, scope, editable line-up, and budget all stay in one place before the funded placements go live.",
     presenterNotes: [
-      "Generate the brief from a business goal and target SKUs, not from hand-editing creatives.",
-      "If the selected products fit aisle or category screens better than checkout, the demo automatically adjusts the scope.",
-      "Already-compatible screens still count as live proof even when no template change is required."
+      "Generate the line-up from a business goal and target SKUs, not from hand-editing creatives.",
+      "Use the AI brief or manual SKU selection to show how the planner explains why those products are in focus.",
+      "If the selected products fit aisle or category screens better than checkout, the planner can widen or pivot the scope automatically.",
+      "Already-compatible screens still count as proof because the value is the recommendation and funding logic, not just creative swaps."
     ],
     proofPoints: [
       "Goal-led buying brief",
       "Auto-matched screen scope",
+      "Editable line-up and budget control",
       "Applies even when the best screen already matches"
+    ],
+    supportingModules: [
+      "Planner steps: brief, scope, assortment",
+      "AI brief with SKU reasoning",
+      "Decision logic and editable line-up",
+      "Budget slider and launch state"
+    ],
+    demoActions: [
+      "Set the advertiser and objective, then use the AI brief or manual SKU selection to create the shortlist.",
+      "Call out any store or page auto-widening as planner logic, not as a hidden pre-baked setup.",
+      "Use the recommendation summary to explain why placements are included, excluded, or already compatible.",
+      "Move to the budget slider and approve the funded line-up so monitoring inherits the same campaign context."
+    ],
+    qaPrompts: [
+      "If someone asks why a screen is missing, use the store logic, scope logic, or guardrail rationale in the decision panel.",
+      "If someone asks what changed, distinguish between funded placements, held-by-budget placements, and placements still available to add back.",
+      "If someone asks about commercials, point to the selected versus max spend and funded impression totals."
     ]
   },
   {
     id: "monitoring",
     label: "Monitoring",
-    description: "Review live screens, telemetry, and the applied plan after the click-through.",
+    description: "Use the live brand dashboard, measurement board, preview rail, and campaign history to show operational proof after launch.",
     actionLabel: "Open monitoring",
     starterScreenId: "STORE_42_CMAX_CHECKOUT_KIOSK",
-    speakerSummary: "The same shared player URL now shows live proof across screens, with telemetry that makes the activation feel operational.",
+    speakerSummary:
+      "Monitoring turns the launch into an operational story: the same shared player now feeds a brand dashboard, measurement board, preview rail, and campaign history.",
     presenterNotes: [
-      "Show that the plan moved from setup into live state without changing the player path.",
-      "Use the preview rail and telemetry to make the demo feel observable and production-like.",
-      "The key takeaway is continuity: same URL, different resolved screens, measurable delivery."
+      "Show that the campaign moved from plan to live state without changing the shared player path.",
+      "Anchor the story on the brand dashboard first, then use measurement to separate observed delivery from modeled retail outcomes.",
+      "Use the preview rail or live screen snapshot to prove the campaign is in market on the actual resolved screens.",
+      "Finish with telemetry breakdowns and run history so the workflow feels observable, measurable, and reusable."
     ],
     proofPoints: [
-      "Live proof-of-play",
+      "Brand dashboard",
+      "Measurement board",
+      "Live preview rail",
       "Telemetry by screen and SKU",
       "Same shared player path end to end"
+    ],
+    supportingModules: [
+      "Brand-scoped dashboard and KPI rail",
+      "Measurement board with observed and modeled metrics",
+      "Telemetry breakdowns by screen, template, and SKU",
+      "Live screen snapshot, preview rail, and campaign history"
+    ],
+    demoActions: [
+      "Open monitoring after apply and frame it as a brand dashboard, not just a telemetry dump.",
+      "Use the KPI rail and measurement board to separate observed plays and exposure from modeled QR, incrementality, and sales impact.",
+      "Show one live screen snapshot or preview card to prove the same shared player is now in market.",
+      "Finish on the campaign timeline to show continuity from planning through launch."
+    ],
+    qaPrompts: [
+      "If someone asks what is live versus modeled, use the measurement source note and metric tags to separate telemetry from modeled outcomes.",
+      "If someone asks for proof, use the live screen snapshot, preview links, and breakdowns by screen, template, or SKU.",
+      "If someone asks about optimization, point to the campaign history and plan-level before or after comparison story."
     ]
   }
 ];
@@ -3083,7 +3144,7 @@ async function inferTargetProductsFromPromptWithAi(prompt, feed, scopedScreens =
           {
             role: "system",
             content:
-              "You select SKUs for an in-store retail media planner. Use the brief semantically, not only exact token overlap. Prefer products that fit the user's intent, including stock, value, premium, rating, and freshness signals when mentioned. Only choose from the supplied candidates. Return an empty list if nothing is a confident fit."
+              "You select SKUs for an in-store retail media planner. Use the brief semantically, not only exact token overlap. Prefer products that fit the user's intent, including stock, value, premium, rating, and freshness signals when mentioned. If the brief suggests beginners, simplicity, low confidence with technology, or mainstream ease-of-use, prefer simple everyday consumer products and avoid creator, capture, studio, pro interface, or specialist gear unless the brief clearly asks for them. Only choose from the supplied candidates. Return an empty list if nothing is a confident fit. Explain the selection briefly."
           },
           {
             role: "user",
@@ -4327,7 +4388,8 @@ function readGoalRequest(input) {
   };
 }
 
-async function resolveGoalTargetProducts(goal, feed, scopedScreens) {
+async function resolveGoalTargetProducts(goal, feed, scopedScreens, options = {}) {
+  const allowAccountFallback = options.allowAccountFallback !== false;
   const normalizedFeed = Array.isArray(feed)
     ? feed.map((product, index) => normalizeProductFeedItem(product, index))
     : [];
@@ -4386,14 +4448,16 @@ async function resolveGoalTargetProducts(goal, feed, scopedScreens) {
     };
   }
 
-  if ((requestedAdvertiserId || requestedBrand) && filteredFeed.length > 0) {
+  if ((requestedAdvertiserId || requestedBrand) && filteredFeed.length > 0 && allowAccountFallback) {
     const accountProducts = filteredFeed.slice(0, GOAL_TARGET_SKU_LIMIT);
     return {
       targetSkuIds: accountProducts.map((product) => normalizeSku(product.sku)),
       targetProducts: accountProducts,
       targetSource: "account",
       inferredTerms: [],
-      inferenceReasoning: "",
+      inferenceReasoning: goal.prompt
+        ? "The brief did not map confidently to a specific SKU shortlist, so the planner widened back to the broader brand assortment."
+        : "",
       inferenceModel: ""
     };
   }
@@ -4403,7 +4467,9 @@ async function resolveGoalTargetProducts(goal, feed, scopedScreens) {
     targetProducts: [],
     targetSource: "none",
     inferredTerms: [],
-    inferenceReasoning: "",
+    inferenceReasoning: goal.prompt
+      ? "The brief was too ambiguous to produce a confident SKU shortlist. Try describing simpler shopper needs such as easy setup, everyday use, budget, premium, or high stock."
+      : "",
     inferenceModel: ""
   };
 }
@@ -5849,7 +5915,9 @@ app.post("/api/goal-skus/infer", async (req, res) => {
     const [db, feed] = await Promise.all([readDb(), readProductFeed()]);
     const allScreens = Array.isArray(db.screens) ? db.screens : [];
     const scopedScreens = filterGoalScopeScreens(allScreens, goal);
-    const resolved = await resolveGoalTargetProducts(goal, feed, scopedScreens.length > 0 ? scopedScreens : allScreens);
+    const resolved = await resolveGoalTargetProducts(goal, feed, scopedScreens.length > 0 ? scopedScreens : allScreens, {
+      allowAccountFallback: false
+    });
     res.json({
       products: resolved.targetProducts,
       targetSkuIds: resolved.targetSkuIds,
