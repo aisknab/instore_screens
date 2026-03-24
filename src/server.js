@@ -361,6 +361,28 @@ function averageOf(values = [], fallback = 0) {
   return numeric.reduce((sum, value) => sum + value, 0) / numeric.length;
 }
 
+function formatCount(value) {
+  return Math.max(0, Math.round(Number(value || 0))).toLocaleString("en-US");
+}
+
+function formatMoney(value) {
+  return `$${Math.round(Number(value || 0)).toLocaleString("en-US")}`;
+}
+
+function formatDuration(ms) {
+  const totalSeconds = Math.max(0, Math.round(Number(ms || 0) / 1000));
+  if (totalSeconds < 60) {
+    return `${totalSeconds}s`;
+  }
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  if (minutes < 60) {
+    return `${minutes}m ${seconds}s`;
+  }
+  const hours = Math.floor(minutes / 60);
+  return `${hours}h ${minutes % 60}m`;
+}
+
 function buildDemoStoreSalesSignalMap() {
   const rawEntries = DEMO_STORE_PROFILES.map((profile, index) => {
     const screenConfigs = Object.values(profile?.screenConfigs || {});
@@ -3160,6 +3182,529 @@ function summarizeTelemetryCounts(events) {
   return summary;
 }
 
+function formatTelemetryPercent(value, fractionDigits = 1) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) {
+    return "0.0%";
+  }
+  return `${(numeric * 100).toFixed(fractionDigits)}%`;
+}
+
+function formatTelemetryRatio(value, fractionDigits = 1) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) {
+    return `0.${"0".repeat(Math.max(0, fractionDigits))}x`;
+  }
+  return `${numeric.toFixed(fractionDigits)}x`;
+}
+
+function formatTelemetrySignedDuration(ms) {
+  const numeric = Number(ms);
+  if (!Number.isFinite(numeric) || numeric === 0) {
+    return "0s";
+  }
+  const prefix = numeric > 0 ? "+" : "-";
+  return `${prefix}${formatDuration(Math.abs(numeric))}`;
+}
+
+function formatTelemetrySignedMoney(value) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric) || numeric === 0) {
+    return "$0";
+  }
+  const prefix = numeric > 0 ? "+" : "-";
+  return `${prefix}$${Math.round(Math.abs(numeric)).toLocaleString()}`;
+}
+
+function formatTelemetrySignedPercent(value, fractionDigits = 1) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric) || numeric === 0) {
+    return "0.0 pp";
+  }
+  const prefix = numeric > 0 ? "+" : "-";
+  return `${prefix}${Math.abs(numeric * 100).toFixed(fractionDigits)} pp`;
+}
+
+function formatTelemetryComparisonValue(unit, value) {
+  switch (unit) {
+    case "percent":
+      return formatTelemetryPercent(value);
+    case "ratio":
+      return formatTelemetryRatio(value);
+    case "duration":
+      return formatDuration(Math.max(0, Number(value) || 0));
+    case "currency":
+      return `$${Math.round(Number(value) || 0).toLocaleString()}`;
+    case "count":
+    default:
+      return formatCount(value);
+  }
+}
+
+function formatTelemetryComparisonDelta(unit, value) {
+  switch (unit) {
+    case "percent":
+      return formatTelemetrySignedPercent(value);
+    case "ratio":
+      return `${Number(value) >= 0 ? "+" : "-"}${Math.abs(Number(value) || 0).toFixed(1)}x`;
+    case "duration":
+      return formatTelemetrySignedDuration(value);
+    case "currency":
+      return formatTelemetrySignedMoney(value);
+    case "count":
+    default:
+      return `${Number(value) >= 0 ? "+" : "-"}${Math.abs(Math.round(Number(value) || 0)).toLocaleString()}`;
+  }
+}
+
+function buildTelemetryComparison(currentValue, baselineValue, unit = "count") {
+  const current = Number(currentValue);
+  const baseline = Number(baselineValue);
+  if (!Number.isFinite(current) || !Number.isFinite(baseline)) {
+    return null;
+  }
+  const delta = current - baseline;
+  return {
+    baselineValue: baseline,
+    baselineText: formatTelemetryComparisonValue(unit, baseline),
+    currentValue: current,
+    currentText: formatTelemetryComparisonValue(unit, current),
+    deltaValue: delta,
+    deltaText: formatTelemetryComparisonDelta(unit, delta),
+    deltaPercent: baseline !== 0 ? delta / baseline : null,
+    direction: delta > 0 ? "up" : delta < 0 ? "down" : "flat"
+  };
+}
+
+function buildTelemetryMetric({
+  key,
+  label,
+  description,
+  value,
+  unit,
+  formula,
+  sourceTags = [],
+  numerator = null,
+  denominator = null,
+  numeratorLabel = "",
+  denominatorLabel = "",
+  comparison = null,
+  secondaryValue = null,
+  secondaryLabel = ""
+}) {
+  const normalizedValue = Number(value);
+  const normalizedSecondaryValue = Number(secondaryValue);
+  return {
+    key,
+    label,
+    description,
+    value: Number.isFinite(normalizedValue) ? normalizedValue : 0,
+    valueText: formatTelemetryComparisonValue(unit, normalizedValue),
+    unit,
+    formula,
+    sourceTags,
+    numerator: Number.isFinite(Number(numerator)) ? Number(numerator) : null,
+    denominator: Number.isFinite(Number(denominator)) ? Number(denominator) : null,
+    numeratorLabel,
+    denominatorLabel,
+    secondaryValue: Number.isFinite(normalizedSecondaryValue) ? normalizedSecondaryValue : null,
+    secondaryValueText: Number.isFinite(normalizedSecondaryValue)
+      ? formatTelemetryComparisonValue(secondaryLabel === "currency" ? "currency" : secondaryLabel || unit, normalizedSecondaryValue)
+      : "",
+    secondaryLabel,
+    comparison,
+    model: "modeled"
+  };
+}
+
+function resolveTelemetryMeasurementRun(db, planId) {
+  const runs = ensureAgentRunsArray(db);
+  const requestedPlanId = readOptionalString(planId, 120);
+  if (requestedPlanId) {
+    return runs.find((entry) => entry.planId === requestedPlanId) || null;
+  }
+  return null;
+}
+
+function collectMeasurementScreenIds(run, planComparison = null) {
+  const screenIds = [
+    ...(Array.isArray(run?.appliedScreenIds) ? run.appliedScreenIds : []),
+    ...(Array.isArray(run?.liveScreens) ? run.liveScreens.map((screen) => screen.screenId) : []),
+    ...(Array.isArray(run?.plannedScreenIds) ? run.plannedScreenIds : []),
+    ...(Array.isArray(run?.selectedPlacementScreenIds) ? run.selectedPlacementScreenIds : []),
+    ...(Array.isArray(planComparison?.affectedScreens) ? planComparison.affectedScreens : [])
+  ]
+    .map((screenId) => readOptionalString(screenId, 80))
+    .filter(Boolean);
+  return [...new Set(screenIds)];
+}
+
+function getMeasurementScreens(db, run, planComparison = null) {
+  const screenMap = new Map((Array.isArray(db?.screens) ? db.screens : []).map((screen) => [readOptionalString(screen.screenId, 80), screen]));
+  return collectMeasurementScreenIds(run, planComparison)
+    .map((screenId) => screenMap.get(screenId))
+    .filter(Boolean);
+}
+
+function getMeasurementStoreIds(run, screens = []) {
+  const storeIds = [
+    readOptionalString(run?.goal?.storeId, 80),
+    ...(Array.isArray(screens) ? screens.map((screen) => readOptionalString(screen?.storeId, 80)) : [])
+  ]
+    .filter(Boolean);
+  return [...new Set(storeIds)];
+}
+
+function aggregateDemoStoreSignals(storeIds = []) {
+  const signals = [...new Set((Array.isArray(storeIds) ? storeIds : []).map((storeId) => readOptionalString(storeId, 80)).filter(Boolean))]
+    .map((storeId) => DEMO_STORE_SALES_SIGNAL_MAP.get(storeId))
+    .filter(Boolean);
+
+  if (signals.length === 0) {
+    return {
+      storeCount: 0,
+      totalSales: 0,
+      avgBasketValue: 42,
+      salesIndex: 0.5,
+      footTrafficIndex: 0.5,
+      checkoutIntentIndex: 0.5,
+      premiumDemandIndex: 0.5,
+      clearancePressureIndex: 0.5
+    };
+  }
+
+  return {
+    storeCount: signals.length,
+    totalSales: Math.round(averageOf(signals.map((signal) => signal.totalSales), 0)),
+    avgBasketValue: Number(averageOf(signals.map((signal) => signal.avgBasketValue), 42).toFixed(2)),
+    salesIndex: Number(averageOf(signals.map((signal) => signal.salesIndex), 0.5).toFixed(2)),
+    footTrafficIndex: Number(averageOf(signals.map((signal) => signal.footTrafficIndex), 0.5).toFixed(2)),
+    checkoutIntentIndex: Number(averageOf(signals.map((signal) => signal.checkoutIntentIndex), 0.5).toFixed(2)),
+    premiumDemandIndex: Number(averageOf(signals.map((signal) => signal.premiumDemandIndex), 0.5).toFixed(2)),
+    clearancePressureIndex: Number(averageOf(signals.map((signal) => signal.clearancePressureIndex), 0.5).toFixed(2))
+  };
+}
+
+function getMeasurementTargetProducts(run) {
+  const rawProducts = Array.isArray(run?.goal?.targetProducts) ? run.goal.targetProducts : [];
+  return rawProducts
+    .map((product, index) => normalizeProductFeedItem(product, index))
+    .filter((product) => Boolean(product?.sku));
+}
+
+function getMeasurementObjectiveBoost(objective) {
+  switch (objective) {
+    case "checkout-attach":
+      return 0.07;
+    case "clearance":
+      return 0.06;
+    case "premium":
+      return 0.08;
+    case "awareness":
+    default:
+      return 0.05;
+  }
+}
+
+function buildTelemetryMeasurementScenario({ totals = {}, run = null, storeSignal = null, targetProducts = [] } = {}) {
+  const playCount = Math.max(0, Math.round(Number(totals.playCount || 0)));
+  const exposureMs = Math.max(0, Math.round(Number(totals.exposureMs || 0)));
+  const exposureEventCount = Math.max(0, Math.round(Number(totals.exposureEventCount || 0)));
+  const avgExposureMs =
+    Number.isFinite(Number(totals.avgExposureMs)) && Number(totals.avgExposureMs) > 0
+      ? Math.round(Number(totals.avgExposureMs))
+      : exposureEventCount > 0
+        ? Math.round(exposureMs / exposureEventCount)
+        : 0;
+  const impressionProxy = Math.max(playCount, Math.round(exposureMs / 30000));
+  const objective = readOptionalString(run?.goal?.objective, 40) || "awareness";
+  const selectedSpend = Math.max(0, Math.round(Number(run?.budget?.selectedSpend || 0)));
+  const maxSpend = Math.max(selectedSpend, Math.round(Number(run?.budget?.maxSpend || 0)));
+  const budgetUtilization = maxSpend > 0 ? clampNumber(selectedSpend / maxSpend, 0, 1) : 0.5;
+  const avgPrice = Number(averageOf(targetProducts.map((product) => readNumericValue(product?.price, 0)), 0).toFixed(2));
+  const targetBrands = [...new Set(targetProducts.map((product) => readOptionalString(product?.brand, 80)).filter(Boolean))];
+  const brandDiversity = targetProducts.length > 0 ? clampNumber(targetBrands.length / Math.max(targetProducts.length, 1), 0, 1) : 0.35;
+  const priceBoost = clampNumber(avgPrice / 1000, 0.05, 0.7);
+  const exposureBoost = clampNumber(avgExposureMs / 30000, 0.8, 1.35);
+  const salesMultiple =
+    1.85 +
+    Number(storeSignal?.salesIndex || 0.5) * 0.9 +
+    Number(storeSignal?.footTrafficIndex || 0.5) * 0.55 +
+    Number(storeSignal?.checkoutIntentIndex || 0.5) * 0.4 +
+    priceBoost * 0.6 +
+    getMeasurementObjectiveBoost(objective) +
+    budgetUtilization * 0.35 +
+    (exposureBoost - 1) * 0.4;
+  const modeledInStoreSales = Math.max(0, Math.round(impressionProxy * salesMultiple));
+  const qrScanRate = clampNumber(
+    0.014 +
+      Number(storeSignal?.checkoutIntentIndex || 0.5) * 0.022 +
+      Number(storeSignal?.footTrafficIndex || 0.5) * 0.01 +
+      Math.min(0.018, targetProducts.length * 0.003) +
+      (exposureBoost - 1) * 0.01,
+    0.01,
+    0.08
+  );
+  const qrScans = Math.max(0, Math.round(impressionProxy * qrScanRate));
+  const loyaltyActions = Math.max(0, Math.round(qrScans * clampNumber(0.18 + budgetUtilization * 0.08 + brandDiversity * 0.08, 0.12, 0.42)));
+  const interactionActions = qrScans + loyaltyActions;
+  const interactionRate = impressionProxy > 0 ? interactionActions / impressionProxy : 0;
+  const incrementalityRate = clampNumber(
+    0.08 +
+      Number(storeSignal?.salesIndex || 0.5) * 0.05 +
+      Number(storeSignal?.checkoutIntentIndex || 0.5) * 0.05 +
+      budgetUtilization * 0.08 +
+      interactionRate * 0.28 +
+      getMeasurementObjectiveBoost(objective) * 0.4,
+    0.06,
+    0.3
+  );
+  const incrementalSales = Math.max(0, Math.round(modeledInStoreSales * incrementalityRate));
+  const baselineSales = Math.max(0, modeledInStoreSales - incrementalSales);
+  const newBuyerRate = clampNumber(
+    0.07 +
+      Number(storeSignal?.footTrafficIndex || 0.5) * 0.04 +
+      brandDiversity * 0.08 +
+      priceBoost * 0.05 +
+      getMeasurementObjectiveBoost(objective) * 0.25,
+    0.05,
+    0.24
+  );
+  const newBuyerSales = Math.max(0, Math.round(modeledInStoreSales * newBuyerRate));
+  const newBuyerTransactions = Math.max(0, Math.round(newBuyerSales / Math.max(1, Number(storeSignal?.avgBasketValue || 42))));
+  const inStoreROAS = impressionProxy > 0 ? modeledInStoreSales / impressionProxy : 0;
+
+  return {
+    objective,
+    selectedSpend,
+    maxSpend,
+    budgetUtilization,
+    avgPrice,
+    targetBrands,
+    targetBrandCount: targetBrands.length,
+    targetSkuCount: targetProducts.length,
+    storeSignal,
+    impressionProxy,
+    playCount,
+    exposureMs,
+    avgExposureMs,
+    qrScans,
+    loyaltyActions,
+    interactionActions,
+    interactionRate,
+    modeledInStoreSales,
+    baselineSales,
+    incrementalSales,
+    incrementalityRate,
+    newBuyerSales,
+    newBuyerTransactions,
+    newBuyerRate,
+    inStoreROAS
+  };
+}
+
+function buildTelemetryMeasurementBoard(db, telemetryTotals, planComparison, planId) {
+  const run = resolveTelemetryMeasurementRun(db, planId);
+  const screens = getMeasurementScreens(db, run, planComparison);
+  const storeIds = getMeasurementStoreIds(run, screens);
+  const storeSignal = aggregateDemoStoreSignals(storeIds);
+  const targetProducts = getMeasurementTargetProducts(run);
+  const currentTotals = planComparison?.afterApply || telemetryTotals;
+  const baselineTotals = planComparison?.beforeApply || null;
+  const currentScenario = buildTelemetryMeasurementScenario({
+    totals: currentTotals,
+    run,
+    storeSignal,
+    targetProducts
+  });
+  const baselineScenario = baselineTotals
+    ? buildTelemetryMeasurementScenario({
+        totals: baselineTotals,
+        run,
+        storeSignal,
+        targetProducts
+      })
+    : null;
+
+  const metrics = [
+    buildTelemetryMetric({
+      key: "interactionRate",
+      label: "Interaction rate",
+      description: "Percentage of shoppers who engaged with the screen through a QR scan or loyalty action.",
+      value: currentScenario.interactionRate,
+      unit: "percent",
+      formula: "(QR scans + loyalty actions) / ad plays",
+      sourceTags: ["telemetry", "modeled", "engagement"],
+      numerator: currentScenario.interactionActions,
+      denominator: currentScenario.impressionProxy,
+      numeratorLabel: "Engagement actions",
+      denominatorLabel: "Ad plays",
+      comparison: baselineScenario ? buildTelemetryComparison(currentScenario.interactionRate, baselineScenario.interactionRate, "percent") : null,
+      secondaryValue: currentScenario.loyaltyActions,
+      secondaryLabel: "count"
+    }),
+    buildTelemetryMetric({
+      key: "qrScans",
+      label: "QR code scans",
+      description: "Modeled scans for coupons or product details that can feed app and loyalty handoffs.",
+      value: currentScenario.qrScans,
+      unit: "count",
+      formula: "Impression proxy x modeled QR scan rate",
+      sourceTags: ["telemetry", "modeled", "qr"],
+      numerator: currentScenario.qrScans,
+      denominator: currentScenario.impressionProxy,
+      numeratorLabel: "Scans",
+      denominatorLabel: "Impression proxy",
+      comparison: baselineScenario ? buildTelemetryComparison(currentScenario.qrScans, baselineScenario.qrScans, "count") : null,
+      secondaryValue: currentScenario.loyaltyActions,
+      secondaryLabel: "count"
+    }),
+    buildTelemetryMetric({
+      key: "incrementality",
+      label: "Incrementality",
+      description: "Modeled sales attributable to advertising versus a no-ads baseline for the same screens.",
+      value: currentScenario.incrementalSales,
+      unit: "currency",
+      formula: "Modeled in-store sales x incrementality rate",
+      sourceTags: ["telemetry", "plan", "sales-signal", "model"],
+      numerator: currentScenario.incrementalSales,
+      denominator: currentScenario.modeledInStoreSales,
+      numeratorLabel: "Incremental sales",
+      denominatorLabel: "Modeled sales",
+      comparison: baselineScenario ? buildTelemetryComparison(currentScenario.incrementalSales, baselineScenario.incrementalSales, "currency") : null,
+      secondaryValue: currentScenario.baselineSales,
+      secondaryLabel: "currency"
+    }),
+    buildTelemetryMetric({
+      key: "newBuyerAcquisition",
+      label: "New buyer acquisition",
+      description: "New-to-brand sales modeled from POS-style sales signals and the target mix.",
+      value: currentScenario.newBuyerSales,
+      unit: "currency",
+      formula: "Modeled in-store sales x new-to-brand rate",
+      sourceTags: ["telemetry", "pos-model", "sales-signal", "model"],
+      numerator: currentScenario.newBuyerSales,
+      denominator: currentScenario.modeledInStoreSales,
+      numeratorLabel: "New-to-brand sales",
+      denominatorLabel: "Modeled sales",
+      comparison: baselineScenario ? buildTelemetryComparison(currentScenario.newBuyerSales, baselineScenario.newBuyerSales, "currency") : null,
+      secondaryValue: currentScenario.newBuyerTransactions,
+      secondaryLabel: "count"
+    }),
+    buildTelemetryMetric({
+      key: "inStoreROAS",
+      label: "In-store ROAS",
+      description: "In-store sales divided by the impressions proxy used in the demo.",
+      value: currentScenario.inStoreROAS,
+      unit: "ratio",
+      formula: "Modeled in-store sales / ad plays",
+      sourceTags: ["telemetry", "sales-signal", "model"],
+      numerator: currentScenario.modeledInStoreSales,
+      denominator: currentScenario.impressionProxy,
+      numeratorLabel: "Modeled sales",
+      denominatorLabel: "Ad plays",
+      comparison: baselineScenario ? buildTelemetryComparison(currentScenario.inStoreROAS, baselineScenario.inStoreROAS, "ratio") : null
+    }),
+    buildTelemetryMetric({
+      key: "totalExposureTime",
+      label: "Total exposure time",
+      description: "Total visible dwell time captured from exposure beacons.",
+      value: currentScenario.exposureMs,
+      unit: "duration",
+      formula: "Sum of exposure beacon dwell time",
+      sourceTags: ["telemetry"],
+      numerator: currentScenario.exposureMs,
+      denominator: currentScenario.playCount,
+      numeratorLabel: "Exposure time",
+      denominatorLabel: "Ad plays",
+      comparison: baselineScenario ? buildTelemetryComparison(currentScenario.exposureMs, baselineScenario.exposureMs, "duration") : null
+    }),
+    buildTelemetryMetric({
+      key: "totalAdPlays",
+      label: "Total Ad Plays",
+      description: "All proof-of-play events counted for the selected scope.",
+      value: currentScenario.playCount,
+      unit: "count",
+      formula: "Count of play beacon events",
+      sourceTags: ["telemetry"],
+      numerator: currentScenario.playCount,
+      denominator: currentScenario.playCount,
+      numeratorLabel: "Play events",
+      denominatorLabel: "Play events",
+      comparison: baselineScenario ? buildTelemetryComparison(currentScenario.playCount, baselineScenario.playCount, "count") : null
+    })
+  ];
+
+  const scopeScreenIds = collectMeasurementScreenIds(run, planComparison);
+  const scopeLabel = scopeScreenIds.length > 0 ? `${scopeScreenIds.length} scoped screen${scopeScreenIds.length === 1 ? "" : "s"}` : "global telemetry";
+  const trendParts = [];
+  if (baselineScenario) {
+    trendParts.push(
+      `${formatCount(currentScenario.playCount)} plays vs ${formatCount(baselineScenario.playCount)} before apply`,
+      `${formatDuration(currentScenario.exposureMs)} exposure vs ${formatDuration(baselineScenario.exposureMs)} before apply`
+    );
+  } else {
+    trendParts.push(`${formatCount(currentScenario.playCount)} plays`, `${formatDuration(currentScenario.exposureMs)} exposure`);
+  }
+  trendParts.push(`${formatMoney(currentScenario.incrementalSales)} modeled incrementality`);
+
+  return {
+    modelType: "modeled-demo",
+    generatedAt: new Date().toISOString(),
+    scope: {
+      planId: readOptionalString(planId, 120),
+      runStatus: readOptionalString(run?.status, 40),
+      scopeLabel,
+      screenCount: scopeScreenIds.length > 0 ? scopeScreenIds.length : Number(telemetryTotals.screenCount || 0),
+      storeCount: storeSignal.storeCount,
+      storeIds,
+      targetSkuCount: currentScenario.targetSkuCount,
+      targetBrandCount: currentScenario.targetBrandCount,
+      objective: currentScenario.objective,
+      selectedSpend: currentScenario.selectedSpend,
+      maxSpend: currentScenario.maxSpend,
+      budgetUtilization: currentScenario.budgetUtilization,
+      sourceTags: [...new Set(metrics.flatMap((metric) => metric.sourceTags))]
+    },
+    current: {
+      playCount: currentScenario.playCount,
+      exposureMs: currentScenario.exposureMs,
+      impressionProxy: currentScenario.impressionProxy,
+      modeledInStoreSales: currentScenario.modeledInStoreSales,
+      incrementalSales: currentScenario.incrementalSales,
+      newBuyerSales: currentScenario.newBuyerSales
+    },
+    baseline: baselineScenario
+      ? {
+          playCount: baselineScenario.playCount,
+          exposureMs: baselineScenario.exposureMs,
+          impressionProxy: baselineScenario.impressionProxy,
+          modeledInStoreSales: baselineScenario.modeledInStoreSales,
+          incrementalSales: baselineScenario.incrementalSales,
+          newBuyerSales: baselineScenario.newBuyerSales
+        }
+      : null,
+    narrative: {
+      headline: scopeScreenIds.length > 0 ? `Measurement board for ${scopeLabel}.` : "Measurement board for the full telemetry set.",
+      summary:
+        "Observed play and exposure telemetry anchor the board, while QR scans, incrementality, and new buyer acquisition are modeled from the active plan and store sales signals.",
+      comparisonStory: baselineScenario
+        ? `Compared with the pre-apply window, the scoped inventory is showing ${formatTelemetrySignedPercent(
+            currentScenario.interactionRate - baselineScenario.interactionRate
+          )} interaction-rate change, ${formatTelemetrySignedMoney(currentScenario.incrementalSales - baselineScenario.incrementalSales)} incremental sales change, and ${formatTelemetrySignedDuration(
+            currentScenario.exposureMs - baselineScenario.exposureMs
+          )} exposure change.`
+        : `Modeled from the current telemetry set, with ${formatCount(currentScenario.qrScans)} QR scans and ${formatMoney(
+            currentScenario.incrementalSales
+          )} incremental sales.`,
+      sourceNote:
+        "QR scans, loyalty actions, incrementality, and new buyer acquisition are modeled outputs based on the same telemetry and plan inputs used elsewhere in the demo.",
+      trend: trendParts.join(" | ")
+    },
+    metrics
+  };
+}
+
 function buildTelemetryBreakdown(events, keySelector, decorate, limit = TELEMETRY_BREAKDOWN_LIMIT) {
   const entries = new Map();
 
@@ -3294,9 +3839,11 @@ function buildTelemetrySummary(db, planId = "") {
       safeDateMs(readOptionalString(left.occurredAt, 80) || readOptionalString(left.collectedAt, 80)) ?? 0;
     return rightMs - leftMs;
   });
+  const telemetryTotals = summarizeTelemetryCounts(telemetryEvents);
+  const planComparison = planId ? buildPlanTelemetryComparison(db, planId, telemetryEvents) : null;
 
   return {
-    totals: summarizeTelemetryCounts(telemetryEvents),
+    totals: telemetryTotals,
     byScreen: buildTelemetryBreakdown(
       telemetryEvents,
       (event) => event.screenId,
@@ -3326,7 +3873,8 @@ function buildTelemetrySummary(db, planId = "") {
         productName: readOptionalString(event.productName, 180)
       })
     ),
-    planComparison: planId ? buildPlanTelemetryComparison(db, planId, telemetryEvents) : null
+    planComparison,
+    measurementBoard: buildTelemetryMeasurementBoard(db, telemetryTotals, planComparison, planId)
   };
 }
 

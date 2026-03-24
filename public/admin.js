@@ -208,6 +208,7 @@ const elements = {
   goalLiveSummary: qs("#goalLiveSummary"),
   goalLiveScreens: qs("#goalLiveScreens"),
   telemetrySummary: qs("#telemetrySummary"),
+  measurementBoardGrid: qs("#measurementBoardGrid"),
   telemetryByScreen: qs("#telemetryByScreen"),
   telemetryByTemplate: qs("#telemetryByTemplate"),
   telemetryBySku: qs("#telemetryBySku"),
@@ -222,6 +223,8 @@ const elements = {
   refreshRunsBtn: qs("#agentRefreshBtn"),
   refreshTelemetryBtn: qs("#telemetryRefreshBtn")
 };
+
+const DEFAULT_MEASUREMENT_BOARD_GRID_HTML = elements.measurementBoardGrid?.innerHTML || "";
 
 function escapeHtml(value) {
   return String(value ?? "")
@@ -3214,6 +3217,90 @@ function renderTelemetryList(container, entries, type) {
     .join("");
 }
 
+function formatMeasurementSourceTag(value) {
+  const raw = String(value || "").trim().toLowerCase();
+  if (!raw) {
+    return "";
+  }
+  switch (raw) {
+    case "qr":
+      return "QR";
+    case "pos-model":
+      return "POS model";
+    case "sales-signal":
+      return "Sales signal";
+    case "telemetry":
+      return "Telemetry";
+    case "engagement":
+      return "Engagement";
+    case "modeled":
+      return "Modeled";
+    case "model":
+      return "Model";
+    case "plan":
+      return "Plan";
+    default:
+      return titleCase(raw);
+  }
+}
+
+function getMeasurementComparisonText(metric = {}) {
+  const comparison = metric?.comparison;
+  if (!comparison) {
+    return "";
+  }
+  const baselineText = String(comparison.baselineText || "").trim();
+  const deltaText = String(comparison.deltaText || "").trim();
+  if (!baselineText && !deltaText) {
+    return "";
+  }
+  if (!baselineText) {
+    return deltaText;
+  }
+  if (!deltaText || comparison.direction === "flat") {
+    return `vs baseline ${baselineText}`;
+  }
+  return `vs baseline ${baselineText} (${deltaText})`;
+}
+
+function renderMeasurementBoard(board) {
+  if (!elements.measurementBoardGrid) {
+    return;
+  }
+
+  const metrics = Array.isArray(board?.metrics) ? board.metrics : [];
+  if (metrics.length === 0) {
+    elements.measurementBoardGrid.innerHTML = DEFAULT_MEASUREMENT_BOARD_GRID_HTML;
+    return;
+  }
+
+  elements.measurementBoardGrid.innerHTML = metrics
+    .map((metric) => {
+      const comparisonText = getMeasurementComparisonText(metric);
+      const sourceTags = Array.isArray(metric?.sourceTags)
+        ? metric.sourceTags.map(formatMeasurementSourceTag).filter(Boolean)
+        : [];
+      const accentClass =
+        metric?.key === "totalExposureTime" || metric?.key === "totalAdPlays" ? " measurement-card--accent" : "";
+
+      return `<article class="measurement-card${accentClass}">
+        <p class="measurement-card__label">${escapeHtml(metric?.label || "Metric")}</p>
+        <strong>${escapeHtml(metric?.valueText || formatCount(metric?.value || 0))}</strong>
+        ${metric?.formula ? `<p class="measurement-card__formula">Formula: ${escapeHtml(metric.formula)}</p>` : ""}
+        ${metric?.description ? `<p class="measurement-card__description">${escapeHtml(metric.description)}</p>` : ""}
+        ${comparisonText ? `<p class="measurement-card__comparison">${escapeHtml(comparisonText)}</p>` : ""}
+        ${
+          sourceTags.length > 0
+            ? `<div class="measurement-card__tags">${sourceTags
+                .map((tag) => `<span class="measurement-card__tag">${escapeHtml(tag)}</span>`)
+                .join("")}</div>`
+            : ""
+        }
+      </article>`;
+    })
+    .join("");
+}
+
 function renderTelemetry() {
   if (!elements.telemetrySummary) {
     return;
@@ -3226,43 +3313,88 @@ function renderTelemetry() {
   if (!telemetry || totalEvents === 0) {
     elements.telemetrySummary.classList.add("empty");
     elements.telemetrySummary.textContent = "Open a live screen to generate play and exposure data.";
+    renderMeasurementBoard(null);
     renderTelemetryList(elements.telemetryByScreen, [], "screen");
     renderTelemetryList(elements.telemetryByTemplate, [], "template");
     renderTelemetryList(elements.telemetryBySku, [], "sku");
     return;
   }
 
+  const measurementBoard = telemetry.measurementBoard;
   const comparison = telemetry.planComparison;
-  const comparisonMarkup =
-    comparison?.afterApply && comparison?.beforeApply
-      ? `<p class="goal-change__metrics">
-          Plan ${escapeHtml(comparison.planId || "")} | Before apply: ${escapeHtml(
-            formatCount(comparison.beforeApply.playCount)
-          )} plays / ${escapeHtml(formatDuration(comparison.beforeApply.exposureMs))} |
-          After apply: ${escapeHtml(formatCount(comparison.afterApply.playCount))} plays /
-          ${escapeHtml(formatDuration(comparison.afterApply.exposureMs))}
-        </p>`
-      : comparison?.planId
-        ? `<p class="goal-change__metrics">Plan ${escapeHtml(comparison.planId)} is loaded. Before/after telemetry appears after apply.</p>`
-        : "";
-
   elements.telemetrySummary.classList.remove("empty");
-  elements.telemetrySummary.innerHTML = `
-    <strong>Proof of play</strong>
-    <p class="goal-change__metrics">
-      Events: ${escapeHtml(formatCount(totalEvents))} | Plays: ${escapeHtml(formatCount(totals.playCount || 0))} |
-      Exposure: ${escapeHtml(formatDuration(totals.exposureMs || 0))} | Avg dwell:
-      ${escapeHtml(formatDuration(totals.avgExposureMs || 0))}
-    </p>
-    <p class="goal-change__metrics">
-      Screens: ${escapeHtml(formatCount(totals.screenCount || 0))} | Templates:
-      ${escapeHtml(formatCount(totals.templateCount || 0))} | SKUs:
-      ${escapeHtml(formatCount(totals.skuCount || 0))}
-      ${totals.lastSeenAt ? ` | Last seen: ${escapeHtml(formatTimestamp(totals.lastSeenAt))}` : ""}
-    </p>
-    ${comparisonMarkup}
-  `;
+  if (measurementBoard?.narrative) {
+    const scope = measurementBoard.scope || {};
+    const summaryMeta = [
+      scope.scopeLabel,
+      scope.objective ? `Objective ${titleCase(scope.objective)}` : "",
+      Number(scope.storeCount || 0) > 0 ? `${formatCount(scope.storeCount || 0)} store${Number(scope.storeCount || 0) === 1 ? "" : "s"}` : "",
+      Number(scope.screenCount || 0) > 0
+        ? `${formatCount(scope.screenCount || 0)} screen${Number(scope.screenCount || 0) === 1 ? "" : "s"}`
+        : "",
+      Number(scope.targetSkuCount || 0) > 0 ? `${formatCount(scope.targetSkuCount || 0)} target SKU${Number(scope.targetSkuCount || 0) === 1 ? "" : "s"}` : "",
+      Number(scope.selectedSpend || 0) > 0 ? `Budget ${formatMoney(scope.selectedSpend || 0)}` : "",
+      totals.lastSeenAt ? `Last seen ${formatTimestamp(totals.lastSeenAt)}` : ""
+    ].filter(Boolean);
 
+    elements.telemetrySummary.innerHTML = `
+      <strong>${escapeHtml(measurementBoard.narrative.headline || "Measurement board")}</strong>
+      <p class="measurement-summary__lede">${escapeHtml(
+        measurementBoard.narrative.summary || "Observed and modeled performance signals for the live activation."
+      )}</p>
+      ${summaryMeta.length > 0 ? `<p class="measurement-summary__meta">${escapeHtml(summaryMeta.join(" | "))}</p>` : ""}
+      ${
+        measurementBoard.narrative.trend
+          ? `<p class="measurement-summary__trend">${escapeHtml(measurementBoard.narrative.trend)}</p>`
+          : ""
+      }
+      ${
+        measurementBoard.narrative.comparisonStory
+          ? `<p class="measurement-summary__comparison">${escapeHtml(measurementBoard.narrative.comparisonStory)}</p>`
+          : comparison?.planId
+            ? `<p class="measurement-summary__comparison">Plan ${escapeHtml(
+                comparison.planId
+              )} is loaded. Before/after telemetry will deepen as more live events arrive.</p>`
+            : ""
+      }
+      ${
+        measurementBoard.narrative.sourceNote
+          ? `<p class="measurement-summary__note">${escapeHtml(measurementBoard.narrative.sourceNote)}</p>`
+          : ""
+      }
+    `;
+  } else {
+    const comparisonMarkup =
+      comparison?.afterApply && comparison?.beforeApply
+        ? `<p class="goal-change__metrics">
+            Plan ${escapeHtml(comparison.planId || "")} | Before apply: ${escapeHtml(
+              formatCount(comparison.beforeApply.playCount)
+            )} plays / ${escapeHtml(formatDuration(comparison.beforeApply.exposureMs))} |
+            After apply: ${escapeHtml(formatCount(comparison.afterApply.playCount))} plays /
+            ${escapeHtml(formatDuration(comparison.afterApply.exposureMs))}
+          </p>`
+        : comparison?.planId
+          ? `<p class="goal-change__metrics">Plan ${escapeHtml(comparison.planId)} is loaded. Before/after telemetry appears after apply.</p>`
+          : "";
+
+    elements.telemetrySummary.innerHTML = `
+      <strong>Proof of play</strong>
+      <p class="goal-change__metrics">
+        Events: ${escapeHtml(formatCount(totalEvents))} | Plays: ${escapeHtml(formatCount(totals.playCount || 0))} |
+        Exposure: ${escapeHtml(formatDuration(totals.exposureMs || 0))} | Avg dwell:
+        ${escapeHtml(formatDuration(totals.avgExposureMs || 0))}
+      </p>
+      <p class="goal-change__metrics">
+        Screens: ${escapeHtml(formatCount(totals.screenCount || 0))} | Templates:
+        ${escapeHtml(formatCount(totals.templateCount || 0))} | SKUs:
+        ${escapeHtml(formatCount(totals.skuCount || 0))}
+        ${totals.lastSeenAt ? ` | Last seen: ${escapeHtml(formatTimestamp(totals.lastSeenAt))}` : ""}
+      </p>
+      ${comparisonMarkup}
+    `;
+  }
+
+  renderMeasurementBoard(measurementBoard);
   renderTelemetryList(elements.telemetryByScreen, telemetry.byScreen || [], "screen");
   renderTelemetryList(elements.telemetryByTemplate, telemetry.byTemplate || [], "template");
   renderTelemetryList(elements.telemetryBySku, telemetry.bySku || [], "sku");

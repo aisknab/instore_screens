@@ -628,96 +628,188 @@
           </div>
         </div>
 
-        <div id="monitoringKpis" class="kpi-grid">
-          <article class="kpi-card">
-            <p class="kpi-card__label">Plays</p>
-            <strong id="monitorKpiPlays">0</strong>
-            <span class="kpi-card__meta">Proof of play events</span>
-          </article>
-          <article class="kpi-card">
-            <p class="kpi-card__label">Exposure</p>
-            <strong id="monitorKpiExposure">0s</strong>
-            <span class="kpi-card__meta">Total visible dwell time</span>
-          </article>
-          <article class="kpi-card">
-            <p class="kpi-card__label">Live screens</p>
-            <strong id="monitorKpiScreens">0</strong>
-            <span class="kpi-card__meta">Screens on the active plan</span>
-          </article>
-          <article class="kpi-card">
-            <p class="kpi-card__label">Applied plans</p>
-            <strong id="monitorKpiPlans">0</strong>
-            <span class="kpi-card__meta">Runs that made it live</span>
-          </article>
-        </div>
-
-        <div class="stage-grid stage-grid--monitoring">
-          <article class="card card--wide">
-            <div class="card__header">
-              <div>
-                <p class="section-kicker">Live proof</p>
-                <h3>Screen snapshot</h3>
+        <div class="monitoring-dashboard">
+          <section class="monitoring-overview">
+            <div class="monitoring-overview__copy">
+              <p class="section-kicker">Measurement cockpit</p>
+              <h3>One view for delivery, engagement, and modeled retail impact</h3>
+              <p class="monitoring-overview__lede">
+                The monitoring layer now reads like a live dashboard: proof of play sits beside interaction signals, attribution-ready outcomes, and a clean narrative for judges.
+              </p>
+              <div class="monitoring-overview__signals">
+                <span class="monitoring-signal">Live telemetry</span>
+                <span class="monitoring-signal">Modeled incrementality</span>
+                <span class="monitoring-signal">POS-style acquisition</span>
               </div>
-              <button id="nextToMonitoringBtnSecondary" type="button" class="btn btn--ghost js-stage-jump" data-stage="monitoring">
-                Stay on monitoring
-              </button>
             </div>
-
-            <div id="goalLiveSummary" class="goal-summary empty">Apply a plan to view live screens and creatives.</div>
-            <div id="goalLiveScreens" class="stack-list"></div>
-          </article>
-
-          <article class="card card--preview">
-            <div class="card__header">
-              <div>
-                <p class="section-kicker">Optional preview</p>
-                <h3>Monitoring preview rail</h3>
-              </div>
-              <a id="monitorPreviewLink" class="btn btn--ghost btn--compact" href="/screen.html" target="_blank" rel="noreferrer">
-                Open screen
-              </a>
-            </div>
-
-            <div id="monitorPreviewRail" class="preview-pane">
-              <p class="preview-pane__eyebrow">Live screen placeholder</p>
-              <h4>Waiting for the active plan</h4>
-              <p id="monitoringNarrative">
-                Use this area for a live iframe, a screenshot, or a short story about how one shared player URL still resolves into distinct in-store screens.
+            <div class="monitoring-overview__aside">
+              <p class="monitoring-overview__eyebrow">Measurement framework</p>
+              <h4>Built for modern retail media storytelling</h4>
+              <p>
+                The board below is structured for media teams who need both operational proof and a full-funnel retail outcome story in the same moment.
               </p>
             </div>
-          </article>
+          </section>
 
-          <article class="card card--wide">
-            <div class="card__header">
-              <div>
-                <p class="section-kicker">Telemetry</p>
-                <h3>Performance breakdowns</h3>
-              </div>
-              <span class="card__badge">Proof of delivery</span>
+          <div id="monitoringKpis" class="kpi-grid kpi-grid--monitoring">
+            <article class="kpi-card kpi-card--monitoring">
+              <p class="kpi-card__label">Total ad plays</p>
+              <strong id="monitorKpiPlays">0</strong>
+              <span class="kpi-card__meta">Proof of play events across the live activation.</span>
+            </article>
+            <article class="kpi-card kpi-card--monitoring">
+              <p class="kpi-card__label">Total exposure time</p>
+              <strong id="monitorKpiExposure">0s</strong>
+              <span class="kpi-card__meta">Aggregate visible dwell time captured by the player.</span>
+            </article>
+            <article class="kpi-card kpi-card--monitoring">
+              <p class="kpi-card__label">Live screens</p>
+              <strong id="monitorKpiScreens">0</strong>
+              <span class="kpi-card__meta">Screens currently carrying the active plan.</span>
+            </article>
+            <article class="kpi-card kpi-card--monitoring">
+              <p class="kpi-card__label">Applied plans</p>
+              <strong id="monitorKpiPlans">0</strong>
+              <span class="kpi-card__meta">Campaign plans promoted from recommendation to live proof.</span>
+            </article>
+          </div>
+
+          <div class="monitoring-layout">
+            <div class="monitoring-layout__primary">
+              <article class="card monitoring-card monitoring-card--measurement">
+                <div class="card__header monitoring-card__header">
+                  <div>
+                    <p class="section-kicker">Performance measurement</p>
+                    <h3>Measurement board</h3>
+                    <p>Designed to hold live proof, interaction signals, and retail outcome metrics together.</p>
+                  </div>
+                  <span class="card__badge">Dashboard view</span>
+                </div>
+
+                <div class="measurement-board">
+                  <div class="measurement-board__top">
+                    <section class="measurement-brief">
+                      <p class="measurement-brief__eyebrow">Metric families</p>
+                      <h4>From screen attention to in-store revenue impact</h4>
+                      <p class="measurement-brief__copy">
+                        The board is structured so operational delivery metrics, shopper actions, and modeled sales outcomes can be read in one pass without switching context.
+                      </p>
+                      <div class="measurement-brief__chips">
+                        <span class="measurement-chip">Delivery</span>
+                        <span class="measurement-chip">Engagement</span>
+                        <span class="measurement-chip">Sales lift</span>
+                        <span class="measurement-chip">Acquisition</span>
+                      </div>
+                    </section>
+
+                    <div id="telemetrySummary" class="goal-summary empty measurement-board__summary">
+                      Open a live screen to generate play and exposure data.
+                    </div>
+                  </div>
+
+                  <div id="measurementBoardGrid" class="measurement-board__grid" aria-label="Measurement board placeholders">
+                    <article class="measurement-card">
+                      <p class="measurement-card__label">Interaction rate</p>
+                      <strong>Engaged shoppers</strong>
+                      <p>Share of exposed shoppers who scan, tap through, or continue their journey on mobile.</p>
+                    </article>
+                    <article class="measurement-card">
+                      <p class="measurement-card__label">QR code scans</p>
+                      <strong>Coupon and detail intent</strong>
+                      <p>Captures product-detail or coupon handoff moments that can feed app download and loyalty outcomes.</p>
+                    </article>
+                    <article class="measurement-card">
+                      <p class="measurement-card__label">Incrementality</p>
+                      <strong>Sales caused by media</strong>
+                      <p>Reserved for ad-vs-control lift readout across stores or screens where ads were not shown.</p>
+                    </article>
+                    <article class="measurement-card">
+                      <p class="measurement-card__label">New buyer acquisition</p>
+                      <strong>New-to-brand sales</strong>
+                      <p>Highlights first-time brand purchasers inferred from retail or POS-style transaction signals.</p>
+                    </article>
+                    <article class="measurement-card">
+                      <p class="measurement-card__label">In-store ROAS</p>
+                      <strong>Revenue per impression</strong>
+                      <p>Frames store sales return against on-screen delivery so the retail media value story stays legible.</p>
+                    </article>
+                    <article class="measurement-card measurement-card--accent">
+                      <p class="measurement-card__label">Proof signals</p>
+                      <strong>Exposure and ad plays</strong>
+                      <p>The live KPI rail anchors the board with foundational delivery evidence before modeled outcomes layer in.</p>
+                    </article>
+                  </div>
+
+                  <div class="telemetry-grid telemetry-grid--dashboard">
+                    <section class="telemetry-panel telemetry-panel--dashboard">
+                      <h4 class="telemetry-panel__title">By Screen</h4>
+                      <div id="telemetryByScreen" class="stack-list telemetry-list"></div>
+                    </section>
+                    <section class="telemetry-panel telemetry-panel--dashboard">
+                      <h4 class="telemetry-panel__title">By Template</h4>
+                      <div id="telemetryByTemplate" class="stack-list telemetry-list"></div>
+                    </section>
+                    <section class="telemetry-panel telemetry-panel--dashboard">
+                      <h4 class="telemetry-panel__title">By SKU</h4>
+                      <div id="telemetryBySku" class="stack-list telemetry-list"></div>
+                    </section>
+                  </div>
+                </div>
+              </article>
+
+              <article class="card monitoring-card monitoring-card--live">
+                <div class="card__header monitoring-card__header">
+                  <div>
+                    <p class="section-kicker">Live proof</p>
+                    <h3>Screen snapshot</h3>
+                    <p>Keep the live payload visible so the dashboard never loses contact with the activation itself.</p>
+                  </div>
+                  <button id="nextToMonitoringBtnSecondary" type="button" class="btn btn--ghost js-stage-jump" data-stage="monitoring">
+                    Stay on monitoring
+                  </button>
+                </div>
+
+                <div id="goalLiveSummary" class="goal-summary empty">Apply a plan to view live screens and creatives.</div>
+                <div id="goalLiveScreens" class="stack-list"></div>
+              </article>
             </div>
 
-            <div id="telemetrySummary" class="goal-summary empty">
-              Open a live screen to generate play and exposure data.
-            </div>
+            <aside class="monitoring-layout__side">
+              <article class="card monitoring-card monitoring-card--preview">
+                <div class="card__header monitoring-card__header">
+                  <div>
+                    <p class="section-kicker">Optional preview</p>
+                    <h3>Monitoring preview rail</h3>
+                    <p>Use a live player, frame grab, or story panel without leaving the dashboard.</p>
+                  </div>
+                  <a id="monitorPreviewLink" class="btn btn--ghost btn--compact" href="/screen.html" target="_blank" rel="noreferrer">
+                    Open screen
+                  </a>
+                </div>
 
-            <div class="telemetry-grid">
-              <section class="telemetry-panel">
-                <h4 class="telemetry-panel__title">By Screen</h4>
-                <div id="telemetryByScreen" class="stack-list telemetry-list"></div>
-              </section>
-              <section class="telemetry-panel">
-                <h4 class="telemetry-panel__title">By Template</h4>
-                <div id="telemetryByTemplate" class="stack-list telemetry-list"></div>
-              </section>
-              <section class="telemetry-panel">
-                <h4 class="telemetry-panel__title">By SKU</h4>
-                <div id="telemetryBySku" class="stack-list telemetry-list"></div>
-              </section>
-            </div>
+                <div id="monitorPreviewRail" class="preview-pane preview-pane--monitoring">
+                  <p class="preview-pane__eyebrow">Live screen placeholder</p>
+                  <h4>Waiting for the active plan</h4>
+                  <p id="monitoringNarrative">
+                    Use this area for a live iframe, a screenshot, or a short story about how one shared player URL still resolves into distinct in-store screens.
+                  </p>
+                </div>
+              </article>
 
-            <h3 class="subhead">Agent run history</h3>
-            <div id="agentRunsList" class="stack-list"></div>
-          </article>
+              <article class="card monitoring-card monitoring-card--runs">
+                <div class="card__header monitoring-card__header">
+                  <div>
+                    <p class="section-kicker">Activation history</p>
+                    <h3>Agent run timeline</h3>
+                    <p>Keep plan history close to the measurement board so delivery and optimization can be read together.</p>
+                  </div>
+                  <span class="card__badge">Ops log</span>
+                </div>
+
+                <div id="agentRunsList" class="stack-list"></div>
+              </article>
+            </aside>
+          </div>
         </div>
       </section>
     </main>
