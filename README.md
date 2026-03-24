@@ -63,6 +63,7 @@ Example:
 npm install
 npm run dev
 npm run smoke
+npm run generate:product-images -- --limit 25
 ```
 
 The writable DB file defaults to `data/db.json`. In production, set `DB_FILE` to a path outside the git checkout so runtime changes do not block `git pull`.
@@ -77,6 +78,36 @@ Open:
 
 - Admin: `http://localhost:3000/admin.html`
 - Default seed screen: `http://localhost:3000/screen.html?screenId=STORE_42_ELECTRONICS_V1`
+
+## Generated Product Images
+
+The repo now includes a resumable SKU image generation pipeline that writes transparent PNG packshots to `public/assets/products/generated` and rewrites `data/productFeed.json` to point each product at its local generated asset.
+
+Typical run:
+
+```bash
+OPENAI_API_KEY=your_api_key_here npm run generate:product-images
+```
+
+Useful flags:
+
+- `--limit 50` to process a smaller batch first
+- `--sku ACC-MOUSE-001,WG-FRIDGE-001` to target specific products
+- `--force` to regenerate existing local PNGs
+- `--dry-run` to inspect the plan without calling OpenAI
+- `--concurrency 2` to run a small number of requests in parallel
+
+The script also writes `data/productImageManifest.json` with per-SKU generation status, prompt metadata, and failures so you can resume large runs safely. `GET /api/screen-ad` now prefers the current feed image for matching SKUs, so newly generated feed assets show up on existing screens without manually editing every stored line item.
+
+If your OpenAI credentials are only available inside the running service environment, trigger the same batch from the app itself:
+
+```bash
+curl -X POST http://localhost:3000/api/product-images/generate \
+  -H "Content-Type: application/json" \
+  -d '{"limit":50,"concurrency":2}'
+```
+
+Check progress with `GET /api/product-images/status`.
 
 ## Template Showcase URLs
 
@@ -137,6 +168,25 @@ Query params:
 Example:
 
 `GET /api/products?q=laptop&category=electronics&limit=20`
+
+### `POST /api/product-images/generate`
+
+Starts a background product image generation batch from the running server process. This is useful when the service already has the required `OPENAI_*` credentials baked into its environment.
+
+Optional JSON body:
+
+- `skus` array or comma-separated string
+- `limit`
+- `force`
+- `dryRun`
+- `concurrency`
+- `quality`
+- `size`
+- `timeoutMs`
+
+### `GET /api/product-images/status`
+
+Returns the current or most recent background image-generation job, including recent stdout and stderr log lines.
 
 ### `GET /api/pages`
 
@@ -338,6 +388,7 @@ Response shape:
 - `GET /api/screen-ad` rotates through active line items per screen across calls.
 - RMJS payload includes all required product fields even when defaults are used.
 - Product images are normalized to local demo assets when remote URLs are present, to avoid broken visuals in restricted networks.
+- If a screen product SKU exists in `data/productFeed.json`, the screen delivery payload prefers the feed's current image path for that SKU.
 - Looping templates are topped up from product feed at runtime when a screen is under-configured (so carousel/menu demos still rotate).
 - If `rm.js` fails to load (for example DNS/network restrictions), fallback renderer still shows full template behavior.
 - Local fallback rendering now records `play` and timed `exposure` telemetry to `/collect`, surfaced in the admin telemetry panel.
@@ -352,6 +403,8 @@ Response shape:
 - Set `DB_FILE` to a writable path outside the repo, for example `/var/lib/criteoscreens/db.json`, so deploys can use a clean `git pull`.
 - Set `OPENAI_API_KEY` to enable model-backed AI SKU brief selection in Step 3. Without it, the planner falls back to built-in heuristic matching.
 - Optionally set `OPENAI_MODEL` to override the default model alias (`gpt-5-mini`).
+- Set `OPENAI_PRODUCT_IMAGE_MODEL` to override the product image generator model alias. It defaults to `gpt-5.4`.
+- Set `OPENAI_PRODUCT_IMAGE_QUALITY` and `OPENAI_PRODUCT_IMAGE_SIZE` when you want to tune batch image output.
 
 Example `systemd` environment:
 

@@ -1,4 +1,5 @@
 import express from "express";
+import { spawn } from "node:child_process";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -862,6 +863,8 @@ const GOAL_PLANNING_THEME_KEYWORDS = {
   value: ["value", "save", "deal", "student", "budget"]
 };
 const PRODUCT_FEED_FILE = path.resolve(process.cwd(), "data", "productFeed.json");
+const PRODUCT_IMAGE_GENERATOR_SCRIPT = path.resolve(process.cwd(), "scripts", "generate-product-images.mjs");
+const PRODUCT_IMAGE_JOB_LOG_LIMIT = 200;
 const DEMO_STOCK_BY_SKU = {
   "LAP-CREATOR-15-005": {
     STORE_42: 34,
@@ -936,6 +939,7 @@ const DEMO_CATEGORY_IMAGE_FALLBACKS = new Set([
 ]);
 const REMOTE_URL_PATTERN = /^https?:\/\//i;
 const rotationState = new Map();
+let productImageGenerationJob = null;
 const TOUCH_FORWARD_CTA_PATTERN =
   /\b(tap|click|touch|swipe|press|shop now|learn more|buy now|start now|order now)\b/i;
 const TOUCH_FORWARD_COPY_PATTERN = /\b(tap|click|touch|swipe|press)\b/i;
@@ -1164,6 +1168,200 @@ function readStringArray(value, maxItems = 20, itemMaxLength = 80) {
     .map((entry) => readOptionalString(entry, itemMaxLength))
     .filter(Boolean)
     .slice(0, maxItems);
+}
+
+function readOptionalInteger(value, fallback, { min = Number.MIN_SAFE_INTEGER, max = Number.MAX_SAFE_INTEGER } = {}) {
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed)) {
+    return fallback;
+  }
+  return Math.max(min, Math.min(max, parsed));
+}
+
+function readProductImageGenerationOptions(body = {}) {
+  const quality = readOptionalString(body?.quality, 20).toLowerCase() || "";
+  const size = readOptionalString(body?.size, 20);
+  const allowedQuality = new Set(["low", "medium", "high"]);
+  const allowedSize = new Set(["1024x1024", "1536x1024", "1024x1536"]);
+
+  if (quality && !allowedQuality.has(quality)) {
+    throw new HttpError(400, "quality must be one of: low, medium, high.");
+  }
+  if (size && !allowedSize.has(size)) {
+    throw new HttpError(400, "size must be one of: 1024x1024, 1536x1024, 1024x1536.");
+  }
+
+  return {
+    skuFilter: readStringArray(body?.skus ?? body?.skuFilter ?? body?.sku, 2000, 120)
+      .map((sku) => normalizeSku(sku))
+      .filter(Boolean),
+    limit: readOptionalInteger(body?.limit, null, { min: 1, max: 5000 }),
+    force: readBoolean(body?.force, false),
+    dryRun: readBoolean(body?.dryRun, false),
+    concurrency: readOptionalInteger(body?.concurrency, 1, { min: 1, max: 8 }),
+    quality: quality || "",
+    size: size || "",
+    timeoutMs: readOptionalInteger(body?.timeoutMs, null, { min: 1000, max: 900000 })
+  };
+}
+
+function buildProductImageGenerationArgs(options = {}) {
+  const args = [];
+  const skuFilter = Array.isArray(options.skuFilter) ? options.skuFilter : [];
+  if (skuFilter.length > 0) {
+    args.push("--sku", skuFilter.join(","));
+  }
+  if (Number.isInteger(options.limit)) {
+    args.push("--limit", String(options.limit));
+  }
+  if (readBoolean(options.force, false)) {
+    args.push("--force");
+  }
+  if (readBoolean(options.dryRun, false)) {
+    args.push("--dry-run");
+  }
+  if (Number.isInteger(options.concurrency) && options.concurrency > 1) {
+    args.push("--concurrency", String(options.concurrency));
+  }
+  if (readOptionalString(options.quality, 20)) {
+    args.push("--quality", options.quality);
+  }
+  if (readOptionalString(options.size, 20)) {
+    args.push("--size", options.size);
+  }
+  if (Number.isInteger(options.timeoutMs)) {
+    args.push("--timeout-ms", String(options.timeoutMs));
+  }
+  return args;
+}
+
+function appendProductImageJobLogs(job, source, chunk) {
+  if (!job || !chunk) {
+    return;
+  }
+  const lines = String(chunk)
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+  if (lines.length === 0) {
+    return;
+  }
+  const logs = Array.isArray(job.logs) ? job.logs : [];
+  for (const line of lines) {
+    logs.push({
+      at: new Date().toISOString(),
+      source,
+      message: line.slice(0, 1000)
+    });
+  }
+  if (logs.length > PRODUCT_IMAGE_JOB_LOG_LIMIT) {
+    logs.splice(0, logs.length - PRODUCT_IMAGE_JOB_LOG_LIMIT);
+  }
+  job.logs = logs;
+  job.updatedAt = new Date().toISOString();
+}
+
+function buildProductImageJobSnapshot(job = productImageGenerationJob) {
+  if (!job) {
+    return {
+      status: "idle",
+      running: false,
+      jobId: "",
+      pid: null,
+      startedAt: "",
+      completedAt: "",
+      exitCode: null,
+      error: "",
+      options: {},
+      args: [],
+      logs: []
+    };
+  }
+  return {
+    status: readOptionalString(job.status, 40) || "idle",
+    running: readBoolean(job.running, false),
+    jobId: readOptionalString(job.jobId, 120),
+    pid: Number.isInteger(job.pid) ? job.pid : null,
+    startedAt: readOptionalString(job.startedAt, 80),
+    completedAt: readOptionalString(job.completedAt, 80),
+    updatedAt: readOptionalString(job.updatedAt, 80),
+    exitCode: Number.isInteger(job.exitCode) ? job.exitCode : null,
+    signal: readOptionalString(job.signal, 40),
+    error: readOptionalString(job.error, 500),
+    options: job.options && typeof job.options === "object" ? { ...job.options } : {},
+    args: Array.isArray(job.args) ? [...job.args] : [],
+    logs: Array.isArray(job.logs) ? [...job.logs] : []
+  };
+}
+
+function startProductImageGenerationJob(options = {}) {
+  if (productImageGenerationJob?.running) {
+    throw new HttpError(409, "A product image generation job is already running.");
+  }
+
+  const args = buildProductImageGenerationArgs(options);
+  const now = new Date().toISOString();
+  const child = spawn(process.execPath, [PRODUCT_IMAGE_GENERATOR_SCRIPT, ...args], {
+    cwd: process.cwd(),
+    env: process.env,
+    stdio: ["ignore", "pipe", "pipe"]
+  });
+  const job = {
+    jobId: `product-images-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
+    running: true,
+    status: "running",
+    pid: child.pid,
+    startedAt: now,
+    completedAt: "",
+    updatedAt: now,
+    exitCode: null,
+    signal: "",
+    error: "",
+    options: {
+      ...options,
+      skuFilter: Array.isArray(options.skuFilter) ? [...options.skuFilter] : []
+    },
+    args,
+    logs: []
+  };
+  productImageGenerationJob = job;
+  appendProductImageJobLogs(job, "system", `Started product image generation with PID ${child.pid || "pending"}.`);
+
+  child.stdout?.on("data", (chunk) => {
+    appendProductImageJobLogs(job, "stdout", chunk);
+  });
+  child.stderr?.on("data", (chunk) => {
+    appendProductImageJobLogs(job, "stderr", chunk);
+  });
+  child.on("error", (error) => {
+    job.running = false;
+    job.status = "failed";
+    job.error = readOptionalString(error?.message, 500) || "The generator process failed to start.";
+    job.completedAt = new Date().toISOString();
+    job.updatedAt = job.completedAt;
+  });
+  child.on("exit", (code, signal) => {
+    job.running = false;
+    job.exitCode = Number.isInteger(code) ? code : null;
+    job.signal = readOptionalString(signal, 40);
+    job.completedAt = new Date().toISOString();
+    job.updatedAt = job.completedAt;
+    job.status = code === 0 ? "completed" : "failed";
+    if (code !== 0 && !job.error) {
+      job.error = signal
+        ? `Product image generation exited with signal ${signal}.`
+        : `Product image generation exited with code ${code}.`;
+    }
+    appendProductImageJobLogs(
+      job,
+      "system",
+      code === 0
+        ? "Product image generation completed successfully."
+        : job.error || "Product image generation exited unsuccessfully."
+    );
+  });
+
+  return buildProductImageJobSnapshot(job);
 }
 
 function readRequiredDateInput(value, fieldName) {
@@ -1705,6 +1903,35 @@ async function readProductFeed() {
   } catch {
     return PRODUCT_FEED_DEFAULT.map((product, index) => normalizeProductFeedItem(product, index));
   }
+}
+
+function buildProductFeedLookup(feed = []) {
+  return new Map(
+    (Array.isArray(feed) ? feed : [])
+      .map((product) => [normalizeSku(product?.sku), product])
+      .filter(([sku]) => Boolean(sku))
+  );
+}
+
+function preferFeedImageForProduct(product, feedLookup) {
+  const sku = normalizeSku(
+    readOptionalString(product?.ProductId, 80) ||
+      readOptionalString(product?.productId, 80) ||
+      readOptionalString(product?.sku, 80)
+  );
+  if (!sku || !(feedLookup instanceof Map) || !feedLookup.has(sku)) {
+    return product;
+  }
+  const feedProduct = feedLookup.get(sku);
+  const feedImage = readOptionalString(feedProduct?.image, 500);
+  if (!feedImage) {
+    return product;
+  }
+  return {
+    ...product,
+    Image: feedImage,
+    image: feedImage
+  };
 }
 
 function uniqueBySku(products) {
@@ -5727,6 +5954,23 @@ app.get("/api/health", (_req, res) => {
   res.json({ status: "ok", timestamp: new Date().toISOString() });
 });
 
+app.get("/api/product-images/status", (_req, res) => {
+  res.json({ job: buildProductImageJobSnapshot() });
+});
+
+app.post("/api/product-images/generate", async (req, res) => {
+  try {
+    const job = startProductImageGenerationJob(readProductImageGenerationOptions(req.body));
+    res.status(202).json({ job });
+  } catch (error) {
+    const normalized = normalizeError(error);
+    res.status(normalized.status).json({
+      error: normalized.message,
+      job: buildProductImageJobSnapshot()
+    });
+  }
+});
+
 app.get("/api/options", async (_req, res) => {
   try {
     const db = await readDb();
@@ -6615,6 +6859,8 @@ app.post("/api/agent/goals/apply", async (req, res) => {
 app.get("/api/screen-ad", async (req, res) => {
   try {
     const db = await readDb();
+    const feed = await readProductFeed();
+    const feedLookup = buildProductFeedLookup(feed);
     const resolved = resolveScreenRequest(db, req);
     const screen = resolved.screen;
     const screenId = screen.screenId;
@@ -6633,7 +6879,6 @@ app.get("/api/screen-ad", async (req, res) => {
     const minProductCount = getTemplateProductLimit(selectedTemplate.id);
     const sourceProducts = Array.isArray(selectedLineItem.products) ? [...selectedLineItem.products] : [];
     if (sourceProducts.length < minProductCount) {
-      const feed = await readProductFeed();
       const existingSkus = new Set(
         sourceProducts
           .map((product) =>
@@ -6666,7 +6911,7 @@ app.get("/api/screen-ad", async (req, res) => {
     }
 
     const products = sourceProducts.map((product, index) =>
-      normalizeProductForDelivery(product, {
+      normalizeProductForDelivery(preferFeedImageForProduct(product, feedLookup), {
         screenId,
         lineItemId: selectedLineItem.lineItemId,
         index,
