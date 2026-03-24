@@ -188,6 +188,11 @@ const state = {
   goalScopeStepAcknowledged: false,
   goalSkuSelectionMode: "",
   goalPromptMatchedTerms: [],
+  goalPromptInferencePending: false,
+  goalPromptInferenceTimer: null,
+  goalPromptInferenceRequestId: 0,
+  goalPromptInferenceProvider: "",
+  goalPromptInferenceModel: "",
   goalRetailerRateCard: null,
   goalPlacementSelections: new Map(),
   goalBudgetPlanId: "",
@@ -569,6 +574,13 @@ function setGoalSkuSelectionMode(mode, matchedTerms = []) {
       : [];
 }
 
+function clearGoalPromptInferenceTimer() {
+  if (state.goalPromptInferenceTimer) {
+    window.clearTimeout(state.goalPromptInferenceTimer);
+    state.goalPromptInferenceTimer = null;
+  }
+}
+
 function tokenizeGoalMatch(value) {
   return readTextValue(value)
     .toLowerCase()
@@ -768,23 +780,92 @@ function inferGoalSkuProductsFromPrompt(
   return { products: inferredProducts, matchedTerms };
 }
 
+function buildGoalPromptInferencePayload() {
+  const advertiserId = getSelectedGoalAdvertiserId();
+  const account = getGoalAccountByAdvertiserId(advertiserId);
+  return {
+    prompt: getGoalPromptText(),
+    advertiserId,
+    brand: account?.brand || "",
+    assortmentCategory: String(elements.goalProductCategory?.value || "").trim().toLowerCase(),
+    objective: String(elements.goalObjective?.value || "").trim(),
+    aggressiveness: String(elements.goalAggressiveness?.value || "").trim(),
+    storeId: String(elements.goalStoreScope?.value || "").trim(),
+    pageId: String(elements.goalPageScope?.value || "").trim()
+  };
+}
+
 function applyGoalPromptSelection({ passiveRender = false } = {}) {
   const prompt = getGoalPromptText();
+  clearGoalPromptInferenceTimer();
   if (!prompt) {
+    state.goalPromptInferenceRequestId += 1;
+    state.goalPromptInferencePending = false;
     if (state.goalSkuSelectionMode === "prompt") {
       setGoalSkuSelectionMode("");
       setSelectedGoalSkus([]);
       return;
     }
-    if (passiveRender) {
-      renderGoalProducts();
-    }
+    renderGoalProducts();
     return;
   }
 
-  const inferred = inferGoalSkuProductsFromPrompt(prompt);
-  setGoalSkuSelectionMode("prompt", inferred.matchedTerms);
-  setSelectedGoalSkus(inferred.products.map((product) => product.sku));
+  const payload = buildGoalPromptInferencePayload();
+  if (!payload.advertiserId) {
+    state.goalPromptInferenceRequestId += 1;
+    state.goalPromptInferencePending = false;
+    if (state.goalSkuSelectionMode === "prompt") {
+      setGoalSkuSelectionMode("");
+      setSelectedGoalSkus([]);
+      return;
+    }
+    renderGoalProducts();
+    return;
+  }
+
+  const requestId = state.goalPromptInferenceRequestId + 1;
+  state.goalPromptInferenceRequestId = requestId;
+  state.goalPromptInferencePending = true;
+  renderGoalProducts();
+
+  const runInference = async () => {
+    try {
+      const response = await requestJson("/api/goal-skus/infer", {
+        method: "POST",
+        body: JSON.stringify(payload)
+      });
+      if (requestId !== state.goalPromptInferenceRequestId) {
+        return;
+      }
+      state.goalPromptInferencePending = false;
+      state.goalPromptInferenceProvider = readTextValue(
+        response?.inferenceProvider || state.options?.goalPromptInferenceProvider || ""
+      );
+      state.goalPromptInferenceModel = readTextValue(
+        response?.inferenceModel || state.options?.goalPromptInferenceModel || ""
+      );
+      setGoalSkuSelectionMode("prompt", response?.matchedTerms || []);
+      setSelectedGoalSkus(response?.targetSkuIds || []);
+    } catch (error) {
+      if (requestId !== state.goalPromptInferenceRequestId) {
+        return;
+      }
+      state.goalPromptInferencePending = false;
+      const inferred = inferGoalSkuProductsFromPrompt(payload.prompt);
+      setGoalSkuSelectionMode("prompt", inferred.matchedTerms);
+      setSelectedGoalSkus(inferred.products.map((product) => product.sku));
+      if (!passiveRender) {
+        showStatus("AI brief fell back to local matching because the server inference request failed.", true);
+      }
+      // Keep working locally if the server-side inference path is unavailable.
+      // eslint-disable-next-line no-console
+      console.warn(error);
+    }
+  };
+
+  state.goalPromptInferenceTimer = window.setTimeout(() => {
+    runInference().catch(handleError);
+  }, passiveRender ? 280 : 0);
 }
 
 function getGoalPromptSelectionNote() {
@@ -792,6 +873,9 @@ function getGoalPromptSelectionNote() {
   const matchedTerms = state.goalPromptMatchedTerms.slice(0, 4);
   if (!prompt) {
     return "";
+  }
+  if (state.goalPromptInferencePending) {
+    return "AI is reviewing the assortment...";
   }
   if (isGoalPromptSelectionActive()) {
     if (state.selectedGoalSkuIds.size > 0) {
@@ -1130,6 +1214,8 @@ function goalTargetSourceLabel(source) {
       return "Manual SKU shortlist";
     case "account":
       return "Brand-led assortment";
+    case "prompt-ai":
+      return "AI brief-selected SKU shortlist";
     case "prompt":
       return "AI brief-selected SKU shortlist";
     default:
@@ -1833,9 +1919,14 @@ function syncGoalFormFromRun(run) {
   if (elements.goalPrompt) {
     elements.goalPrompt.value = run?.goal?.prompt || "";
   }
+  clearGoalPromptInferenceTimer();
+  state.goalPromptInferencePending = false;
   state.goalScopeStepAcknowledged = Boolean(run?.goal);
   state.goalPlanningStep = run?.goal ? 3 : 1;
-  setGoalSkuSelectionMode(run?.goal?.targetSource === "prompt" ? "prompt" : run?.goal ? "manual" : "", run?.goal?.inferredTerms || []);
+  setGoalSkuSelectionMode(
+    String(run?.goal?.targetSource || "").startsWith("prompt") ? "prompt" : run?.goal ? "manual" : "",
+    run?.goal?.inferredTerms || []
+  );
   state.goalRetailerRateCard = sanitizeGoalRateCard(state.options?.screenTypePricingDefaults || {});
   renderGoalRateCard(state.goalRetailerRateCard);
   setSelectedGoalSkus(run?.goal?.targetSkuIds || []);
@@ -2605,6 +2696,9 @@ function getGoalPlanningStepSummary(stepNumber) {
   if (!advertiserId) {
     return "Choose an account first to browse its assortment.";
   }
+  if (state.goalPromptInferencePending && prompt) {
+    return "AI is reviewing the assortment for the current brief.";
+  }
   if (isGoalPromptSelectionActive() && selectedCount > 0) {
     return `AI brief selected ${selectedCount} priority SKU(s)${category ? ` in ${titleCase(category)}` : ""}.`;
   }
@@ -2790,13 +2884,18 @@ function renderGoalSelectedSkus() {
     return;
   }
   const selectedProducts = getSelectedGoalProducts().sort((left, right) => left.name.localeCompare(right.name));
-  elements.goalSelectedSkuHeadline.textContent = isGoalPromptSelectionActive()
-    ? `${selectedProducts.length} AI-selected`
-    : `${selectedProducts.length} selected`;
+  elements.goalSelectedSkuHeadline.textContent =
+    state.goalPromptInferencePending && getGoalPromptText()
+      ? "AI reviewing"
+      : isGoalPromptSelectionActive()
+        ? `${selectedProducts.length} AI-selected`
+        : `${selectedProducts.length} selected`;
 
   if (selectedProducts.length === 0) {
     elements.goalSelectedSkus.classList.add("empty");
-    if (isGoalPromptSelectionActive()) {
+    if (state.goalPromptInferencePending && getGoalPromptText()) {
+      elements.goalSelectedSkus.textContent = "AI is reviewing the assortment for the current brief.";
+    } else if (isGoalPromptSelectionActive()) {
       elements.goalSelectedSkus.textContent = "AI brief is active, but no matching SKUs were found yet.";
     } else if (getGoalPromptText()) {
       elements.goalSelectedSkus.textContent = "No priority SKUs selected. Edit the AI brief to auto-select, or pick SKUs below.";
@@ -5251,6 +5350,8 @@ async function init() {
   try {
     await refreshDemoConfig();
     state.options = await requestJson("/api/options");
+    state.goalPromptInferenceProvider = readTextValue(state.options?.goalPromptInferenceProvider || "");
+    state.goalPromptInferenceModel = readTextValue(state.options?.goalPromptInferenceModel || "");
     await Promise.all([refreshProductFeed(), refreshInventory(), refreshGoalRunsData()]);
 
     renderOptions();

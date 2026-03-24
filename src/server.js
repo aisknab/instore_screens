@@ -776,6 +776,18 @@ const GOAL_TARGET_SKU_LIMIT = 24;
 const GOAL_INFERRED_PRODUCT_LIMIT = 8;
 const GOAL_RELEVANCE_THRESHOLD = 0.24;
 const GOAL_PROMPT_MIN_SCORE = 0.75;
+const GOAL_PROMPT_AI_CANDIDATE_LIMIT = 32;
+const GOAL_PROMPT_AI_TIMEOUT_MS = 12000;
+const OPENAI_API_KEY = toTrimmedString(process.env.OPENAI_API_KEY);
+const OPENAI_MODEL = toTrimmedString(process.env.OPENAI_MODEL) || "gpt-5-mini";
+const OPENAI_BASE_URL = toTrimmedString(process.env.OPENAI_BASE_URL) || "https://api.openai.com/v1";
+const GOAL_PROMPT_INTENT_KEYWORDS = {
+  stock: ["stock", "inventory", "available", "availability", "in stock", "high stock", "surplus", "overstock"],
+  value: ["value", "deal", "discount", "cheap", "budget", "affordable", "sale", "markdown"],
+  premium: ["premium", "hero", "flagship", "luxury", "high end", "high-end", "best", "top tier"],
+  rating: ["rating", "rated", "reviewed", "top rated", "best reviewed", "best-rated"],
+  newness: ["new", "newest", "latest", "launch", "recent"]
+};
 const GOAL_PLANNING_THEME_KEYWORDS = {
   urgency: ["today", "now", "afternoon", "weekend", "launch", "rush", "limited", "immediate"],
   premium: ["premium", "hero", "flagship", "signature", "oled", "luxury", "new", "launch"],
@@ -2754,11 +2766,67 @@ function summarizeGoalScope(goal, scopedScreens, compatibleScreens, requestedPag
   };
 }
 
-function inferTargetProductsFromPrompt(prompt, feed, scopedScreens = []) {
+function promptIncludesIntentKeyword(promptText, promptTokens, keyword) {
+  const normalizedKeyword = readOptionalString(keyword, 80).toLowerCase();
+  if (!normalizedKeyword) {
+    return false;
+  }
+  return normalizedKeyword.includes(" ")
+    ? promptText.includes(normalizedKeyword)
+    : promptTokens.has(normalizeMatchToken(normalizedKeyword));
+}
+
+function buildGoalPromptIntentSignals(promptText, promptTokens) {
+  return Object.fromEntries(
+    Object.entries(GOAL_PROMPT_INTENT_KEYWORDS).map(([intent, keywords]) => [
+      intent,
+      keywords.some((keyword) => promptIncludesIntentKeyword(promptText, promptTokens, keyword))
+    ])
+  );
+}
+
+function buildMetricRange(values = []) {
+  const numericValues = values.map((value) => Number(value)).filter((value) => Number.isFinite(value));
+  if (numericValues.length === 0) {
+    return { min: 0, max: 0 };
+  }
+  return {
+    min: Math.min(...numericValues),
+    max: Math.max(...numericValues)
+  };
+}
+
+function summarizeProductStockSignals(product, storeId = "") {
+  const stockByStore =
+    product?.stockByStore && typeof product.stockByStore === "object"
+      ? product.stockByStore
+      : {};
+  const numericStockValues = Object.values(stockByStore)
+    .map((quantity) => Math.max(0, Number(quantity) || 0))
+    .filter((quantity) => Number.isFinite(quantity));
+  const normalizedStoreId = readOptionalString(storeId, 80);
+  const storeStock = normalizedStoreId ? Math.max(0, Number(stockByStore[normalizedStoreId]) || 0) : 0;
+  const totalStock = numericStockValues.reduce((sum, quantity) => sum + quantity, 0);
+  const maxStoreStock = numericStockValues.length > 0 ? Math.max(...numericStockValues) : 0;
+  return {
+    storeStock,
+    totalStock,
+    maxStoreStock,
+    relevantStock: normalizedStoreId ? storeStock : totalStock
+  };
+}
+
+function buildGoalPromptScoredCandidates(prompt, feed, scopedScreens = [], goal = {}) {
   const promptText = readOptionalString(prompt, 280).toLowerCase();
   const promptTokens = new Set(tokenizeForMatch(promptText, true));
   if (!promptText || promptTokens.size === 0 || !Array.isArray(feed) || feed.length === 0) {
-    return { products: [], matchedTerms: [] };
+    return {
+      promptText,
+      promptTokens,
+      intentSignals: buildGoalPromptIntentSignals(promptText, promptTokens),
+      hasIntentSignals: false,
+      scored: []
+    };
   }
 
   const scopedTokens = new Set();
@@ -2769,9 +2837,38 @@ function inferTargetProductsFromPrompt(prompt, feed, scopedScreens = []) {
     }
   }
 
-  const scored = feed.map((rawProduct, index) => {
+  const candidateMetrics = feed.map((rawProduct, index) => {
     const product = normalizeProductFeedItem(rawProduct, index);
     const context = buildProductGoalContext(product);
+    const stockSignals = summarizeProductStockSignals(product, goal?.storeId);
+    const priceValue = Math.max(0, readNumericValue(product?.price, 0));
+    const comparePriceValue = Math.max(0, readNumericValue(product?.comparePrice, 0));
+    const discountRate =
+      comparePriceValue > 0 && comparePriceValue > priceValue
+        ? clampNumber((comparePriceValue - priceValue) / comparePriceValue, 0, 0.95)
+        : 0;
+    const ratingValue = clampNumber(readNumericValue(product?.rating, 0) / 5, 0, 1);
+    const isNewnessTagged = context.tagTokens.some((token) => token === "new" || token === "new-range" || token === "launch");
+
+    return {
+      product,
+      context,
+      stockSignals,
+      priceValue,
+      discountRate,
+      ratingValue,
+      isNewnessTagged
+    };
+  });
+
+  const intentSignals = buildGoalPromptIntentSignals(promptText, promptTokens);
+  const hasIntentSignals = Object.values(intentSignals).some(Boolean);
+  const stockRange = buildMetricRange(candidateMetrics.map((entry) => entry.stockSignals.relevantStock));
+  const priceRange = buildMetricRange(candidateMetrics.map((entry) => entry.priceValue));
+  const discountRange = buildMetricRange(candidateMetrics.map((entry) => entry.discountRate));
+
+  const scored = candidateMetrics.map((entry) => {
+    const { product, context } = entry;
     let score = 0;
     const matchedTerms = new Set();
 
@@ -2815,6 +2912,46 @@ function inferTargetProductsFromPrompt(prompt, feed, scopedScreens = []) {
       score += 0.12;
     }
 
+    const highPriceScore =
+      entry.priceValue > 0 ? normalizeRange(entry.priceValue, priceRange.min, priceRange.max, 0.5) : 0;
+    const lowPriceScore = entry.priceValue > 0 ? clampNumber(1 - highPriceScore, 0, 1) : 0;
+    const stockScore =
+      entry.stockSignals.relevantStock > 0
+        ? normalizeRange(entry.stockSignals.relevantStock, stockRange.min, stockRange.max, 0.55)
+        : 0;
+    const discountScore =
+      entry.discountRate > 0 ? normalizeRange(entry.discountRate, discountRange.min, discountRange.max, 0.5) : 0;
+    const premiumScore = Math.max(highPriceScore, entry.ratingValue, entry.isNewnessTagged ? 0.72 : 0);
+
+    if (intentSignals.stock) {
+      score += stockScore * 1.55;
+      if (entry.stockSignals.relevantStock > 0) {
+        matchedTerms.add("high-stock");
+      }
+    }
+    if (intentSignals.value) {
+      score += Math.max(discountScore, lowPriceScore) * 1.2;
+      if (entry.discountRate > 0 || entry.priceValue > 0) {
+        matchedTerms.add("value");
+      }
+    }
+    if (intentSignals.premium) {
+      score += premiumScore * 1.05;
+      if (premiumScore >= 0.6) {
+        matchedTerms.add("premium");
+      }
+    }
+    if (intentSignals.rating) {
+      score += entry.ratingValue * 0.9;
+      if (entry.ratingValue >= 0.7) {
+        matchedTerms.add("top-rated");
+      }
+    }
+    if (intentSignals.newness && entry.isNewnessTagged) {
+      score += 0.85;
+      matchedTerms.add("new");
+    }
+
     const tokenMatches = tagMatches + nameMatches + brandMatches;
     return {
       product,
@@ -2831,11 +2968,34 @@ function inferTargetProductsFromPrompt(prompt, feed, scopedScreens = []) {
     return left.product.name.localeCompare(right.product.name);
   });
 
-  const strongMatches = scored.filter((entry) => entry.score >= GOAL_PROMPT_MIN_SCORE);
+  return {
+    promptText,
+    promptTokens,
+    intentSignals,
+    hasIntentSignals,
+    scored
+  };
+}
+
+function inferTargetProductsFromPromptHeuristic(prompt, feed, scopedScreens = [], goal = {}) {
+  const analysis = buildGoalPromptScoredCandidates(prompt, feed, scopedScreens, goal);
+  if (!analysis.promptText || analysis.scored.length === 0) {
+    return { products: [], matchedTerms: [], provider: "heuristic", reasoning: "" };
+  }
+
+  const strongMatches = analysis.scored.filter((entry) => entry.score >= GOAL_PROMPT_MIN_SCORE);
+  const relaxedMatches = analysis.scored.filter((entry) =>
+    entry.score >= (analysis.hasIntentSignals ? 0.35 : GOAL_PROMPT_MIN_SCORE * 0.75) &&
+    (analysis.hasIntentSignals || entry.tokenMatches >= 2 || entry.matchedTerms.length > 0)
+  );
   const fallbackMatches =
     strongMatches.length > 0
       ? strongMatches
-      : scored.filter((entry) => entry.score >= GOAL_PROMPT_MIN_SCORE * 0.75 && entry.tokenMatches >= 2);
+      : relaxedMatches.length > 0
+        ? relaxedMatches
+        : analysis.hasIntentSignals
+          ? analysis.scored.filter((entry) => entry.score > 0.2).slice(0, GOAL_INFERRED_PRODUCT_LIMIT)
+          : [];
   const inferredProducts = uniqueBySku(fallbackMatches.map((entry) => entry.product)).slice(0, GOAL_INFERRED_PRODUCT_LIMIT);
   const inferredSkuSet = new Set(inferredProducts.map((product) => normalizeSku(product.sku)));
   const matchedTerms = [
@@ -2848,7 +3008,179 @@ function inferTargetProductsFromPrompt(prompt, feed, scopedScreens = []) {
     .filter((token) => token && token.length > 2)
     .slice(0, 10);
 
-  return { products: inferredProducts, matchedTerms };
+  return { products: inferredProducts, matchedTerms, provider: "heuristic", reasoning: "" };
+}
+
+function readChatCompletionTextContent(content) {
+  if (typeof content === "string") {
+    return content;
+  }
+  if (!Array.isArray(content)) {
+    return "";
+  }
+  return content
+    .map((part) => {
+      if (typeof part === "string") {
+        return part;
+      }
+      if (part && typeof part.text === "string") {
+        return part.text;
+      }
+      return "";
+    })
+    .join("");
+}
+
+async function inferTargetProductsFromPromptWithAi(prompt, feed, scopedScreens = [], goal = {}) {
+  if (!OPENAI_API_KEY) {
+    return null;
+  }
+
+  const analysis = buildGoalPromptScoredCandidates(prompt, feed, scopedScreens, goal);
+  if (!analysis.promptText || analysis.scored.length === 0) {
+    return null;
+  }
+
+  const candidateEntries = analysis.scored.slice(0, GOAL_PROMPT_AI_CANDIDATE_LIMIT);
+  const candidateProducts = candidateEntries.map((entry) => entry.product);
+  const candidateBySku = new Map(candidateProducts.map((product) => [normalizeSku(product.sku), product]));
+  const scopedPlacementHints = scopedScreens.slice(0, 8).map((screen) => ({
+    screenId: readOptionalString(screen?.screenId, 80),
+    storeId: readOptionalString(screen?.storeId, 80),
+    pageId: readOptionalString(screen?.pageId, 40),
+    location: readOptionalString(screen?.location, 80),
+    screenType: readOptionalString(screen?.screenType, 80)
+  }));
+  const candidates = candidateEntries.map((entry) => ({
+    sku: normalizeSku(entry.product.sku),
+    name: readOptionalString(entry.product.name, 180),
+    brand: readOptionalString(entry.product.brand, 80),
+    category: readOptionalString(entry.product.category, 80),
+    tags: readStringArray(entry.product.tags, 12, 40),
+    price: readNumericValue(entry.product.price, 0),
+    comparePrice: readNumericValue(entry.product.comparePrice, 0),
+    rating: readNumericValue(entry.product.rating, 0),
+    relevantStock: entry.product.stockByStore && goal?.storeId
+      ? Math.max(0, Number(entry.product.stockByStore[goal.storeId]) || 0)
+      : summarizeProductStockSignals(entry.product, goal?.storeId).relevantStock,
+    totalStock: summarizeProductStockSignals(entry.product, "").totalStock
+  }));
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), GOAL_PROMPT_AI_TIMEOUT_MS);
+
+  try {
+    const response = await fetch(`${OPENAI_BASE_URL.replace(/\/+$/, "")}/chat/completions`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${OPENAI_API_KEY}`
+      },
+      signal: controller.signal,
+      body: JSON.stringify({
+        model: OPENAI_MODEL,
+        messages: [
+          {
+            role: "system",
+            content:
+              "You select SKUs for an in-store retail media planner. Use the brief semantically, not only exact token overlap. Prefer products that fit the user's intent, including stock, value, premium, rating, and freshness signals when mentioned. Only choose from the supplied candidates. Return an empty list if nothing is a confident fit."
+          },
+          {
+            role: "user",
+            content: JSON.stringify({
+              prompt: analysis.promptText,
+              objective: readOptionalString(goal?.objective, 40),
+              advertiserId: readOptionalString(goal?.advertiserId, 120),
+              brand: readOptionalString(goal?.brand, 80),
+              assortmentCategory: readOptionalString(goal?.assortmentCategory, 80),
+              storeId: readOptionalString(goal?.storeId, 80),
+              pageId: readOptionalString(goal?.pageId, 40),
+              shortlistLimit: GOAL_INFERRED_PRODUCT_LIMIT,
+              scopedPlacementHints,
+              candidates
+            })
+          }
+        ],
+        response_format: {
+          type: "json_schema",
+          json_schema: {
+            name: "goal_sku_selection",
+            strict: true,
+            schema: {
+              type: "object",
+              additionalProperties: false,
+              properties: {
+                selectedSkus: {
+                  type: "array",
+                  items: { type: "string" },
+                  maxItems: GOAL_INFERRED_PRODUCT_LIMIT
+                },
+                matchedConcepts: {
+                  type: "array",
+                  items: { type: "string" },
+                  maxItems: 8
+                },
+                reasoning: {
+                  type: "string",
+                  maxLength: 240
+                }
+              },
+              required: ["selectedSkus", "matchedConcepts", "reasoning"]
+            }
+          }
+        }
+      })
+    });
+
+    const responseText = await response.text();
+    let payload = null;
+    try {
+      payload = responseText ? JSON.parse(responseText) : null;
+    } catch {
+      payload = null;
+    }
+
+    if (!response.ok) {
+      throw new Error(payload?.error?.message || `OpenAI request failed with status ${response.status}.`);
+    }
+
+    const completionText = readChatCompletionTextContent(payload?.choices?.[0]?.message?.content);
+    const parsed = completionText ? JSON.parse(completionText) : {};
+    const selectedSkus = readStringArray(parsed?.selectedSkus, GOAL_INFERRED_PRODUCT_LIMIT, 80)
+      .map((sku) => normalizeSku(sku))
+      .filter((sku) => candidateBySku.has(sku));
+    const selectedProducts = uniqueBySku(
+      selectedSkus
+        .map((sku) => candidateBySku.get(sku))
+        .filter(Boolean)
+    ).slice(0, GOAL_INFERRED_PRODUCT_LIMIT);
+    const matchedTerms = readStringArray(parsed?.matchedConcepts, 8, 40)
+      .map((term) => readOptionalString(term, 40).toLowerCase())
+      .filter(Boolean);
+
+    return {
+      products: selectedProducts,
+      matchedTerms,
+      provider: "openai",
+      reasoning: readOptionalString(parsed?.reasoning, 240),
+      model: OPENAI_MODEL
+    };
+  } catch (error) {
+    const message = error?.name === "AbortError" ? "request timed out" : error?.message || "unknown error";
+    // eslint-disable-next-line no-console
+    console.warn(`OpenAI SKU inference failed; falling back to heuristic matching (${message}).`);
+    return null;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
+async function inferTargetProductsFromPrompt(prompt, feed, scopedScreens = [], goal = {}) {
+  const aiSelection = await inferTargetProductsFromPromptWithAi(prompt, feed, scopedScreens, goal);
+  if (aiSelection) {
+    return aiSelection;
+  }
+  return inferTargetProductsFromPromptHeuristic(prompt, feed, scopedScreens, goal);
 }
 
 function screenContainsAnyTargetSku(screen, targetSkuIds) {
@@ -3995,7 +4327,7 @@ function readGoalRequest(input) {
   };
 }
 
-function resolveGoalTargetProducts(goal, feed, scopedScreens) {
+async function resolveGoalTargetProducts(goal, feed, scopedScreens) {
   const normalizedFeed = Array.isArray(feed)
     ? feed.map((product, index) => normalizeProductFeedItem(product, index))
     : [];
@@ -4035,18 +4367,22 @@ function resolveGoalTargetProducts(goal, feed, scopedScreens) {
       targetSkuIds: selectedProducts.map((product) => normalizeSku(product.sku)),
       targetProducts: selectedProducts,
       targetSource: "manual",
-      inferredTerms: []
+      inferredTerms: [],
+      inferenceReasoning: "",
+      inferenceModel: ""
     };
   }
 
   const inferenceFeed = filteredFeed.length > 0 ? filteredFeed : normalizedFeed;
-  const inferred = inferTargetProductsFromPrompt(goal.prompt, inferenceFeed, scopedScreens);
+  const inferred = await inferTargetProductsFromPrompt(goal.prompt, inferenceFeed, scopedScreens, goal);
   if (inferred.products.length > 0) {
     return {
       targetSkuIds: inferred.products.map((product) => normalizeSku(product.sku)),
       targetProducts: inferred.products,
-      targetSource: "prompt",
-      inferredTerms: inferred.matchedTerms
+      targetSource: inferred.provider === "openai" ? "prompt-ai" : "prompt",
+      inferredTerms: inferred.matchedTerms,
+      inferenceReasoning: inferred.reasoning || "",
+      inferenceModel: inferred.model || ""
     };
   }
 
@@ -4056,7 +4392,9 @@ function resolveGoalTargetProducts(goal, feed, scopedScreens) {
       targetSkuIds: accountProducts.map((product) => normalizeSku(product.sku)),
       targetProducts: accountProducts,
       targetSource: "account",
-      inferredTerms: []
+      inferredTerms: [],
+      inferenceReasoning: "",
+      inferenceModel: ""
     };
   }
 
@@ -4064,7 +4402,9 @@ function resolveGoalTargetProducts(goal, feed, scopedScreens) {
     targetSkuIds: [],
     targetProducts: [],
     targetSource: "none",
-    inferredTerms: []
+    inferredTerms: [],
+    inferenceReasoning: "",
+    inferenceModel: ""
   };
 }
 
@@ -4484,8 +4824,10 @@ function buildGoalPlan(goal, screens) {
       ? "Manual SKU shortlist"
       : goal.targetSource === "account"
         ? "Brand-led assortment"
-      : goal.targetSource === "prompt"
-        ? "Brief-inferred SKU shortlist"
+      : goal.targetSource === "prompt-ai"
+        ? "AI brief-selected SKU shortlist"
+        : goal.targetSource === "prompt"
+          ? "Brief-inferred SKU shortlist"
         : "Objective-led recommendation";
   const targetSummary =
     targetProducts.length > 0
@@ -4494,7 +4836,9 @@ function buildGoalPlan(goal, screens) {
         ? "The brief did not resolve to a confident SKU shortlist, so CMax used objective-led placement selection."
         : "No priority SKU shortlist applied.";
   const inferredTermsSummary =
-    goal.targetSource === "prompt" && Array.isArray(goal.inferredTerms) && goal.inferredTerms.length > 0
+    (goal.targetSource === "prompt" || goal.targetSource === "prompt-ai") &&
+    Array.isArray(goal.inferredTerms) &&
+    goal.inferredTerms.length > 0
       ? `Prompt terms: ${goal.inferredTerms.slice(0, 6).join(", ")}.`
       : "";
   const exclusionSummary =
@@ -5331,6 +5675,8 @@ app.get("/api/options", async (_req, res) => {
       goalObjectives: GOAL_OBJECTIVES.map(({ id, label, description }) => ({ id, label, description })),
       goalAggressivenessOptions: GOAL_AGGRESSIVENESS_OPTIONS,
       goalSupportsSkuTargeting: true,
+      goalPromptInferenceProvider: OPENAI_API_KEY ? "openai" : "heuristic",
+      goalPromptInferenceModel: OPENAI_API_KEY ? OPENAI_MODEL : "",
       telemetryEventTypes: TELEMETRY_EVENT_TYPES
     });
   } catch (error) {
@@ -5468,6 +5814,50 @@ app.get("/api/products", async (req, res) => {
       total: products.length,
       categories,
       accounts
+    });
+  } catch (error) {
+    const normalized = normalizeError(error);
+    res.status(normalized.status).json({ error: normalized.message });
+  }
+});
+
+app.post("/api/goal-skus/infer", async (req, res) => {
+  try {
+    const goal = {
+      objective: readOptionalString(req.body?.objective, 40),
+      aggressiveness: readOptionalString(req.body?.aggressiveness, 20),
+      storeId: readOptionalString(req.body?.storeId, 80),
+      pageId: readOptionalString(req.body?.pageId, 40),
+      assortmentCategory: readOptionalString(req.body?.assortmentCategory, 80).toLowerCase(),
+      prompt: readOptionalString(req.body?.prompt, 280),
+      advertiserId: readOptionalString(req.body?.advertiserId, 120),
+      brand: readOptionalString(req.body?.brand, 80)
+    };
+    if (!goal.prompt) {
+      res.json({
+        products: [],
+        targetSkuIds: [],
+        targetSource: "none",
+        matchedTerms: [],
+        inferenceProvider: OPENAI_API_KEY ? "openai" : "heuristic",
+        inferenceModel: OPENAI_API_KEY ? OPENAI_MODEL : "",
+        inferenceReasoning: ""
+      });
+      return;
+    }
+
+    const [db, feed] = await Promise.all([readDb(), readProductFeed()]);
+    const allScreens = Array.isArray(db.screens) ? db.screens : [];
+    const scopedScreens = filterGoalScopeScreens(allScreens, goal);
+    const resolved = await resolveGoalTargetProducts(goal, feed, scopedScreens.length > 0 ? scopedScreens : allScreens);
+    res.json({
+      products: resolved.targetProducts,
+      targetSkuIds: resolved.targetSkuIds,
+      targetSource: resolved.targetSource,
+      matchedTerms: resolved.inferredTerms,
+      inferenceProvider: resolved.targetSource === "prompt-ai" ? "openai" : "heuristic",
+      inferenceModel: resolved.inferenceModel || (resolved.targetSource === "prompt-ai" ? OPENAI_MODEL : ""),
+      inferenceReasoning: resolved.inferenceReasoning || ""
     });
   } catch (error) {
     const normalized = normalizeError(error);
@@ -5833,7 +6223,7 @@ app.post("/api/agent/goals/plan", async (req, res) => {
       const allScreens = shouldUseDemoInventory ? demoCandidateScreens : allStoreScreens;
       const requestedPageId = readOptionalString(goal.pageId, 40);
       const initialScopedScreens = filterGoalScopeScreens(allScreens, goal);
-      const targetResolution = resolveGoalTargetProducts(goal, feed, initialScopedScreens.length > 0 ? initialScopedScreens : allScreens);
+      const targetResolution = await resolveGoalTargetProducts(goal, feed, initialScopedScreens.length > 0 ? initialScopedScreens : allScreens);
       const planningSignals = buildGoalPlanningSignals(goal, targetResolution.targetProducts);
       const storeStrategy = buildGoalStoreStrategy(goal, targetResolution.targetProducts, allScreens, planningSignals);
       const planningScreenPool = filterScreensByStoreIds(allScreens, storeStrategy.effectiveStoreIds);

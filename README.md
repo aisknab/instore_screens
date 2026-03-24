@@ -350,6 +350,8 @@ Response shape:
 - Set `PORT` explicitly when running behind NGINX so the app stays on a fixed upstream port.
 - The server can be bound explicitly with `HOST` when needed. Default production-safe example: `HOST=0.0.0.0`.
 - Set `DB_FILE` to a writable path outside the repo, for example `/var/lib/criteoscreens/db.json`, so deploys can use a clean `git pull`.
+- Set `OPENAI_API_KEY` to enable model-backed AI SKU brief selection in Step 3. Without it, the planner falls back to built-in heuristic matching.
+- Optionally set `OPENAI_MODEL` to override the default model alias (`gpt-5-mini`).
 
 Example `systemd` environment:
 
@@ -357,6 +359,8 @@ Example `systemd` environment:
 Environment=HOST=0.0.0.0
 Environment=PORT=3100
 Environment=DB_FILE=/var/lib/criteoscreens/db.json
+Environment=OPENAI_API_KEY=your_api_key_here
+Environment=OPENAI_MODEL=gpt-5-mini
 ```
 
 Example deploy helper from the repo root:
