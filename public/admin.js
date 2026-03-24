@@ -4822,7 +4822,7 @@ async function refreshInventory() {
 }
 
 async function refreshProductFeed() {
-  const response = await requestJson("/api/products?limit=1000");
+  const response = await requestJson("/api/products?limit=2000");
   state.productFeed = Array.isArray(response.products) ? response.products : [];
   state.productAccounts =
     Array.isArray(response.accounts) && response.accounts.length > 0

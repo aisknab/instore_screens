@@ -5845,7 +5845,7 @@ app.get("/api/products", async (req, res) => {
     const query = readOptionalString(req.query.q, 120).toLowerCase();
     const category = readOptionalString(req.query.category, 80).toLowerCase();
     const parsedLimit = Number(req.query.limit);
-    const limit = Number.isInteger(parsedLimit) ? Math.max(1, Math.min(parsedLimit, 1000)) : 120;
+    const limit = Number.isInteger(parsedLimit) ? Math.max(1, Math.min(parsedLimit, 2000)) : 120;
 
     let products = [...feed];
     if (category) {
