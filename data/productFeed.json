@@ -1,343 +1,5391 @@
-﻿[
-    {
-        "sku":  "LAP-ULTRA-13-001",
-        "name":  "UltraBook 13 Pro",
-        "category":  "electronics",
-        "brand":  "Vertex",
-        "productPage":  "https://store.example.com/products/lap-ultra-13-001",
-        "image":  "/assets/products/lap-ultra-13-001.svg",
-        "price":  "1299.00",
-        "comparePrice":  "1499.00",
-        "rating":  "4.8",
-        "advertiserId":  "advertiser-vertex",
-        "tags":  [
-                     "laptop",
-                     "ultrabook",
-                     "premium",
-                     "new-range"
-                 ]
+[
+  {
+    "sku": "LAP-ULTRA-13-001",
+    "name": "UltraBook 13 Pro",
+    "category": "electronics",
+    "brand": "Vertex",
+    "productPage": "https://store.example.com/products/lap-ultra-13-001",
+    "image": "/assets/products/lap-ultra-13-001.svg",
+    "price": "1299.00",
+    "comparePrice": "1499.00",
+    "rating": "4.8",
+    "advertiserId": "advertiser-vertex",
+    "tags": [
+      "laptop",
+      "ultrabook",
+      "premium",
+      "new-range"
+    ]
+  },
+  {
+    "sku": "LAP-GAME-16-002",
+    "name": "GameCore 16 RTX",
+    "category": "electronics",
+    "brand": "Aegis",
+    "productPage": "https://store.example.com/products/lap-game-16-002",
+    "image": "/assets/products/lap-game-16-002.svg",
+    "price": "1799.00",
+    "comparePrice": "1999.00",
+    "rating": "4.7",
+    "advertiserId": "advertiser-aegis",
+    "tags": [
+      "laptop",
+      "gaming",
+      "performance",
+      "new-range"
+    ]
+  },
+  {
+    "sku": "LAP-BIZ-14-003",
+    "name": "Business Lite 14",
+    "category": "electronics",
+    "brand": "Northfield",
+    "productPage": "https://store.example.com/products/lap-biz-14-003",
+    "image": "/assets/products/lap-biz-14-003.svg",
+    "price": "999.00",
+    "comparePrice": "1199.00",
+    "rating": "4.6",
+    "advertiserId": "advertiser-northfield",
+    "tags": [
+      "laptop",
+      "business",
+      "work",
+      "new-range"
+    ]
+  },
+  {
+    "sku": "LAP-STUDENT-15-004",
+    "name": "Student Plus 15",
+    "category": "electronics",
+    "brand": "Orbit",
+    "productPage": "https://store.example.com/products/lap-student-15-004",
+    "image": "/assets/products/lap-student-15-004.svg",
+    "price": "749.00",
+    "comparePrice": "899.00",
+    "rating": "4.5",
+    "advertiserId": "advertiser-orbit",
+    "tags": [
+      "laptop",
+      "student",
+      "value",
+      "new-range"
+    ]
+  },
+  {
+    "sku": "LAP-CREATOR-15-005",
+    "name": "Creator Studio 15 OLED",
+    "category": "electronics",
+    "brand": "Aurora",
+    "productPage": "https://store.example.com/products/lap-creator-15-005",
+    "image": "/assets/products/lap-creator-15-005.svg",
+    "price": "1599.00",
+    "comparePrice": "1799.00",
+    "rating": "4.8",
+    "advertiserId": "advertiser-aurora",
+    "stockByStore": {
+      "STORE_42": 34,
+      "STORE_17": 18,
+      "STORE_08": 12,
+      "STORE_21": 16,
+      "STORE_33": 46,
+      "STORE_55": 14,
+      "STORE_64": 20,
+      "STORE_71": 28,
+      "STORE_88": 11,
+      "STORE_95": 22
     },
-    {
-        "sku":  "LAP-GAME-16-002",
-        "name":  "GameCore 16 RTX",
-        "category":  "electronics",
-        "brand":  "Aegis",
-        "productPage":  "https://store.example.com/products/lap-game-16-002",
-        "image":  "/assets/products/lap-game-16-002.svg",
-        "price":  "1799.00",
-        "comparePrice":  "1999.00",
-        "rating":  "4.7",
-        "advertiserId":  "advertiser-aegis",
-        "tags":  [
-                     "laptop",
-                     "gaming",
-                     "performance",
-                     "new-range"
-                 ]
+    "tags": [
+      "laptop",
+      "creator",
+      "oled",
+      "new-range"
+    ]
+  },
+  {
+    "sku": "LAP-2IN1-14-006",
+    "name": "Flex 2-in-1 14 Touch",
+    "category": "electronics",
+    "brand": "Vertex",
+    "productPage": "https://store.example.com/products/lap-2in1-14-006",
+    "image": "/assets/products/lap-2in1-14-006.svg",
+    "price": "1099.00",
+    "comparePrice": "1299.00",
+    "rating": "4.6",
+    "advertiserId": "advertiser-vertex",
+    "tags": [
+      "laptop",
+      "2-in-1",
+      "touch",
+      "new-range"
+    ]
+  },
+  {
+    "sku": "ACC-MOUSE-001",
+    "name": "Ergo Wireless Mouse",
+    "category": "electronics",
+    "brand": "Northfield",
+    "productPage": "https://store.example.com/products/acc-mouse-001",
+    "image": "/assets/products/acc-mouse-001.svg",
+    "price": "49.00",
+    "comparePrice": "69.00",
+    "rating": "4.4",
+    "advertiserId": "advertiser-northfield",
+    "stockByStore": {
+      "STORE_42": 48,
+      "STORE_17": 26,
+      "STORE_08": 15,
+      "STORE_21": 18,
+      "STORE_33": 21,
+      "STORE_55": 31,
+      "STORE_64": 14,
+      "STORE_71": 52,
+      "STORE_88": 12,
+      "STORE_95": 24
     },
-    {
-        "sku":  "LAP-BIZ-14-003",
-        "name":  "Business Lite 14",
-        "category":  "electronics",
-        "brand":  "Northfield",
-        "productPage":  "https://store.example.com/products/lap-biz-14-003",
-        "image":  "/assets/products/lap-biz-14-003.svg",
-        "price":  "999.00",
-        "comparePrice":  "1199.00",
-        "rating":  "4.6",
-        "advertiserId":  "advertiser-northfield",
-        "tags":  [
-                     "laptop",
-                     "business",
-                     "work",
-                     "new-range"
-                 ]
+    "tags": [
+      "accessory",
+      "mouse",
+      "checkout-attach"
+    ]
+  },
+  {
+    "sku": "ACC-BACKPACK-002",
+    "name": "Commuter Laptop Backpack",
+    "category": "electronics",
+    "brand": "Orbit",
+    "productPage": "https://store.example.com/products/acc-backpack-002",
+    "image": "/assets/products/acc-backpack-002.svg",
+    "price": "89.00",
+    "comparePrice": "109.00",
+    "rating": "4.5",
+    "advertiserId": "advertiser-orbit",
+    "tags": [
+      "accessory",
+      "laptop",
+      "bag",
+      "checkout-attach"
+    ]
+  },
+  {
+    "sku": "ACC-DOCK-003",
+    "name": "USB-C Multi Dock",
+    "category": "electronics",
+    "brand": "Aegis",
+    "productPage": "https://store.example.com/products/acc-dock-003",
+    "image": "/assets/products/acc-dock-003.svg",
+    "price": "149.00",
+    "comparePrice": "179.00",
+    "rating": "4.6",
+    "advertiserId": "advertiser-aegis",
+    "stockByStore": {
+      "STORE_42": 29,
+      "STORE_17": 16,
+      "STORE_08": 9,
+      "STORE_21": 12,
+      "STORE_33": 24,
+      "STORE_55": 13,
+      "STORE_64": 11,
+      "STORE_71": 27,
+      "STORE_88": 8,
+      "STORE_95": 19
     },
-    {
-        "sku":  "LAP-STUDENT-15-004",
-        "name":  "Student Plus 15",
-        "category":  "electronics",
-        "brand":  "Orbit",
-        "productPage":  "https://store.example.com/products/lap-student-15-004",
-        "image":  "/assets/products/lap-student-15-004.svg",
-        "price":  "749.00",
-        "comparePrice":  "899.00",
-        "rating":  "4.5",
-        "advertiserId":  "advertiser-orbit",
-        "tags":  [
-                     "laptop",
-                     "student",
-                     "value",
-                     "new-range"
-                 ]
+    "tags": [
+      "accessory",
+      "dock",
+      "usb-c",
+      "checkout-attach"
+    ]
+  },
+  {
+    "sku": "WG-FRIDGE-001",
+    "name": "Smart Fridge Family XL",
+    "category": "whitegoods",
+    "brand": "Polarix",
+    "productPage": "https://store.example.com/products/wg-fridge-001",
+    "image": "/assets/products/wg-fridge-001.svg",
+    "price": "1299.00",
+    "comparePrice": "1599.00",
+    "rating": "4.8",
+    "advertiserId": "advertiser-polarix",
+    "tags": [
+      "fridge",
+      "kitchen",
+      "premium"
+    ]
+  },
+  {
+    "sku": "WG-WASHER-002",
+    "name": "EcoWash Washer 9kg",
+    "category": "whitegoods",
+    "brand": "HydroHome",
+    "productPage": "https://store.example.com/products/wg-washer-002",
+    "image": "/assets/products/wg-washer-002.svg",
+    "price": "549.00",
+    "comparePrice": "699.00",
+    "rating": "4.6",
+    "advertiserId": "advertiser-hydrohome",
+    "tags": [
+      "washer",
+      "laundry",
+      "value"
+    ]
+  },
+  {
+    "sku": "WG-OVEN-003",
+    "name": "Steam Oven Pro 60L",
+    "category": "whitegoods",
+    "brand": "ChefLine",
+    "productPage": "https://store.example.com/products/wg-oven-003",
+    "image": "/assets/products/wg-oven-003.svg",
+    "price": "749.00",
+    "comparePrice": "899.00",
+    "rating": "4.5",
+    "advertiserId": "advertiser-chefline",
+    "stockByStore": {
+      "STORE_42": 23,
+      "STORE_17": 14,
+      "STORE_08": 10,
+      "STORE_21": 34,
+      "STORE_33": 12,
+      "STORE_55": 9,
+      "STORE_64": 39,
+      "STORE_71": 11,
+      "STORE_88": 8,
+      "STORE_95": 28
     },
-    {
-        "sku":  "LAP-CREATOR-15-005",
-        "name":  "Creator Studio 15 OLED",
-        "category":  "electronics",
-        "brand":  "Aurora",
-        "productPage":  "https://store.example.com/products/lap-creator-15-005",
-        "image":  "/assets/products/lap-creator-15-005.svg",
-        "price":  "1599.00",
-        "comparePrice":  "1799.00",
-        "rating":  "4.8",
-        "advertiserId":  "advertiser-aurora",
-        "stockByStore":  {
-                             "STORE_42":  34,
-                             "STORE_17":  18,
-                             "STORE_08":  12,
-                             "STORE_21":  16,
-                             "STORE_33":  46,
-                             "STORE_55":  14,
-                             "STORE_64":  20,
-                             "STORE_71":  28,
-                             "STORE_88":  11,
-                             "STORE_95":  22
-                         },
-        "tags":  [
-                     "laptop",
-                     "creator",
-                     "oled",
-                     "new-range"
-                 ]
+    "tags": [
+      "oven",
+      "kitchen",
+      "clearance"
+    ]
+  },
+  {
+    "sku": "FS-LUNCH-001",
+    "name": "Lunch Combo Upgrade",
+    "category": "foodcourt",
+    "brand": "QuickBite",
+    "productPage": "https://store.example.com/products/fs-lunch-001",
+    "image": "/assets/products/fs-lunch-001.svg",
+    "price": "14.99",
+    "comparePrice": "19.99",
+    "rating": "4.6",
+    "advertiserId": "advertiser-quickbite",
+    "tags": [
+      "menu",
+      "combo",
+      "foodcourt"
+    ]
+  },
+  {
+    "sku": "FS-BREAKFAST-002",
+    "name": "Breakfast Stack + Coffee",
+    "category": "foodcourt",
+    "brand": "QuickBite",
+    "productPage": "https://store.example.com/products/fs-breakfast-002",
+    "image": "/assets/products/fs-breakfast-002.svg",
+    "price": "9.99",
+    "comparePrice": "12.99",
+    "rating": "4.7",
+    "advertiserId": "advertiser-quickbite",
+    "tags": [
+      "menu",
+      "breakfast",
+      "foodcourt"
+    ]
+  },
+  {
+    "sku": "GR-PROTEIN-001",
+    "name": "Protein Bar 6 Pack",
+    "category": "aisle",
+    "brand": "FitFuel",
+    "productPage": "https://store.example.com/products/gr-protein-001",
+    "image": "/assets/products/gr-protein-001.svg",
+    "price": "8.99",
+    "comparePrice": "12.99",
+    "rating": "4.5",
+    "advertiserId": "advertiser-fitfuel",
+    "stockByStore": {
+      "STORE_42": 41,
+      "STORE_17": 22,
+      "STORE_08": 31,
+      "STORE_21": 18,
+      "STORE_33": 12,
+      "STORE_55": 26,
+      "STORE_64": 10,
+      "STORE_71": 19,
+      "STORE_88": 45,
+      "STORE_95": 29
     },
-    {
-        "sku":  "LAP-2IN1-14-006",
-        "name":  "Flex 2-in-1 14 Touch",
-        "category":  "electronics",
-        "brand":  "Vertex",
-        "productPage":  "https://store.example.com/products/lap-2in1-14-006",
-        "image":  "/assets/products/lap-2in1-14-006.svg",
-        "price":  "1099.00",
-        "comparePrice":  "1299.00",
-        "rating":  "4.6",
-        "advertiserId":  "advertiser-vertex",
-        "tags":  [
-                     "laptop",
-                     "2-in-1",
-                     "touch",
-                     "new-range"
-                 ]
-    },
-    {
-        "sku":  "ACC-MOUSE-001",
-        "name":  "Ergo Wireless Mouse",
-        "category":  "electronics",
-        "brand":  "Northfield",
-        "productPage":  "https://store.example.com/products/acc-mouse-001",
-        "image":  "/assets/products/acc-mouse-001.svg",
-        "price":  "49.00",
-        "comparePrice":  "69.00",
-        "rating":  "4.4",
-        "advertiserId":  "advertiser-northfield",
-        "stockByStore":  {
-                             "STORE_42":  48,
-                             "STORE_17":  26,
-                             "STORE_08":  15,
-                             "STORE_21":  18,
-                             "STORE_33":  21,
-                             "STORE_55":  31,
-                             "STORE_64":  14,
-                             "STORE_71":  52,
-                             "STORE_88":  12,
-                             "STORE_95":  24
-                         },
-        "tags":  [
-                     "accessory",
-                     "mouse",
-                     "checkout-attach"
-                 ]
-    },
-    {
-        "sku":  "ACC-BACKPACK-002",
-        "name":  "Commuter Laptop Backpack",
-        "category":  "electronics",
-        "brand":  "Orbit",
-        "productPage":  "https://store.example.com/products/acc-backpack-002",
-        "image":  "/assets/products/acc-backpack-002.svg",
-        "price":  "89.00",
-        "comparePrice":  "109.00",
-        "rating":  "4.5",
-        "advertiserId":  "advertiser-orbit",
-        "tags":  [
-                     "accessory",
-                     "laptop",
-                     "bag",
-                     "checkout-attach"
-                 ]
-    },
-    {
-        "sku":  "ACC-DOCK-003",
-        "name":  "USB-C Multi Dock",
-        "category":  "electronics",
-        "brand":  "Aegis",
-        "productPage":  "https://store.example.com/products/acc-dock-003",
-        "image":  "/assets/products/acc-dock-003.svg",
-        "price":  "149.00",
-        "comparePrice":  "179.00",
-        "rating":  "4.6",
-        "advertiserId":  "advertiser-aegis",
-        "stockByStore":  {
-                             "STORE_42":  29,
-                             "STORE_17":  16,
-                             "STORE_08":  9,
-                             "STORE_21":  12,
-                             "STORE_33":  24,
-                             "STORE_55":  13,
-                             "STORE_64":  11,
-                             "STORE_71":  27,
-                             "STORE_88":  8,
-                             "STORE_95":  19
-                         },
-        "tags":  [
-                     "accessory",
-                     "dock",
-                     "usb-c",
-                     "checkout-attach"
-                 ]
-    },
-    {
-        "sku":  "WG-FRIDGE-001",
-        "name":  "Smart Fridge Family XL",
-        "category":  "whitegoods",
-        "brand":  "Polarix",
-        "productPage":  "https://store.example.com/products/wg-fridge-001",
-        "image":  "/assets/products/wg-fridge-001.svg",
-        "price":  "1299.00",
-        "comparePrice":  "1599.00",
-        "rating":  "4.8",
-        "advertiserId":  "advertiser-polarix",
-        "tags":  [
-                     "fridge",
-                     "kitchen",
-                     "premium"
-                 ]
-    },
-    {
-        "sku":  "WG-WASHER-002",
-        "name":  "EcoWash Washer 9kg",
-        "category":  "whitegoods",
-        "brand":  "HydroHome",
-        "productPage":  "https://store.example.com/products/wg-washer-002",
-        "image":  "/assets/products/wg-washer-002.svg",
-        "price":  "549.00",
-        "comparePrice":  "699.00",
-        "rating":  "4.6",
-        "advertiserId":  "advertiser-hydrohome",
-        "tags":  [
-                     "washer",
-                     "laundry",
-                     "value"
-                 ]
-    },
-    {
-        "sku":  "WG-OVEN-003",
-        "name":  "Steam Oven Pro 60L",
-        "category":  "whitegoods",
-        "brand":  "ChefLine",
-        "productPage":  "https://store.example.com/products/wg-oven-003",
-        "image":  "/assets/products/wg-oven-003.svg",
-        "price":  "749.00",
-        "comparePrice":  "899.00",
-        "rating":  "4.5",
-        "advertiserId":  "advertiser-chefline",
-        "stockByStore":  {
-                             "STORE_42":  23,
-                             "STORE_17":  14,
-                             "STORE_08":  10,
-                             "STORE_21":  34,
-                             "STORE_33":  12,
-                             "STORE_55":  9,
-                             "STORE_64":  39,
-                             "STORE_71":  11,
-                             "STORE_88":  8,
-                             "STORE_95":  28
-                         },
-        "tags":  [
-                     "oven",
-                     "kitchen",
-                     "clearance"
-                 ]
-    },
-    {
-        "sku":  "FS-LUNCH-001",
-        "name":  "Lunch Combo Upgrade",
-        "category":  "foodcourt",
-        "brand":  "QuickBite",
-        "productPage":  "https://store.example.com/products/fs-lunch-001",
-        "image":  "/assets/products/fs-lunch-001.svg",
-        "price":  "14.99",
-        "comparePrice":  "19.99",
-        "rating":  "4.6",
-        "advertiserId":  "advertiser-quickbite",
-        "tags":  [
-                     "menu",
-                     "combo",
-                     "foodcourt"
-                 ]
-    },
-    {
-        "sku":  "FS-BREAKFAST-002",
-        "name":  "Breakfast Stack + Coffee",
-        "category":  "foodcourt",
-        "brand":  "QuickBite",
-        "productPage":  "https://store.example.com/products/fs-breakfast-002",
-        "image":  "/assets/products/fs-breakfast-002.svg",
-        "price":  "9.99",
-        "comparePrice":  "12.99",
-        "rating":  "4.7",
-        "advertiserId":  "advertiser-quickbite",
-        "tags":  [
-                     "menu",
-                     "breakfast",
-                     "foodcourt"
-                 ]
-    },
-    {
-        "sku":  "GR-PROTEIN-001",
-        "name":  "Protein Bar 6 Pack",
-        "category":  "aisle",
-        "brand":  "FitFuel",
-        "productPage":  "https://store.example.com/products/gr-protein-001",
-        "image":  "/assets/products/gr-protein-001.svg",
-        "price":  "8.99",
-        "comparePrice":  "12.99",
-        "rating":  "4.5",
-        "advertiserId":  "advertiser-fitfuel",
-        "stockByStore":  {
-                             "STORE_42":  41,
-                             "STORE_17":  22,
-                             "STORE_08":  31,
-                             "STORE_21":  18,
-                             "STORE_33":  12,
-                             "STORE_55":  26,
-                             "STORE_64":  10,
-                             "STORE_71":  19,
-                             "STORE_88":  45,
-                             "STORE_95":  29
-                         },
-        "tags":  [
-                     "shelf",
-                     "snack",
-                     "clearance"
-                 ]
-    },
-    {
-        "sku":  "GR-COFFEE-002",
-        "name":  "Premium Coffee Beans",
-        "category":  "aisle",
-        "brand":  "BeanCraft",
-        "productPage":  "https://store.example.com/products/gr-coffee-002",
-        "image":  "/assets/products/gr-coffee-002.svg",
-        "price":  "24.99",
-        "comparePrice":  "34.99",
-        "rating":  "4.8",
-        "advertiserId":  "advertiser-beancraft",
-        "tags":  [
-                     "shelf",
-                     "coffee",
-                     "premium"
-                 ]
-    }
+    "tags": [
+      "shelf",
+      "snack",
+      "clearance"
+    ]
+  },
+  {
+    "sku": "GR-COFFEE-002",
+    "name": "Premium Coffee Beans",
+    "category": "aisle",
+    "brand": "BeanCraft",
+    "productPage": "https://store.example.com/products/gr-coffee-002",
+    "image": "/assets/products/gr-coffee-002.svg",
+    "price": "24.99",
+    "comparePrice": "34.99",
+    "rating": "4.8",
+    "advertiserId": "advertiser-beancraft",
+    "tags": [
+      "shelf",
+      "coffee",
+      "premium"
+    ]
+  },
+  {
+    "sku": "LAP-PERF-14-101",
+    "name": "Aegis ForgeBook 14 Gaming Laptop",
+    "category": "electronics",
+    "brand": "Aegis",
+    "productPage": "https://store.example.com/products/lap-perf-14-101",
+    "image": "/assets/products/lap-ultra-13-001.svg",
+    "price": "1199.99",
+    "comparePrice": "1399.99",
+    "rating": "4.6",
+    "advertiserId": "advertiser-aegis",
+    "tags": [
+      "gaming",
+      "laptop",
+      "performance",
+      "portable"
+    ]
+  },
+  {
+    "sku": "LAP-PERF-16-102",
+    "name": "Aegis ForgeBook 16 Pro Gaming Laptop",
+    "category": "electronics",
+    "brand": "Aegis",
+    "productPage": "https://store.example.com/products/lap-perf-16-102",
+    "image": "/assets/products/lap-game-16-002.svg",
+    "price": "1599.99",
+    "comparePrice": "1799.99",
+    "rating": "4.7",
+    "advertiserId": "advertiser-aegis",
+    "tags": [
+      "gaming",
+      "laptop",
+      "pro",
+      "high-refresh"
+    ]
+  },
+  {
+    "sku": "LAP-PERF-17-103",
+    "name": "Aegis ForgeBook 17 Max Gaming Laptop",
+    "category": "electronics",
+    "brand": "Aegis",
+    "productPage": "https://store.example.com/products/lap-perf-17-103",
+    "image": "/assets/products/lap-biz-14-003.svg",
+    "price": "1899.99",
+    "comparePrice": "2099.99",
+    "rating": "4.8",
+    "advertiserId": "advertiser-aegis",
+    "tags": [
+      "gaming",
+      "laptop",
+      "max",
+      "desktop-replacement"
+    ]
+  },
+  {
+    "sku": "LAP-CREATOR-15-104",
+    "name": "Aegis StudioCore 15 Performance Laptop",
+    "category": "electronics",
+    "brand": "Aegis",
+    "productPage": "https://store.example.com/products/lap-creator-15-104",
+    "image": "/assets/products/lap-student-15-004.svg",
+    "price": "1349.99",
+    "comparePrice": "1499.99",
+    "rating": "4.5",
+    "advertiserId": "advertiser-aegis",
+    "tags": [
+      "creator",
+      "laptop",
+      "performance",
+      "portable"
+    ]
+  },
+  {
+    "sku": "LAP-CREATOR-16-105",
+    "name": "Aegis StudioCore 16 Workstation Laptop",
+    "category": "electronics",
+    "brand": "Aegis",
+    "productPage": "https://store.example.com/products/lap-creator-16-105",
+    "image": "/assets/products/lap-creator-15-005.svg",
+    "price": "1749.99",
+    "comparePrice": "1999.99",
+    "rating": "4.7",
+    "advertiserId": "advertiser-aegis",
+    "tags": [
+      "creator",
+      "workstation",
+      "laptop",
+      "power"
+    ]
+  },
+  {
+    "sku": "LAP-ULTRA-14-106",
+    "name": "Aegis AeroThin 14 Ultralight Laptop",
+    "category": "electronics",
+    "brand": "Aegis",
+    "productPage": "https://store.example.com/products/lap-ultra-14-106",
+    "image": "/assets/products/lap-2in1-14-006.svg",
+    "price": "999.99",
+    "comparePrice": "1149.99",
+    "rating": "4.4",
+    "advertiserId": "advertiser-aegis",
+    "tags": [
+      "ultralight",
+      "laptop",
+      "thin",
+      "daily-use"
+    ]
+  },
+  {
+    "sku": "LAP-ULTRA-16-107",
+    "name": "Aegis AeroThin 16 Performance Laptop",
+    "category": "electronics",
+    "brand": "Aegis",
+    "productPage": "https://store.example.com/products/lap-ultra-16-107",
+    "image": "/assets/products/acc-mouse-001.svg",
+    "price": "1299.99",
+    "comparePrice": "1449.99",
+    "rating": "4.5",
+    "advertiserId": "advertiser-aegis",
+    "tags": [
+      "ultralight",
+      "laptop",
+      "performance",
+      "fast"
+    ]
+  },
+  {
+    "sku": "ACC-MOUSE-201",
+    "name": "Aegis ViperPro Wireless Gaming Mouse",
+    "category": "electronics",
+    "brand": "Aegis",
+    "productPage": "https://store.example.com/products/acc-mouse-201",
+    "image": "/assets/products/acc-backpack-002.svg",
+    "price": "89.99",
+    "comparePrice": "109.99",
+    "rating": "4.7",
+    "advertiserId": "advertiser-aegis",
+    "tags": [
+      "mouse",
+      "wireless",
+      "gaming",
+      "precision"
+    ]
+  },
+  {
+    "sku": "ACC-KEY-202",
+    "name": "Aegis TitanStrike Mechanical Gaming Keyboard",
+    "category": "electronics",
+    "brand": "Aegis",
+    "productPage": "https://store.example.com/products/acc-key-202",
+    "image": "/assets/products/acc-dock-003.svg",
+    "price": "129.99",
+    "comparePrice": "149.99",
+    "rating": "4.8",
+    "advertiserId": "advertiser-aegis",
+    "tags": [
+      "keyboard",
+      "mechanical",
+      "gaming",
+      "rgb"
+    ]
+  },
+  {
+    "sku": "ACC-HEAD-203",
+    "name": "Aegis PulseCore Wireless Gaming Headset",
+    "category": "electronics",
+    "brand": "Aegis",
+    "productPage": "https://store.example.com/products/acc-head-203",
+    "image": "/assets/products/lap-ultra-13-001.svg",
+    "price": "119.99",
+    "comparePrice": "139.99",
+    "rating": "4.6",
+    "advertiserId": "advertiser-aegis",
+    "tags": [
+      "headset",
+      "wireless",
+      "gaming",
+      "audio"
+    ]
+  },
+  {
+    "sku": "ACC-DOCK-204",
+    "name": "Aegis OmniLink USB-C Gaming Dock",
+    "category": "electronics",
+    "brand": "Aegis",
+    "productPage": "https://store.example.com/products/acc-dock-204",
+    "image": "/assets/products/lap-game-16-002.svg",
+    "price": "149.99",
+    "comparePrice": "179.99",
+    "rating": "4.5",
+    "advertiserId": "advertiser-aegis",
+    "tags": [
+      "dock",
+      "usb-c",
+      "gaming",
+      "hub"
+    ]
+  },
+  {
+    "sku": "ACC-STND-205",
+    "name": "Aegis ElevateMax Laptop Cooling Stand",
+    "category": "electronics",
+    "brand": "Aegis",
+    "productPage": "https://store.example.com/products/acc-stnd-205",
+    "image": "/assets/products/lap-biz-14-003.svg",
+    "price": "59.99",
+    "comparePrice": "79.99",
+    "rating": "4.4",
+    "advertiserId": "advertiser-aegis",
+    "tags": [
+      "stand",
+      "cooling",
+      "laptop",
+      "ergonomic"
+    ]
+  },
+  {
+    "sku": "ACC-CARD-206",
+    "name": "Aegis StreamLink Capture Card",
+    "category": "electronics",
+    "brand": "Aegis",
+    "productPage": "https://store.example.com/products/acc-card-206",
+    "image": "/assets/products/lap-student-15-004.svg",
+    "price": "179.99",
+    "comparePrice": "219.99",
+    "rating": "4.6",
+    "advertiserId": "advertiser-aegis",
+    "tags": [
+      "capture",
+      "streaming",
+      "gaming",
+      "hdmi"
+    ]
+  },
+  {
+    "sku": "ACC-CAM-207",
+    "name": "Aegis FocusCam 4K Streaming Camera",
+    "category": "electronics",
+    "brand": "Aegis",
+    "productPage": "https://store.example.com/products/acc-cam-207",
+    "image": "/assets/products/lap-creator-15-005.svg",
+    "price": "159.99",
+    "comparePrice": "189.99",
+    "rating": "4.5",
+    "advertiserId": "advertiser-aegis",
+    "tags": [
+      "camera",
+      "streaming",
+      "4k",
+      "usb"
+    ]
+  },
+  {
+    "sku": "ACC-MIC-208",
+    "name": "Aegis VoiceForge USB Gaming Microphone",
+    "category": "electronics",
+    "brand": "Aegis",
+    "productPage": "https://store.example.com/products/acc-mic-208",
+    "image": "/assets/products/lap-2in1-14-006.svg",
+    "price": "99.99",
+    "comparePrice": "124.99",
+    "rating": "4.6",
+    "advertiserId": "advertiser-aegis",
+    "tags": [
+      "microphone",
+      "usb",
+      "gaming",
+      "streaming"
+    ]
+  },
+  {
+    "sku": "MON-FAST-301",
+    "name": "Aegis ArcView 27 Fast IPS Monitor",
+    "category": "electronics",
+    "brand": "Aegis",
+    "productPage": "https://store.example.com/products/mon-fast-301",
+    "image": "/assets/products/acc-mouse-001.svg",
+    "price": "279.99",
+    "comparePrice": "329.99",
+    "rating": "4.7",
+    "advertiserId": "advertiser-aegis",
+    "tags": [
+      "monitor",
+      "ips",
+      "gaming",
+      "high-refresh"
+    ]
+  },
+  {
+    "sku": "MON-FAST-302",
+    "name": "Aegis ArcView 32 Fast IPS Monitor",
+    "category": "electronics",
+    "brand": "Aegis",
+    "productPage": "https://store.example.com/products/mon-fast-302",
+    "image": "/assets/products/acc-backpack-002.svg",
+    "price": "399.99",
+    "comparePrice": "459.99",
+    "rating": "4.8",
+    "advertiserId": "advertiser-aegis",
+    "tags": [
+      "monitor",
+      "ips",
+      "32-inch",
+      "gaming"
+    ]
+  },
+  {
+    "sku": "MON-UHD-303",
+    "name": "Aegis HaloView 34 Ultrawide Monitor",
+    "category": "electronics",
+    "brand": "Aegis",
+    "productPage": "https://store.example.com/products/mon-uhd-303",
+    "image": "/assets/products/acc-dock-003.svg",
+    "price": "449.99",
+    "comparePrice": "519.99",
+    "rating": "4.7",
+    "advertiserId": "advertiser-aegis",
+    "tags": [
+      "monitor",
+      "ultrawide",
+      "work",
+      "gaming"
+    ]
+  },
+  {
+    "sku": "MON-UHD-304",
+    "name": "Aegis HaloView 27 4K Monitor",
+    "category": "electronics",
+    "brand": "Aegis",
+    "productPage": "https://store.example.com/products/mon-uhd-304",
+    "image": "/assets/products/lap-ultra-13-001.svg",
+    "price": "349.99",
+    "comparePrice": "399.99",
+    "rating": "4.6",
+    "advertiserId": "advertiser-aegis",
+    "tags": [
+      "monitor",
+      "4k",
+      "display",
+      "creator"
+    ]
+  },
+  {
+    "sku": "MON-ESPORT-305",
+    "name": "Aegis RiftX 24 Esports Monitor",
+    "category": "electronics",
+    "brand": "Aegis",
+    "productPage": "https://store.example.com/products/mon-esport-305",
+    "image": "/assets/products/lap-game-16-002.svg",
+    "price": "229.99",
+    "comparePrice": "269.99",
+    "rating": "4.5",
+    "advertiserId": "advertiser-aegis",
+    "tags": [
+      "monitor",
+      "esports",
+      "gaming",
+      "fast"
+    ]
+  },
+  {
+    "sku": "AUD-HIFI-401",
+    "name": "Aegis SonicFlow Gaming Speakers",
+    "category": "electronics",
+    "brand": "Aegis",
+    "productPage": "https://store.example.com/products/aud-hifi-401",
+    "image": "/assets/products/lap-biz-14-003.svg",
+    "price": "89.99",
+    "comparePrice": "109.99",
+    "rating": "4.4",
+    "advertiserId": "advertiser-aegis",
+    "tags": [
+      "speakers",
+      "gaming",
+      "audio",
+      "desktop"
+    ]
+  },
+  {
+    "sku": "AUD-HIFI-402",
+    "name": "Aegis SonicFlow Pro Desktop Speakers",
+    "category": "electronics",
+    "brand": "Aegis",
+    "productPage": "https://store.example.com/products/aud-hifi-402",
+    "image": "/assets/products/lap-student-15-004.svg",
+    "price": "139.99",
+    "comparePrice": "169.99",
+    "rating": "4.6",
+    "advertiserId": "advertiser-aegis",
+    "tags": [
+      "speakers",
+      "pro",
+      "audio",
+      "desktop"
+    ]
+  },
+  {
+    "sku": "AUD-AMP-403",
+    "name": "Aegis PulseAmp USB DAC",
+    "category": "electronics",
+    "brand": "Aegis",
+    "productPage": "https://store.example.com/products/aud-amp-403",
+    "image": "/assets/products/lap-creator-15-005.svg",
+    "price": "129.99",
+    "comparePrice": "154.99",
+    "rating": "4.5",
+    "advertiserId": "advertiser-aegis",
+    "tags": [
+      "dac",
+      "usb",
+      "audio",
+      "headphones"
+    ]
+  },
+  {
+    "sku": "AUD-AMP-404",
+    "name": "Aegis PulseAmp Headphone Amplifier",
+    "category": "electronics",
+    "brand": "Aegis",
+    "productPage": "https://store.example.com/products/aud-amp-404",
+    "image": "/assets/products/lap-2in1-14-006.svg",
+    "price": "149.99",
+    "comparePrice": "179.99",
+    "rating": "4.6",
+    "advertiserId": "advertiser-aegis",
+    "tags": [
+      "amplifier",
+      "audio",
+      "headphones",
+      "hi-fi"
+    ]
+  },
+  {
+    "sku": "AUD-MIX-405",
+    "name": "Aegis StreamMix Audio Interface",
+    "category": "electronics",
+    "brand": "Aegis",
+    "productPage": "https://store.example.com/products/aud-mix-405",
+    "image": "/assets/products/acc-mouse-001.svg",
+    "price": "199.99",
+    "comparePrice": "239.99",
+    "rating": "4.7",
+    "advertiserId": "advertiser-aegis",
+    "tags": [
+      "audio",
+      "interface",
+      "streaming",
+      "recording"
+    ]
+  },
+  {
+    "sku": "LAP-AURORA-01-001",
+    "name": "Aurora CreatorBook 14",
+    "category": "electronics",
+    "brand": "Aurora",
+    "productPage": "https://store.example.com/products/lap-aurora-01-001",
+    "image": "/assets/products/acc-backpack-002.svg",
+    "price": "1299.00",
+    "comparePrice": "1499.00",
+    "rating": "4.6",
+    "advertiserId": "advertiser-aurora",
+    "tags": [
+      "creator",
+      "laptop",
+      "portable",
+      "premium"
+    ]
+  },
+  {
+    "sku": "LAP-AURORA-01-002",
+    "name": "Aurora CreatorBook 16 Pro",
+    "category": "electronics",
+    "brand": "Aurora",
+    "productPage": "https://store.example.com/products/lap-aurora-01-002",
+    "image": "/assets/products/acc-dock-003.svg",
+    "price": "1899.00",
+    "comparePrice": "2199.00",
+    "rating": "4.8",
+    "advertiserId": "advertiser-aurora",
+    "tags": [
+      "creator",
+      "laptop",
+      "performance",
+      "premium"
+    ]
+  },
+  {
+    "sku": "LAP-AURORA-01-003",
+    "name": "Aurora StudioBook 15 OLED",
+    "category": "electronics",
+    "brand": "Aurora",
+    "productPage": "https://store.example.com/products/lap-aurora-01-003",
+    "image": "/assets/products/lap-ultra-13-001.svg",
+    "price": "1599.00",
+    "comparePrice": "1799.00",
+    "rating": "4.7",
+    "advertiserId": "advertiser-aurora",
+    "tags": [
+      "studio",
+      "oled",
+      "laptop",
+      "color"
+    ]
+  },
+  {
+    "sku": "LAP-AURORA-01-004",
+    "name": "Aurora StudioBook 17 Workstation",
+    "category": "electronics",
+    "brand": "Aurora",
+    "productPage": "https://store.example.com/products/lap-aurora-01-004",
+    "image": "/assets/products/lap-game-16-002.svg",
+    "price": "2499.00",
+    "comparePrice": "2799.00",
+    "rating": "4.9",
+    "advertiserId": "advertiser-aurora",
+    "tags": [
+      "workstation",
+      "laptop",
+      "power",
+      "creative"
+    ]
+  },
+  {
+    "sku": "LAP-AURORA-01-005",
+    "name": "Aurora PixelNote 13",
+    "category": "electronics",
+    "brand": "Aurora",
+    "productPage": "https://store.example.com/products/lap-aurora-01-005",
+    "image": "/assets/products/lap-biz-14-003.svg",
+    "price": "999.00",
+    "comparePrice": "1199.00",
+    "rating": "4.4",
+    "advertiserId": "advertiser-aurora",
+    "tags": [
+      "ultraportable",
+      "laptop",
+      "thin",
+      "mobile"
+    ]
+  },
+  {
+    "sku": "LAP-AURORA-01-006",
+    "name": "Aurora PixelNote 15 Max",
+    "category": "electronics",
+    "brand": "Aurora",
+    "productPage": "https://store.example.com/products/lap-aurora-01-006",
+    "image": "/assets/products/lap-student-15-004.svg",
+    "price": "1399.00",
+    "comparePrice": "1599.00",
+    "rating": "4.5",
+    "advertiserId": "advertiser-aurora",
+    "tags": [
+      "ultraportable",
+      "laptop",
+      "display",
+      "mobile"
+    ]
+  },
+  {
+    "sku": "LAP-AURORA-01-007",
+    "name": "Aurora FrameBook 14 Plus",
+    "category": "electronics",
+    "brand": "Aurora",
+    "productPage": "https://store.example.com/products/lap-aurora-01-007",
+    "image": "/assets/products/lap-creator-15-005.svg",
+    "price": "1149.00",
+    "comparePrice": "1299.00",
+    "rating": "4.3",
+    "advertiserId": "advertiser-aurora",
+    "tags": [
+      "laptop",
+      "student",
+      "portable",
+      "value"
+    ]
+  },
+  {
+    "sku": "LAP-AURORA-01-008",
+    "name": "Aurora FrameBook 16 Creator Edition",
+    "category": "electronics",
+    "brand": "Aurora",
+    "productPage": "https://store.example.com/products/lap-aurora-01-008",
+    "image": "/assets/products/lap-2in1-14-006.svg",
+    "price": "1749.00",
+    "comparePrice": "1999.00",
+    "rating": "4.7",
+    "advertiserId": "advertiser-aurora",
+    "tags": [
+      "creator",
+      "laptop",
+      "editing",
+      "premium"
+    ]
+  },
+  {
+    "sku": "MON-AURORA-02-001",
+    "name": "Aurora VisionPro 27 4K",
+    "category": "electronics",
+    "brand": "Aurora",
+    "productPage": "https://store.example.com/products/mon-aurora-02-001",
+    "image": "/assets/products/acc-mouse-001.svg",
+    "price": "499.00",
+    "comparePrice": "599.00",
+    "rating": "4.6",
+    "advertiserId": "advertiser-aurora",
+    "tags": [
+      "monitor",
+      "4k",
+      "display",
+      "creator"
+    ]
+  },
+  {
+    "sku": "MON-AURORA-02-002",
+    "name": "Aurora VisionPro 32 5K",
+    "category": "electronics",
+    "brand": "Aurora",
+    "productPage": "https://store.example.com/products/mon-aurora-02-002",
+    "image": "/assets/products/acc-backpack-002.svg",
+    "price": "899.00",
+    "comparePrice": "1099.00",
+    "rating": "4.8",
+    "advertiserId": "advertiser-aurora",
+    "tags": [
+      "monitor",
+      "5k",
+      "color",
+      "premium"
+    ]
+  },
+  {
+    "sku": "MON-AURORA-02-003",
+    "name": "Aurora StudioView 34 Ultrawide",
+    "category": "electronics",
+    "brand": "Aurora",
+    "productPage": "https://store.example.com/products/mon-aurora-02-003",
+    "image": "/assets/products/acc-dock-003.svg",
+    "price": "749.00",
+    "comparePrice": "899.00",
+    "rating": "4.7",
+    "advertiserId": "advertiser-aurora",
+    "tags": [
+      "monitor",
+      "ultrawide",
+      "studio",
+      "wide"
+    ]
+  },
+  {
+    "sku": "MON-AURORA-02-004",
+    "name": "Aurora StudioView 27 Color Accurate",
+    "category": "electronics",
+    "brand": "Aurora",
+    "productPage": "https://store.example.com/products/mon-aurora-02-004",
+    "image": "/assets/products/lap-ultra-13-001.svg",
+    "price": "649.00",
+    "comparePrice": "799.00",
+    "rating": "4.6",
+    "advertiserId": "advertiser-aurora",
+    "tags": [
+      "monitor",
+      "color",
+      "calibrated",
+      "creator"
+    ]
+  },
+  {
+    "sku": "MON-AURORA-02-005",
+    "name": "Aurora EdgePanel 24 Pro",
+    "category": "electronics",
+    "brand": "Aurora",
+    "productPage": "https://store.example.com/products/mon-aurora-02-005",
+    "image": "/assets/products/lap-game-16-002.svg",
+    "price": "279.00",
+    "comparePrice": "329.00",
+    "rating": "4.4",
+    "advertiserId": "advertiser-aurora",
+    "tags": [
+      "monitor",
+      "compact",
+      "office",
+      "sharp"
+    ]
+  },
+  {
+    "sku": "MON-AURORA-02-006",
+    "name": "Aurora EdgePanel 32 HDR",
+    "category": "electronics",
+    "brand": "Aurora",
+    "productPage": "https://store.example.com/products/mon-aurora-02-006",
+    "image": "/assets/products/lap-biz-14-003.svg",
+    "price": "599.00",
+    "comparePrice": "699.00",
+    "rating": "4.5",
+    "advertiserId": "advertiser-aurora",
+    "tags": [
+      "monitor",
+      "hdr",
+      "display",
+      "vivid"
+    ]
+  },
+  {
+    "sku": "AUD-AURORA-03-001",
+    "name": "Aurora SoundWave Studio Headphones",
+    "category": "electronics",
+    "brand": "Aurora",
+    "productPage": "https://store.example.com/products/aud-aurora-03-001",
+    "image": "/assets/products/lap-student-15-004.svg",
+    "price": "249.00",
+    "comparePrice": "299.00",
+    "rating": "4.7",
+    "advertiserId": "advertiser-aurora",
+    "tags": [
+      "audio",
+      "headphones",
+      "studio",
+      "detailed"
+    ]
+  },
+  {
+    "sku": "AUD-AURORA-03-002",
+    "name": "Aurora SoundWave Wireless Earbuds",
+    "category": "electronics",
+    "brand": "Aurora",
+    "productPage": "https://store.example.com/products/aud-aurora-03-002",
+    "image": "/assets/products/lap-creator-15-005.svg",
+    "price": "179.00",
+    "comparePrice": "219.00",
+    "rating": "4.5",
+    "advertiserId": "advertiser-aurora",
+    "tags": [
+      "audio",
+      "earbuds",
+      "wireless",
+      "portable"
+    ]
+  },
+  {
+    "sku": "AUD-AURORA-03-003",
+    "name": "Aurora MixerDock USB Interface",
+    "category": "electronics",
+    "brand": "Aurora",
+    "productPage": "https://store.example.com/products/aud-aurora-03-003",
+    "image": "/assets/products/lap-2in1-14-006.svg",
+    "price": "199.00",
+    "comparePrice": "249.00",
+    "rating": "4.6",
+    "advertiserId": "advertiser-aurora",
+    "tags": [
+      "audio",
+      "interface",
+      "usb",
+      "recording"
+    ]
+  },
+  {
+    "sku": "AUD-AURORA-03-004",
+    "name": "Aurora BoomBar Desktop Speaker",
+    "category": "electronics",
+    "brand": "Aurora",
+    "productPage": "https://store.example.com/products/aud-aurora-03-004",
+    "image": "/assets/products/acc-mouse-001.svg",
+    "price": "129.00",
+    "comparePrice": "159.00",
+    "rating": "4.3",
+    "advertiserId": "advertiser-aurora",
+    "tags": [
+      "audio",
+      "speaker",
+      "desktop",
+      "clear"
+    ]
+  },
+  {
+    "sku": "AUD-AURORA-03-005",
+    "name": "Aurora StageCore Monitor Speakers",
+    "category": "electronics",
+    "brand": "Aurora",
+    "productPage": "https://store.example.com/products/aud-aurora-03-005",
+    "image": "/assets/products/acc-backpack-002.svg",
+    "price": "349.00",
+    "comparePrice": "399.00",
+    "rating": "4.7",
+    "advertiserId": "advertiser-aurora",
+    "tags": [
+      "audio",
+      "monitors",
+      "studio",
+      "balanced"
+    ]
+  },
+  {
+    "sku": "AUD-AURORA-03-006",
+    "name": "Aurora ClearVoice Podcast Mic",
+    "category": "electronics",
+    "brand": "Aurora",
+    "productPage": "https://store.example.com/products/aud-aurora-03-006",
+    "image": "/assets/products/acc-dock-003.svg",
+    "price": "149.00",
+    "comparePrice": "179.00",
+    "rating": "4.6",
+    "advertiserId": "advertiser-aurora",
+    "tags": [
+      "audio",
+      "microphone",
+      "podcast",
+      "voice"
+    ]
+  },
+  {
+    "sku": "CAM-AURORA-04-001",
+    "name": "Aurora FrameCast 4K Capture Card",
+    "category": "electronics",
+    "brand": "Aurora",
+    "productPage": "https://store.example.com/products/cam-aurora-04-001",
+    "image": "/assets/products/lap-ultra-13-001.svg",
+    "price": "179.00",
+    "comparePrice": "219.00",
+    "rating": "4.5",
+    "advertiserId": "advertiser-aurora",
+    "tags": [
+      "capture",
+      "4k",
+      "streaming",
+      "usb"
+    ]
+  },
+  {
+    "sku": "CAM-AURORA-04-002",
+    "name": "Aurora FrameCast Pro HDMI Recorder",
+    "category": "electronics",
+    "brand": "Aurora",
+    "productPage": "https://store.example.com/products/cam-aurora-04-002",
+    "image": "/assets/products/lap-game-16-002.svg",
+    "price": "299.00",
+    "comparePrice": "349.00",
+    "rating": "4.7",
+    "advertiserId": "advertiser-aurora",
+    "tags": [
+      "capture",
+      "hdmi",
+      "recorder",
+      "pro"
+    ]
+  },
+  {
+    "sku": "CAM-AURORA-04-003",
+    "name": "Aurora StudioCam 4K Webcam",
+    "category": "electronics",
+    "brand": "Aurora",
+    "productPage": "https://store.example.com/products/cam-aurora-04-003",
+    "image": "/assets/products/lap-biz-14-003.svg",
+    "price": "159.00",
+    "comparePrice": "199.00",
+    "rating": "4.4",
+    "advertiserId": "advertiser-aurora",
+    "tags": [
+      "camera",
+      "webcam",
+      "4k",
+      "video"
+    ]
+  },
+  {
+    "sku": "CAM-AURORA-04-004",
+    "name": "Aurora StudioCam PTZ",
+    "category": "electronics",
+    "brand": "Aurora",
+    "productPage": "https://store.example.com/products/cam-aurora-04-004",
+    "image": "/assets/products/lap-student-15-004.svg",
+    "price": "449.00",
+    "comparePrice": "529.00",
+    "rating": "4.6",
+    "advertiserId": "advertiser-aurora",
+    "tags": [
+      "camera",
+      "ptz",
+      "streaming",
+      "studio"
+    ]
+  },
+  {
+    "sku": "CAM-AURORA-04-005",
+    "name": "Aurora LensLink Pro Capture Kit",
+    "category": "electronics",
+    "brand": "Aurora",
+    "productPage": "https://store.example.com/products/cam-aurora-04-005",
+    "image": "/assets/products/lap-creator-15-005.svg",
+    "price": "379.00",
+    "comparePrice": "449.00",
+    "rating": "4.8",
+    "advertiserId": "advertiser-aurora",
+    "tags": [
+      "capture",
+      "camera",
+      "creator",
+      "kit"
+    ]
+  },
+  {
+    "sku": "GR-BEAN-101",
+    "name": "BeanCraft Morning Rise Whole Bean Coffee",
+    "category": "aisle",
+    "brand": "BeanCraft",
+    "productPage": "https://store.example.com/products/gr-bean-101",
+    "image": "/assets/products/gr-protein-001.svg",
+    "price": "14.99",
+    "comparePrice": "17.99",
+    "rating": "4.6",
+    "advertiserId": "advertiser-beancraft",
+    "tags": [
+      "whole-bean",
+      "morning",
+      "medium-roast",
+      "daily"
+    ]
+  },
+  {
+    "sku": "GR-BEAN-102",
+    "name": "BeanCraft Deep Roast Espresso Beans",
+    "category": "aisle",
+    "brand": "BeanCraft",
+    "productPage": "https://store.example.com/products/gr-bean-102",
+    "image": "/assets/products/gr-coffee-002.svg",
+    "price": "16.99",
+    "comparePrice": "19.99",
+    "rating": "4.8",
+    "advertiserId": "advertiser-beancraft",
+    "tags": [
+      "espresso",
+      "whole-bean",
+      "dark-roast",
+      "bold"
+    ]
+  },
+  {
+    "sku": "GR-BEAN-103",
+    "name": "BeanCraft Highland Single Origin Beans",
+    "category": "aisle",
+    "brand": "BeanCraft",
+    "productPage": "https://store.example.com/products/gr-bean-103",
+    "image": "/assets/products/gr-protein-001.svg",
+    "price": "18.49",
+    "comparePrice": "21.49",
+    "rating": "4.7",
+    "advertiserId": "advertiser-beancraft",
+    "tags": [
+      "single-origin",
+      "whole-bean",
+      "fruity",
+      "specialty"
+    ]
+  },
+  {
+    "sku": "GR-BEAN-104",
+    "name": "BeanCraft Velvet House Blend Ground Coffee",
+    "category": "aisle",
+    "brand": "BeanCraft",
+    "productPage": "https://store.example.com/products/gr-bean-104",
+    "image": "/assets/products/gr-coffee-002.svg",
+    "price": "13.99",
+    "comparePrice": "16.49",
+    "rating": "4.5",
+    "advertiserId": "advertiser-beancraft",
+    "tags": [
+      "ground",
+      "house-blend",
+      "smooth",
+      "medium-roast"
+    ]
+  },
+  {
+    "sku": "GR-BEAN-105",
+    "name": "BeanCraft French Roast Ground Coffee",
+    "category": "aisle",
+    "brand": "BeanCraft",
+    "productPage": "https://store.example.com/products/gr-bean-105",
+    "image": "/assets/products/gr-protein-001.svg",
+    "price": "12.99",
+    "comparePrice": "15.49",
+    "rating": "4.4",
+    "advertiserId": "advertiser-beancraft",
+    "tags": [
+      "ground",
+      "french-roast",
+      "dark-roast",
+      "rich"
+    ]
+  },
+  {
+    "sku": "GR-BEAN-106",
+    "name": "BeanCraft Cocoa Drift Mocha Blend",
+    "category": "aisle",
+    "brand": "BeanCraft",
+    "productPage": "https://store.example.com/products/gr-bean-106",
+    "image": "/assets/products/gr-coffee-002.svg",
+    "price": "15.49",
+    "comparePrice": "18.49",
+    "rating": "4.6",
+    "advertiserId": "advertiser-beancraft",
+    "tags": [
+      "blend",
+      "mocha",
+      "ground",
+      "sweet"
+    ]
+  },
+  {
+    "sku": "GR-BEAN-107",
+    "name": "BeanCraft Breakfast Reserve Coffee Pods",
+    "category": "aisle",
+    "brand": "BeanCraft",
+    "productPage": "https://store.example.com/products/gr-bean-107",
+    "image": "/assets/products/gr-protein-001.svg",
+    "price": "11.99",
+    "comparePrice": "14.49",
+    "rating": "4.5",
+    "advertiserId": "advertiser-beancraft",
+    "tags": [
+      "pods",
+      "breakfast",
+      "compatible",
+      "medium-roast"
+    ]
+  },
+  {
+    "sku": "GR-BEAN-108",
+    "name": "BeanCraft Caramel Grove Coffee Pods",
+    "category": "aisle",
+    "brand": "BeanCraft",
+    "productPage": "https://store.example.com/products/gr-bean-108",
+    "image": "/assets/products/gr-coffee-002.svg",
+    "price": "12.49",
+    "comparePrice": "14.99",
+    "rating": "4.3",
+    "advertiserId": "advertiser-beancraft",
+    "tags": [
+      "pods",
+      "caramel",
+      "flavored",
+      "smooth"
+    ]
+  },
+  {
+    "sku": "GR-BEAN-109",
+    "name": "BeanCraft Dark Current Espresso Pods",
+    "category": "aisle",
+    "brand": "BeanCraft",
+    "productPage": "https://store.example.com/products/gr-bean-109",
+    "image": "/assets/products/gr-protein-001.svg",
+    "price": "13.49",
+    "comparePrice": "15.99",
+    "rating": "4.7",
+    "advertiserId": "advertiser-beancraft",
+    "tags": [
+      "pods",
+      "espresso",
+      "dark-roast",
+      "intense"
+    ]
+  },
+  {
+    "sku": "GR-BEAN-110",
+    "name": "BeanCraft Cold Brew Concentrate Starter",
+    "category": "aisle",
+    "brand": "BeanCraft",
+    "productPage": "https://store.example.com/products/gr-bean-110",
+    "image": "/assets/products/gr-coffee-002.svg",
+    "price": "10.99",
+    "comparePrice": "12.99",
+    "rating": "4.4",
+    "advertiserId": "advertiser-beancraft",
+    "tags": [
+      "cold-brew",
+      "starter",
+      "brew",
+      "smooth"
+    ]
+  },
+  {
+    "sku": "GR-BEAN-111",
+    "name": "BeanCraft Nitro Ready Cold Brew Beans",
+    "category": "aisle",
+    "brand": "BeanCraft",
+    "productPage": "https://store.example.com/products/gr-bean-111",
+    "image": "/assets/products/gr-protein-001.svg",
+    "price": "17.99",
+    "comparePrice": "20.99",
+    "rating": "4.6",
+    "advertiserId": "advertiser-beancraft",
+    "tags": [
+      "cold-brew",
+      "whole-bean",
+      "nitro",
+      "bold"
+    ]
+  },
+  {
+    "sku": "GR-BEAN-112",
+    "name": "BeanCraft Pour Over Select Beans",
+    "category": "aisle",
+    "brand": "BeanCraft",
+    "productPage": "https://store.example.com/products/gr-bean-112",
+    "image": "/assets/products/gr-coffee-002.svg",
+    "price": "15.99",
+    "comparePrice": "18.99",
+    "rating": "4.7",
+    "advertiserId": "advertiser-beancraft",
+    "tags": [
+      "pour-over",
+      "whole-bean",
+      "clean",
+      "bright"
+    ]
+  },
+  {
+    "sku": "GR-BEAN-113",
+    "name": "BeanCraft Drip Classic Ground Coffee",
+    "category": "aisle",
+    "brand": "BeanCraft",
+    "productPage": "https://store.example.com/products/gr-bean-113",
+    "image": "/assets/products/gr-protein-001.svg",
+    "price": "11.49",
+    "comparePrice": "13.99",
+    "rating": "4.4",
+    "advertiserId": "advertiser-beancraft",
+    "tags": [
+      "drip",
+      "ground",
+      "classic",
+      "balanced"
+    ]
+  },
+  {
+    "sku": "GR-BEAN-114",
+    "name": "BeanCraft Hazelnut Morning Ground Blend",
+    "category": "aisle",
+    "brand": "BeanCraft",
+    "productPage": "https://store.example.com/products/gr-bean-114",
+    "image": "/assets/products/gr-coffee-002.svg",
+    "price": "12.49",
+    "comparePrice": "14.99",
+    "rating": "4.5",
+    "advertiserId": "advertiser-beancraft",
+    "tags": [
+      "ground",
+      "hazelnut",
+      "flavored",
+      "aromatic"
+    ]
+  },
+  {
+    "sku": "GR-BEAN-115",
+    "name": "BeanCraft Decaf Nightcap Whole Beans",
+    "category": "aisle",
+    "brand": "BeanCraft",
+    "productPage": "https://store.example.com/products/gr-bean-115",
+    "image": "/assets/products/gr-protein-001.svg",
+    "price": "13.99",
+    "comparePrice": "16.49",
+    "rating": "4.3",
+    "advertiserId": "advertiser-beancraft",
+    "tags": [
+      "decaf",
+      "whole-bean",
+      "night",
+      "mild"
+    ]
+  },
+  {
+    "sku": "GR-BEAN-116",
+    "name": "BeanCraft Italian Roast Espresso Blend",
+    "category": "aisle",
+    "brand": "BeanCraft",
+    "productPage": "https://store.example.com/products/gr-bean-116",
+    "image": "/assets/products/gr-coffee-002.svg",
+    "price": "16.49",
+    "comparePrice": "19.49",
+    "rating": "4.8",
+    "advertiserId": "advertiser-beancraft",
+    "tags": [
+      "espresso",
+      "italian-roast",
+      "dark-roast",
+      "crema"
+    ]
+  },
+  {
+    "sku": "GR-BEAN-117",
+    "name": "BeanCraft Compostable Pod Variety Pack",
+    "category": "aisle",
+    "brand": "BeanCraft",
+    "productPage": "https://store.example.com/products/gr-bean-117",
+    "image": "/assets/products/gr-protein-001.svg",
+    "price": "14.99",
+    "comparePrice": "17.49",
+    "rating": "4.6",
+    "advertiserId": "advertiser-beancraft",
+    "tags": [
+      "pods",
+      "variety",
+      "compostable",
+      "assorted"
+    ]
+  },
+  {
+    "sku": "GR-BEAN-118",
+    "name": "BeanCraft Sumatra Dark Whole Bean Coffee",
+    "category": "aisle",
+    "brand": "BeanCraft",
+    "productPage": "https://store.example.com/products/gr-bean-118",
+    "image": "/assets/products/gr-coffee-002.svg",
+    "price": "17.49",
+    "comparePrice": "20.49",
+    "rating": "4.7",
+    "advertiserId": "advertiser-beancraft",
+    "tags": [
+      "whole-bean",
+      "sumatra",
+      "dark-roast",
+      "earthy"
+    ]
+  },
+  {
+    "sku": "GR-BEAN-119",
+    "name": "BeanCraft Cafe Blend Ground Coffee",
+    "category": "aisle",
+    "brand": "BeanCraft",
+    "productPage": "https://store.example.com/products/gr-bean-119",
+    "image": "/assets/products/gr-protein-001.svg",
+    "price": "10.99",
+    "comparePrice": "12.49",
+    "rating": "4.2",
+    "advertiserId": "advertiser-beancraft",
+    "tags": [
+      "ground",
+      "cafe",
+      "blend",
+      "everyday"
+    ]
+  },
+  {
+    "sku": "GR-BEAN-120",
+    "name": "BeanCraft Aeropress Brew Pack",
+    "category": "aisle",
+    "brand": "BeanCraft",
+    "productPage": "https://store.example.com/products/gr-bean-120",
+    "image": "/assets/products/gr-coffee-002.svg",
+    "price": "19.99",
+    "comparePrice": "24.99",
+    "rating": "4.5",
+    "advertiserId": "advertiser-beancraft",
+    "tags": [
+      "aeropress",
+      "brew",
+      "portable",
+      "coffee"
+    ]
+  },
+  {
+    "sku": "GR-BEAN-121",
+    "name": "BeanCraft French Press Fine Ground Coffee",
+    "category": "aisle",
+    "brand": "BeanCraft",
+    "productPage": "https://store.example.com/products/gr-bean-121",
+    "image": "/assets/products/gr-protein-001.svg",
+    "price": "13.49",
+    "comparePrice": "15.99",
+    "rating": "4.6",
+    "advertiserId": "advertiser-beancraft",
+    "tags": [
+      "french-press",
+      "ground",
+      "bold",
+      "brew"
+    ]
+  },
+  {
+    "sku": "GR-BEAN-122",
+    "name": "BeanCraft Home Roaster Sample Kit",
+    "category": "aisle",
+    "brand": "BeanCraft",
+    "productPage": "https://store.example.com/products/gr-bean-122",
+    "image": "/assets/products/gr-coffee-002.svg",
+    "price": "24.99",
+    "comparePrice": "29.99",
+    "rating": "4.4",
+    "advertiserId": "advertiser-beancraft",
+    "tags": [
+      "roaster",
+      "sample",
+      "home-brew",
+      "beans"
+    ]
+  },
+  {
+    "sku": "GR-BEAN-123",
+    "name": "BeanCraft Espresso Grind Precision Blend",
+    "category": "aisle",
+    "brand": "BeanCraft",
+    "productPage": "https://store.example.com/products/gr-bean-123",
+    "image": "/assets/products/gr-protein-001.svg",
+    "price": "14.49",
+    "comparePrice": "16.99",
+    "rating": "4.7",
+    "advertiserId": "advertiser-beancraft",
+    "tags": [
+      "ground",
+      "espresso",
+      "precision",
+      "fine"
+    ]
+  },
+  {
+    "sku": "GR-BEAN-124",
+    "name": "BeanCraft Vanilla Cream Coffee Pods",
+    "category": "aisle",
+    "brand": "BeanCraft",
+    "productPage": "https://store.example.com/products/gr-bean-124",
+    "image": "/assets/products/gr-coffee-002.svg",
+    "price": "12.99",
+    "comparePrice": "15.49",
+    "rating": "4.4",
+    "advertiserId": "advertiser-beancraft",
+    "tags": [
+      "pods",
+      "vanilla",
+      "flavored",
+      "cream"
+    ]
+  },
+  {
+    "sku": "GR-BEAN-125",
+    "name": "BeanCraft Sunrise Blend Whole Beans",
+    "category": "aisle",
+    "brand": "BeanCraft",
+    "productPage": "https://store.example.com/products/gr-bean-125",
+    "image": "/assets/products/gr-protein-001.svg",
+    "price": "15.49",
+    "comparePrice": "18.49",
+    "rating": "4.5",
+    "advertiserId": "advertiser-beancraft",
+    "tags": [
+      "whole-bean",
+      "blend",
+      "sunrise",
+      "bright"
+    ]
+  },
+  {
+    "sku": "WG-OVEN-101",
+    "name": "ChefLine PureHeat 60cm Built-In Oven",
+    "category": "whitegoods",
+    "brand": "ChefLine",
+    "productPage": "https://store.example.com/products/wg-oven-101",
+    "image": "/assets/products/wg-fridge-001.svg",
+    "price": "899.99",
+    "comparePrice": "1049.99",
+    "rating": "4.6",
+    "advertiserId": "advertiser-chefline",
+    "tags": [
+      "oven",
+      "builtin",
+      "electric",
+      "family"
+    ]
+  },
+  {
+    "sku": "WG-OVEN-102",
+    "name": "ChefLine PureHeat 90cm Double Oven",
+    "category": "whitegoods",
+    "brand": "ChefLine",
+    "productPage": "https://store.example.com/products/wg-oven-102",
+    "image": "/assets/products/wg-washer-002.svg",
+    "price": "1499.99",
+    "comparePrice": "1699.99",
+    "rating": "4.7",
+    "advertiserId": "advertiser-chefline",
+    "tags": [
+      "oven",
+      "double",
+      "spacious",
+      "electric",
+      "premium"
+    ]
+  },
+  {
+    "sku": "WG-OVEN-103",
+    "name": "ChefLine AirBake 60cm Fan-Forced Oven",
+    "category": "whitegoods",
+    "brand": "ChefLine",
+    "productPage": "https://store.example.com/products/wg-oven-103",
+    "image": "/assets/products/wg-oven-003.svg",
+    "price": "999.99",
+    "comparePrice": "1149.99",
+    "rating": "4.5",
+    "advertiserId": "advertiser-chefline",
+    "tags": [
+      "oven",
+      "fan-forced",
+      "bake",
+      "even",
+      "kitchen"
+    ]
+  },
+  {
+    "sku": "WG-OVEN-104",
+    "name": "ChefLine AirBake 90cm Multi-Function Oven",
+    "category": "whitegoods",
+    "brand": "ChefLine",
+    "productPage": "https://store.example.com/products/wg-oven-104",
+    "image": "/assets/products/wg-fridge-001.svg",
+    "price": "1699.99",
+    "comparePrice": "1899.99",
+    "rating": "4.8",
+    "advertiserId": "advertiser-chefline",
+    "tags": [
+      "oven",
+      "multi-function",
+      "large",
+      "modern",
+      "bake"
+    ]
+  },
+  {
+    "sku": "WG-OVEN-105",
+    "name": "ChefLine QuickRoast 60cm Compact Oven",
+    "category": "whitegoods",
+    "brand": "ChefLine",
+    "productPage": "https://store.example.com/products/wg-oven-105",
+    "image": "/assets/products/wg-washer-002.svg",
+    "price": "749.99",
+    "comparePrice": "849.99",
+    "rating": "4.3",
+    "advertiserId": "advertiser-chefline",
+    "tags": [
+      "oven",
+      "compact",
+      "quick",
+      "roast",
+      "apartment"
+    ]
+  },
+  {
+    "sku": "WG-COOK-201",
+    "name": "ChefLine FlameForge 4-Burner Gas Cooktop",
+    "category": "whitegoods",
+    "brand": "ChefLine",
+    "productPage": "https://store.example.com/products/wg-cook-201",
+    "image": "/assets/products/wg-oven-003.svg",
+    "price": "699.99",
+    "comparePrice": "799.99",
+    "rating": "4.5",
+    "advertiserId": "advertiser-chefline",
+    "tags": [
+      "cooktop",
+      "gas",
+      "burner",
+      "stainless",
+      "control"
+    ]
+  },
+  {
+    "sku": "WG-COOK-202",
+    "name": "ChefLine FlameForge 5-Burner Gas Cooktop",
+    "category": "whitegoods",
+    "brand": "ChefLine",
+    "productPage": "https://store.example.com/products/wg-cook-202",
+    "image": "/assets/products/wg-fridge-001.svg",
+    "price": "899.99",
+    "comparePrice": "999.99",
+    "rating": "4.6",
+    "advertiserId": "advertiser-chefline",
+    "tags": [
+      "cooktop",
+      "gas",
+      "five-burner",
+      "chef",
+      "power"
+    ]
+  },
+  {
+    "sku": "WG-COOK-203",
+    "name": "ChefLine InductPro 60cm Induction Cooktop",
+    "category": "whitegoods",
+    "brand": "ChefLine",
+    "productPage": "https://store.example.com/products/wg-cook-203",
+    "image": "/assets/products/wg-washer-002.svg",
+    "price": "799.99",
+    "comparePrice": "929.99",
+    "rating": "4.7",
+    "advertiserId": "advertiser-chefline",
+    "tags": [
+      "cooktop",
+      "induction",
+      "fast",
+      "efficient",
+      "sleek"
+    ]
+  },
+  {
+    "sku": "WG-COOK-204",
+    "name": "ChefLine InductPro 90cm Induction Cooktop",
+    "category": "whitegoods",
+    "brand": "ChefLine",
+    "productPage": "https://store.example.com/products/wg-cook-204",
+    "image": "/assets/products/wg-oven-003.svg",
+    "price": "1299.99",
+    "comparePrice": "1499.99",
+    "rating": "4.8",
+    "advertiserId": "advertiser-chefline",
+    "tags": [
+      "cooktop",
+      "induction",
+      "wide",
+      "premium",
+      "power"
+    ]
+  },
+  {
+    "sku": "WG-COOK-205",
+    "name": "ChefLine SimmerStone 4-Zone Ceramic Cooktop",
+    "category": "whitegoods",
+    "brand": "ChefLine",
+    "productPage": "https://store.example.com/products/wg-cook-205",
+    "image": "/assets/products/wg-fridge-001.svg",
+    "price": "599.99",
+    "comparePrice": "699.99",
+    "rating": "4.2",
+    "advertiserId": "advertiser-chefline",
+    "tags": [
+      "cooktop",
+      "ceramic",
+      "zones",
+      "smooth",
+      "budget"
+    ]
+  },
+  {
+    "sku": "WG-APPL-301",
+    "name": "ChefLine ChillMate 420L Fridge",
+    "category": "whitegoods",
+    "brand": "ChefLine",
+    "productPage": "https://store.example.com/products/wg-appl-301",
+    "image": "/assets/products/wg-washer-002.svg",
+    "price": "1199.99",
+    "comparePrice": "1349.99",
+    "rating": "4.4",
+    "advertiserId": "advertiser-chefline",
+    "tags": [
+      "fridge",
+      "storage",
+      "fresh",
+      "kitchen",
+      "family"
+    ]
+  },
+  {
+    "sku": "WG-APPL-302",
+    "name": "ChefLine ChillMate 510L French Door Fridge",
+    "category": "whitegoods",
+    "brand": "ChefLine",
+    "productPage": "https://store.example.com/products/wg-appl-302",
+    "image": "/assets/products/wg-oven-003.svg",
+    "price": "1999.99",
+    "comparePrice": "2299.99",
+    "rating": "4.7",
+    "advertiserId": "advertiser-chefline",
+    "tags": [
+      "fridge",
+      "french-door",
+      "large",
+      "modern",
+      "fresh"
+    ]
+  },
+  {
+    "sku": "WG-APPL-303",
+    "name": "ChefLine FrostKeep 350L Freezer",
+    "category": "whitegoods",
+    "brand": "ChefLine",
+    "productPage": "https://store.example.com/products/wg-appl-303",
+    "image": "/assets/products/wg-fridge-001.svg",
+    "price": "899.99",
+    "comparePrice": "999.99",
+    "rating": "4.3",
+    "advertiserId": "advertiser-chefline",
+    "tags": [
+      "freezer",
+      "storage",
+      "upright",
+      "cold",
+      "reliable"
+    ]
+  },
+  {
+    "sku": "WG-APPL-304",
+    "name": "ChefLine SteamPure Built-In Dishwasher",
+    "category": "whitegoods",
+    "brand": "ChefLine",
+    "productPage": "https://store.example.com/products/wg-appl-304",
+    "image": "/assets/products/wg-washer-002.svg",
+    "price": "1099.99",
+    "comparePrice": "1249.99",
+    "rating": "4.5",
+    "advertiserId": "advertiser-chefline",
+    "tags": [
+      "dishwasher",
+      "steam",
+      "quiet",
+      "clean",
+      "builtin"
+    ]
+  },
+  {
+    "sku": "WG-APPL-305",
+    "name": "ChefLine WashWave 14-Place Dishwasher",
+    "category": "whitegoods",
+    "brand": "ChefLine",
+    "productPage": "https://store.example.com/products/wg-appl-305",
+    "image": "/assets/products/wg-oven-003.svg",
+    "price": "1299.99",
+    "comparePrice": "1449.99",
+    "rating": "4.6",
+    "advertiserId": "advertiser-chefline",
+    "tags": [
+      "dishwasher",
+      "family",
+      "quiet",
+      "wash",
+      "efficient"
+    ]
+  },
+  {
+    "sku": "WG-APPL-306",
+    "name": "ChefLine PureDry 9kg Condensing Dryer",
+    "category": "whitegoods",
+    "brand": "ChefLine",
+    "productPage": "https://store.example.com/products/wg-appl-306",
+    "image": "/assets/products/wg-fridge-001.svg",
+    "price": "1099.99",
+    "comparePrice": "1249.99",
+    "rating": "4.4",
+    "advertiserId": "advertiser-chefline",
+    "tags": [
+      "dryer",
+      "laundry",
+      "condensing",
+      "care",
+      "home"
+    ]
+  },
+  {
+    "sku": "WG-APPL-307",
+    "name": "ChefLine SpinFresh 8kg Front Load Washer",
+    "category": "whitegoods",
+    "brand": "ChefLine",
+    "productPage": "https://store.example.com/products/wg-appl-307",
+    "image": "/assets/products/wg-washer-002.svg",
+    "price": "999.99",
+    "comparePrice": "1149.99",
+    "rating": "4.5",
+    "advertiserId": "advertiser-chefline",
+    "tags": [
+      "washer",
+      "laundry",
+      "front-load",
+      "clean",
+      "efficient"
+    ]
+  },
+  {
+    "sku": "WG-APPL-308",
+    "name": "ChefLine HeatPro 7kg Top Load Washer",
+    "category": "whitegoods",
+    "brand": "ChefLine",
+    "productPage": "https://store.example.com/products/wg-appl-308",
+    "image": "/assets/products/wg-oven-003.svg",
+    "price": "799.99",
+    "comparePrice": "899.99",
+    "rating": "4.2",
+    "advertiserId": "advertiser-chefline",
+    "tags": [
+      "washer",
+      "top-load",
+      "laundry",
+      "simple",
+      "value"
+    ]
+  },
+  {
+    "sku": "WG-APPL-309",
+    "name": "ChefLine CrispAir Range Hood 90cm",
+    "category": "whitegoods",
+    "brand": "ChefLine",
+    "productPage": "https://store.example.com/products/wg-appl-309",
+    "image": "/assets/products/wg-fridge-001.svg",
+    "price": "649.99",
+    "comparePrice": "749.99",
+    "rating": "4.3",
+    "advertiserId": "advertiser-chefline",
+    "tags": [
+      "range-hood",
+      "kitchen",
+      "ventilation",
+      "sleek",
+      "quiet"
+    ]
+  },
+  {
+    "sku": "WG-APPL-310",
+    "name": "ChefLine CrispAir Canopy Range Hood",
+    "category": "whitegoods",
+    "brand": "ChefLine",
+    "productPage": "https://store.example.com/products/wg-appl-310",
+    "image": "/assets/products/wg-washer-002.svg",
+    "price": "549.99",
+    "comparePrice": "629.99",
+    "rating": "4.2",
+    "advertiserId": "advertiser-chefline",
+    "tags": [
+      "range-hood",
+      "canopy",
+      "airflow",
+      "kitchen",
+      "clean"
+    ]
+  },
+  {
+    "sku": "WG-APPL-311",
+    "name": "ChefLine MicroMelt Built-In Microwave",
+    "category": "whitegoods",
+    "brand": "ChefLine",
+    "productPage": "https://store.example.com/products/wg-appl-311",
+    "image": "/assets/products/wg-oven-003.svg",
+    "price": "399.99",
+    "comparePrice": "459.99",
+    "rating": "4.1",
+    "advertiserId": "advertiser-chefline",
+    "tags": [
+      "microwave",
+      "builtin",
+      "quick",
+      "heating",
+      "kitchen"
+    ]
+  },
+  {
+    "sku": "WG-APPL-312",
+    "name": "ChefLine MicroMelt 34L Countertop Microwave",
+    "category": "whitegoods",
+    "brand": "ChefLine",
+    "productPage": "https://store.example.com/products/wg-appl-312",
+    "image": "/assets/products/wg-fridge-001.svg",
+    "price": "249.99",
+    "comparePrice": "289.99",
+    "rating": "4.0",
+    "advertiserId": "advertiser-chefline",
+    "tags": [
+      "microwave",
+      "countertop",
+      "compact",
+      "quick",
+      "everyday"
+    ]
+  },
+  {
+    "sku": "WG-APPL-313",
+    "name": "ChefLine ToastCraft 4-Slice Toaster",
+    "category": "whitegoods",
+    "brand": "ChefLine",
+    "productPage": "https://store.example.com/products/wg-appl-313",
+    "image": "/assets/products/wg-washer-002.svg",
+    "price": "89.99",
+    "comparePrice": "109.99",
+    "rating": "4.3",
+    "advertiserId": "advertiser-chefline",
+    "tags": [
+      "toaster",
+      "breakfast",
+      "compact",
+      "home",
+      "easy"
+    ]
+  },
+  {
+    "sku": "WG-APPL-314",
+    "name": "ChefLine BrewCraft Coffee Machine",
+    "category": "whitegoods",
+    "brand": "ChefLine",
+    "productPage": "https://store.example.com/products/wg-appl-314",
+    "image": "/assets/products/wg-oven-003.svg",
+    "price": "199.99",
+    "comparePrice": "239.99",
+    "rating": "4.4",
+    "advertiserId": "advertiser-chefline",
+    "tags": [
+      "coffee",
+      "brew",
+      "morning",
+      "kitchen",
+      "fresh"
+    ]
+  },
+  {
+    "sku": "WG-APPL-315",
+    "name": "ChefLine CrispFlow Air Fryer Oven",
+    "category": "whitegoods",
+    "brand": "ChefLine",
+    "productPage": "https://store.example.com/products/wg-appl-315",
+    "image": "/assets/products/wg-fridge-001.svg",
+    "price": "329.99",
+    "comparePrice": "379.99",
+    "rating": "4.5",
+    "advertiserId": "advertiser-chefline",
+    "tags": [
+      "air-fryer",
+      "oven",
+      "crispy",
+      "compact",
+      "kitchen"
+    ]
+  },
+  {
+    "sku": "GR-PROTEIN-002",
+    "name": "FitFuel Whey Protein Vanilla Bean",
+    "category": "aisle",
+    "brand": "FitFuel",
+    "productPage": "https://store.example.com/products/gr-protein-002",
+    "image": "/assets/products/gr-protein-001.svg",
+    "price": "29.99",
+    "comparePrice": "34.99",
+    "rating": "4.7",
+    "advertiserId": "advertiser-fitfuel",
+    "tags": [
+      "protein",
+      "vanilla",
+      "whey",
+      "muscle"
+    ]
+  },
+  {
+    "sku": "GR-PROTEIN-003",
+    "name": "FitFuel Whey Protein Chocolate Fudge",
+    "category": "aisle",
+    "brand": "FitFuel",
+    "productPage": "https://store.example.com/products/gr-protein-003",
+    "image": "/assets/products/gr-coffee-002.svg",
+    "price": "31.49",
+    "comparePrice": "36.99",
+    "rating": "4.8",
+    "advertiserId": "advertiser-fitfuel",
+    "tags": [
+      "protein",
+      "chocolate",
+      "whey",
+      "recovery"
+    ]
+  },
+  {
+    "sku": "GR-PROTEIN-004",
+    "name": "FitFuel Plant Protein Peanut Butter",
+    "category": "aisle",
+    "brand": "FitFuel",
+    "productPage": "https://store.example.com/products/gr-protein-004",
+    "image": "/assets/products/gr-protein-001.svg",
+    "price": "28.99",
+    "comparePrice": "33.99",
+    "rating": "4.5",
+    "advertiserId": "advertiser-fitfuel",
+    "tags": [
+      "protein",
+      "plant",
+      "peanut",
+      "vegan"
+    ]
+  },
+  {
+    "sku": "GR-PROTEIN-005",
+    "name": "FitFuel Clear Protein Citrus Berry",
+    "category": "aisle",
+    "brand": "FitFuel",
+    "productPage": "https://store.example.com/products/gr-protein-005",
+    "image": "/assets/products/gr-coffee-002.svg",
+    "price": "27.99",
+    "comparePrice": "32.99",
+    "rating": "4.4",
+    "advertiserId": "advertiser-fitfuel",
+    "tags": [
+      "protein",
+      "clear",
+      "citrus",
+      "refreshing"
+    ]
+  },
+  {
+    "sku": "GR-BAR-006",
+    "name": "FitFuel Crunch Protein Bars Peanut Caramel",
+    "category": "aisle",
+    "brand": "FitFuel",
+    "productPage": "https://store.example.com/products/gr-bar-006",
+    "image": "/assets/products/gr-protein-001.svg",
+    "price": "14.99",
+    "comparePrice": "18.99",
+    "rating": "4.6",
+    "advertiserId": "advertiser-fitfuel",
+    "tags": [
+      "bars",
+      "protein",
+      "peanut",
+      "snack"
+    ]
+  },
+  {
+    "sku": "GR-BAR-007",
+    "name": "FitFuel Soft Bake Protein Bars Brownie",
+    "category": "aisle",
+    "brand": "FitFuel",
+    "productPage": "https://store.example.com/products/gr-bar-007",
+    "image": "/assets/products/gr-coffee-002.svg",
+    "price": "15.49",
+    "comparePrice": "19.49",
+    "rating": "4.7",
+    "advertiserId": "advertiser-fitfuel",
+    "tags": [
+      "bars",
+      "brownie",
+      "protein",
+      "soft"
+    ]
+  },
+  {
+    "sku": "GR-BAR-008",
+    "name": "FitFuel Oat Protein Bars Blueberry Almond",
+    "category": "aisle",
+    "brand": "FitFuel",
+    "productPage": "https://store.example.com/products/gr-bar-008",
+    "image": "/assets/products/gr-protein-001.svg",
+    "price": "13.99",
+    "comparePrice": "17.49",
+    "rating": "4.5",
+    "advertiserId": "advertiser-fitfuel",
+    "tags": [
+      "bars",
+      "oat",
+      "blueberry",
+      "snack"
+    ]
+  },
+  {
+    "sku": "GR-BAR-009",
+    "name": "FitFuel Keto Protein Bars Dark Chocolate",
+    "category": "aisle",
+    "brand": "FitFuel",
+    "productPage": "https://store.example.com/products/gr-bar-009",
+    "image": "/assets/products/gr-coffee-002.svg",
+    "price": "16.99",
+    "comparePrice": "20.99",
+    "rating": "4.6",
+    "advertiserId": "advertiser-fitfuel",
+    "tags": [
+      "bars",
+      "keto",
+      "chocolate",
+      "protein"
+    ]
+  },
+  {
+    "sku": "GR-SHAKE-010",
+    "name": "FitFuel Ready To Drink Protein Shake Mocha",
+    "category": "aisle",
+    "brand": "FitFuel",
+    "productPage": "https://store.example.com/products/gr-shake-010",
+    "image": "/assets/products/gr-protein-001.svg",
+    "price": "21.99",
+    "comparePrice": "25.99",
+    "rating": "4.7",
+    "advertiserId": "advertiser-fitfuel",
+    "tags": [
+      "shake",
+      "mocha",
+      "protein",
+      "ready"
+    ]
+  },
+  {
+    "sku": "GR-SHAKE-011",
+    "name": "FitFuel Ready To Drink Protein Shake Vanilla",
+    "category": "aisle",
+    "brand": "FitFuel",
+    "productPage": "https://store.example.com/products/gr-shake-011",
+    "image": "/assets/products/gr-coffee-002.svg",
+    "price": "21.49",
+    "comparePrice": "25.49",
+    "rating": "4.6",
+    "advertiserId": "advertiser-fitfuel",
+    "tags": [
+      "shake",
+      "vanilla",
+      "protein",
+      "ready"
+    ]
+  },
+  {
+    "sku": "GR-SHAKE-012",
+    "name": "FitFuel Breakfast Protein Shake Banana Oat",
+    "category": "aisle",
+    "brand": "FitFuel",
+    "productPage": "https://store.example.com/products/gr-shake-012",
+    "image": "/assets/products/gr-protein-001.svg",
+    "price": "22.49",
+    "comparePrice": "26.49",
+    "rating": "4.5",
+    "advertiserId": "advertiser-fitfuel",
+    "tags": [
+      "shake",
+      "banana",
+      "oat",
+      "breakfast"
+    ]
+  },
+  {
+    "sku": "GR-SHAKE-013",
+    "name": "FitFuel Mass Gainer Shake Chocolate",
+    "category": "aisle",
+    "brand": "FitFuel",
+    "productPage": "https://store.example.com/products/gr-shake-013",
+    "image": "/assets/products/gr-coffee-002.svg",
+    "price": "34.99",
+    "comparePrice": "39.99",
+    "rating": "4.4",
+    "advertiserId": "advertiser-fitfuel",
+    "tags": [
+      "shake",
+      "mass",
+      "chocolate",
+      "gain"
+    ]
+  },
+  {
+    "sku": "GR-PANTRY-014",
+    "name": "FitFuel Overnight Oats Protein Cup Cinnamon",
+    "category": "aisle",
+    "brand": "FitFuel",
+    "productPage": "https://store.example.com/products/gr-pantry-014",
+    "image": "/assets/products/gr-protein-001.svg",
+    "price": "4.99",
+    "comparePrice": "6.49",
+    "rating": "4.6",
+    "advertiserId": "advertiser-fitfuel",
+    "tags": [
+      "oats",
+      "protein",
+      "cinnamon",
+      "pantry"
+    ]
+  },
+  {
+    "sku": "GR-PANTRY-015",
+    "name": "FitFuel Peanut Butter Protein Spread",
+    "category": "aisle",
+    "brand": "FitFuel",
+    "productPage": "https://store.example.com/products/gr-pantry-015",
+    "image": "/assets/products/gr-coffee-002.svg",
+    "price": "8.99",
+    "comparePrice": "10.99",
+    "rating": "4.7",
+    "advertiserId": "advertiser-fitfuel",
+    "tags": [
+      "spread",
+      "peanut",
+      "protein",
+      "pantry"
+    ]
+  },
+  {
+    "sku": "GR-PANTRY-016",
+    "name": "FitFuel High Protein Granola Honey Almond",
+    "category": "aisle",
+    "brand": "FitFuel",
+    "productPage": "https://store.example.com/products/gr-pantry-016",
+    "image": "/assets/products/gr-protein-001.svg",
+    "price": "7.99",
+    "comparePrice": "9.99",
+    "rating": "4.5",
+    "advertiserId": "advertiser-fitfuel",
+    "tags": [
+      "granola",
+      "honey",
+      "almond",
+      "protein"
+    ]
+  },
+  {
+    "sku": "GR-PANTRY-017",
+    "name": "FitFuel Chickpea Pasta High Protein",
+    "category": "aisle",
+    "brand": "FitFuel",
+    "productPage": "https://store.example.com/products/gr-pantry-017",
+    "image": "/assets/products/gr-coffee-002.svg",
+    "price": "5.49",
+    "comparePrice": "6.99",
+    "rating": "4.4",
+    "advertiserId": "advertiser-fitfuel",
+    "tags": [
+      "pasta",
+      "chickpea",
+      "protein",
+      "pantry"
+    ]
+  },
+  {
+    "sku": "GR-PANTRY-018",
+    "name": "FitFuel Instant Protein Oatmeal Apple Spice",
+    "category": "aisle",
+    "brand": "FitFuel",
+    "productPage": "https://store.example.com/products/gr-pantry-018",
+    "image": "/assets/products/gr-protein-001.svg",
+    "price": "6.99",
+    "comparePrice": "8.49",
+    "rating": "4.6",
+    "advertiserId": "advertiser-fitfuel",
+    "tags": [
+      "oatmeal",
+      "apple",
+      "protein",
+      "instant"
+    ]
+  },
+  {
+    "sku": "GR-SNACK-019",
+    "name": "FitFuel Roasted Edamame Sea Salt",
+    "category": "aisle",
+    "brand": "FitFuel",
+    "productPage": "https://store.example.com/products/gr-snack-019",
+    "image": "/assets/products/gr-coffee-002.svg",
+    "price": "3.99",
+    "comparePrice": "5.49",
+    "rating": "4.5",
+    "advertiserId": "advertiser-fitfuel",
+    "tags": [
+      "snack",
+      "edamame",
+      "roasted",
+      "salty"
+    ]
+  },
+  {
+    "sku": "GR-SNACK-020",
+    "name": "FitFuel Trail Mix Protein Blend Berry Nut",
+    "category": "aisle",
+    "brand": "FitFuel",
+    "productPage": "https://store.example.com/products/gr-snack-020",
+    "image": "/assets/products/gr-protein-001.svg",
+    "price": "9.49",
+    "comparePrice": "11.49",
+    "rating": "4.5",
+    "advertiserId": "advertiser-fitfuel",
+    "tags": [
+      "trail",
+      "mix",
+      "berry",
+      "protein"
+    ]
+  },
+  {
+    "sku": "GR-SNACK-021",
+    "name": "FitFuel Almond Butter Bites Dark Cocoa",
+    "category": "aisle",
+    "brand": "FitFuel",
+    "productPage": "https://store.example.com/products/gr-snack-021",
+    "image": "/assets/products/gr-coffee-002.svg",
+    "price": "5.99",
+    "comparePrice": "7.49",
+    "rating": "4.4",
+    "advertiserId": "advertiser-fitfuel",
+    "tags": [
+      "bites",
+      "almond",
+      "cocoa",
+      "snack"
+    ]
+  },
+  {
+    "sku": "GR-SNACK-022",
+    "name": "FitFuel Protein Pretzels Chili Lime",
+    "category": "aisle",
+    "brand": "FitFuel",
+    "productPage": "https://store.example.com/products/gr-snack-022",
+    "image": "/assets/products/gr-protein-001.svg",
+    "price": "4.49",
+    "comparePrice": "5.99",
+    "rating": "4.3",
+    "advertiserId": "advertiser-fitfuel",
+    "tags": [
+      "pretzels",
+      "protein",
+      "chili",
+      "lime"
+    ]
+  },
+  {
+    "sku": "GR-WELL-023",
+    "name": "FitFuel Electrolyte Hydration Powder Citrus",
+    "category": "aisle",
+    "brand": "FitFuel",
+    "productPage": "https://store.example.com/products/gr-well-023",
+    "image": "/assets/products/gr-coffee-002.svg",
+    "price": "12.99",
+    "comparePrice": "15.99",
+    "rating": "4.6",
+    "advertiserId": "advertiser-fitfuel",
+    "tags": [
+      "hydration",
+      "electrolyte",
+      "citrus",
+      "wellness"
+    ]
+  },
+  {
+    "sku": "GR-WELL-024",
+    "name": "FitFuel Collagen Protein Creamer Vanilla",
+    "category": "aisle",
+    "brand": "FitFuel",
+    "productPage": "https://store.example.com/products/gr-well-024",
+    "image": "/assets/products/gr-protein-001.svg",
+    "price": "14.49",
+    "comparePrice": "17.99",
+    "rating": "4.5",
+    "advertiserId": "advertiser-fitfuel",
+    "tags": [
+      "collagen",
+      "creamer",
+      "vanilla",
+      "protein"
+    ]
+  },
+  {
+    "sku": "GR-WELL-025",
+    "name": "FitFuel Fiber Protein Muffin Mix Blueberry",
+    "category": "aisle",
+    "brand": "FitFuel",
+    "productPage": "https://store.example.com/products/gr-well-025",
+    "image": "/assets/products/gr-coffee-002.svg",
+    "price": "6.49",
+    "comparePrice": "7.99",
+    "rating": "4.4",
+    "advertiserId": "advertiser-fitfuel",
+    "tags": [
+      "fiber",
+      "muffin",
+      "blueberry",
+      "mix"
+    ]
+  },
+  {
+    "sku": "GR-WELL-026",
+    "name": "FitFuel Keto Snack Mix Rosemary Sea Salt",
+    "category": "aisle",
+    "brand": "FitFuel",
+    "productPage": "https://store.example.com/products/gr-well-026",
+    "image": "/assets/products/gr-protein-001.svg",
+    "price": "8.49",
+    "comparePrice": "10.49",
+    "rating": "4.5",
+    "advertiserId": "advertiser-fitfuel",
+    "tags": [
+      "keto",
+      "snack",
+      "rosemary",
+      "salt"
+    ]
+  },
+  {
+    "sku": "WG-WASHER-001",
+    "name": "HydroHome CleanSpin 8kg Front Load Washer",
+    "category": "whitegoods",
+    "brand": "HydroHome",
+    "productPage": "https://store.example.com/products/wg-washer-001",
+    "image": "/assets/products/wg-oven-003.svg",
+    "price": "699.99",
+    "comparePrice": "799.99",
+    "rating": "4.6",
+    "advertiserId": "advertiser-hydrohome",
+    "tags": [
+      "washer",
+      "front-load",
+      "laundry",
+      "energy-efficient"
+    ]
+  },
+  {
+    "sku": "WG-WASHER-003",
+    "name": "HydroHome CleanSpin 10kg Front Load Washer",
+    "category": "whitegoods",
+    "brand": "HydroHome",
+    "productPage": "https://store.example.com/products/wg-washer-003",
+    "image": "/assets/products/wg-fridge-001.svg",
+    "price": "849.99",
+    "comparePrice": "949.99",
+    "rating": "4.7",
+    "advertiserId": "advertiser-hydrohome",
+    "tags": [
+      "washer",
+      "large-capacity",
+      "laundry",
+      "quiet"
+    ]
+  },
+  {
+    "sku": "WG-WASHER-004",
+    "name": "HydroHome QuickWash 7kg Top Load Washer",
+    "category": "whitegoods",
+    "brand": "HydroHome",
+    "productPage": "https://store.example.com/products/wg-washer-004",
+    "image": "/assets/products/wg-washer-002.svg",
+    "price": "549.99",
+    "comparePrice": "619.99",
+    "rating": "4.3",
+    "advertiserId": "advertiser-hydrohome",
+    "tags": [
+      "washer",
+      "top-load",
+      "compact",
+      "laundry"
+    ]
+  },
+  {
+    "sku": "WG-DRYER-005",
+    "name": "HydroHome DryMax 8kg Heat Pump Dryer",
+    "category": "whitegoods",
+    "brand": "HydroHome",
+    "productPage": "https://store.example.com/products/wg-dryer-005",
+    "image": "/assets/products/wg-oven-003.svg",
+    "price": "899.99",
+    "comparePrice": "999.99",
+    "rating": "4.7",
+    "advertiserId": "advertiser-hydrohome",
+    "tags": [
+      "dryer",
+      "heat-pump",
+      "laundry",
+      "efficient"
+    ]
+  },
+  {
+    "sku": "WG-DRYER-006",
+    "name": "HydroHome DryMax 9kg Condenser Dryer",
+    "category": "whitegoods",
+    "brand": "HydroHome",
+    "productPage": "https://store.example.com/products/wg-dryer-006",
+    "image": "/assets/products/wg-fridge-001.svg",
+    "price": "749.99",
+    "comparePrice": "829.99",
+    "rating": "4.5",
+    "advertiserId": "advertiser-hydrohome",
+    "tags": [
+      "dryer",
+      "condenser",
+      "laundry",
+      "family"
+    ]
+  },
+  {
+    "sku": "WG-DRYER-007",
+    "name": "HydroHome AirDry 7kg Vented Dryer",
+    "category": "whitegoods",
+    "brand": "HydroHome",
+    "productPage": "https://store.example.com/products/wg-dryer-007",
+    "image": "/assets/products/wg-washer-002.svg",
+    "price": "499.99",
+    "comparePrice": "569.99",
+    "rating": "4.2",
+    "advertiserId": "advertiser-hydrohome",
+    "tags": [
+      "dryer",
+      "vented",
+      "budget",
+      "laundry"
+    ]
+  },
+  {
+    "sku": "WG-COMBO-008",
+    "name": "HydroHome DuoWash 8kg Washer Dryer Combo",
+    "category": "whitegoods",
+    "brand": "HydroHome",
+    "productPage": "https://store.example.com/products/wg-combo-008",
+    "image": "/assets/products/wg-oven-003.svg",
+    "price": "1099.99",
+    "comparePrice": "1249.99",
+    "rating": "4.6",
+    "advertiserId": "advertiser-hydrohome",
+    "tags": [
+      "combo",
+      "washer-dryer",
+      "laundry",
+      "space-saving"
+    ]
+  },
+  {
+    "sku": "WG-COMBO-009",
+    "name": "HydroHome DuoWash 10kg Washer Dryer Combo",
+    "category": "whitegoods",
+    "brand": "HydroHome",
+    "productPage": "https://store.example.com/products/wg-combo-009",
+    "image": "/assets/products/wg-fridge-001.svg",
+    "price": "1299.99",
+    "comparePrice": "1449.99",
+    "rating": "4.7",
+    "advertiserId": "advertiser-hydrohome",
+    "tags": [
+      "combo",
+      "large-capacity",
+      "laundry",
+      "premium"
+    ]
+  },
+  {
+    "sku": "WG-COMBO-010",
+    "name": "HydroHome Compact Duo 7kg Washer Dryer Combo",
+    "category": "whitegoods",
+    "brand": "HydroHome",
+    "productPage": "https://store.example.com/products/wg-combo-010",
+    "image": "/assets/products/wg-washer-002.svg",
+    "price": "999.99",
+    "comparePrice": "1149.99",
+    "rating": "4.4",
+    "advertiserId": "advertiser-hydrohome",
+    "tags": [
+      "combo",
+      "compact",
+      "laundry",
+      "apartment"
+    ]
+  },
+  {
+    "sku": "WG-MOP-011",
+    "name": "HydroHome SteamGlide Electric Steam Mop",
+    "category": "whitegoods",
+    "brand": "HydroHome",
+    "productPage": "https://store.example.com/products/wg-mop-011",
+    "image": "/assets/products/wg-oven-003.svg",
+    "price": "119.99",
+    "comparePrice": "149.99",
+    "rating": "4.4",
+    "advertiserId": "advertiser-hydrohome",
+    "tags": [
+      "steam-mop",
+      "hard-floor",
+      "cleaning",
+      "sanitizing"
+    ]
+  },
+  {
+    "sku": "WG-MOP-012",
+    "name": "HydroHome SteamGlide Pro Steam Mop",
+    "category": "whitegoods",
+    "brand": "HydroHome",
+    "productPage": "https://store.example.com/products/wg-mop-012",
+    "image": "/assets/products/wg-fridge-001.svg",
+    "price": "149.99",
+    "comparePrice": "179.99",
+    "rating": "4.6",
+    "advertiserId": "advertiser-hydrohome",
+    "tags": [
+      "steam-mop",
+      "pro",
+      "cleaning",
+      "quick-dry"
+    ]
+  },
+  {
+    "sku": "WG-MOP-013",
+    "name": "HydroHome FloorFresh Spray Mop",
+    "category": "whitegoods",
+    "brand": "HydroHome",
+    "productPage": "https://store.example.com/products/wg-mop-013",
+    "image": "/assets/products/wg-washer-002.svg",
+    "price": "69.99",
+    "comparePrice": "89.99",
+    "rating": "4.2",
+    "advertiserId": "advertiser-hydrohome",
+    "tags": [
+      "mop",
+      "spray",
+      "hard-floor",
+      "cleaning"
+    ]
+  },
+  {
+    "sku": "WG-MOP-014",
+    "name": "HydroHome TileMate Hard Floor Cleaner",
+    "category": "whitegoods",
+    "brand": "HydroHome",
+    "productPage": "https://store.example.com/products/wg-mop-014",
+    "image": "/assets/products/wg-oven-003.svg",
+    "price": "179.99",
+    "comparePrice": "219.99",
+    "rating": "4.5",
+    "advertiserId": "advertiser-hydrohome",
+    "tags": [
+      "floor-cleaner",
+      "tiles",
+      "cleaning",
+      "scrub"
+    ]
+  },
+  {
+    "sku": "WG-VAC-014",
+    "name": "HydroHome DustLift Upright Vacuum Cleaner",
+    "category": "whitegoods",
+    "brand": "HydroHome",
+    "productPage": "https://store.example.com/products/wg-vac-014",
+    "image": "/assets/products/wg-fridge-001.svg",
+    "price": "199.99",
+    "comparePrice": "239.99",
+    "rating": "4.5",
+    "advertiserId": "advertiser-hydrohome",
+    "tags": [
+      "vacuum",
+      "upright",
+      "cleaning",
+      "pet-hair"
+    ]
+  },
+  {
+    "sku": "WG-VAC-015",
+    "name": "HydroHome DustLift Cordless Stick Vacuum",
+    "category": "whitegoods",
+    "brand": "HydroHome",
+    "productPage": "https://store.example.com/products/wg-vac-015",
+    "image": "/assets/products/wg-washer-002.svg",
+    "price": "279.99",
+    "comparePrice": "329.99",
+    "rating": "4.6",
+    "advertiserId": "advertiser-hydrohome",
+    "tags": [
+      "vacuum",
+      "cordless",
+      "stick",
+      "cleaning"
+    ]
+  },
+  {
+    "sku": "WG-VAC-016",
+    "name": "HydroHome DustLift Compact Handheld Vacuum",
+    "category": "whitegoods",
+    "brand": "HydroHome",
+    "productPage": "https://store.example.com/products/wg-vac-016",
+    "image": "/assets/products/wg-oven-003.svg",
+    "price": "99.99",
+    "comparePrice": "124.99",
+    "rating": "4.3",
+    "advertiserId": "advertiser-hydrohome",
+    "tags": [
+      "vacuum",
+      "handheld",
+      "compact",
+      "cleaning"
+    ]
+  },
+  {
+    "sku": "WG-CLEAN-017",
+    "name": "HydroHome SpotScrub Carpet Cleaner",
+    "category": "whitegoods",
+    "brand": "HydroHome",
+    "productPage": "https://store.example.com/products/wg-clean-017",
+    "image": "/assets/products/wg-fridge-001.svg",
+    "price": "249.99",
+    "comparePrice": "299.99",
+    "rating": "4.4",
+    "advertiserId": "advertiser-hydrohome",
+    "tags": [
+      "carpet-cleaner",
+      "spot-cleaning",
+      "home",
+      "deep-clean"
+    ]
+  },
+  {
+    "sku": "WG-CLEAN-018",
+    "name": "HydroHome SpotScrub Pro Carpet Extractor",
+    "category": "whitegoods",
+    "brand": "HydroHome",
+    "productPage": "https://store.example.com/products/wg-clean-018",
+    "image": "/assets/products/wg-washer-002.svg",
+    "price": "349.99",
+    "comparePrice": "399.99",
+    "rating": "4.6",
+    "advertiserId": "advertiser-hydrohome",
+    "tags": [
+      "extractor",
+      "carpet-cleaner",
+      "pro",
+      "deep-clean"
+    ]
+  },
+  {
+    "sku": "WG-CLEAN-019",
+    "name": "HydroHome FreshJet Handheld Steam Cleaner",
+    "category": "whitegoods",
+    "brand": "HydroHome",
+    "productPage": "https://store.example.com/products/wg-clean-019",
+    "image": "/assets/products/wg-oven-003.svg",
+    "price": "129.99",
+    "comparePrice": "159.99",
+    "rating": "4.3",
+    "advertiserId": "advertiser-hydrohome",
+    "tags": [
+      "steam-cleaner",
+      "handheld",
+      "sanitizing",
+      "kitchen"
+    ]
+  },
+  {
+    "sku": "WG-CLEAN-020",
+    "name": "HydroHome FreshJet Multi-Surface Steam Cleaner",
+    "category": "whitegoods",
+    "brand": "HydroHome",
+    "productPage": "https://store.example.com/products/wg-clean-020",
+    "image": "/assets/products/wg-fridge-001.svg",
+    "price": "199.99",
+    "comparePrice": "239.99",
+    "rating": "4.5",
+    "advertiserId": "advertiser-hydrohome",
+    "tags": [
+      "steam-cleaner",
+      "multi-surface",
+      "home",
+      "sanitizing"
+    ]
+  },
+  {
+    "sku": "WG-STEAM-021",
+    "name": "HydroHome PressPro Garment Steamer",
+    "category": "whitegoods",
+    "brand": "HydroHome",
+    "productPage": "https://store.example.com/products/wg-steam-021",
+    "image": "/assets/products/wg-washer-002.svg",
+    "price": "89.99",
+    "comparePrice": "109.99",
+    "rating": "4.4",
+    "advertiserId": "advertiser-hydrohome",
+    "tags": [
+      "garment-steamer",
+      "wrinkle-care",
+      "laundry",
+      "portable"
+    ]
+  },
+  {
+    "sku": "WG-STEAM-022",
+    "name": "HydroHome PressPro XL Garment Steamer",
+    "category": "whitegoods",
+    "brand": "HydroHome",
+    "productPage": "https://store.example.com/products/wg-steam-022",
+    "image": "/assets/products/wg-oven-003.svg",
+    "price": "129.99",
+    "comparePrice": "154.99",
+    "rating": "4.5",
+    "advertiserId": "advertiser-hydrohome",
+    "tags": [
+      "garment-steamer",
+      "xl",
+      "wrinkle-care",
+      "home"
+    ]
+  },
+  {
+    "sku": "WG-IRON-023",
+    "name": "HydroHome GlideSure Steam Iron",
+    "category": "whitegoods",
+    "brand": "HydroHome",
+    "productPage": "https://store.example.com/products/wg-iron-023",
+    "image": "/assets/products/wg-fridge-001.svg",
+    "price": "59.99",
+    "comparePrice": "74.99",
+    "rating": "4.2",
+    "advertiserId": "advertiser-hydrohome",
+    "tags": [
+      "iron",
+      "steam",
+      "laundry",
+      "wrinkle-care"
+    ]
+  },
+  {
+    "sku": "WG-IRON-024",
+    "name": "HydroHome GlideSure Ceramic Steam Iron",
+    "category": "whitegoods",
+    "brand": "HydroHome",
+    "productPage": "https://store.example.com/products/wg-iron-024",
+    "image": "/assets/products/wg-washer-002.svg",
+    "price": "79.99",
+    "comparePrice": "94.99",
+    "rating": "4.4",
+    "advertiserId": "advertiser-hydrohome",
+    "tags": [
+      "iron",
+      "ceramic",
+      "steam",
+      "laundry"
+    ]
+  },
+  {
+    "sku": "WG-IRON-025",
+    "name": "HydroHome GlideSure Travel Steam Iron",
+    "category": "whitegoods",
+    "brand": "HydroHome",
+    "productPage": "https://store.example.com/products/wg-iron-025",
+    "image": "/assets/products/wg-oven-003.svg",
+    "price": "39.99",
+    "comparePrice": "49.99",
+    "rating": "4.1",
+    "advertiserId": "advertiser-hydrohome",
+    "tags": [
+      "iron",
+      "travel",
+      "compact",
+      "laundry"
+    ]
+  },
+  {
+    "sku": "LAP-NORTH-101",
+    "name": "Northfield WorkBook 14 Business Laptop",
+    "category": "electronics",
+    "brand": "Northfield",
+    "productPage": "https://store.example.com/products/lap-north-101",
+    "image": "/assets/products/acc-mouse-001.svg",
+    "price": "599.99",
+    "comparePrice": "679.99",
+    "rating": "4.4",
+    "advertiserId": "advertiser-northfield",
+    "tags": [
+      "laptop",
+      "business",
+      "portable",
+      "office",
+      "reliable"
+    ]
+  },
+  {
+    "sku": "LAP-NORTH-102",
+    "name": "Northfield WorkBook 15 Pro Laptop",
+    "category": "electronics",
+    "brand": "Northfield",
+    "productPage": "https://store.example.com/products/lap-north-102",
+    "image": "/assets/products/acc-backpack-002.svg",
+    "price": "749.99",
+    "comparePrice": "829.99",
+    "rating": "4.5",
+    "advertiserId": "advertiser-northfield",
+    "tags": [
+      "laptop",
+      "productivity",
+      "office",
+      "performance",
+      "portable"
+    ]
+  },
+  {
+    "sku": "LAP-NORTH-103",
+    "name": "Northfield FlexNote 13 Convertible Laptop",
+    "category": "electronics",
+    "brand": "Northfield",
+    "productPage": "https://store.example.com/products/lap-north-103",
+    "image": "/assets/products/acc-dock-003.svg",
+    "price": "699.99",
+    "comparePrice": "779.99",
+    "rating": "4.3",
+    "advertiserId": "advertiser-northfield",
+    "tags": [
+      "2-in-1",
+      "laptop",
+      "touch",
+      "notes",
+      "travel"
+    ]
+  },
+  {
+    "sku": "LAP-NORTH-104",
+    "name": "Northfield CoreDesk 15 Everyday Laptop",
+    "category": "electronics",
+    "brand": "Northfield",
+    "productPage": "https://store.example.com/products/lap-north-104",
+    "image": "/assets/products/lap-ultra-13-001.svg",
+    "price": "549.99",
+    "comparePrice": "619.99",
+    "rating": "4.2",
+    "advertiserId": "advertiser-northfield",
+    "tags": [
+      "laptop",
+      "office",
+      "daily-use",
+      "value",
+      "reliable"
+    ]
+  },
+  {
+    "sku": "LAP-NORTH-105",
+    "name": "Northfield ExecBook 16 Business Laptop",
+    "category": "electronics",
+    "brand": "Northfield",
+    "productPage": "https://store.example.com/products/lap-north-105",
+    "image": "/assets/products/lap-game-16-002.svg",
+    "price": "899.99",
+    "comparePrice": "999.99",
+    "rating": "4.6",
+    "advertiserId": "advertiser-northfield",
+    "tags": [
+      "laptop",
+      "executive",
+      "business",
+      "power",
+      "office"
+    ]
+  },
+  {
+    "sku": "ACC-NORTH-201",
+    "name": "Northfield USB-C Docking Hub 8-in-1",
+    "category": "electronics",
+    "brand": "Northfield",
+    "productPage": "https://store.example.com/products/acc-north-201",
+    "image": "/assets/products/lap-biz-14-003.svg",
+    "price": "49.99",
+    "comparePrice": "59.99",
+    "rating": "4.5",
+    "advertiserId": "advertiser-northfield",
+    "tags": [
+      "hub",
+      "usb-c",
+      "dock",
+      "office",
+      "connectivity"
+    ]
+  },
+  {
+    "sku": "ACC-NORTH-202",
+    "name": "Northfield Adjustable Laptop Stand",
+    "category": "electronics",
+    "brand": "Northfield",
+    "productPage": "https://store.example.com/products/acc-north-202",
+    "image": "/assets/products/lap-student-15-004.svg",
+    "price": "34.99",
+    "comparePrice": "44.99",
+    "rating": "4.6",
+    "advertiserId": "advertiser-northfield",
+    "tags": [
+      "stand",
+      "desk",
+      "ergonomic",
+      "portable",
+      "office"
+    ]
+  },
+  {
+    "sku": "ACC-NORTH-203",
+    "name": "Northfield Wireless Keyboard",
+    "category": "electronics",
+    "brand": "Northfield",
+    "productPage": "https://store.example.com/products/acc-north-203",
+    "image": "/assets/products/lap-creator-15-005.svg",
+    "price": "29.99",
+    "comparePrice": "39.99",
+    "rating": "4.4",
+    "advertiserId": "advertiser-northfield",
+    "tags": [
+      "keyboard",
+      "wireless",
+      "office",
+      "quiet",
+      "productivity"
+    ]
+  },
+  {
+    "sku": "ACC-NORTH-204",
+    "name": "Northfield Wireless Mouse",
+    "category": "electronics",
+    "brand": "Northfield",
+    "productPage": "https://store.example.com/products/acc-north-204",
+    "image": "/assets/products/lap-2in1-14-006.svg",
+    "price": "19.99",
+    "comparePrice": "27.99",
+    "rating": "4.3",
+    "advertiserId": "advertiser-northfield",
+    "tags": [
+      "mouse",
+      "wireless",
+      "office",
+      "compact",
+      "travel"
+    ]
+  },
+  {
+    "sku": "ACC-NORTH-205",
+    "name": "Northfield Laptop Sleeve 14in",
+    "category": "electronics",
+    "brand": "Northfield",
+    "productPage": "https://store.example.com/products/acc-north-205",
+    "image": "/assets/products/acc-mouse-001.svg",
+    "price": "22.99",
+    "comparePrice": "29.99",
+    "rating": "4.2",
+    "advertiserId": "advertiser-northfield",
+    "tags": [
+      "sleeve",
+      "laptop",
+      "protection",
+      "carry",
+      "office"
+    ]
+  },
+  {
+    "sku": "ACC-NORTH-206",
+    "name": "Northfield USB-C Charge Cable 6ft",
+    "category": "electronics",
+    "brand": "Northfield",
+    "productPage": "https://store.example.com/products/acc-north-206",
+    "image": "/assets/products/acc-backpack-002.svg",
+    "price": "14.99",
+    "comparePrice": "19.99",
+    "rating": "4.5",
+    "advertiserId": "advertiser-northfield",
+    "tags": [
+      "cable",
+      "usb-c",
+      "charging",
+      "office",
+      "value"
+    ]
+  },
+  {
+    "sku": "ACC-NORTH-207",
+    "name": "Northfield Laptop Charger 65W",
+    "category": "electronics",
+    "brand": "Northfield",
+    "productPage": "https://store.example.com/products/acc-north-207",
+    "image": "/assets/products/acc-dock-003.svg",
+    "price": "39.99",
+    "comparePrice": "49.99",
+    "rating": "4.4",
+    "advertiserId": "advertiser-northfield",
+    "tags": [
+      "charger",
+      "laptop",
+      "power",
+      "usb-c",
+      "travel"
+    ]
+  },
+  {
+    "sku": "ACC-NORTH-208",
+    "name": "Northfield Portable Monitor Stand",
+    "category": "electronics",
+    "brand": "Northfield",
+    "productPage": "https://store.example.com/products/acc-north-208",
+    "image": "/assets/products/lap-ultra-13-001.svg",
+    "price": "26.99",
+    "comparePrice": "34.99",
+    "rating": "4.1",
+    "advertiserId": "advertiser-northfield",
+    "tags": [
+      "stand",
+      "monitor",
+      "desk",
+      "portable",
+      "office"
+    ]
+  },
+  {
+    "sku": "MON-NORTH-301",
+    "name": "Northfield DeskView 24 Monitor",
+    "category": "electronics",
+    "brand": "Northfield",
+    "productPage": "https://store.example.com/products/mon-north-301",
+    "image": "/assets/products/lap-game-16-002.svg",
+    "price": "149.99",
+    "comparePrice": "179.99",
+    "rating": "4.3",
+    "advertiserId": "advertiser-northfield",
+    "tags": [
+      "monitor",
+      "desk",
+      "fhd",
+      "office",
+      "productivity"
+    ]
+  },
+  {
+    "sku": "MON-NORTH-302",
+    "name": "Northfield DeskView 27 Monitor",
+    "category": "electronics",
+    "brand": "Northfield",
+    "productPage": "https://store.example.com/products/mon-north-302",
+    "image": "/assets/products/lap-biz-14-003.svg",
+    "price": "199.99",
+    "comparePrice": "239.99",
+    "rating": "4.5",
+    "advertiserId": "advertiser-northfield",
+    "tags": [
+      "monitor",
+      "office",
+      "large",
+      "work",
+      "display"
+    ]
+  },
+  {
+    "sku": "MON-NORTH-303",
+    "name": "Northfield UltraSlim 32 Curved Monitor",
+    "category": "electronics",
+    "brand": "Northfield",
+    "productPage": "https://store.example.com/products/mon-north-303",
+    "image": "/assets/products/lap-student-15-004.svg",
+    "price": "329.99",
+    "comparePrice": "379.99",
+    "rating": "4.4",
+    "advertiserId": "advertiser-northfield",
+    "tags": [
+      "monitor",
+      "curved",
+      "ultrawide",
+      "office",
+      "focus"
+    ]
+  },
+  {
+    "sku": "MON-NORTH-304",
+    "name": "Northfield Portable 15.6 Monitor",
+    "category": "electronics",
+    "brand": "Northfield",
+    "productPage": "https://store.example.com/products/mon-north-304",
+    "image": "/assets/products/lap-creator-15-005.svg",
+    "price": "179.99",
+    "comparePrice": "219.99",
+    "rating": "4.2",
+    "advertiserId": "advertiser-northfield",
+    "tags": [
+      "monitor",
+      "portable",
+      "travel",
+      "usb-c",
+      "office"
+    ]
+  },
+  {
+    "sku": "MON-NORTH-305",
+    "name": "Northfield DeskView 22 Monitor",
+    "category": "electronics",
+    "brand": "Northfield",
+    "productPage": "https://store.example.com/products/mon-north-305",
+    "image": "/assets/products/lap-2in1-14-006.svg",
+    "price": "129.99",
+    "comparePrice": "159.99",
+    "rating": "4.1",
+    "advertiserId": "advertiser-northfield",
+    "tags": [
+      "monitor",
+      "budget",
+      "office",
+      "desk",
+      "work"
+    ]
+  },
+  {
+    "sku": "TAB-NORTH-401",
+    "name": "Northfield NoteTab 10 Productivity Tablet",
+    "category": "electronics",
+    "brand": "Northfield",
+    "productPage": "https://store.example.com/products/tab-north-401",
+    "image": "/assets/products/acc-mouse-001.svg",
+    "price": "239.99",
+    "comparePrice": "279.99",
+    "rating": "4.3",
+    "advertiserId": "advertiser-northfield",
+    "tags": [
+      "tablet",
+      "notes",
+      "office",
+      "portable",
+      "study"
+    ]
+  },
+  {
+    "sku": "TAB-NORTH-402",
+    "name": "Northfield NoteTab 8 Compact Tablet",
+    "category": "electronics",
+    "brand": "Northfield",
+    "productPage": "https://store.example.com/products/tab-north-402",
+    "image": "/assets/products/acc-backpack-002.svg",
+    "price": "179.99",
+    "comparePrice": "219.99",
+    "rating": "4.0",
+    "advertiserId": "advertiser-northfield",
+    "tags": [
+      "tablet",
+      "compact",
+      "reading",
+      "portable",
+      "value"
+    ]
+  },
+  {
+    "sku": "TAB-NORTH-403",
+    "name": "Northfield ProPad 11 Tablet",
+    "category": "electronics",
+    "brand": "Northfield",
+    "productPage": "https://store.example.com/products/tab-north-403",
+    "image": "/assets/products/acc-dock-003.svg",
+    "price": "299.99",
+    "comparePrice": "349.99",
+    "rating": "4.4",
+    "advertiserId": "advertiser-northfield",
+    "tags": [
+      "tablet",
+      "productivity",
+      "office",
+      "stylus",
+      "portable"
+    ]
+  },
+  {
+    "sku": "TAB-NORTH-404",
+    "name": "Northfield Tablet Folio Case 11in",
+    "category": "electronics",
+    "brand": "Northfield",
+    "productPage": "https://store.example.com/products/tab-north-404",
+    "image": "/assets/products/lap-ultra-13-001.svg",
+    "price": "24.99",
+    "comparePrice": "31.99",
+    "rating": "4.2",
+    "advertiserId": "advertiser-northfield",
+    "tags": [
+      "case",
+      "tablet",
+      "folio",
+      "protection",
+      "office"
+    ]
+  },
+  {
+    "sku": "TAB-NORTH-405",
+    "name": "Northfield Active Stylus Pen",
+    "category": "electronics",
+    "brand": "Northfield",
+    "productPage": "https://store.example.com/products/tab-north-405",
+    "image": "/assets/products/lap-game-16-002.svg",
+    "price": "29.99",
+    "comparePrice": "39.99",
+    "rating": "4.3",
+    "advertiserId": "advertiser-northfield",
+    "tags": [
+      "stylus",
+      "tablet",
+      "notes",
+      "drawing",
+      "office"
+    ]
+  },
+  {
+    "sku": "ACC-NORTH-209",
+    "name": "Northfield Desk Dock Charging Station",
+    "category": "electronics",
+    "brand": "Northfield",
+    "productPage": "https://store.example.com/products/acc-north-209",
+    "image": "/assets/products/lap-biz-14-003.svg",
+    "price": "44.99",
+    "comparePrice": "54.99",
+    "rating": "4.4",
+    "advertiserId": "advertiser-northfield",
+    "tags": [
+      "dock",
+      "charging",
+      "desk",
+      "office",
+      "organized"
+    ]
+  },
+  {
+    "sku": "AUD-NORTH-501",
+    "name": "Northfield USB Headset with Mic",
+    "category": "electronics",
+    "brand": "Northfield",
+    "productPage": "https://store.example.com/products/aud-north-501",
+    "image": "/assets/products/lap-student-15-004.svg",
+    "price": "34.99",
+    "comparePrice": "44.99",
+    "rating": "4.3",
+    "advertiserId": "advertiser-northfield",
+    "tags": [
+      "headset",
+      "mic",
+      "office",
+      "calls",
+      "online"
+    ]
+  },
+  {
+    "sku": "LAP-ORBIT-101",
+    "name": "Orbit StudyBook 14 Student Laptop",
+    "category": "electronics",
+    "brand": "Orbit",
+    "productPage": "https://store.example.com/products/lap-orbit-101",
+    "image": "/assets/products/lap-creator-15-005.svg",
+    "price": "349.99",
+    "comparePrice": "399.99",
+    "rating": "4.3",
+    "advertiserId": "advertiser-orbit",
+    "tags": [
+      "student",
+      "laptop",
+      "budget",
+      "portable",
+      "daily-use"
+    ]
+  },
+  {
+    "sku": "LAP-ORBIT-102",
+    "name": "Orbit CampusBook 15 Everyday Laptop",
+    "category": "electronics",
+    "brand": "Orbit",
+    "productPage": "https://store.example.com/products/lap-orbit-102",
+    "image": "/assets/products/lap-2in1-14-006.svg",
+    "price": "429.99",
+    "comparePrice": "479.99",
+    "rating": "4.4",
+    "advertiserId": "advertiser-orbit",
+    "tags": [
+      "student",
+      "laptop",
+      "lightweight",
+      "value",
+      "school"
+    ]
+  },
+  {
+    "sku": "LAP-ORBIT-103",
+    "name": "Orbit FlexBook 13 Convertible Laptop",
+    "category": "electronics",
+    "brand": "Orbit",
+    "productPage": "https://store.example.com/products/lap-orbit-103",
+    "image": "/assets/products/acc-mouse-001.svg",
+    "price": "499.99",
+    "comparePrice": "569.99",
+    "rating": "4.2",
+    "advertiserId": "advertiser-orbit",
+    "tags": [
+      "2-in-1",
+      "laptop",
+      "notes",
+      "portable",
+      "touch"
+    ]
+  },
+  {
+    "sku": "LAP-ORBIT-104",
+    "name": "Orbit CoreBook 15 Value Laptop",
+    "category": "electronics",
+    "brand": "Orbit",
+    "productPage": "https://store.example.com/products/lap-orbit-104",
+    "image": "/assets/products/acc-backpack-002.svg",
+    "price": "379.99",
+    "comparePrice": "429.99",
+    "rating": "4.1",
+    "advertiserId": "advertiser-orbit",
+    "tags": [
+      "laptop",
+      "budget",
+      "study",
+      "office",
+      "reliable"
+    ]
+  },
+  {
+    "sku": "ACC-ORBIT-201",
+    "name": "Orbit USB-C Fast Charge Cable 6ft",
+    "category": "electronics",
+    "brand": "Orbit",
+    "productPage": "https://store.example.com/products/acc-orbit-201",
+    "image": "/assets/products/acc-dock-003.svg",
+    "price": "12.99",
+    "comparePrice": "16.99",
+    "rating": "4.6",
+    "advertiserId": "advertiser-orbit",
+    "tags": [
+      "cable",
+      "usb-c",
+      "charging",
+      "daily-use",
+      "value"
+    ]
+  },
+  {
+    "sku": "ACC-ORBIT-202",
+    "name": "Orbit Compact Laptop Stand",
+    "category": "electronics",
+    "brand": "Orbit",
+    "productPage": "https://store.example.com/products/acc-orbit-202",
+    "image": "/assets/products/lap-ultra-13-001.svg",
+    "price": "24.99",
+    "comparePrice": "29.99",
+    "rating": "4.5",
+    "advertiserId": "advertiser-orbit",
+    "tags": [
+      "stand",
+      "desk",
+      "portable",
+      "ergonomic",
+      "student"
+    ]
+  },
+  {
+    "sku": "ACC-ORBIT-203",
+    "name": "Orbit Wireless Mouse",
+    "category": "electronics",
+    "brand": "Orbit",
+    "productPage": "https://store.example.com/products/acc-orbit-203",
+    "image": "/assets/products/lap-game-16-002.svg",
+    "price": "18.99",
+    "comparePrice": "24.99",
+    "rating": "4.4",
+    "advertiserId": "advertiser-orbit",
+    "tags": [
+      "mouse",
+      "wireless",
+      "portable",
+      "office",
+      "study"
+    ]
+  },
+  {
+    "sku": "ACC-ORBIT-204",
+    "name": "Orbit Slim Keyboard Cover 13-14in",
+    "category": "electronics",
+    "brand": "Orbit",
+    "productPage": "https://store.example.com/products/acc-orbit-204",
+    "image": "/assets/products/lap-biz-14-003.svg",
+    "price": "14.49",
+    "comparePrice": "19.99",
+    "rating": "4.0",
+    "advertiserId": "advertiser-orbit",
+    "tags": [
+      "cover",
+      "keyboard",
+      "protection",
+      "laptop",
+      "thin"
+    ]
+  },
+  {
+    "sku": "ACC-ORBIT-205",
+    "name": "Orbit USB-C Hub 5-in-1",
+    "category": "electronics",
+    "brand": "Orbit",
+    "productPage": "https://store.example.com/products/acc-orbit-205",
+    "image": "/assets/products/lap-student-15-004.svg",
+    "price": "29.99",
+    "comparePrice": "36.99",
+    "rating": "4.5",
+    "advertiserId": "advertiser-orbit",
+    "tags": [
+      "hub",
+      "usb-c",
+      "adapter",
+      "display",
+      "travel"
+    ]
+  },
+  {
+    "sku": "ACC-ORBIT-206",
+    "name": "Orbit Laptop Sleeve 14in",
+    "category": "electronics",
+    "brand": "Orbit",
+    "productPage": "https://store.example.com/products/acc-orbit-206",
+    "image": "/assets/products/lap-creator-15-005.svg",
+    "price": "17.99",
+    "comparePrice": "22.99",
+    "rating": "4.3",
+    "advertiserId": "advertiser-orbit",
+    "tags": [
+      "sleeve",
+      "laptop",
+      "protection",
+      "school",
+      "carry"
+    ]
+  },
+  {
+    "sku": "ACC-ORBIT-207",
+    "name": "Orbit Power Bank 10000mAh",
+    "category": "electronics",
+    "brand": "Orbit",
+    "productPage": "https://store.example.com/products/acc-orbit-207",
+    "image": "/assets/products/lap-2in1-14-006.svg",
+    "price": "27.99",
+    "comparePrice": "34.99",
+    "rating": "4.6",
+    "advertiserId": "advertiser-orbit",
+    "tags": [
+      "power",
+      "portable",
+      "charging",
+      "phone",
+      "backup"
+    ]
+  },
+  {
+    "sku": "TAB-ORBIT-301",
+    "name": "Orbit NoteTab 10 Tablet",
+    "category": "electronics",
+    "brand": "Orbit",
+    "productPage": "https://store.example.com/products/tab-orbit-301",
+    "image": "/assets/products/acc-mouse-001.svg",
+    "price": "159.99",
+    "comparePrice": "189.99",
+    "rating": "4.2",
+    "advertiserId": "advertiser-orbit",
+    "tags": [
+      "tablet",
+      "study",
+      "streaming",
+      "portable",
+      "value"
+    ]
+  },
+  {
+    "sku": "TAB-ORBIT-302",
+    "name": "Orbit NoteTab 8 Compact Tablet",
+    "category": "electronics",
+    "brand": "Orbit",
+    "productPage": "https://store.example.com/products/tab-orbit-302",
+    "image": "/assets/products/acc-backpack-002.svg",
+    "price": "119.99",
+    "comparePrice": "149.99",
+    "rating": "4.0",
+    "advertiserId": "advertiser-orbit",
+    "tags": [
+      "tablet",
+      "compact",
+      "kids",
+      "reading",
+      "budget"
+    ]
+  },
+  {
+    "sku": "TAB-ORBIT-303",
+    "name": "Orbit Tablet Folio Case 10in",
+    "category": "electronics",
+    "brand": "Orbit",
+    "productPage": "https://store.example.com/products/tab-orbit-303",
+    "image": "/assets/products/acc-dock-003.svg",
+    "price": "19.99",
+    "comparePrice": "24.99",
+    "rating": "4.4",
+    "advertiserId": "advertiser-orbit",
+    "tags": [
+      "case",
+      "tablet",
+      "folio",
+      "protective",
+      "school"
+    ]
+  },
+  {
+    "sku": "TAB-ORBIT-304",
+    "name": "Orbit Active Stylus Pen",
+    "category": "electronics",
+    "brand": "Orbit",
+    "productPage": "https://store.example.com/products/tab-orbit-304",
+    "image": "/assets/products/lap-ultra-13-001.svg",
+    "price": "22.99",
+    "comparePrice": "27.99",
+    "rating": "4.1",
+    "advertiserId": "advertiser-orbit",
+    "tags": [
+      "stylus",
+      "tablet",
+      "notes",
+      "drawing",
+      "study"
+    ]
+  },
+  {
+    "sku": "TAB-ORBIT-305",
+    "name": "Orbit Screen Protector 10in",
+    "category": "electronics",
+    "brand": "Orbit",
+    "productPage": "https://store.example.com/products/tab-orbit-305",
+    "image": "/assets/products/lap-game-16-002.svg",
+    "price": "9.99",
+    "comparePrice": "14.99",
+    "rating": "4.3",
+    "advertiserId": "advertiser-orbit",
+    "tags": [
+      "screen",
+      "protector",
+      "tablet",
+      "clear",
+      "value"
+    ]
+  },
+  {
+    "sku": "AUD-ORBIT-401",
+    "name": "Orbit Pocket Earbuds",
+    "category": "electronics",
+    "brand": "Orbit",
+    "productPage": "https://store.example.com/products/aud-orbit-401",
+    "image": "/assets/products/lap-biz-14-003.svg",
+    "price": "14.99",
+    "comparePrice": "19.99",
+    "rating": "4.2",
+    "advertiserId": "advertiser-orbit",
+    "tags": [
+      "earbuds",
+      "audio",
+      "portable",
+      "music",
+      "budget"
+    ]
+  },
+  {
+    "sku": "AUD-ORBIT-402",
+    "name": "Orbit Wired Headphones",
+    "category": "electronics",
+    "brand": "Orbit",
+    "productPage": "https://store.example.com/products/aud-orbit-402",
+    "image": "/assets/products/lap-student-15-004.svg",
+    "price": "19.99",
+    "comparePrice": "24.99",
+    "rating": "4.3",
+    "advertiserId": "advertiser-orbit",
+    "tags": [
+      "headphones",
+      "wired",
+      "study",
+      "audio",
+      "value"
+    ]
+  },
+  {
+    "sku": "AUD-ORBIT-403",
+    "name": "Orbit Bluetooth Speaker Mini",
+    "category": "electronics",
+    "brand": "Orbit",
+    "productPage": "https://store.example.com/products/aud-orbit-403",
+    "image": "/assets/products/lap-creator-15-005.svg",
+    "price": "24.99",
+    "comparePrice": "31.99",
+    "rating": "4.4",
+    "advertiserId": "advertiser-orbit",
+    "tags": [
+      "speaker",
+      "bluetooth",
+      "portable",
+      "music",
+      "desk"
+    ]
+  },
+  {
+    "sku": "AUD-ORBIT-404",
+    "name": "Orbit Noise-Isolating Earbuds",
+    "category": "electronics",
+    "brand": "Orbit",
+    "productPage": "https://store.example.com/products/aud-orbit-404",
+    "image": "/assets/products/lap-2in1-14-006.svg",
+    "price": "21.99",
+    "comparePrice": "28.99",
+    "rating": "4.1",
+    "advertiserId": "advertiser-orbit",
+    "tags": [
+      "earbuds",
+      "noise",
+      "study",
+      "audio",
+      "commute"
+    ]
+  },
+  {
+    "sku": "AUD-ORBIT-405",
+    "name": "Orbit Clip-On Speaker",
+    "category": "electronics",
+    "brand": "Orbit",
+    "productPage": "https://store.example.com/products/aud-orbit-405",
+    "image": "/assets/products/acc-mouse-001.svg",
+    "price": "17.49",
+    "comparePrice": "22.49",
+    "rating": "4.0",
+    "advertiserId": "advertiser-orbit",
+    "tags": [
+      "speaker",
+      "clip-on",
+      "portable",
+      "travel",
+      "sound"
+    ]
+  },
+  {
+    "sku": "ACC-ORBIT-208",
+    "name": "Orbit Tablet Stand Adjustable",
+    "category": "electronics",
+    "brand": "Orbit",
+    "productPage": "https://store.example.com/products/acc-orbit-208",
+    "image": "/assets/products/acc-backpack-002.svg",
+    "price": "15.99",
+    "comparePrice": "20.99",
+    "rating": "4.2",
+    "advertiserId": "advertiser-orbit",
+    "tags": [
+      "stand",
+      "tablet",
+      "desk",
+      "adjustable",
+      "study"
+    ]
+  },
+  {
+    "sku": "LAP-ORBIT-105",
+    "name": "Orbit StudyBook 15 Chromebook",
+    "category": "electronics",
+    "brand": "Orbit",
+    "productPage": "https://store.example.com/products/lap-orbit-105",
+    "image": "/assets/products/acc-dock-003.svg",
+    "price": "289.99",
+    "comparePrice": "329.99",
+    "rating": "4.5",
+    "advertiserId": "advertiser-orbit",
+    "tags": [
+      "chromebook",
+      "student",
+      "laptop",
+      "budget",
+      "web"
+    ]
+  },
+  {
+    "sku": "ACC-ORBIT-209",
+    "name": "Orbit Laptop Charger 65W",
+    "category": "electronics",
+    "brand": "Orbit",
+    "productPage": "https://store.example.com/products/acc-orbit-209",
+    "image": "/assets/products/lap-ultra-13-001.svg",
+    "price": "26.99",
+    "comparePrice": "32.99",
+    "rating": "4.4",
+    "advertiserId": "advertiser-orbit",
+    "tags": [
+      "charger",
+      "laptop",
+      "usb-c",
+      "power",
+      "travel"
+    ]
+  },
+  {
+    "sku": "AUD-ORBIT-406",
+    "name": "Orbit Over-Ear Study Headset",
+    "category": "electronics",
+    "brand": "Orbit",
+    "productPage": "https://store.example.com/products/aud-orbit-406",
+    "image": "/assets/products/lap-game-16-002.svg",
+    "price": "29.99",
+    "comparePrice": "39.99",
+    "rating": "4.3",
+    "advertiserId": "advertiser-orbit",
+    "tags": [
+      "headset",
+      "study",
+      "mic",
+      "audio",
+      "online-class"
+    ]
+  },
+  {
+    "sku": "WG-FRIDGE-002",
+    "name": "Polarix AeroChill 520L French Door Refrigerator",
+    "category": "whitegoods",
+    "brand": "Polarix",
+    "productPage": "https://store.example.com/products/wg-fridge-002",
+    "image": "/assets/products/wg-oven-003.svg",
+    "price": "2499.00",
+    "comparePrice": "2799.00",
+    "rating": "4.7",
+    "advertiserId": "advertiser-polarix",
+    "tags": [
+      "french-door",
+      "smart-cooling",
+      "family-size",
+      "premium",
+      "freshness"
+    ]
+  },
+  {
+    "sku": "WG-FRIDGE-003",
+    "name": "Polarix FrostLine 420L Bottom Mount Refrigerator",
+    "category": "whitegoods",
+    "brand": "Polarix",
+    "productPage": "https://store.example.com/products/wg-fridge-003",
+    "image": "/assets/products/wg-fridge-001.svg",
+    "price": "1899.00",
+    "comparePrice": "2149.00",
+    "rating": "4.5",
+    "advertiserId": "advertiser-polarix",
+    "tags": [
+      "bottom-mount",
+      "energy-saving",
+      "crisp-storage",
+      "quiet",
+      "modern"
+    ]
+  },
+  {
+    "sku": "WG-FRIDGE-004",
+    "name": "Polarix GlacierVault 680L Side-by-Side Refrigerator",
+    "category": "whitegoods",
+    "brand": "Polarix",
+    "productPage": "https://store.example.com/products/wg-fridge-004",
+    "image": "/assets/products/wg-washer-002.svg",
+    "price": "3199.00",
+    "comparePrice": "3599.00",
+    "rating": "4.8",
+    "advertiserId": "advertiser-polarix",
+    "tags": [
+      "side-by-side",
+      "large-capacity",
+      "water-dispenser",
+      "luxury",
+      "family"
+    ]
+  },
+  {
+    "sku": "WG-FRIDGE-005",
+    "name": "Polarix CoolCurve 340L Top Mount Refrigerator",
+    "category": "whitegoods",
+    "brand": "Polarix",
+    "productPage": "https://store.example.com/products/wg-fridge-005",
+    "image": "/assets/products/wg-oven-003.svg",
+    "price": "1299.00",
+    "comparePrice": "1449.00",
+    "rating": "4.3",
+    "advertiserId": "advertiser-polarix",
+    "tags": [
+      "top-mount",
+      "compact",
+      "reliable",
+      "kitchen",
+      "everyday"
+    ]
+  },
+  {
+    "sku": "WG-FRIDGE-006",
+    "name": "Polarix ArcticCell 610L French Door Refrigerator",
+    "category": "whitegoods",
+    "brand": "Polarix",
+    "productPage": "https://store.example.com/products/wg-fridge-006",
+    "image": "/assets/products/wg-fridge-001.svg",
+    "price": "2899.00",
+    "comparePrice": "3249.00",
+    "rating": "4.7",
+    "advertiserId": "advertiser-polarix",
+    "tags": [
+      "french-door",
+      "dual-zone",
+      "fresh-keeper",
+      "premium",
+      "wide-shelf"
+    ]
+  },
+  {
+    "sku": "WG-FRIDGE-007",
+    "name": "Polarix ChillReserve 250L Bar Fridge",
+    "category": "whitegoods",
+    "brand": "Polarix",
+    "productPage": "https://store.example.com/products/wg-fridge-007",
+    "image": "/assets/products/wg-washer-002.svg",
+    "price": "699.00",
+    "comparePrice": "799.00",
+    "rating": "4.2",
+    "advertiserId": "advertiser-polarix",
+    "tags": [
+      "bar-fridge",
+      "drinks",
+      "compact",
+      "home-bar",
+      "sleek"
+    ]
+  },
+  {
+    "sku": "WG-FRIDGE-008",
+    "name": "Polarix SummitCool 455L Counter Depth Refrigerator",
+    "category": "whitegoods",
+    "brand": "Polarix",
+    "productPage": "https://store.example.com/products/wg-fridge-008",
+    "image": "/assets/products/wg-oven-003.svg",
+    "price": "2199.00",
+    "comparePrice": "2499.00",
+    "rating": "4.6",
+    "advertiserId": "advertiser-polarix",
+    "tags": [
+      "counter-depth",
+      "space-saving",
+      "premium",
+      "fresh-zone",
+      "stylish"
+    ]
+  },
+  {
+    "sku": "WG-FRIDGE-009",
+    "name": "Polarix PureIce 540L Quad Door Refrigerator",
+    "category": "whitegoods",
+    "brand": "Polarix",
+    "productPage": "https://store.example.com/products/wg-fridge-009",
+    "image": "/assets/products/wg-fridge-001.svg",
+    "price": "2799.00",
+    "comparePrice": "3099.00",
+    "rating": "4.7",
+    "advertiserId": "advertiser-polarix",
+    "tags": [
+      "quad-door",
+      "flex-storage",
+      "ice-maker",
+      "premium",
+      "family"
+    ]
+  },
+  {
+    "sku": "WG-FRIDGE-010",
+    "name": "Polarix FrostEdge 200L Beverage Cooler",
+    "category": "whitegoods",
+    "brand": "Polarix",
+    "productPage": "https://store.example.com/products/wg-fridge-010",
+    "image": "/assets/products/wg-washer-002.svg",
+    "price": "899.00",
+    "comparePrice": "999.00",
+    "rating": "4.4",
+    "advertiserId": "advertiser-polarix",
+    "tags": [
+      "beverage-cooler",
+      "glass-door",
+      "drinks",
+      "home-entertainment",
+      "chilled"
+    ]
+  },
+  {
+    "sku": "WG-FRIDGE-011",
+    "name": "Polarix LuxeVault 32 Bottle Wine Cooler",
+    "category": "whitegoods",
+    "brand": "Polarix",
+    "productPage": "https://store.example.com/products/wg-fridge-011",
+    "image": "/assets/products/wg-oven-003.svg",
+    "price": "1099.00",
+    "comparePrice": "1249.00",
+    "rating": "4.6",
+    "advertiserId": "advertiser-polarix",
+    "tags": [
+      "wine-cooler",
+      "dual-zone",
+      "quiet",
+      "cellar",
+      "premium"
+    ]
+  },
+  {
+    "sku": "WG-FRIDGE-012",
+    "name": "Polarix GlacierBar 60L Underbench Fridge",
+    "category": "whitegoods",
+    "brand": "Polarix",
+    "productPage": "https://store.example.com/products/wg-fridge-012",
+    "image": "/assets/products/wg-fridge-001.svg",
+    "price": "429.00",
+    "comparePrice": "499.00",
+    "rating": "4.1",
+    "advertiserId": "advertiser-polarix",
+    "tags": [
+      "underbench",
+      "compact",
+      "apartment",
+      "drinks",
+      "space-saver"
+    ]
+  },
+  {
+    "sku": "WG-FRIDGE-013",
+    "name": "Polarix NorthStar 720L French Door Refrigerator",
+    "category": "whitegoods",
+    "brand": "Polarix",
+    "productPage": "https://store.example.com/products/wg-fridge-013",
+    "image": "/assets/products/wg-washer-002.svg",
+    "price": "3499.00",
+    "comparePrice": "3899.00",
+    "rating": "4.9",
+    "advertiserId": "advertiser-polarix",
+    "tags": [
+      "french-door",
+      "family-size",
+      "plumbed",
+      "premium",
+      "cooling"
+    ]
+  },
+  {
+    "sku": "WG-FRIDGE-014",
+    "name": "Polarix IceHalo 400L Bottom Mount Refrigerator",
+    "category": "whitegoods",
+    "brand": "Polarix",
+    "productPage": "https://store.example.com/products/wg-fridge-014",
+    "image": "/assets/products/wg-oven-003.svg",
+    "price": "1799.00",
+    "comparePrice": "1999.00",
+    "rating": "4.4",
+    "advertiserId": "advertiser-polarix",
+    "tags": [
+      "bottom-mount",
+      "fresh-drawer",
+      "energy-smart",
+      "clean-line",
+      "kitchen"
+    ]
+  },
+  {
+    "sku": "WG-FRIDGE-015",
+    "name": "Polarix ColdForge 300L Chest Freezer",
+    "category": "whitegoods",
+    "brand": "Polarix",
+    "productPage": "https://store.example.com/products/wg-fridge-015",
+    "image": "/assets/products/wg-fridge-001.svg",
+    "price": "799.00",
+    "comparePrice": "899.00",
+    "rating": "4.5",
+    "advertiserId": "advertiser-polarix",
+    "tags": [
+      "chest-freezer",
+      "bulk-storage",
+      "frozen-food",
+      "garage",
+      "reliable"
+    ]
+  },
+  {
+    "sku": "WG-FRIDGE-016",
+    "name": "Polarix FrostTower 380L Upright Freezer",
+    "category": "whitegoods",
+    "brand": "Polarix",
+    "productPage": "https://store.example.com/products/wg-fridge-016",
+    "image": "/assets/products/wg-washer-002.svg",
+    "price": "1199.00",
+    "comparePrice": "1349.00",
+    "rating": "4.3",
+    "advertiserId": "advertiser-polarix",
+    "tags": [
+      "upright-freezer",
+      "shelves",
+      "organised",
+      "family",
+      "frost-safe"
+    ]
+  },
+  {
+    "sku": "WG-FRIDGE-017",
+    "name": "Polarix BreezeArc 515L Multi-Door Refrigerator",
+    "category": "whitegoods",
+    "brand": "Polarix",
+    "productPage": "https://store.example.com/products/wg-fridge-017",
+    "image": "/assets/products/wg-oven-003.svg",
+    "price": "2999.00",
+    "comparePrice": "3349.00",
+    "rating": "4.8",
+    "advertiserId": "advertiser-polarix",
+    "tags": [
+      "multi-door",
+      "flex-zone",
+      "premium",
+      "cool-storage",
+      "family"
+    ]
+  },
+  {
+    "sku": "WG-FRIDGE-018",
+    "name": "Polarix CrystalChill 150L Display Cooler",
+    "category": "whitegoods",
+    "brand": "Polarix",
+    "productPage": "https://store.example.com/products/wg-fridge-018",
+    "image": "/assets/products/wg-fridge-001.svg",
+    "price": "649.00",
+    "comparePrice": "729.00",
+    "rating": "4.2",
+    "advertiserId": "advertiser-polarix",
+    "tags": [
+      "display-cooler",
+      "glass-front",
+      "beverages",
+      "retail-style",
+      "sleek"
+    ]
+  },
+  {
+    "sku": "WG-FRIDGE-019",
+    "name": "Polarix SilentPeak 460L Integrated Refrigerator",
+    "category": "whitegoods",
+    "brand": "Polarix",
+    "productPage": "https://store.example.com/products/wg-fridge-019",
+    "image": "/assets/products/wg-washer-002.svg",
+    "price": "2699.00",
+    "comparePrice": "2999.00",
+    "rating": "4.6",
+    "advertiserId": "advertiser-polarix",
+    "tags": [
+      "integrated",
+      "quiet",
+      "built-in",
+      "premium",
+      "minimal"
+    ]
+  },
+  {
+    "sku": "WG-FRIDGE-020",
+    "name": "Polarix ArcticLume 570L French Door Refrigerator",
+    "category": "whitegoods",
+    "brand": "Polarix",
+    "productPage": "https://store.example.com/products/wg-fridge-020",
+    "image": "/assets/products/wg-oven-003.svg",
+    "price": "3099.00",
+    "comparePrice": "3499.00",
+    "rating": "4.8",
+    "advertiserId": "advertiser-polarix",
+    "tags": [
+      "french-door",
+      "led-lighting",
+      "family-size",
+      "premium",
+      "freshness"
+    ]
+  },
+  {
+    "sku": "WG-FRIDGE-021",
+    "name": "Polarix CoolMatrix 230L Beverage Center",
+    "category": "whitegoods",
+    "brand": "Polarix",
+    "productPage": "https://store.example.com/products/wg-fridge-021",
+    "image": "/assets/products/wg-fridge-001.svg",
+    "price": "999.00",
+    "comparePrice": "1149.00",
+    "rating": "4.5",
+    "advertiserId": "advertiser-polarix",
+    "tags": [
+      "beverage-center",
+      "dual-temp",
+      "drinks",
+      "glass-door",
+      "lounge"
+    ]
+  },
+  {
+    "sku": "WG-FRIDGE-022",
+    "name": "Polarix FrostLine Pro 355L Top Mount Refrigerator",
+    "category": "whitegoods",
+    "brand": "Polarix",
+    "productPage": "https://store.example.com/products/wg-fridge-022",
+    "image": "/assets/products/wg-washer-002.svg",
+    "price": "1399.00",
+    "comparePrice": "1599.00",
+    "rating": "4.3",
+    "advertiserId": "advertiser-polarix",
+    "tags": [
+      "top-mount",
+      "pro-series",
+      "efficient",
+      "kitchen",
+      "daily-use"
+    ]
+  },
+  {
+    "sku": "WG-FRIDGE-023",
+    "name": "Polarix GlacierNest 28 Bottle Wine Refrigerator",
+    "category": "whitegoods",
+    "brand": "Polarix",
+    "productPage": "https://store.example.com/products/wg-fridge-023",
+    "image": "/assets/products/wg-oven-003.svg",
+    "price": "949.00",
+    "comparePrice": "1049.00",
+    "rating": "4.4",
+    "advertiserId": "advertiser-polarix",
+    "tags": [
+      "wine-refrigerator",
+      "compact",
+      "dual-zone",
+      "quiet",
+      "cellar"
+    ]
+  },
+  {
+    "sku": "WG-FRIDGE-024",
+    "name": "Polarix AeroVault 490L Bottom Mount Refrigerator",
+    "category": "whitegoods",
+    "brand": "Polarix",
+    "productPage": "https://store.example.com/products/wg-fridge-024",
+    "image": "/assets/products/wg-fridge-001.svg",
+    "price": "2299.00",
+    "comparePrice": "2599.00",
+    "rating": "4.6",
+    "advertiserId": "advertiser-polarix",
+    "tags": [
+      "bottom-mount",
+      "fresh-drawer",
+      "premium",
+      "organised",
+      "modern"
+    ]
+  },
+  {
+    "sku": "WG-FRIDGE-025",
+    "name": "Polarix IceBloom 85L Cube Ice Maker",
+    "category": "whitegoods",
+    "brand": "Polarix",
+    "productPage": "https://store.example.com/products/wg-fridge-025",
+    "image": "/assets/products/wg-washer-002.svg",
+    "price": "599.00",
+    "comparePrice": "679.00",
+    "rating": "4.2",
+    "advertiserId": "advertiser-polarix",
+    "tags": [
+      "ice-maker",
+      "countertop",
+      "fast-cycle",
+      "drinks",
+      "home-bar"
+    ]
+  },
+  {
+    "sku": "WG-FRIDGE-026",
+    "name": "Polarix ColdWave 18L Portable Compressor Cooler",
+    "category": "whitegoods",
+    "brand": "Polarix",
+    "productPage": "https://store.example.com/products/wg-fridge-026",
+    "image": "/assets/products/wg-oven-003.svg",
+    "price": "449.00",
+    "comparePrice": "519.00",
+    "rating": "4.1",
+    "advertiserId": "advertiser-polarix",
+    "tags": [
+      "portable",
+      "compressor",
+      "road-trip",
+      "cooling",
+      "compact"
+    ]
+  },
+  {
+    "sku": "FS-BREAKFAST-003",
+    "name": "QuickBite Bacon Egg Muffin",
+    "category": "foodcourt",
+    "brand": "QuickBite",
+    "productPage": "https://store.example.com/products/fs-breakfast-003",
+    "image": "/assets/products/fs-breakfast-002.svg",
+    "price": "6.49",
+    "comparePrice": "7.49",
+    "rating": "4.5",
+    "advertiserId": "advertiser-quickbite",
+    "tags": [
+      "breakfast",
+      "muffin",
+      "bacon",
+      "eggs"
+    ]
+  },
+  {
+    "sku": "FS-BREAKFAST-004",
+    "name": "QuickBite Sausage Egg Roll",
+    "category": "foodcourt",
+    "brand": "QuickBite",
+    "productPage": "https://store.example.com/products/fs-breakfast-004",
+    "image": "/assets/products/fs-lunch-001.svg",
+    "price": "6.99",
+    "comparePrice": "7.99",
+    "rating": "4.4",
+    "advertiserId": "advertiser-quickbite",
+    "tags": [
+      "breakfast",
+      "sausage",
+      "egg",
+      "roll"
+    ]
+  },
+  {
+    "sku": "FS-BREAKFAST-005",
+    "name": "QuickBite Breakfast Wrap",
+    "category": "foodcourt",
+    "brand": "QuickBite",
+    "productPage": "https://store.example.com/products/fs-breakfast-005",
+    "image": "/assets/products/fs-breakfast-002.svg",
+    "price": "7.49",
+    "comparePrice": "8.49",
+    "rating": "4.6",
+    "advertiserId": "advertiser-quickbite",
+    "tags": [
+      "breakfast",
+      "wrap",
+      "hot",
+      "value"
+    ]
+  },
+  {
+    "sku": "FS-BREAKFAST-006",
+    "name": "QuickBite Pancake Stack",
+    "category": "foodcourt",
+    "brand": "QuickBite",
+    "productPage": "https://store.example.com/products/fs-breakfast-006",
+    "image": "/assets/products/fs-lunch-001.svg",
+    "price": "5.99",
+    "comparePrice": "6.99",
+    "rating": "4.3",
+    "advertiserId": "advertiser-quickbite",
+    "tags": [
+      "breakfast",
+      "pancakes",
+      "sweet",
+      "syrup"
+    ]
+  },
+  {
+    "sku": "FS-BREAKFAST-007",
+    "name": "QuickBite Sunrise Combo",
+    "category": "foodcourt",
+    "brand": "QuickBite",
+    "productPage": "https://store.example.com/products/fs-breakfast-007",
+    "image": "/assets/products/fs-breakfast-002.svg",
+    "price": "8.99",
+    "comparePrice": "10.49",
+    "rating": "4.7",
+    "advertiserId": "advertiser-quickbite",
+    "tags": [
+      "breakfast",
+      "combo",
+      "coffee",
+      "savory"
+    ]
+  },
+  {
+    "sku": "FS-LUNCH-003",
+    "name": "QuickBite Chicken Burger",
+    "category": "foodcourt",
+    "brand": "QuickBite",
+    "productPage": "https://store.example.com/products/fs-lunch-003",
+    "image": "/assets/products/fs-lunch-001.svg",
+    "price": "9.49",
+    "comparePrice": "10.99",
+    "rating": "4.5",
+    "advertiserId": "advertiser-quickbite",
+    "tags": [
+      "lunch",
+      "burger",
+      "chicken",
+      "grilled"
+    ]
+  },
+  {
+    "sku": "FS-LUNCH-004",
+    "name": "QuickBite Classic Cheeseburger",
+    "category": "foodcourt",
+    "brand": "QuickBite",
+    "productPage": "https://store.example.com/products/fs-lunch-004",
+    "image": "/assets/products/fs-breakfast-002.svg",
+    "price": "9.99",
+    "comparePrice": "11.49",
+    "rating": "4.6",
+    "advertiserId": "advertiser-quickbite",
+    "tags": [
+      "lunch",
+      "burger",
+      "cheeseburger",
+      "beef"
+    ]
+  },
+  {
+    "sku": "FS-LUNCH-005",
+    "name": "QuickBite Crispy Chicken Wrap",
+    "category": "foodcourt",
+    "brand": "QuickBite",
+    "productPage": "https://store.example.com/products/fs-lunch-005",
+    "image": "/assets/products/fs-lunch-001.svg",
+    "price": "8.99",
+    "comparePrice": "10.29",
+    "rating": "4.4",
+    "advertiserId": "advertiser-quickbite",
+    "tags": [
+      "lunch",
+      "wrap",
+      "chicken",
+      "crispy"
+    ]
+  },
+  {
+    "sku": "FS-LUNCH-006",
+    "name": "QuickBite Loaded Fries Meal",
+    "category": "foodcourt",
+    "brand": "QuickBite",
+    "productPage": "https://store.example.com/products/fs-lunch-006",
+    "image": "/assets/products/fs-breakfast-002.svg",
+    "price": "7.99",
+    "comparePrice": "9.49",
+    "rating": "4.2",
+    "advertiserId": "advertiser-quickbite",
+    "tags": [
+      "lunch",
+      "fries",
+      "loaded",
+      "snack"
+    ]
+  },
+  {
+    "sku": "FS-LUNCH-007",
+    "name": "QuickBite Beef Nacho Bowl",
+    "category": "foodcourt",
+    "brand": "QuickBite",
+    "productPage": "https://store.example.com/products/fs-lunch-007",
+    "image": "/assets/products/fs-lunch-001.svg",
+    "price": "10.49",
+    "comparePrice": "11.99",
+    "rating": "4.5",
+    "advertiserId": "advertiser-quickbite",
+    "tags": [
+      "lunch",
+      "nachos",
+      "beef",
+      "bowl"
+    ]
+  },
+  {
+    "sku": "FS-COMBO-008",
+    "name": "QuickBite Family Feast Combo",
+    "category": "foodcourt",
+    "brand": "QuickBite",
+    "productPage": "https://store.example.com/products/fs-combo-008",
+    "image": "/assets/products/fs-breakfast-002.svg",
+    "price": "24.99",
+    "comparePrice": "29.99",
+    "rating": "4.8",
+    "advertiserId": "advertiser-quickbite",
+    "tags": [
+      "combo",
+      "family",
+      "share",
+      "meal"
+    ]
+  },
+  {
+    "sku": "FS-COMBO-009",
+    "name": "QuickBite Duo Burger Combo",
+    "category": "foodcourt",
+    "brand": "QuickBite",
+    "productPage": "https://store.example.com/products/fs-combo-009",
+    "image": "/assets/products/fs-lunch-001.svg",
+    "price": "18.99",
+    "comparePrice": "22.49",
+    "rating": "4.7",
+    "advertiserId": "advertiser-quickbite",
+    "tags": [
+      "combo",
+      "burger",
+      "duo",
+      "drinks"
+    ]
+  },
+  {
+    "sku": "FS-COMBO-010",
+    "name": "QuickBite Lunch Saver Combo",
+    "category": "foodcourt",
+    "brand": "QuickBite",
+    "productPage": "https://store.example.com/products/fs-combo-010",
+    "image": "/assets/products/fs-breakfast-002.svg",
+    "price": "12.49",
+    "comparePrice": "14.99",
+    "rating": "4.3",
+    "advertiserId": "advertiser-quickbite",
+    "tags": [
+      "combo",
+      "lunch",
+      "value",
+      "deal"
+    ]
+  },
+  {
+    "sku": "FS-COMBO-011",
+    "name": "QuickBite Snack Pack Combo",
+    "category": "foodcourt",
+    "brand": "QuickBite",
+    "productPage": "https://store.example.com/products/fs-combo-011",
+    "image": "/assets/products/fs-lunch-001.svg",
+    "price": "11.99",
+    "comparePrice": "13.49",
+    "rating": "4.4",
+    "advertiserId": "advertiser-quickbite",
+    "tags": [
+      "combo",
+      "snack",
+      "pack",
+      "savory"
+    ]
+  },
+  {
+    "sku": "FS-SNACK-012",
+    "name": "QuickBite Cheese Bites",
+    "category": "foodcourt",
+    "brand": "QuickBite",
+    "productPage": "https://store.example.com/products/fs-snack-012",
+    "image": "/assets/products/fs-breakfast-002.svg",
+    "price": "4.99",
+    "comparePrice": "5.99",
+    "rating": "4.2",
+    "advertiserId": "advertiser-quickbite",
+    "tags": [
+      "snack",
+      "cheese",
+      "bites",
+      "hot"
+    ]
+  },
+  {
+    "sku": "FS-SNACK-013",
+    "name": "QuickBite Chicken Nuggets",
+    "category": "foodcourt",
+    "brand": "QuickBite",
+    "productPage": "https://store.example.com/products/fs-snack-013",
+    "image": "/assets/products/fs-lunch-001.svg",
+    "price": "5.49",
+    "comparePrice": "6.49",
+    "rating": "4.5",
+    "advertiserId": "advertiser-quickbite",
+    "tags": [
+      "snack",
+      "nuggets",
+      "chicken",
+      "crispy"
+    ]
+  },
+  {
+    "sku": "FS-SNACK-014",
+    "name": "QuickBite Mozzarella Sticks",
+    "category": "foodcourt",
+    "brand": "QuickBite",
+    "productPage": "https://store.example.com/products/fs-snack-014",
+    "image": "/assets/products/fs-breakfast-002.svg",
+    "price": "5.99",
+    "comparePrice": "6.99",
+    "rating": "4.4",
+    "advertiserId": "advertiser-quickbite",
+    "tags": [
+      "snack",
+      "mozzarella",
+      "sticks",
+      "fried"
+    ]
+  },
+  {
+    "sku": "FS-SNACK-015",
+    "name": "QuickBite Mini Pretzel Bites",
+    "category": "foodcourt",
+    "brand": "QuickBite",
+    "productPage": "https://store.example.com/products/fs-snack-015",
+    "image": "/assets/products/fs-lunch-001.svg",
+    "price": "4.49",
+    "comparePrice": "5.29",
+    "rating": "4.1",
+    "advertiserId": "advertiser-quickbite",
+    "tags": [
+      "snack",
+      "pretzel",
+      "bites",
+      "salty"
+    ]
+  },
+  {
+    "sku": "FS-SNACK-016",
+    "name": "QuickBite Nacho Chips Cup",
+    "category": "foodcourt",
+    "brand": "QuickBite",
+    "productPage": "https://store.example.com/products/fs-snack-016",
+    "image": "/assets/products/fs-breakfast-002.svg",
+    "price": "3.99",
+    "comparePrice": "4.79",
+    "rating": "4.0",
+    "advertiserId": "advertiser-quickbite",
+    "tags": [
+      "snack",
+      "nachos",
+      "chips",
+      "cheese"
+    ]
+  },
+  {
+    "sku": "FS-BOWL-017",
+    "name": "QuickBite Teriyaki Rice Bowl",
+    "category": "foodcourt",
+    "brand": "QuickBite",
+    "productPage": "https://store.example.com/products/fs-bowl-017",
+    "image": "/assets/products/fs-lunch-001.svg",
+    "price": "10.99",
+    "comparePrice": "12.49",
+    "rating": "4.6",
+    "advertiserId": "advertiser-quickbite",
+    "tags": [
+      "bowl",
+      "rice",
+      "teriyaki",
+      "lunch"
+    ]
+  },
+  {
+    "sku": "FS-BOWL-018",
+    "name": "QuickBite Chicken Rice Bowl",
+    "category": "foodcourt",
+    "brand": "QuickBite",
+    "productPage": "https://store.example.com/products/fs-bowl-018",
+    "image": "/assets/products/fs-breakfast-002.svg",
+    "price": "10.49",
+    "comparePrice": "11.99",
+    "rating": "4.5",
+    "advertiserId": "advertiser-quickbite",
+    "tags": [
+      "bowl",
+      "rice",
+      "chicken",
+      "savory"
+    ]
+  },
+  {
+    "sku": "FS-BOWL-019",
+    "name": "QuickBite Veggie Grain Bowl",
+    "category": "foodcourt",
+    "brand": "QuickBite",
+    "productPage": "https://store.example.com/products/fs-bowl-019",
+    "image": "/assets/products/fs-lunch-001.svg",
+    "price": "9.99",
+    "comparePrice": "11.49",
+    "rating": "4.3",
+    "advertiserId": "advertiser-quickbite",
+    "tags": [
+      "bowl",
+      "veggie",
+      "grain",
+      "fresh"
+    ]
+  },
+  {
+    "sku": "FS-SAND-020",
+    "name": "QuickBite Turkey Club Sandwich",
+    "category": "foodcourt",
+    "brand": "QuickBite",
+    "productPage": "https://store.example.com/products/fs-sand-020",
+    "image": "/assets/products/fs-breakfast-002.svg",
+    "price": "8.49",
+    "comparePrice": "9.99",
+    "rating": "4.4",
+    "advertiserId": "advertiser-quickbite",
+    "tags": [
+      "sandwich",
+      "turkey",
+      "club",
+      "lunch"
+    ]
+  },
+  {
+    "sku": "FS-SAND-021",
+    "name": "QuickBite Roast Beef Sandwich",
+    "category": "foodcourt",
+    "brand": "QuickBite",
+    "productPage": "https://store.example.com/products/fs-sand-021",
+    "image": "/assets/products/fs-lunch-001.svg",
+    "price": "9.49",
+    "comparePrice": "10.99",
+    "rating": "4.5",
+    "advertiserId": "advertiser-quickbite",
+    "tags": [
+      "sandwich",
+      "beef",
+      "roast",
+      "hearty"
+    ]
+  },
+  {
+    "sku": "FS-SAND-022",
+    "name": "QuickBite Veggie Stack Sandwich",
+    "category": "foodcourt",
+    "brand": "QuickBite",
+    "productPage": "https://store.example.com/products/fs-sand-022",
+    "image": "/assets/products/fs-breakfast-002.svg",
+    "price": "7.99",
+    "comparePrice": "9.29",
+    "rating": "4.2",
+    "advertiserId": "advertiser-quickbite",
+    "tags": [
+      "sandwich",
+      "veggie",
+      "stack",
+      "fresh"
+    ]
+  },
+  {
+    "sku": "LAP-VX-13-101",
+    "name": "Vertex HaloBook 13 Carbon",
+    "category": "electronics",
+    "brand": "Vertex",
+    "productPage": "https://store.example.com/products/lap-vx-13-101",
+    "image": "/assets/products/acc-backpack-002.svg",
+    "price": "1199.00",
+    "comparePrice": "1399.00",
+    "rating": "4.8",
+    "advertiserId": "advertiser-vertex",
+    "tags": [
+      "laptop",
+      "ultrabook",
+      "carbon",
+      "premium"
+    ]
+  },
+  {
+    "sku": "LAP-VX-14-102",
+    "name": "Vertex FlexBook 14 OLED",
+    "category": "electronics",
+    "brand": "Vertex",
+    "productPage": "https://store.example.com/products/lap-vx-14-102",
+    "image": "/assets/products/acc-dock-003.svg",
+    "price": "1299.00",
+    "comparePrice": "1499.00",
+    "rating": "4.7",
+    "advertiserId": "advertiser-vertex",
+    "tags": [
+      "laptop",
+      "2-in-1",
+      "oled",
+      "touch"
+    ]
+  },
+  {
+    "sku": "LAP-VX-16-103",
+    "name": "Vertex CoreBook 16 Pro",
+    "category": "electronics",
+    "brand": "Vertex",
+    "productPage": "https://store.example.com/products/lap-vx-16-103",
+    "image": "/assets/products/lap-ultra-13-001.svg",
+    "price": "1599.00",
+    "comparePrice": "1799.00",
+    "rating": "4.8",
+    "advertiserId": "advertiser-vertex",
+    "tags": [
+      "laptop",
+      "performance",
+      "creator",
+      "pro"
+    ]
+  },
+  {
+    "sku": "LAP-2IN1-13-104",
+    "name": "Vertex FlexBook 13 Slim",
+    "category": "electronics",
+    "brand": "Vertex",
+    "productPage": "https://store.example.com/products/lap-2in1-13-104",
+    "image": "/assets/products/lap-game-16-002.svg",
+    "price": "1049.00",
+    "comparePrice": "1199.00",
+    "rating": "4.6",
+    "advertiserId": "advertiser-vertex",
+    "tags": [
+      "laptop",
+      "2-in-1",
+      "slim",
+      "portable"
+    ]
+  },
+  {
+    "sku": "LAP-2IN1-14-105",
+    "name": "Vertex StudioFlip 14 Touch",
+    "category": "electronics",
+    "brand": "Vertex",
+    "productPage": "https://store.example.com/products/lap-2in1-14-105",
+    "image": "/assets/products/lap-biz-14-003.svg",
+    "price": "1149.00",
+    "comparePrice": "1299.00",
+    "rating": "4.7",
+    "advertiserId": "advertiser-vertex",
+    "tags": [
+      "laptop",
+      "touch",
+      "tablet-mode",
+      "flexible"
+    ]
+  },
+  {
+    "sku": "TAB-VX-11-106",
+    "name": "Vertex Slate 11 Pro",
+    "category": "electronics",
+    "brand": "Vertex",
+    "productPage": "https://store.example.com/products/tab-vx-11-106",
+    "image": "/assets/products/lap-student-15-004.svg",
+    "price": "699.00",
+    "comparePrice": "799.00",
+    "rating": "4.6",
+    "advertiserId": "advertiser-vertex",
+    "tags": [
+      "tablet",
+      "portable",
+      "pen-ready",
+      "pro"
+    ]
+  },
+  {
+    "sku": "TAB-VX-13-107",
+    "name": "Vertex Slate 13 Ultra",
+    "category": "electronics",
+    "brand": "Vertex",
+    "productPage": "https://store.example.com/products/tab-vx-13-107",
+    "image": "/assets/products/lap-creator-15-005.svg",
+    "price": "899.00",
+    "comparePrice": "999.00",
+    "rating": "4.7",
+    "advertiserId": "advertiser-vertex",
+    "tags": [
+      "tablet",
+      "large-screen",
+      "creative",
+      "ultra"
+    ]
+  },
+  {
+    "sku": "TAB-5G-11-108",
+    "name": "Vertex Slate 11 5G",
+    "category": "electronics",
+    "brand": "Vertex",
+    "productPage": "https://store.example.com/products/tab-5g-11-108",
+    "image": "/assets/products/lap-2in1-14-006.svg",
+    "price": "749.00",
+    "comparePrice": "849.00",
+    "rating": "4.5",
+    "advertiserId": "advertiser-vertex",
+    "tags": [
+      "tablet",
+      "5g",
+      "mobile",
+      "work"
+    ]
+  },
+  {
+    "sku": "TAB-PRO-12-109",
+    "name": "Vertex NotePad 12 Pro",
+    "category": "electronics",
+    "brand": "Vertex",
+    "productPage": "https://store.example.com/products/tab-pro-12-109",
+    "image": "/assets/products/acc-mouse-001.svg",
+    "price": "829.00",
+    "comparePrice": "949.00",
+    "rating": "4.7",
+    "advertiserId": "advertiser-vertex",
+    "tags": [
+      "tablet",
+      "notes",
+      "stylus",
+      "productivity"
+    ]
+  },
+  {
+    "sku": "MON-27-110",
+    "name": "Vertex View 27 QHD",
+    "category": "electronics",
+    "brand": "Vertex",
+    "productPage": "https://store.example.com/products/mon-27-110",
+    "image": "/assets/products/acc-backpack-002.svg",
+    "price": "399.00",
+    "comparePrice": "469.00",
+    "rating": "4.6",
+    "advertiserId": "advertiser-vertex",
+    "tags": [
+      "monitor",
+      "qhd",
+      "office",
+      "display"
+    ]
+  },
+  {
+    "sku": "MON-32-111",
+    "name": "Vertex View 32 4K",
+    "category": "electronics",
+    "brand": "Vertex",
+    "productPage": "https://store.example.com/products/mon-32-111",
+    "image": "/assets/products/acc-dock-003.svg",
+    "price": "549.00",
+    "comparePrice": "629.00",
+    "rating": "4.8",
+    "advertiserId": "advertiser-vertex",
+    "tags": [
+      "monitor",
+      "4k",
+      "large",
+      "creator"
+    ]
+  },
+  {
+    "sku": "MON-34-112",
+    "name": "Vertex Curve 34 UltraWide",
+    "category": "electronics",
+    "brand": "Vertex",
+    "productPage": "https://store.example.com/products/mon-34-112",
+    "image": "/assets/products/lap-ultra-13-001.svg",
+    "price": "699.00",
+    "comparePrice": "799.00",
+    "rating": "4.7",
+    "advertiserId": "advertiser-vertex",
+    "tags": [
+      "monitor",
+      "ultrawide",
+      "curved",
+      "productivity"
+    ]
+  },
+  {
+    "sku": "ACC-DOCK-113",
+    "name": "Vertex DockStation Pro 14",
+    "category": "electronics",
+    "brand": "Vertex",
+    "productPage": "https://store.example.com/products/acc-dock-113",
+    "image": "/assets/products/lap-game-16-002.svg",
+    "price": "179.00",
+    "comparePrice": "219.00",
+    "rating": "4.5",
+    "advertiserId": "advertiser-vertex",
+    "tags": [
+      "dock",
+      "usb-c",
+      "desk",
+      "expand"
+    ]
+  },
+  {
+    "sku": "ACC-USB4-114",
+    "name": "Vertex USB4 Travel Hub",
+    "category": "electronics",
+    "brand": "Vertex",
+    "productPage": "https://store.example.com/products/acc-usb4-114",
+    "image": "/assets/products/lap-biz-14-003.svg",
+    "price": "89.00",
+    "comparePrice": "109.00",
+    "rating": "4.4",
+    "advertiserId": "advertiser-vertex",
+    "tags": [
+      "hub",
+      "usb4",
+      "travel",
+      "compact"
+    ]
+  },
+  {
+    "sku": "ACC-HUB-115",
+    "name": "Vertex ThunderHub 8-Port",
+    "category": "electronics",
+    "brand": "Vertex",
+    "productPage": "https://store.example.com/products/acc-hub-115",
+    "image": "/assets/products/lap-student-15-004.svg",
+    "price": "129.00",
+    "comparePrice": "149.00",
+    "rating": "4.5",
+    "advertiserId": "advertiser-vertex",
+    "tags": [
+      "hub",
+      "thunderbolt",
+      "desktop",
+      "ports"
+    ]
+  },
+  {
+    "sku": "ACC-CHARGER-116",
+    "name": "Vertex GaN ChargeBlock 100W",
+    "category": "electronics",
+    "brand": "Vertex",
+    "productPage": "https://store.example.com/products/acc-charger-116",
+    "image": "/assets/products/lap-creator-15-005.svg",
+    "price": "79.00",
+    "comparePrice": "99.00",
+    "rating": "4.6",
+    "advertiserId": "advertiser-vertex",
+    "tags": [
+      "charger",
+      "gan",
+      "fast",
+      "travel"
+    ]
+  },
+  {
+    "sku": "ACC-STAND-117",
+    "name": "Vertex LiftStand Air",
+    "category": "electronics",
+    "brand": "Vertex",
+    "productPage": "https://store.example.com/products/acc-stand-117",
+    "image": "/assets/products/lap-2in1-14-006.svg",
+    "price": "59.00",
+    "comparePrice": "79.00",
+    "rating": "4.5",
+    "advertiserId": "advertiser-vertex",
+    "tags": [
+      "stand",
+      "ergonomic",
+      "desk",
+      "aluminum"
+    ]
+  },
+  {
+    "sku": "ACC-CABLE-118",
+    "name": "Vertex Braided USB-C Cable 2m",
+    "category": "electronics",
+    "brand": "Vertex",
+    "productPage": "https://store.example.com/products/acc-cable-118",
+    "image": "/assets/products/acc-mouse-001.svg",
+    "price": "29.00",
+    "comparePrice": "39.00",
+    "rating": "4.4",
+    "advertiserId": "advertiser-vertex",
+    "tags": [
+      "cable",
+      "usb-c",
+      "braided",
+      "durable"
+    ]
+  },
+  {
+    "sku": "AUD-ANC-119",
+    "name": "Vertex Pulse ANC Headphones",
+    "category": "electronics",
+    "brand": "Vertex",
+    "productPage": "https://store.example.com/products/aud-anc-119",
+    "image": "/assets/products/acc-backpack-002.svg",
+    "price": "249.00",
+    "comparePrice": "299.00",
+    "rating": "4.7",
+    "advertiserId": "advertiser-vertex",
+    "tags": [
+      "audio",
+      "anc",
+      "wireless",
+      "headphones"
+    ]
+  },
+  {
+    "sku": "AUD-MIC-120",
+    "name": "Vertex StreamMic USB-C",
+    "category": "electronics",
+    "brand": "Vertex",
+    "productPage": "https://store.example.com/products/aud-mic-120",
+    "image": "/assets/products/acc-dock-003.svg",
+    "price": "149.00",
+    "comparePrice": "179.00",
+    "rating": "4.6",
+    "advertiserId": "advertiser-vertex",
+    "tags": [
+      "audio",
+      "microphone",
+      "streaming",
+      "usb-c"
+    ]
+  },
+  {
+    "sku": "AUD-SPEAKER-121",
+    "name": "Vertex DeskSound Stereo Pair",
+    "category": "electronics",
+    "brand": "Vertex",
+    "productPage": "https://store.example.com/products/aud-speaker-121",
+    "image": "/assets/products/lap-ultra-13-001.svg",
+    "price": "119.00",
+    "comparePrice": "139.00",
+    "rating": "4.5",
+    "advertiserId": "advertiser-vertex",
+    "tags": [
+      "audio",
+      "speaker",
+      "desk",
+      "stereo"
+    ]
+  },
+  {
+    "sku": "AUD-HEADSET-122",
+    "name": "Vertex WorkSound Headset",
+    "category": "electronics",
+    "brand": "Vertex",
+    "productPage": "https://store.example.com/products/aud-headset-122",
+    "image": "/assets/products/lap-game-16-002.svg",
+    "price": "169.00",
+    "comparePrice": "199.00",
+    "rating": "4.6",
+    "advertiserId": "advertiser-vertex",
+    "tags": [
+      "audio",
+      "headset",
+      "calls",
+      "work"
+    ]
+  },
+  {
+    "sku": "LAP-MOBILE-123",
+    "name": "Vertex AirBook 13 Mobile",
+    "category": "electronics",
+    "brand": "Vertex",
+    "productPage": "https://store.example.com/products/lap-mobile-123",
+    "image": "/assets/products/lap-biz-14-003.svg",
+    "price": "999.00",
+    "comparePrice": "1149.00",
+    "rating": "4.6",
+    "advertiserId": "advertiser-vertex",
+    "tags": [
+      "laptop",
+      "mobile",
+      "thin",
+      "travel"
+    ]
+  },
+  {
+    "sku": "LAP-CREATOR-124",
+    "name": "Vertex StudioBook 15 OLED",
+    "category": "electronics",
+    "brand": "Vertex",
+    "productPage": "https://store.example.com/products/lap-creator-124",
+    "image": "/assets/products/lap-student-15-004.svg",
+    "price": "1699.00",
+    "comparePrice": "1899.00",
+    "rating": "4.9",
+    "advertiserId": "advertiser-vertex",
+    "tags": [
+      "laptop",
+      "creator",
+      "oled",
+      "performance"
+    ]
+  },
+  {
+    "sku": "LAP-WORK-125",
+    "name": "Vertex OfficeBook 14 Pro",
+    "category": "electronics",
+    "brand": "Vertex",
+    "productPage": "https://store.example.com/products/lap-work-125",
+    "image": "/assets/products/lap-creator-15-005.svg",
+    "price": "1099.00",
+    "comparePrice": "1249.00",
+    "rating": "4.5",
+    "advertiserId": "advertiser-vertex",
+    "tags": [
+      "laptop",
+      "business",
+      "pro",
+      "reliable"
+    ]
+  }
 ]
-

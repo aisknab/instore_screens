@@ -35,13 +35,13 @@ const DEFAULT_GOAL_DEFAULTS = {
   targetSkuIds: ["ACC-MOUSE-001"]
 };
 
-const DEFAULT_SCREEN_TYPE_DAILY_RATES = {
-  "Vertical Screen": 180,
-  "Horizontal Screen": 150,
-  "Shelf Edge": 65,
-  Endcap: 95,
-  Kiosk: 130,
-  "Digital Menu Board": 120
+const DEFAULT_SCREEN_TYPE_CPMS = {
+  "Vertical Screen": 22,
+  "Horizontal Screen": 18,
+  "Shelf Edge": 15,
+  Endcap: 18,
+  Kiosk: 24,
+  "Digital Menu Board": 20
 };
 const DEFAULT_GOAL_FLIGHT_DAYS = 7;
 
@@ -121,6 +121,7 @@ const state = {
   editingScreenId: "",
   manualSupplyConfirmed: false,
   presetLoadedInSession: false,
+  supplyHandoffAcknowledged: false,
   goalPlanningStep: 1,
   goalScopeStepAcknowledged: false,
   goalRetailerRateCard: null,
@@ -129,7 +130,8 @@ const state = {
   goalBudgetSpend: null,
   sessionPlanIds: new Set(),
   toastTimeoutId: null,
-  previewRailKey: ""
+  previewRailKey: "",
+  previewRailRequestId: 0
 };
 
 function qs(selector) {
@@ -155,6 +157,10 @@ const elements = {
   createAnchorBtn: qs("#createAnchorBtn"),
   supplySummaryCards: qs("#supplySummaryCards"),
   presetSummary: qs("#presetSummary"),
+  supplyHandoffCard: qs("#supplyHandoffCard"),
+  supplyHandoffMessage: qs("#supplyHandoffMessage"),
+  supplyHandoffStats: qs("#supplyHandoffStats"),
+  continueToBuyingBtn: qs("#continueToBuyingBtn"),
   pagesList: qs("#pagesList"),
   screensList: qs("#screensList"),
   pageForm: qs("#page-form"),
@@ -332,14 +338,14 @@ function formatGoalFlightSummary(startValue = elements.goalFlightStart?.value, e
 function getGoalRateCardScreenTypes() {
   return Array.isArray(state.options?.screenTypes) && state.options.screenTypes.length > 0
     ? state.options.screenTypes
-    : Object.keys(DEFAULT_SCREEN_TYPE_DAILY_RATES);
+    : Object.keys(DEFAULT_SCREEN_TYPE_CPMS);
 }
 
 function getGoalRateCardDefaults() {
   const serverDefaults = state.options?.screenTypePricingDefaults || {};
   return Object.fromEntries(
     getGoalRateCardScreenTypes().map((screenType) => {
-      const fallback = Number(DEFAULT_SCREEN_TYPE_DAILY_RATES[screenType] || 100);
+      const fallback = Number(DEFAULT_SCREEN_TYPE_CPMS[screenType] || 10);
       const configured = Number(serverDefaults?.[screenType]);
       return [screenType, Number.isFinite(configured) ? Math.max(0, Math.round(configured)) : fallback];
     })
@@ -384,7 +390,7 @@ function renderGoalRateCard(rateCardSeed = null) {
       (screenType) => `<article class="summary-card">
         <span class="kpi-card__label">${escapeHtml(screenType)}</span>
         <strong>${escapeHtml(formatMoney(rateCard[screenType] || 0))}</strong>
-        <span>Per screen / day</span>
+        <span>CPM</span>
       </article>`
     )
     .join("");
@@ -406,14 +412,14 @@ function renderRetailerRateCard(rateCardSeed = null) {
             id="retailerRateCard-${escapeHtml(String(index))}"
             type="number"
             min="0"
-            step="5"
+            step="1"
             inputmode="numeric"
             class="js-retailer-rate-input"
             data-screen-type="${escapeHtml(screenType)}"
             value="${escapeHtml(String(rateCard[screenType] || 0))}"
           >
         </span>
-        <p class="field__meta">Per screen / day</p>
+        <p class="field__meta">CPM</p>
       </div>`
     )
     .join("");
@@ -426,7 +432,7 @@ function summarizeGoalRateCard() {
   }
   const min = Math.min(...rates);
   const max = Math.max(...rates);
-  return `${formatMoney(min)}-${formatMoney(max)} per screen / day`;
+  return `${formatMoney(min)}-${formatMoney(max)} CPM`;
 }
 
 function getDemoStoreCount() {
@@ -457,6 +463,10 @@ function formatDuration(ms) {
 function formatTimestamp(value) {
   const date = new Date(value);
   return Number.isNaN(date.valueOf()) ? "Unknown time" : date.toLocaleString();
+}
+
+function readTextValue(value) {
+  return typeof value === "string" ? value.trim() : value == null ? "" : String(value).trim();
 }
 
 function normalizeSku(value) {
@@ -585,6 +595,211 @@ function isScreenCompatibleWithProductsLocal(screen, products) {
 
 function getTemplateById(templateId) {
   return (state.options?.templates || []).find((entry) => entry.id === templateId) || null;
+}
+
+function parseJsonObjectValue(value) {
+  if (!value) {
+    return {};
+  }
+  if (value && typeof value === "object") {
+    return value;
+  }
+  const raw = readTextValue(value);
+  if (!raw) {
+    return {};
+  }
+  try {
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function findPageRecord(pageId) {
+  const normalizedId = readTextValue(pageId).toLowerCase();
+  if (!normalizedId) {
+    return null;
+  }
+  return (state.pages || []).find((page) => readTextValue(page.pageId).toLowerCase() === normalizedId) || null;
+}
+
+function findScreenRecord(screenId) {
+  const normalizedId = readTextValue(screenId).toLowerCase();
+  if (!normalizedId) {
+    return null;
+  }
+  return (state.screens || []).find((screen) => readTextValue(screen.screenId).toLowerCase() === normalizedId) || null;
+}
+
+function buildPreviewRailKey(screenIds) {
+  const liveScreens = Array.isArray(state.activeGoalPlan?.liveScreens) ? state.activeGoalPlan.liveScreens : [];
+  const planKey = [state.activeGoalPlan?.planId || "", state.activeGoalPlan?.updatedAt || "", state.activeGoalPlan?.appliedAt || ""].join(":");
+  return screenIds
+    .map((screenId) => {
+      const inventoryScreen = findScreenRecord(screenId);
+      const liveScreen = liveScreens.find((screen) => screen.screenId === screenId);
+      return [
+        screenId,
+        inventoryScreen?.updatedAt || "",
+        inventoryScreen?.templateId || "",
+        liveScreen?.activeLineItemId || "",
+        planKey
+      ].join(":");
+    })
+    .join("|");
+}
+
+function formatPreviewPrice(value) {
+  const raw = readTextValue(value);
+  if (!raw) {
+    return "";
+  }
+  const numeric = Number(raw.replace(/[^0-9.-]/g, ""));
+  if (!Number.isFinite(numeric)) {
+    return raw;
+  }
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: Number.isInteger(numeric) ? 0 : 2,
+    maximumFractionDigits: 2
+  }).format(numeric);
+}
+
+function buildPreviewRailFrameMarkup(bodyMarkup) {
+  const brandContext = getGoalPlanBrandContext();
+  return `
+    <p class="preview-pane__eyebrow">${escapeHtml(brandContext.brand ? `${brandContext.brand} live preview` : "Live campaign preview")}</p>
+    <h4>${escapeHtml(brandContext.brand ? `${brandContext.brand} creative in market` : "Creative in market")}</h4>
+    <p id="monitoringNarrative">${escapeHtml(
+      brandContext.brand
+        ? `${brandContext.brand} creative is running on the active in-store screens below.`
+        : "These previews are pulled from the same live player path used across the active in-store screens."
+    )}</p>
+    ${bodyMarkup}
+  `;
+}
+
+function buildMonitoringPreviewCardMarkup(snapshot) {
+  const sharedPreviewUrl = buildSharedPreviewUrl(snapshot.screenId);
+  const debugPreviewUrl = buildDebugScreenUrl(snapshot.screenId);
+  const metaParts = [snapshot.templateName, snapshot.location && titleCase(snapshot.location), snapshot.screenType].filter(Boolean);
+  const priceMarkup =
+    snapshot.price || snapshot.comparePrice
+      ? `<div class="monitoring-preview-card__price">
+          <strong>${escapeHtml(snapshot.price || "")}</strong>
+          ${snapshot.comparePrice ? `<del>${escapeHtml(snapshot.comparePrice)}</del>` : ""}
+        </div>`
+      : "";
+  const mediaMarkup = snapshot.image
+    ? `<img src="${escapeHtml(snapshot.image)}" alt="${escapeHtml(snapshot.productName || snapshot.screenId)}" loading="lazy">`
+    : '<div class="monitoring-preview-card__media-fallback">Preview unavailable</div>';
+
+  if (snapshot.loading) {
+    return `
+      <article class="monitoring-preview-card is-loading">
+        <div class="monitoring-preview-card__media"></div>
+        <div class="monitoring-preview-card__body">
+          <p class="monitoring-preview-card__screen">${escapeHtml(snapshot.screenId)}</p>
+          <h5>Loading preview...</h5>
+          <p class="monitoring-preview-card__summary">Fetching the latest creative snapshot for this screen.</p>
+        </div>
+      </article>
+    `;
+  }
+
+  if (snapshot.error) {
+    return `
+      <article class="monitoring-preview-card is-error">
+        <div class="monitoring-preview-card__body">
+          <p class="monitoring-preview-card__screen">${escapeHtml(snapshot.screenId)}</p>
+          <h5>Preview unavailable</h5>
+          <p class="monitoring-preview-card__summary">${escapeHtml(snapshot.error)}</p>
+          <div class="monitoring-preview-card__actions">
+            <a href="${escapeHtml(sharedPreviewUrl)}" target="_blank" rel="noreferrer">Open live preview</a>
+            <a href="${escapeHtml(debugPreviewUrl)}" target="_blank" rel="noreferrer">Open debug view</a>
+          </div>
+        </div>
+      </article>
+    `;
+  }
+
+  return `
+    <article class="monitoring-preview-card">
+      <div class="monitoring-preview-card__media">
+        ${mediaMarkup}
+        <span class="monitoring-preview-card__badge">${escapeHtml(snapshot.badge || snapshot.templateName || "Live creative")}</span>
+      </div>
+      <div class="monitoring-preview-card__body">
+        <p class="monitoring-preview-card__screen">${escapeHtml(snapshot.screenId)}</p>
+        <h5>${escapeHtml(snapshot.productName || "In-store creative")}</h5>
+        <p class="monitoring-preview-card__meta">${escapeHtml(metaParts.join(" | "))}</p>
+        ${priceMarkup}
+        <p class="monitoring-preview-card__summary">${escapeHtml(snapshot.summary || snapshot.promotion || "Live creative snapshot")}</p>
+        <div class="monitoring-preview-card__actions">
+          <a href="${escapeHtml(sharedPreviewUrl)}" target="_blank" rel="noreferrer">Open live preview</a>
+          <a href="${escapeHtml(debugPreviewUrl)}" target="_blank" rel="noreferrer">Open debug view</a>
+        </div>
+      </div>
+    </article>
+  `;
+}
+
+function renderPreviewRailCards(cards) {
+  if (!elements.monitorPreviewRail) {
+    return;
+  }
+  elements.monitorPreviewRail.innerHTML = buildPreviewRailFrameMarkup(`
+    <div class="monitoring-preview-grid">
+      ${cards.map((card) => buildMonitoringPreviewCardMarkup(card)).join("")}
+    </div>
+  `);
+  elements.monitoringNarrative = qs("#monitoringNarrative");
+  updateMonitoringNarrative();
+}
+
+async function loadPreviewRailSnapshots(screenIds, previewKey, requestId) {
+  const snapshots = await Promise.all(
+    screenIds.map(async (screenId) => {
+      try {
+        const payload = await requestJson(`/api/screen-ad?screenId=${encodeURIComponent(screenId)}`);
+        const settings = payload?.settings && typeof payload.settings === "object" ? payload.settings : {};
+        const product = Array.isArray(payload?.products) ? payload.products[0] || {} : {};
+        const attributes = parseJsonObjectValue(product.RenderingAttributes);
+        const templateId = readTextValue(settings.templateId);
+        const templateName = readTextValue(settings.templateName) || getTemplateById(templateId)?.name || templateId || "Template";
+
+        return {
+          screenId,
+          templateName,
+          location: readTextValue(settings.location),
+          screenType: readTextValue(settings.screenType),
+          productName: readTextValue(product.ProductName) || templateName,
+          image: readTextValue(product.Image),
+          badge: readTextValue(attributes.badge),
+          promotion: readTextValue(attributes.promotion),
+          price: formatPreviewPrice(product.Price),
+          comparePrice: formatPreviewPrice(product.ComparePrice),
+          summary:
+            readTextValue(attributes.subcopy) ||
+            readTextValue(attributes.promotion) ||
+            readTextValue(settings.resolvedBy)
+        };
+      } catch (error) {
+        return {
+          screenId,
+          error: readTextValue(error?.message) || "The live snapshot could not be loaded."
+        };
+      }
+    })
+  );
+
+  if (state.previewRailKey !== previewKey || state.previewRailRequestId !== requestId) {
+    return;
+  }
+
+  renderPreviewRailCards(snapshots);
 }
 
 function objectiveLabelById(objectiveId) {
@@ -872,6 +1087,18 @@ function isSupplyPresetReady() {
   return Boolean(state.presetLoadedInSession && total > 0 && configured >= total);
 }
 
+function isSupplyHandoffPending() {
+  return Boolean(isSupplyPresetReady() && !state.supplyHandoffAcknowledged && !state.activeGoalPlan);
+}
+
+function isBuyingStageUnlocked() {
+  return Boolean(state.activeGoalPlan) || Boolean(isSupplyPresetReady() && state.supplyHandoffAcknowledged);
+}
+
+function canOpenMonitoringStage() {
+  return state.activeGoalPlan?.status === "applied";
+}
+
 function getScreenResolverId(screenRef) {
   if (screenRef && typeof screenRef === "object") {
     const directResolverId = String(screenRef.resolverId || screenRef.deviceHints?.resolverId || "").trim();
@@ -960,6 +1187,9 @@ function normalizeGoalPlacementEntry(entry = {}, index = 0) {
   return {
     ...(entry || {}),
     screenId,
+    cpm: Math.max(0, Math.round(Number(entry?.cpm || 0))),
+    estimatedDailyImpressions: Math.max(0, Math.round(Number(entry?.estimatedDailyImpressions || 0))),
+    estimatedImpressions: Math.max(0, Math.round(Number(entry?.estimatedImpressions || 0))),
     placementCost: Math.max(0, Math.round(Number(entry?.placementCost || 0))),
     budgetRank: Number(entry?.budgetRank || 0),
     score: Number(entry?.score || 0),
@@ -1621,11 +1851,11 @@ function renderStageButtons() {
 
 function setStage(stage, shouldScroll = false) {
   let nextStage = UI_STAGES.includes(stage) ? stage : "supply";
-  if (nextStage === "buying" && !isSupplyPresetReady()) {
+  if (nextStage === "buying" && !isBuyingStageUnlocked()) {
     nextStage = "supply";
   }
-  if (nextStage === "monitoring" && state.activeGoalPlan?.status !== "applied") {
-    nextStage = isSupplyPresetReady() ? "buying" : "supply";
+  if (nextStage === "monitoring" && !canOpenMonitoringStage()) {
+    nextStage = isBuyingStageUnlocked() ? "buying" : "supply";
   }
 
   state.stage = nextStage;
@@ -1669,7 +1899,16 @@ function updateStagePills() {
           : "Start here";
   }
   if (elements.buyingStagePill) {
-    elements.buyingStagePill.textContent = hasAppliedPlan ? "In market" : hasPlan ? "Brief ready" : supplyReady ? "Awaiting brief" : "Locked";
+    elements.buyingStagePill.textContent =
+      hasAppliedPlan
+        ? "In market"
+        : hasPlan
+          ? "Brief ready"
+          : supplyReady
+            ? state.supplyHandoffAcknowledged
+              ? "Awaiting brief"
+              : "Awaiting handoff"
+            : "Locked";
   }
   if (elements.monitoringStagePill) {
     elements.monitoringStagePill.textContent = totalTelemetryEvents > 0 ? "Live telemetry" : hasAppliedPlan ? "Live" : "Locked";
@@ -1693,14 +1932,15 @@ function updateActionButtons() {
   }
 
   for (const button of qsa("#nextToBuyingBtn, #nextToBuyingBtnSecondary")) {
-    button.disabled = !supplyReady;
+    button.disabled = !isBuyingStageUnlocked();
   }
   for (const button of qsa("#nextToMonitoringBtn, #nextToMonitoringBtnSecondary")) {
     button.disabled = !hasAppliedPlan;
   }
   for (const button of qsa(".js-stage-jump")) {
     const targetStage = button.dataset.stage || "supply";
-    button.disabled = (targetStage === "buying" && !supplyReady) || (targetStage === "monitoring" && !hasAppliedPlan);
+    button.disabled =
+      (targetStage === "buying" && !isBuyingStageUnlocked()) || (targetStage === "monitoring" && !canOpenMonitoringStage());
   }
 
   if (elements.demoScreenLink) {
@@ -1748,7 +1988,7 @@ function renderSupplySummary() {
       label: "Preset rollout"
     },
     {
-      value: isSupplyPresetReady() ? "Unlocked" : "Locked",
+      value: isBuyingStageUnlocked() ? "Unlocked" : isSupplyHandoffPending() ? "Review handoff" : "Locked",
       label: "CMax handoff"
     },
     {
@@ -1779,14 +2019,16 @@ function renderPresetSummary() {
   const summaryMessage = !isManualSupplyConfirmed()
     ? "Add one anchor placement, then apply the shared preset to finish the supply setup."
     : state.presetLoadedInSession
-      ? "Setup complete: minimal CYield change, shared backend-resolved player URL."
+      ? state.supplyHandoffAcknowledged
+        ? "Setup complete: minimal CYield change, shared backend-resolved player URL, and the handoff into CMax is open."
+        : "Setup complete. Review the rollout handoff below, then continue into CMax when you're ready."
       : `Anchor screen saved. Load the preset to roll out the remaining ${remaining} supply-stage screen(s) across ${demoStoreCount} stores.`;
 
   elements.presetSummary.classList.remove("empty");
   elements.presetSummary.innerHTML = `
     <strong>Shared player URL: ${escapeHtml(SHARED_PLAYER_URL)}</strong>
     <p>${escapeHtml(summaryMessage)}</p>
-    <p class="goal-change__metrics">Retailer rate card: ${escapeHtml(summarizeGoalRateCard())}</p>
+    <p class="goal-change__metrics">Retailer CPM card: ${escapeHtml(summarizeGoalRateCard())}</p>
     <p class="goal-change__metrics">
       ${escapeHtml(
         state.presetLoadedInSession
@@ -1795,6 +2037,45 @@ function renderPresetSummary() {
       )}
     </p>
   `;
+}
+
+function renderSupplyHandoff() {
+  if (!elements.supplyHandoffCard) {
+    return;
+  }
+
+  const pending = isSupplyHandoffPending();
+  elements.supplyHandoffCard.classList.toggle("is-hidden", !pending);
+  if (!pending) {
+    return;
+  }
+
+  const supplyStage = getSupplyStage();
+  const configured = Number(supplyStage.configuredScreenIds?.length || 0);
+  const total = Number(supplyStage.screenCount || supplyStage.screenIds?.length || configured);
+  const mappedPlacements = total || configured;
+  const demoStoreCount = getDemoStoreCount();
+
+  if (elements.supplyHandoffMessage) {
+    elements.supplyHandoffMessage.textContent = `The shared player has now been mapped across ${mappedPlacements} supply placement${
+      mappedPlacements === 1 ? "" : "s"
+    } spanning ${demoStoreCount} store${demoStoreCount === 1 ? "" : "s"} and multiple inventory zones. The retailer can now manage that screen footprint flexibly from one setup instead of rebuilding each placement one by one.`;
+  }
+
+  if (elements.supplyHandoffStats) {
+    elements.supplyHandoffStats.innerHTML = [
+      { value: `${mappedPlacements}`, label: "Mapped placements" },
+      { value: `${demoStoreCount}`, label: `Store${demoStoreCount === 1 ? "" : "s"} live` },
+      { value: SHARED_PLAYER_URL, label: "Shared player URL" }
+    ]
+      .map(
+        (stat) => `<div class="supply-handoff__stat">
+          <strong>${escapeHtml(stat.value)}</strong>
+          <span>${escapeHtml(stat.label)}</span>
+        </div>`
+      )
+      .join("");
+  }
 }
 
 function renderPagesList() {
@@ -1992,9 +2273,9 @@ function getGoalPlanningStepSummary(stepNumber) {
     const pageId = String(elements.goalPageScope?.value || "").trim();
     const prompt = String(elements.goalPrompt?.value || "").trim();
     const parts = [formatGoalFlightSummary(), storeId || "All stores", pageId || "All mapped placements"];
-    if (prompt) {
-      parts.push(prompt.length > 72 ? `${prompt.slice(0, 69)}...` : prompt);
-    }
+    parts.push(
+      prompt ? `AI hint: ${prompt.length > 72 ? `${prompt.slice(0, 69)}...` : prompt}` : "No AI product hint"
+    );
     return parts.join(" | ");
   }
 
@@ -2010,7 +2291,7 @@ function getGoalPlanningStepSummary(stepNumber) {
   if (category) {
     return `Browsing ${titleCase(category)} with no SKU shortlist yet.`;
   }
-  return "Choose priority SKUs or leave the list empty and let the brief drive inference.";
+  return "Choose priority SKUs. If you leave this step empty, CMax will use the Step 2 AI product hint to infer the shortlist.";
 }
 
 function getGoalPlanningStepStatus(stepNumber) {
@@ -2669,12 +2950,14 @@ function buildGoalBudgetScenario(plan = state.activeGoalPlan) {
   const fundedIds = new Set();
   const heldBackIds = new Set();
   let fundedSpend = 0;
+  let fundedEstimatedImpressions = 0;
 
   for (const placement of placements) {
     const nextCost = Math.max(0, placement.placementCost);
     if (fundedSpend + nextCost <= selectedSpend) {
       fundedPlacements.push(placement);
       fundedSpend += nextCost;
+      fundedEstimatedImpressions += Math.max(0, placement.estimatedImpressions || 0);
       fundedIds.add(placement.screenId);
     } else {
       heldBackPlacements.push(placement);
@@ -2686,6 +2969,11 @@ function buildGoalBudgetScenario(plan = state.activeGoalPlan) {
     maxSpend,
     selectedSpend,
     fundedSpend,
+    maxEstimatedImpressions: Math.max(
+      0,
+      Math.round(placements.reduce((sum, placement) => sum + Number(placement?.estimatedImpressions || 0), 0))
+    ),
+    fundedEstimatedImpressions,
     fundedIds,
     heldBackIds,
     fundedPlacements,
@@ -2713,12 +3001,14 @@ function renderGoalPlanBudget(plan, budgetScenario) {
   const selectedCount = getGoalPlacementSelectionIds(plan).length;
   const availableCount = getAvailableGoalPlacements(plan).length;
   const flightSummary = formatGoalFlightSummary(plan.goal?.flightStartDate, plan.goal?.flightEndDate);
-  const pricingModelLabel = String(plan?.budget?.pricingModelLabel || plan?.goal?.pricingModelLabel || "Retailer-set daily screen rate").trim();
+  const pricingModelLabel = String(plan?.budget?.pricingModelLabel || plan?.goal?.pricingModelLabel || "Retailer-set CPM by screen type").trim();
   const sliderStep = getGoalBudgetSliderStep(maxSpend, selectedSpend);
   const sliderDisabled = plan.status === "applied" || selectedCount === 0;
   const maxShortcutDisabled = sliderDisabled || selectedSpend >= maxSpend;
   const launchDisabled = plan.status === "applied" || fundedCount === 0 || selectedCount === 0;
   const sliderProgress = maxSpend > 0 ? ((selectedSpend / maxSpend) * 100).toFixed(2) : "0";
+  const estimatedImpressions = Math.max(0, Math.round(Number(budgetScenario.maxEstimatedImpressions || 0)));
+  const fundedEstimatedImpressions = Math.max(0, Math.round(Number(budgetScenario.fundedEstimatedImpressions || 0)));
 
   elements.goalPlanBudget.classList.remove("empty");
   elements.goalPlanBudget.innerHTML = `
@@ -2788,6 +3078,10 @@ function renderGoalPlanBudget(plan, budgetScenario) {
           <span>Funded placements</span>
           <strong>${escapeHtml(`${fundedCount}${selectedCount > 0 ? ` of ${selectedCount}` : ""}`)}</strong>
         </div>
+        <div class="goal-budget__total">
+          <span>Estimated impressions</span>
+          <strong>${escapeHtml(formatCount(estimatedImpressions))}</strong>
+        </div>
       </div>
       <p class="goal-budget__note">
         ${escapeHtml(
@@ -2800,7 +3094,9 @@ function renderGoalPlanBudget(plan, budgetScenario) {
                         selectedSpend < maxSpend ? " Use Max budget to fund the full line-up instantly." : ""
                       }`
                     : "The edited plan is fully funded."
-                }${availableCount > 0 ? ` ${availableCount} more placement(s) remain available in the dropdown.` : ""}`
+                } Funded delivery is modeled at ${formatCount(fundedEstimatedImpressions)} impression(s).${
+                  availableCount > 0 ? ` ${availableCount} more placement(s) remain available in the dropdown.` : ""
+                }`
               : "Increase the budget to fund at least one placement."
         )}
       </p>
@@ -2919,10 +3215,17 @@ function renderGoalPlan() {
       renderDetailRow("Store choice", storeSelectionReason),
       renderDetailRow("Scope logic", scopeSelectionReason),
       renderDetailRow("Assortment category", assortmentCategory),
-      renderDetailRow("Campaign brief", plan.goal?.prompt || ""),
+      renderDetailRow("AI product hint", plan.goal?.prompt || ""),
       renderDetailRow("Scope note", scopeMessage),
       renderDetailRow("Plan metadata", `Plan ID: ${plan.planId || ""} | Created: ${formatTimestamp(plan.createdAt)}`),
-      renderDetailRow("Budget", `${formatMoney(budgetScenario.selectedSpend)} selected from ${formatMoney(maxSpend)} max spend`)
+      renderDetailRow(
+        "Budget",
+        `${formatMoney(budgetScenario.selectedSpend)} selected from ${formatMoney(maxSpend)} max spend${
+          Number(budgetScenario.maxEstimatedImpressions || 0) > 0
+            ? ` | ${formatCount(budgetScenario.maxEstimatedImpressions)} est. impressions`
+            : ""
+        }`
+      )
     ])
   ]
     .filter(Boolean)
@@ -3005,9 +3308,18 @@ function renderGoalPlan() {
       const placementRole = String(entry?.placementRole || "").trim();
       const expectedOutcome = String(entry?.expectedOutcome || "").trim();
       const placementCost = Math.max(0, Math.round(Number(entry?.placementCost || 0)));
+      const cpm = Math.max(0, Math.round(Number(entry?.cpm || 0)));
+      const estimatedImpressions = Math.max(0, Math.round(Number(entry?.estimatedImpressions || 0)));
+      const estimatedDailyImpressions = Math.max(0, Math.round(Number(entry?.estimatedDailyImpressions || 0)));
       const dailyRate = Math.max(0, Math.round(Number(entry?.dailyRate || 0)));
       const screenType = String(entry?.screenType || screen?.screenType || "").trim();
       const normalizedExpectedOutcome = expectedOutcome.replace(/^Expected outcome:\s*/i, "");
+      const pricingMetaCopy =
+        cpm > 0 && estimatedImpressions > 0
+          ? `${formatCount(estimatedImpressions)} est. imps${estimatedDailyImpressions > 0 ? ` | ${formatCount(estimatedDailyImpressions)}/day` : ""} | ${formatMoney(cpm)} CPM${
+              screenType ? ` | ${screenType}` : ""
+            }`
+          : `${formatMoney(dailyRate)} / day${screenType ? ` | ${screenType}` : ""}`;
       const actionButton =
         plan.status === "applied"
           ? ""
@@ -3036,7 +3348,7 @@ function renderGoalPlan() {
           ? `<div class="goal-placement-card__meta-block">
               <span class="goal-placement-card__meta-label">Cost</span>
               <strong>${escapeHtml(formatMoney(placementCost))}</strong>
-              <span class="goal-placement-card__meta-copy">${escapeHtml(`${formatMoney(dailyRate)} / day${screenType ? ` | ${screenType}` : ""}`)}</span>
+              <span class="goal-placement-card__meta-copy">${escapeHtml(pricingMetaCopy)}</span>
             </div>`
           : "",
         templateRationale || refreshRationale
@@ -3525,11 +3837,13 @@ function renderPreviewRail(screenIds) {
 
   const brandContext = getGoalPlanBrandContext();
   const uniqueIds = [...new Set((screenIds || []).filter(Boolean))].slice(0, 2);
-  const nextKey = uniqueIds.join("|");
+  const nextKey = buildPreviewRailKey(uniqueIds);
   if (state.previewRailKey === nextKey) {
     return;
   }
   state.previewRailKey = nextKey;
+  state.previewRailRequestId += 1;
+  const requestId = state.previewRailRequestId;
 
   if (uniqueIds.length === 0) {
     elements.monitorPreviewRail.innerHTML = `
@@ -3545,31 +3859,10 @@ function renderPreviewRail(screenIds) {
     return;
   }
 
-  elements.monitorPreviewRail.innerHTML = `
-    <p class="preview-pane__eyebrow">${escapeHtml(brandContext.brand ? `${brandContext.brand} live preview` : "Live campaign preview")}</p>
-    <h4>${escapeHtml(brandContext.brand ? `${brandContext.brand} creative in market` : "Creative in market")}</h4>
-    <p id="monitoringNarrative">${escapeHtml(
-      brandContext.brand
-        ? `${brandContext.brand} creative is running on the active in-store screens below.`
-        : "These previews are pulled from the same live player path used across the active in-store screens."
-    )}</p>
-    <div style="display:grid;gap:12px;margin-top:6px;">
-      ${uniqueIds
-        .map(
-          (screenId) => `<div style="display:grid;gap:8px;">
-            <strong style="font-size:0.95rem;">${escapeHtml(screenId)}</strong>
-            <iframe
-              title="${escapeHtml(screenId)}"
-              loading="lazy"
-              src="${escapeHtml(buildSharedPreviewUrl(screenId))}"
-              style="width:100%;aspect-ratio:16/9;border:0;border-radius:12px;background:#fff;"
-            ></iframe>
-          </div>`
-        )
-        .join("")}
-    </div>
-  `;
-  elements.monitoringNarrative = qs("#monitoringNarrative");
+  renderPreviewRailCards(uniqueIds.map((screenId) => ({ screenId, loading: true })));
+  loadPreviewRailSnapshots(uniqueIds, nextKey, requestId).catch(() => {
+    // Preview failures are rendered per-card; ignore unexpected promise rejections.
+  });
 }
 
 function renderLiveScreens() {
@@ -3666,6 +3959,7 @@ function renderAll() {
   refreshPageCounter();
   renderSupplySummary();
   renderPresetSummary();
+  renderSupplyHandoff();
   renderSupplyLists();
   renderGoalScopeSelects();
   renderGoalBrandOptions();
@@ -3699,7 +3993,7 @@ async function refreshInventory() {
 }
 
 async function refreshProductFeed() {
-  const response = await requestJson("/api/products?limit=300");
+  const response = await requestJson("/api/products?limit=1000");
   state.productFeed = Array.isArray(response.products) ? response.products : [];
   state.productAccounts =
     Array.isArray(response.accounts) && response.accounts.length > 0
@@ -3836,8 +4130,8 @@ async function saveRetailerRateCard() {
   renderGoalRateCard(state.goalRetailerRateCard);
   renderGoalPlanningFlow();
   renderPresetSummary();
-  showToast("Retailer rate card saved.");
-  showStatus("Retailer pricing updated. New buying plans will use the saved daily rates.");
+  showToast("Retailer CPM card saved.");
+  showStatus("Retailer pricing updated. New buying plans will use the saved CPMs and modeled impression delivery.");
 }
 
 function updateGoalPlacementSelection(screenId, include) {
@@ -3871,16 +4165,13 @@ function updateGoalPlacementSelection(screenId, include) {
 async function handlePageSubmit(event) {
   event.preventDefault();
   const payload = readPagePayload();
-  try {
+  if (!findPageRecord(payload.pageId)) {
     await requestJson("/api/pages", {
       method: "POST",
       body: JSON.stringify(payload)
     });
     showToast(`Page ${payload.pageId} added.`);
-  } catch (error) {
-    if (error?.status !== 409) {
-      throw error;
-    }
+  } else {
     showToast(`Page ${payload.pageId} already exists. Continuing with the existing page.`);
   }
 
@@ -3904,30 +4195,30 @@ async function createAnchorPlacement() {
 
   showStatus("Creating the anchor placement...");
 
-  try {
+  const existingPage = findPageRecord(pagePayload.pageId);
+  if (!existingPage) {
     await requestJson("/api/pages", {
       method: "POST",
       body: JSON.stringify(pagePayload)
     });
-  } catch (error) {
-    if (error?.status !== 409) {
-      throw error;
-    }
   }
 
-  try {
+  const existingScreen = findScreenRecord(screenPayload.screenId);
+  if (existingScreen) {
+    await requestJson(`/api/screens/${encodeURIComponent(existingScreen.screenId)}`, {
+      method: "PUT",
+      body: JSON.stringify(screenPayload)
+    });
+  } else {
     await requestJson("/api/screens", {
       method: "POST",
       body: JSON.stringify(screenPayload)
     });
-  } catch (error) {
-    if (error?.status !== 409) {
-      throw error;
-    }
   }
 
   await Promise.all([refreshDemoConfig(), refreshInventory()]);
   state.manualSupplyConfirmed = state.screens.some((screen) => screen.screenId === getManualSupplyConfig().screen.screenId);
+  state.supplyHandoffAcknowledged = false;
   state.lastDemoAction = {
     kind: "anchor",
     message: `Anchor ready. ${screenPayload.screenId} is mapped to ${pagePayload.pageId}.`
@@ -3956,16 +4247,13 @@ async function handleScreenSubmit(event) {
     });
     showToast(`Screen ${editingId} updated.`);
   } else {
-    try {
+    if (!findScreenRecord(payload.screenId)) {
       await requestJson("/api/screens", {
         method: "POST",
         body: JSON.stringify(payload)
       });
       showToast(`Screen ${payload.screenId} added.`);
-    } catch (error) {
-      if (error?.status !== 409) {
-        throw error;
-      }
+    } else {
       shouldEnterEditMode = true;
       showToast(`Screen ${payload.screenId} already exists. Loading it into edit mode.`);
     }
@@ -3977,6 +4265,7 @@ async function handleScreenSubmit(event) {
     state.screens.some((screen) => screen.screenId === effectiveScreenId)
   ) {
     state.manualSupplyConfirmed = true;
+    state.supplyHandoffAcknowledged = false;
   }
   syncSupplyFormDefaults();
   renderAll();
@@ -4012,6 +4301,7 @@ async function deleteScreen(screenId) {
   if (screenId === getManualSupplyConfig().screen.screenId) {
     state.manualSupplyConfirmed = false;
     state.presetLoadedInSession = false;
+    state.supplyHandoffAcknowledged = false;
     state.activeGoalPlan = null;
     state.goalPlacementSelections.clear();
     state.goalBudgetPlanId = "";
@@ -4043,6 +4333,7 @@ async function handleGoalPlanSubmit(event) {
   setGoalBudgetStateFromPlan(state.activeGoalPlan);
   syncGoalFormFromRun(state.activeGoalPlan);
   await Promise.all([refreshGoalRunsData(), refreshTelemetryData(state.activeGoalPlan?.planId || "")]);
+  state.supplyHandoffAcknowledged = true;
   renderAll();
   setStage("buying", true);
   showToast("In-store buy ready.");
@@ -4083,6 +4374,7 @@ async function applyGoalPlan(planId = "") {
     refreshTelemetryData(chosenPlanId)
   ]);
 
+  state.supplyHandoffAcknowledged = true;
   renderAll();
   setStage("monitoring", true);
   showToast(`Activation live on ${response.liveCount || response.appliedCount || 0} placement(s).`);
@@ -4105,6 +4397,7 @@ async function loadGoalPlan(planId) {
   syncGoalPlacementSelectionFromPlan(run, { overwrite: run.status === "applied" });
   setGoalBudgetStateFromPlan(run);
   syncGoalFormFromRun(run);
+  state.supplyHandoffAcknowledged = true;
 
   if (run.status === "applied") {
     await Promise.all([refreshLiveState(run.planId), refreshTelemetryData(run.planId)]);
@@ -4135,18 +4428,14 @@ async function loadPresetFallback() {
       oneTagHybridIntegration: page.oneTagHybridIntegration,
       includeBidInResponse: page.includeBidInResponse
     };
-    try {
+    if (!findPageRecord(page.pageId)) {
       await requestJson("/api/pages", {
         method: "POST",
         body: JSON.stringify(payload)
       });
       createdPageIds.push(page.pageId);
-    } catch (error) {
-      if (error?.status === 409) {
-        updatedPageIds.push(page.pageId);
-        continue;
-      }
-      throw error;
+    } else {
+      updatedPageIds.push(page.pageId);
     }
   }
 
@@ -4162,18 +4451,19 @@ async function loadPresetFallback() {
       refreshInterval: screen.refreshInterval,
       deviceHints: screen.resolverId ? { resolverId: screen.resolverId } : undefined
     };
-    try {
+    const existingScreen = findScreenRecord(screen.screenId);
+    if (!existingScreen) {
       await requestJson("/api/screens", {
         method: "POST",
         body: JSON.stringify(payload)
       });
       createdScreenIds.push(screen.screenId);
-    } catch (error) {
-      if (error?.status === 409) {
-        updatedScreenIds.push(screen.screenId);
-        continue;
-      }
-      throw error;
+    } else {
+      await requestJson(`/api/screens/${encodeURIComponent(existingScreen.screenId)}`, {
+        method: "PUT",
+        body: JSON.stringify(payload)
+      });
+      updatedScreenIds.push(screen.screenId);
     }
   }
 
@@ -4208,6 +4498,7 @@ async function loadPreset() {
   };
 
   state.presetLoadedInSession = true;
+  state.supplyHandoffAcknowledged = false;
   state.activeGoalPlan = null;
   state.goalPlacementSelections.clear();
   state.goalBudgetPlanId = "";
@@ -4219,9 +4510,9 @@ async function loadPreset() {
   await refreshInventory();
   syncBuyingFormDefaults(true);
   renderAll();
-  setStage("buying", true);
+  elements.supplyHandoffCard?.scrollIntoView({ behavior: "smooth", block: "center" });
   showToast(state.lastDemoAction.message);
-  showStatus("Shared preset is applied. Move into CMax buying.");
+  showStatus("Supply setup is complete. Review the handoff, then continue into CMax buying.");
 }
 
 async function resetDemo() {
@@ -4237,6 +4528,7 @@ async function resetDemo() {
 
   state.manualSupplyConfirmed = false;
   state.presetLoadedInSession = false;
+  state.supplyHandoffAcknowledged = false;
   state.activeGoalPlan = null;
   state.goalPlacementSelections.clear();
   state.goalBudgetPlanId = "";
@@ -4261,6 +4553,18 @@ function handleError(error) {
   showStatus(error.message, true);
 }
 
+function continueToBuying() {
+  if (!isSupplyPresetReady()) {
+    return;
+  }
+
+  state.supplyHandoffAcknowledged = true;
+  renderAll();
+  setStage("buying", true);
+  showToast("Supply handoff confirmed.");
+  showStatus("Supply setup confirmed. Continue with the CMax brief.");
+}
+
 function wireEvents() {
   document.addEventListener("click", (event) => {
     const stageJump = event.target.closest(".js-stage-jump");
@@ -4276,6 +4580,11 @@ function wireEvents() {
 
     if (event.target.closest("#loadPresetBtn, #loadPresetBtnSecondary")) {
       loadPreset().catch(handleError);
+      return;
+    }
+
+    if (event.target.closest("#continueToBuyingBtn")) {
+      continueToBuying();
       return;
     }
 
@@ -4361,7 +4670,7 @@ function wireEvents() {
     }
     state.goalPlanningStep = 2;
     renderGoalPlanningFlow();
-    showStatus("Step 2 unlocked. Set the flight window and optional scope filters.");
+    showStatus("Step 2 unlocked. Set the flight and scope, then optionally add an AI product hint for automatic SKU selection in Step 3.");
     publishPresenterSnapshot();
   });
   elements.goalStep2NextBtn?.addEventListener("click", () => {

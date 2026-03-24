@@ -11,6 +11,7 @@
       rel="stylesheet"
     >
     <link rel="stylesheet" href="/admin.css">
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   </head>
   <body>
     <div class="page-noise" aria-hidden="true"></div>
@@ -19,9 +20,9 @@
       <div class="hero__inner">
         <div class="hero__copy">
           <p class="eyebrow">Criteo hackathon demo</p>
-          <h1>Three acts. One click-through story.</h1>
+          <h1>Configure once. Roll out every store screen.</h1>
           <p class="hero__lede">
-            CYield treats each in-store screen like a page request: every display can hit one shared player URL, and the backend resolves which screen it is from the TV browser footprint. The demo stays on the existing page model.
+            Start with one CYield anchor placement, then let the shared player and backend resolver extend that setup across screen types, inventory zones, and store locations without changing the retailer's existing page model.
           </p>
         </div>
 
@@ -147,10 +148,25 @@
                 </div>
                 <div class="supply-step__actions">
                   <button id="loadPresetBtn" type="button" class="btn btn--primary btn--large">Apply shared preset</button>
-                  <p class="supply-step__hint">Applies the shared supply preset, then moves straight into CMax.</p>
+                  <p class="supply-step__hint">Applies the shared supply preset and prepares the handoff into CMax.</p>
                 </div>
               </section>
             </div>
+
+            <section id="supplyHandoffCard" class="supply-handoff is-hidden" aria-live="polite">
+              <div class="supply-handoff__copy">
+                <p class="section-kicker">Supply setup complete</p>
+                <h4>Inventory is now mapped across the retail footprint</h4>
+                <p id="supplyHandoffMessage" class="supply-handoff__lede">
+                  The shared player is now ready to scale across stores, placements, and inventory types.
+                </p>
+                <div id="supplyHandoffStats" class="supply-handoff__stats"></div>
+              </div>
+              <div class="supply-handoff__actions">
+                <button id="continueToBuyingBtn" type="button" class="btn btn--primary btn--large">Continue to CMax buying</button>
+                <p class="supply-handoff__hint">Step 2 stays locked until this handoff is confirmed.</p>
+              </div>
+            </section>
 
             <div id="presetSummary" class="goal-summary">Add one anchor placement, then apply the shared preset.</div>
           </article>
@@ -366,21 +382,21 @@
                       <div class="form-section__head">
                         <div>
                           <h4 class="form-section__title">Retailer pricing</h4>
-                          <p class="form-section__hint">Set the daily rate by screen type. These rates are used later to cost buying plans.</p>
+                          <p class="form-section__hint">Set the CPM by screen type. Buying plans will convert modeled impression delivery into spend from these rates.</p>
                         </div>
                       </div>
                       <div class="form-section__body">
                         <section class="goal-rate-card" aria-labelledby="retailerRateCardTitle">
                           <div class="goal-rate-card__copy">
                             <p class="section-kicker">Retailer-owned rate card</p>
-                            <h5 id="retailerRateCardTitle">Set prices once on the supply side</h5>
+                            <h5 id="retailerRateCardTitle">Set CPMs once on the supply side</h5>
                             <p class="goal-rate-card__lede">
-                              Applies globally by screen type. Demand planning can read these rates, but cannot change them.
+                              Applies globally by screen type. Demand planning reads these CPMs, estimates delivery by placement, and converts that into media spend.
                             </p>
                           </div>
                           <div id="retailerRateCard" class="goal-rate-card__grid" aria-live="polite"></div>
                           <div class="form-actions form-actions--left">
-                            <button id="saveRetailerRatesBtn" type="button" class="btn btn--ghost">Save retailer rate card</button>
+                            <button id="saveRetailerRatesBtn" type="button" class="btn btn--ghost">Save retailer CPM card</button>
                           </div>
                         </section>
                       </div>
@@ -404,7 +420,7 @@
             <p class="section-kicker">Build the buy</p>
             <h2>CMax Buying / Demand</h2>
             <p class="stage-panel__lede">
-              Choose the account, set the brief, and let CMax explain the recommended in-store line-up in planner language.
+              Choose the account, set the campaign inputs, and let CMax explain the recommended in-store line-up in planner language.
             </p>
           </div>
           <div class="stage-panel__actions">
@@ -479,9 +495,9 @@
                   <div class="planner-step__header">
                     <div class="planner-step__copy">
                       <p class="planner-step__eyebrow">Step 2</p>
-                      <h4>Set flight, scope, and brief</h4>
+                      <h4>Set flight, scope, and AI product hint</h4>
                       <p class="planner-step__summary" data-planner-step-summary>
-                        Start with the campaign flight, then narrow the store or placement scope, or leave it open and let the planner explore the mapped inventory.
+                        Set the flight dates and optional scope filters. The optional AI product hint below is only used if you leave Step 3 without a manual SKU shortlist.
                       </p>
                     </div>
                     <div class="planner-step__meta">
@@ -518,13 +534,17 @@
                     </div>
 
                     <div class="field">
-                      <label for="goalPrompt">Brand Brief (Optional)</label>
+                      <label for="goalPrompt">AI Product Hint (Optional)</label>
+                      <p id="goalPromptHint" class="form-section__hint">
+                        Used only when Step 3 is left empty. Describe the products, category, promotion, or shopper mission CMax should prioritize. If you manually pick SKUs in Step 3, those selections override this text.
+                      </p>
                       <textarea
                         id="goalPrompt"
                         name="prompt"
                         rows="3"
                         maxlength="280"
-                        placeholder="Example: Drive checkout add-on visibility in STORE_42 this afternoon."
+                        aria-describedby="goalPromptHint"
+                        placeholder="Example: If no SKUs are selected in Step 3, prioritize checkout add-ons like batteries, cables, and phone chargers in STORE_42 this afternoon."
                       ></textarea>
                     </div>
 
@@ -540,7 +560,7 @@
                       <p class="planner-step__eyebrow">Step 3</p>
                       <h4>Choose the assortment focus</h4>
                       <p class="planner-step__summary" data-planner-step-summary>
-                        Shortlist priority SKUs, or leave the list empty and let the brief drive product inference.
+                        Shortlist priority SKUs. If you leave this step empty, CMax will use the Step 2 AI product hint to infer them for you.
                       </p>
                     </div>
                     <div class="planner-step__meta">

@@ -79,18 +79,36 @@ const SCREEN_TYPES = [
   "Kiosk",
   "Digital Menu Board"
 ];
-const SCREEN_TYPE_DAILY_RATES = {
-  "Vertical Screen": 180,
-  "Horizontal Screen": 150,
-  "Shelf Edge": 65,
-  Endcap: 95,
-  Kiosk: 130,
-  "Digital Menu Board": 120
+const SCREEN_TYPE_DEFAULT_CPMS = {
+  "Vertical Screen": 22,
+  "Horizontal Screen": 18,
+  "Shelf Edge": 15,
+  Endcap: 18,
+  Kiosk: 24,
+  "Digital Menu Board": 20
+};
+const SCREEN_TYPE_IMPRESSION_FACTORS = {
+  "Vertical Screen": 0.34,
+  "Horizontal Screen": 0.29,
+  "Shelf Edge": 0.17,
+  Endcap: 0.22,
+  Kiosk: 0.3,
+  "Digital Menu Board": 0.27
+};
+const PLACEMENT_ROLE_IMPRESSION_FACTORS = {
+  entrance: 0.95,
+  category: 0.46,
+  aisle: 0.38,
+  checkout: 0.54,
+  foodcourt: 0.62,
+  general: 0.42
 };
 const GOAL_PRICING_MODEL = {
-  id: "daily-screen-rate",
-  label: "Retailer-set daily screen rate",
-  currencySymbol: "$"
+  id: "screen-type-cpm",
+  label: "Retailer-set CPM by screen type",
+  currencySymbol: "$",
+  unit: "CPM",
+  deliveryMetric: "estimated impressions"
 };
 const MAX_GOAL_FLIGHT_DAYS = 180;
 const TEMPLATE_PRESETS = [
@@ -1099,7 +1117,7 @@ function computeInclusiveDayCount(startDate, endDate) {
 
 function buildDefaultGoalRateCard() {
   return Object.fromEntries(
-    SCREEN_TYPES.map((screenType) => [screenType, Number(SCREEN_TYPE_DAILY_RATES[screenType] || 100)])
+    SCREEN_TYPES.map((screenType) => [screenType, Number(SCREEN_TYPE_DEFAULT_CPMS[screenType] || 10)])
   );
 }
 
@@ -1117,18 +1135,40 @@ function readGoalScreenTypeRateCard(value) {
   return defaults;
 }
 
-function getGoalScreenTypeDailyRate(rateCard, screenType) {
+function getGoalScreenTypeCpm(rateCard, screenType) {
   const defaults = buildDefaultGoalRateCard();
   const normalizedType = readOptionalString(screenType, 80);
   const parsed = Number(rateCard?.[normalizedType]);
   if (Number.isFinite(parsed) && parsed >= 0) {
     return Math.round(parsed);
   }
-  return Number(defaults[normalizedType] || 100);
+  return Number(defaults[normalizedType] || 10);
 }
 
-function computeGoalPlacementCost(dailyRate, flightDays) {
-  return Math.max(0, Math.round(Number(dailyRate || 0) * Math.max(1, Number(flightDays || 1))));
+function estimateGoalDailyImpressions(screen, placementRole, storeSignals = {}, refreshInterval = DEFAULT_REFRESH_INTERVAL) {
+  const normalizedType = readOptionalString(screen?.screenType, 80) || "Horizontal Screen";
+  const normalizedRole = readOptionalString(placementRole, 40) || getGoalScreenRole(screen);
+  const baseFootTraffic = Math.max(6000, Math.round(Number(storeSignals?.inferredFootTraffic || 26000)));
+  const estimatedTransactions = Math.max(1, Math.round(Number(storeSignals?.estimatedTransactions || 20000)));
+  const screenFactor = Number(SCREEN_TYPE_IMPRESSION_FACTORS[normalizedType] || 0.24);
+  const roleFactor = Number(PLACEMENT_ROLE_IMPRESSION_FACTORS[normalizedRole] || PLACEMENT_ROLE_IMPRESSION_FACTORS.general);
+  const cadence = readRefreshInterval(refreshInterval);
+  const cadenceFactor = clampNumber(Math.sqrt(DEFAULT_REFRESH_INTERVAL / cadence), 0.85, 1.2);
+  const footTrafficIndex = clampNumber(Number(storeSignals?.footTrafficIndex || 0.55), 0, 1);
+  const checkoutIntentIndex = clampNumber(Number(storeSignals?.checkoutIntentIndex || 0.55), 0, 1);
+  const demandFactor =
+    normalizedRole === "checkout"
+      ? clampNumber(0.95 + checkoutIntentIndex * 0.28, 0.95, 1.24)
+      : normalizedRole === "entrance"
+        ? clampNumber(0.94 + footTrafficIndex * 0.26, 0.94, 1.2)
+        : clampNumber(0.92 + footTrafficIndex * 0.22, 0.92, 1.16);
+  const transactionFloor = normalizedRole === "checkout" ? estimatedTransactions * 0.18 : 0;
+  const estimated = Math.round(baseFootTraffic * screenFactor * roleFactor * cadenceFactor * demandFactor);
+  return Math.max(800, Math.min(22000, Math.max(transactionFloor, estimated)));
+}
+
+function computeGoalPlacementCost(cpm, estimatedImpressions) {
+  return Math.max(0, Math.round((Number(cpm || 0) * Math.max(0, Number(estimatedImpressions || 0))) / 1000));
 }
 
 function rankGoalPlacementsForBudget(placements = []) {
@@ -1148,6 +1188,9 @@ function resolveGoalBudgetSelection(placements = [], selectedSpend = Number.POSI
   const maxSpend = Math.round(
     orderedPlacements.reduce((sum, placement) => sum + Number(placement?.placementCost || 0), 0)
   );
+  const maxEstimatedImpressions = Math.round(
+    orderedPlacements.reduce((sum, placement) => sum + Number(placement?.estimatedImpressions || 0), 0)
+  );
   const normalizedSelectedSpend = Number.isFinite(Number(selectedSpend))
     ? Math.max(0, Math.min(maxSpend, Math.round(Number(selectedSpend))))
     : maxSpend;
@@ -1156,13 +1199,16 @@ function resolveGoalBudgetSelection(placements = [], selectedSpend = Number.POSI
   const fundedScreenIds = [];
   const heldBackScreenIds = [];
   let fundedSpend = 0;
+  let fundedEstimatedImpressions = 0;
 
   for (const placement of orderedPlacements) {
     const placementCost = Math.max(0, Math.round(Number(placement?.placementCost || 0)));
+    const estimatedImpressions = Math.max(0, Math.round(Number(placement?.estimatedImpressions || 0)));
     if (fundedSpend + placementCost <= normalizedSelectedSpend) {
       fundedPlacements.push(placement);
       fundedScreenIds.push(readOptionalString(placement?.screenId, 80));
       fundedSpend += placementCost;
+      fundedEstimatedImpressions += estimatedImpressions;
     } else {
       heldBackPlacements.push(placement);
       heldBackScreenIds.push(readOptionalString(placement?.screenId, 80));
@@ -1171,8 +1217,11 @@ function resolveGoalBudgetSelection(placements = [], selectedSpend = Number.POSI
 
   return {
     maxSpend,
+    maxEstimatedImpressions,
     selectedSpend: normalizedSelectedSpend,
     fundedSpend,
+    fundedEstimatedImpressions,
+    heldBackEstimatedImpressions: Math.max(0, maxEstimatedImpressions - fundedEstimatedImpressions),
     fundedPlacements,
     heldBackPlacements,
     fundedScreenIds: fundedScreenIds.filter(Boolean),
@@ -1186,10 +1235,15 @@ function buildGoalBudget(goal, placements = [], selectedSpend = Number.POSITIVE_
     pricingModelId: GOAL_PRICING_MODEL.id,
     pricingModelLabel: GOAL_PRICING_MODEL.label,
     currencySymbol: GOAL_PRICING_MODEL.currencySymbol,
+    pricingUnit: GOAL_PRICING_MODEL.unit,
+    deliveryMetric: GOAL_PRICING_MODEL.deliveryMetric,
     flightDays: Number(goal?.flightDays || 0),
     maxSpend: selection.maxSpend,
+    maxEstimatedImpressions: selection.maxEstimatedImpressions,
     selectedSpend: selection.selectedSpend,
     fundedSpend: selection.fundedSpend,
+    fundedEstimatedImpressions: selection.fundedEstimatedImpressions,
+    heldBackEstimatedImpressions: selection.heldBackEstimatedImpressions,
     fundedPlacementCount: selection.fundedPlacements.length,
     heldBackPlacementCount: selection.heldBackPlacements.length,
     fundedScreenIds: selection.fundedScreenIds,
@@ -4180,11 +4234,13 @@ function buildGoalPlan(goal, screens) {
     const currentRefreshInterval = readRefreshInterval(screen.refreshInterval);
     const placementRole = getGoalScreenRole(screen);
     const screenType = readOptionalString(screen.screenType, 80) || "Horizontal Screen";
-    const dailyRate = getGoalScreenTypeDailyRate(goal.screenTypeRates, screenType);
-    const placementCost = computeGoalPlacementCost(dailyRate, goal.flightDays);
-    const storeSignals = storeRankingMap.get(readOptionalString(screen.storeId, 80)) || {
+    const storeId = readOptionalString(screen.storeId, 80);
+    const backendStoreSignals = DEMO_STORE_SALES_SIGNAL_MAP.get(storeId) || {};
+    const storeSignals = storeRankingMap.get(storeId) || {
       trafficFit: 0.55,
-      stockFit: 0.55
+      stockFit: 0.55,
+      footTrafficIndex: Number(backendStoreSignals.footTrafficIndex || 0.55),
+      checkoutIntentIndex: Number(backendStoreSignals.checkoutIntentIndex || 0.55)
     };
     let recommendedTemplateId = computeGoalTemplateId(screen, goal.objective, { planningSignals });
     let goalProductsForScreen =
@@ -4201,6 +4257,21 @@ function buildGoalPlan(goal, screens) {
       objectiveId: goal.objective,
       goalProductsForScreen
     });
+    const billingSignals = {
+      inferredFootTraffic: Number(backendStoreSignals.inferredFootTraffic || 26000),
+      estimatedTransactions: Number(backendStoreSignals.estimatedTransactions || 20000),
+      footTrafficIndex: Number(storeSignals.footTrafficIndex ?? backendStoreSignals.footTrafficIndex ?? 0.55),
+      checkoutIntentIndex: Number(storeSignals.checkoutIntentIndex ?? backendStoreSignals.checkoutIntentIndex ?? 0.55)
+    };
+    const cpm = getGoalScreenTypeCpm(goal.screenTypeRates, screenType);
+    const estimatedDailyImpressions = estimateGoalDailyImpressions(
+      screen,
+      placementRole,
+      billingSignals,
+      recommendedRefreshInterval
+    );
+    const estimatedImpressions = Math.max(0, Math.round(estimatedDailyImpressions * Math.max(1, Number(goal.flightDays || 1))));
+    const placementCost = computeGoalPlacementCost(cpm, estimatedImpressions);
     const objectiveFit = computeGoalObjectiveFit(screen, goal.objective, planningSignals);
     const assortmentFit =
       targetProducts.length > 0
@@ -4278,7 +4349,9 @@ function buildGoalPlan(goal, screens) {
       recommendedTemplateId,
       currentRefreshInterval,
       recommendedRefreshInterval,
-      dailyRate,
+      cpm,
+      estimatedDailyImpressions,
+      estimatedImpressions,
       placementCost,
       templateRationale,
       refreshRationale
@@ -4379,7 +4452,9 @@ function buildGoalPlan(goal, screens) {
       recommendedTemplateId: candidate.recommendedTemplateId,
       currentRefreshInterval: candidate.currentRefreshInterval,
       recommendedRefreshInterval: candidate.recommendedRefreshInterval,
-      dailyRate: candidate.dailyRate,
+      cpm: candidate.cpm,
+      estimatedDailyImpressions: candidate.estimatedDailyImpressions,
+      estimatedImpressions: candidate.estimatedImpressions,
       placementCost: candidate.placementCost,
       templateRationale: candidate.templateRationale,
       refreshRationale: candidate.refreshRationale
@@ -4430,7 +4505,9 @@ function buildGoalPlan(goal, screens) {
         : "";
   const spendSummary =
     budget.maxSpend > 0
-      ? `Estimated max spend ${GOAL_PRICING_MODEL.currencySymbol}${budget.maxSpend.toLocaleString()} over ${goal.flightDays} day(s).`
+      ? `Estimated max spend ${GOAL_PRICING_MODEL.currencySymbol}${budget.maxSpend.toLocaleString()} over ${goal.flightDays} day(s) from ${formatCount(
+          budget.maxEstimatedImpressions
+        )} modeled impressions.`
       : "";
   let strategyHeadline = "The planner selected the strongest placements for the brief.";
   switch (goal.objective) {
@@ -4452,7 +4529,7 @@ function buildGoalPlan(goal, screens) {
   const summaryBullets = [
     readOptionalString(goal.storeSelectionReason, 280),
     planningSignals.assortmentCategory ? `Assortment category anchor: ${titleCase(planningSignals.assortmentCategory)}.` : "",
-    "Pricing: retailer-set daily rate by screen type.",
+    "Pricing: retailer-set CPM by screen type against modeled impression delivery.",
     Array.isArray(planningSignals.briefThemes) && planningSignals.briefThemes.length > 0
       ? `Brief themes: ${planningSignals.briefThemes.slice(0, 4).join(", ")}.`
       : ""
@@ -4481,6 +4558,7 @@ function buildGoalPlan(goal, screens) {
       skuTargetUpdates,
       flightDays: goal.flightDays,
       maxSpend: budget.maxSpend,
+      estimatedImpressions: budget.maxEstimatedImpressions,
       avgScore: Number(averageScore.toFixed(2)),
       avgConfidence: Number(averageConfidence.toFixed(2))
     },
@@ -5355,7 +5433,7 @@ app.get("/api/products", async (req, res) => {
     const query = readOptionalString(req.query.q, 120).toLowerCase();
     const category = readOptionalString(req.query.category, 80).toLowerCase();
     const parsedLimit = Number(req.query.limit);
-    const limit = Number.isInteger(parsedLimit) ? Math.max(1, Math.min(parsedLimit, 300)) : 120;
+    const limit = Number.isInteger(parsedLimit) ? Math.max(1, Math.min(parsedLimit, 1000)) : 120;
 
     let products = [...feed];
     if (category) {
