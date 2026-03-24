@@ -65,6 +65,14 @@ npm run dev
 npm run smoke
 ```
 
+The writable DB file defaults to `data/db.json`. In production, set `DB_FILE` to a path outside the git checkout so runtime changes do not block `git pull`.
+
+Example:
+
+```bash
+DB_FILE=/var/lib/criteoscreens/db.json PORT=3100 npm start
+```
+
 Open:
 
 - Admin: `http://localhost:3000/admin.html`
@@ -336,3 +344,17 @@ Response shape:
 - Tracking base URL can be changed with:
 
 `TRACKING_BASE_URL=https://your-tracker.example.com/collect`
+
+## Production Notes
+
+- Set `PORT` explicitly when running behind NGINX so the app stays on a fixed upstream port.
+- The server can be bound explicitly with `HOST` when needed. Default production-safe example: `HOST=0.0.0.0`.
+- Set `DB_FILE` to a writable path outside the repo, for example `/var/lib/criteoscreens/db.json`, so deploys can use a clean `git pull`.
+
+Example `systemd` environment:
+
+```ini
+Environment=HOST=0.0.0.0
+Environment=PORT=3100
+Environment=DB_FILE=/var/lib/criteoscreens/db.json
+```

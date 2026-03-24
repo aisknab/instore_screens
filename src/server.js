@@ -4675,6 +4675,10 @@ async function resetDemoInDb(db) {
 
 const app = express();
 const REQUESTED_PORT = Number(process.env.PORT) || 3000;
+const REQUESTED_HOST =
+  typeof process.env.HOST === "string" && process.env.HOST.trim().length > 0
+    ? process.env.HOST.trim()
+    : "0.0.0.0";
 const HAS_EXPLICIT_PORT = Boolean(process.env.PORT);
 const PORT_FALLBACK_LIMIT = 20;
 const __filename = fileURLToPath(import.meta.url);
@@ -5621,14 +5625,14 @@ app.get("/", (_req, res) => {
 });
 
 function startServer(port, attempt = 0) {
-  const server = app.listen(port);
+  const server = app.listen(port, REQUESTED_HOST);
 
   server.on("listening", () => {
     const address = server.address();
     const activePort =
       address && typeof address === "object" && "port" in address ? Number(address.port) : Number(port);
     // eslint-disable-next-line no-console
-    console.log(`In-store middleware listening on http://localhost:${activePort}`);
+    console.log(`In-store middleware listening on http://${REQUESTED_HOST}:${activePort}`);
   });
 
   server.on("error", (error) => {

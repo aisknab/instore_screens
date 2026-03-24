@@ -2556,13 +2556,14 @@ function getPlanBudgetMaxSpend(plan = {}) {
   return Math.max(0, Math.round(Number(plan?.budget?.maxSpend || plan?.totals?.maxSpend || 0)));
 }
 
-function getGoalBudgetSliderStep(maxSpend) {
+function getGoalBudgetSliderStep(maxSpend, currentSpend = maxSpend) {
   const normalizedMax = Math.max(0, Math.round(Number(maxSpend) || 0));
+  const normalizedCurrent = Math.max(0, Math.round(Number(currentSpend) || 0));
   if (normalizedMax <= 0) {
     return 1;
   }
-  const preferredSteps = normalizedMax > 2000 ? [25, 10, 5, 1] : [5, 1];
-  return preferredSteps.find((step) => normalizedMax % step === 0) || 1;
+  const preferredSteps = normalizedMax > 2000 ? [25, 5, 1] : [5, 1];
+  return preferredSteps.find((step) => normalizedMax % step === 0 && normalizedCurrent % step === 0) || 1;
 }
 
 function normalizeGoalBudgetSpend(plan, value) {
@@ -2670,7 +2671,7 @@ function renderGoalPlanBudget(plan, budgetScenario) {
   const availableCount = getAvailableGoalPlacements(plan).length;
   const flightSummary = formatGoalFlightSummary(plan.goal?.flightStartDate, plan.goal?.flightEndDate);
   const pricingModelLabel = String(plan?.budget?.pricingModelLabel || plan?.goal?.pricingModelLabel || "Retailer-set daily screen rate").trim();
-  const sliderStep = getGoalBudgetSliderStep(maxSpend);
+  const sliderStep = getGoalBudgetSliderStep(maxSpend, selectedSpend);
   const sliderDisabled = plan.status === "applied" || selectedCount === 0;
   const maxShortcutDisabled = sliderDisabled || selectedSpend >= maxSpend;
   const launchDisabled = plan.status === "applied" || fundedCount === 0 || selectedCount === 0;

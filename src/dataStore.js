@@ -1,7 +1,11 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 
-const DB_FILE = path.join(process.cwd(), "data", "db.json");
+const DEFAULT_DB_FILE = path.join(process.cwd(), "data", "db.json");
+const DB_FILE =
+  typeof process.env.DB_FILE === "string" && process.env.DB_FILE.trim().length > 0
+    ? path.resolve(process.env.DB_FILE.trim())
+    : DEFAULT_DB_FILE;
 const EMPTY_DB = { pages: [], screens: [], agentRuns: [], telemetryEvents: [], pricing: {} };
 let dbAccessQueue = Promise.resolve();
 let lastKnownDb = null;
