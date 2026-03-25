@@ -1,9 +1,10 @@
 import express from "express";
 import { spawn } from "node:child_process";
+import { randomUUID } from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { mutateDb, readDb } from "./dataStore.js";
+import { mutateDb, readDb, readSeedDb } from "./dataStore.js";
 import {
   DEMO_ANCHOR_STORE,
   DEMO_STORE_IDS,
@@ -34,11 +35,11 @@ const GOAL_OBJECTIVES = [
     label: "Drive In-Store Awareness",
     description: "Maximize broad visibility across screens and high-traffic zones.",
     creativeDefaults: {
-      promotion: "Now live in-store",
-      badge: "Brand Spotlight",
-      cta: "See in aisle",
-      subcopy: "Featured this hour in your current store.",
-      legal: "Availability may vary by store."
+      promotion: "Seen across the store today",
+      badge: "Store Feature",
+      cta: "See it in this zone",
+      subcopy: "Designed for broad-reach store traffic with fast-read product and brand messaging.",
+      legal: "Pricing and availability vary by location."
     }
   },
   {
@@ -46,11 +47,11 @@ const GOAL_OBJECTIVES = [
     label: "Increase Checkout Attach Rate",
     description: "Promote relevant add-ons and bundles close to checkout or decision points.",
     creativeDefaults: {
-      promotion: "Add-on pick for checkout",
-      badge: "Basket Builder",
-      cta: "Pick up at checkout",
-      subcopy: "Pair this item with your basket for better value.",
-      legal: "Offer valid at participating checkout lanes."
+      promotion: "Easy add-on before checkout",
+      badge: "Queue-Side Pick",
+      cta: "Pick it up before you pay",
+      subcopy: "Built for quick basket-building decisions near checkout, queue, and service points.",
+      legal: "Offer and assortment vary by checkout location."
     }
   },
   {
@@ -58,11 +59,11 @@ const GOAL_OBJECTIVES = [
     label: "Clear Overstock Inventory",
     description: "Prioritize conversion-focused templates for moving excess stock quickly.",
     creativeDefaults: {
-      promotion: "Clearance markdown",
-      badge: "Stock Reduction",
-      cta: "Find in aisle now",
-      subcopy: "Limited units left at this location.",
-      legal: "Clearance stock and pricing are location-specific."
+      promotion: "Marked down in this store",
+      badge: "Final Units",
+      cta: "Find the clearance bay",
+      subcopy: "Clearance-led messaging for inventory that needs fast movement while stock remains on floor.",
+      legal: "Clearance pricing and stock are store-specific."
     }
   },
   {
@@ -70,10 +71,10 @@ const GOAL_OBJECTIVES = [
     label: "Promote Premium Range",
     description: "Elevate hero-led creative for high-value and high-margin products.",
     creativeDefaults: {
-      promotion: "Premium range highlight",
-      badge: "Signature Collection",
-      cta: "See premium display",
-      subcopy: "Elevated quality and standout in-store presentation.",
+      promotion: "Premium range feature",
+      badge: "Signature Display",
+      cta: "See the premium wall",
+      subcopy: "Hero-first messaging for products where design, price, and proof all need room to breathe.",
       legal: "Premium assortment differs by location."
     }
   }
@@ -128,11 +129,11 @@ const TEMPLATE_PRESETS = [
     defaultRefreshInterval: 30000,
     defaultFormatPrefix: "desktop-instore",
     defaultImage: "/assets/products/category-general.svg",
-    defaultPromotion: "Storewide offer",
-    defaultBadge: "In-Store Exclusive",
-    defaultCta: "Find in aisle",
-    defaultSubcopy: "Limited-time pricing available in this store.",
-    defaultLegal: "While stock lasts."
+    defaultPromotion: "Store arrival offer",
+    defaultBadge: "At the Entrance",
+    defaultCta: "Find it in store",
+    defaultSubcopy: "Built for broad-reach retail messaging that shoppers can act on immediately inside the store.",
+    defaultLegal: "Pricing and availability vary by location."
   },
   {
     id: "fullscreen-hero",
@@ -143,10 +144,10 @@ const TEMPLATE_PRESETS = [
     defaultRefreshInterval: 30000,
     defaultFormatPrefix: "desktop-instore-hero",
     defaultImage: "/assets/products/category-electronics.svg",
-    defaultPromotion: "Featured now",
-    defaultBadge: "Featured Product",
-    defaultCta: "See product display",
-    defaultSubcopy: "Discover premium features and compare in-store.",
+    defaultPromotion: "Category feature",
+    defaultBadge: "On the Feature Wall",
+    defaultCta: "See the live display",
+    defaultSubcopy: "Designed for premium comparisons, launches, and high-intent category traffic.",
     defaultLegal: "Selection may vary by location."
   },
   {
@@ -158,10 +159,10 @@ const TEMPLATE_PRESETS = [
     defaultRefreshInterval: 20000,
     defaultFormatPrefix: "desktop-instore-carousel",
     defaultImage: "/assets/products/category-electronics.svg",
-    defaultPromotion: "Weekly highlights",
-    defaultBadge: "Trending Deals",
-    defaultCta: "Browse this aisle",
-    defaultSubcopy: "Auto-rotating offers curated for this aisle.",
+    defaultPromotion: "Rotating range highlights",
+    defaultBadge: "This Zone Today",
+    defaultCta: "Explore the full range",
+    defaultSubcopy: "A rotating wall format for showcasing multiple products in the same aisle or category.",
     defaultLegal: "Offers rotate throughout the day."
   },
   {
@@ -173,11 +174,11 @@ const TEMPLATE_PRESETS = [
     defaultRefreshInterval: 15000,
     defaultFormatPrefix: "desktop-instore-kiosk",
     defaultImage: "/assets/products/category-general.svg",
-    defaultPromotion: "Assisted kiosk offers",
-    defaultBadge: "Kiosk Display",
-    defaultCta: "Scan QR or ask staff",
-    defaultSubcopy: "Use QR handoff or staff assistance to continue on mobile.",
-    defaultLegal: "Digital offers applied at checkout."
+    defaultPromotion: "Continue on your phone",
+    defaultBadge: "Mobile Handoff",
+    defaultCta: "Scan to keep this offer",
+    defaultSubcopy: "Designed for QR-assisted journeys, account sign-in, and deeper product detail away from the screen.",
+    defaultLegal: "Digital offers and sign-in flows vary by store."
   },
   {
     id: "shelf-spotlight",
@@ -188,11 +189,11 @@ const TEMPLATE_PRESETS = [
     defaultRefreshInterval: 12000,
     defaultFormatPrefix: "desktop-instore-shelf",
     defaultImage: "/assets/products/category-aisle.svg",
-    defaultPromotion: "Aisle special",
-    defaultBadge: "Shelf Edge Deal",
-    defaultCta: "Pick up nearby",
-    defaultSubcopy: "Quick-grab promotions near the product shelf.",
-    defaultLegal: "Price valid for this location only."
+    defaultPromotion: "Shelf-side feature",
+    defaultBadge: "Compare Here",
+    defaultCta: "Scan for details",
+    defaultSubcopy: "Compact creative for price, savings, and product proof at decision distance.",
+    defaultLegal: "Price and availability are specific to this location."
   },
   {
     id: "menu-loop",
@@ -203,11 +204,11 @@ const TEMPLATE_PRESETS = [
     defaultRefreshInterval: 10000,
     defaultFormatPrefix: "desktop-instore-menu",
     defaultImage: "/assets/products/category-foodcourt.svg",
-    defaultPromotion: "Now serving deals",
-    defaultBadge: "Now Serving",
-    defaultCta: "Order at counter",
-    defaultSubcopy: "Fresh menu specials rotating throughout the day.",
-    defaultLegal: "Preparation times may vary."
+    defaultPromotion: "Counter highlight",
+    defaultBadge: "Today's Picks",
+    defaultCta: "Scan for ingredients",
+    defaultSubcopy: "Menu-board creative built for daypart offers, combos, and service counter upsell.",
+    defaultLegal: "Preparation times and availability may vary."
   }
 ];
 const TEMPLATE_PRESET_MAP = new Map(TEMPLATE_PRESETS.map((entry) => [entry.id, entry]));
@@ -3575,7 +3576,7 @@ function buildStorageProductFromFeed(feedProduct, screen, templateId, objectiveI
     templateId
   );
 
-  product.RenderingAttributes = applyGoalCreativeAttributes(product, objectiveId, goalProduct);
+  product.RenderingAttributes = applyGoalCreativeAttributes(product, objectiveId, goalProduct, screen, templateId);
   product.RenderingAttributes = normalizeRenderingAttributes({
     ...parseJsonObject(product.RenderingAttributes),
     targetSku: goalProduct.sku,
@@ -3632,7 +3633,13 @@ function buildGoalLineItemForScreen(screen, templateId, objectiveId, goalProduct
     products = [buildStorageProductFromFeed(fallbackFeedProduct, screen, nextTemplate.id, objectiveId)];
   } else {
     const fallbackProduct = buildStorageProduct({}, screen.screenId, screen.location, nextTemplate.id);
-    fallbackProduct.RenderingAttributes = applyGoalCreativeAttributes(fallbackProduct, objectiveId);
+    fallbackProduct.RenderingAttributes = applyGoalCreativeAttributes(
+      fallbackProduct,
+      objectiveId,
+      null,
+      screen,
+      nextTemplate.id
+    );
     products = [fallbackProduct];
   }
 
@@ -5264,22 +5271,100 @@ function buildGoalPlan(goal, screens) {
   };
 }
 
-function applyGoalCreativeAttributes(product, objectiveId, targetProduct = null) {
+function describeGoalScreenRole(role) {
+  switch (readOptionalString(role, 40)) {
+    case "checkout":
+      return "queue-side shoppers";
+    case "aisle":
+      return "decision-point aisle traffic";
+    case "entrance":
+      return "front-of-store traffic";
+    case "foodcourt":
+      return "counter and pickup traffic";
+    case "category":
+      return "high-intent category shoppers";
+    default:
+      return "active store traffic";
+  }
+}
+
+function buildTemplateQrMetadata(templateId, objectiveId = "", location = "") {
+  const normalizedTemplateId = readOptionalString(templateId, 80);
+  const normalizedObjectiveId = readOptionalString(objectiveId, 80);
+  const normalizedLocation = readOptionalString(location, 80).toLowerCase();
+
+  if (normalizedTemplateId === "kiosk-interactive") {
+    return {
+      qrVariant: "mobile-handoff",
+      qrLabel: "Scan to keep this offer",
+      qrCaption: "Continue on your phone and bring the offer back to checkout.",
+      qrAsset: "/assets/qr/qr-mobile-handoff.svg",
+      qrPlacement: "primary",
+      qrDestinationType: "mobile-offer"
+    };
+  }
+
+  if (normalizedTemplateId === "shelf-spotlight") {
+    return {
+      qrVariant: "shelf-callout",
+      qrLabel: "Scan for price and details",
+      qrCaption: "Open specs, ratings, and product comparison on your phone.",
+      qrAsset: "/assets/qr/qr-shelf-callout.svg",
+      qrPlacement: "supporting-card",
+      qrDestinationType: "product-details"
+    };
+  }
+
+  if (normalizedTemplateId === "menu-loop" || normalizedLocation.includes("foodcourt")) {
+    return {
+      qrVariant: "menu-board",
+      qrLabel: "Scan for ingredients",
+      qrCaption: "View ingredients, allergy notes, and menu offers on mobile.",
+      qrAsset: "/assets/qr/qr-menu-board.svg",
+      qrPlacement: "supporting-card",
+      qrDestinationType: "menu-details"
+    };
+  }
+
+  if (normalizedObjectiveId === "clearance" && normalizedTemplateId === "fullscreen-banner") {
+    return {
+      qrVariant: "clearance",
+      qrLabel: "Scan for clearance map",
+      qrCaption: "Show markdown locations and related products on your phone.",
+      qrAsset: "/assets/qr/qr-clearance.svg",
+      qrPlacement: "supporting-card",
+      qrDestinationType: "clearance-map"
+    };
+  }
+
+  return {};
+}
+
+function applyGoalCreativeAttributes(product, objectiveId, targetProduct = null, screen = null, templateId = "") {
   const objective = GOAL_OBJECTIVE_MAP.get(objectiveId) || GOAL_OBJECTIVE_MAP.get("awareness");
   const current = parseJsonObject(product.RenderingAttributes);
-  const dynamicSubcopy =
-    targetProduct && targetProduct.brand
-      ? `${objective.creativeDefaults.subcopy} Focus brand: ${targetProduct.brand}.`
-      : objective.creativeDefaults.subcopy;
+  const resolvedTemplateId =
+    readOptionalString(templateId, 80) ||
+    readOptionalString(current.templateId, 80) ||
+    "fullscreen-banner";
+  const role = describeGoalScreenRole(getGoalScreenRole(screen || { location: screen?.location, screenType: "", pageId: "" }));
+  const brand = readOptionalString(targetProduct?.brand, 80);
+  const qrMetadata = buildTemplateQrMetadata(resolvedTemplateId, objective.id, readOptionalString(screen?.location, 80));
+  const dynamicSubcopy = brand
+    ? `${objective.creativeDefaults.subcopy} ${brand} is framed for ${role}.`
+    : `${objective.creativeDefaults.subcopy} Designed for ${role}.`;
+
   return normalizeRenderingAttributes({
+    ...qrMetadata,
     ...current,
     promotion: objective.creativeDefaults.promotion,
     badge: objective.creativeDefaults.badge,
-    cta: objective.creativeDefaults.cta,
+    cta: readOptionalString(qrMetadata.qrLabel, 80) || objective.creativeDefaults.cta,
     subcopy: dynamicSubcopy,
     legal: objective.creativeDefaults.legal,
     goalObjective: objective.id,
-    goalTargetSku: targetProduct ? normalizeSku(targetProduct.sku) : current.goalTargetSku || ""
+    goalTargetSku: targetProduct ? normalizeSku(targetProduct.sku) : current.goalTargetSku || "",
+    templateId: readOptionalString(current.templateId, 80) || resolvedTemplateId
   });
 }
 
@@ -5323,6 +5408,11 @@ function buildStorageProduct(rawProduct, screenId, location, templateId) {
   const product = rawProduct && typeof rawProduct === "object" ? rawProduct : {};
   const template = getTemplatePreset(templateId);
   const renderingAttributes = parseJsonObject(product.RenderingAttributes ?? product.renderingAttributes);
+  const qrMetadata = buildTemplateQrMetadata(
+    template.id,
+    readOptionalString(renderingAttributes.goalObjective, 80),
+    location
+  );
   const defaultProductName = `${titleCase(location)} ${template.name}`;
   const productId =
     readOptionalString(product.ProductId, 80) ||
@@ -5357,17 +5447,16 @@ function buildStorageProduct(rawProduct, screenId, location, templateId) {
       readOptionalString(product.ClientAdvertiserId, 120) ||
       readOptionalString(product.clientAdvertiserId, 120) ||
       "demo-advertiser",
-    RenderingAttributes: normalizeRenderingAttributes(
-      product.RenderingAttributes ??
-        product.renderingAttributes ?? {
-          promotion: template.defaultPromotion,
-          badge: template.defaultBadge,
-          cta: template.defaultCta,
-          subcopy: template.defaultSubcopy,
-          legal: template.defaultLegal,
-          templateId: template.id
-        }
-    ),
+    RenderingAttributes: normalizeRenderingAttributes({
+      ...qrMetadata,
+      ...renderingAttributes,
+      promotion: readOptionalString(renderingAttributes.promotion, 180) || template.defaultPromotion,
+      badge: readOptionalString(renderingAttributes.badge, 120) || template.defaultBadge,
+      cta: readOptionalString(renderingAttributes.cta, 80) || readOptionalString(qrMetadata.qrLabel, 80) || template.defaultCta,
+      subcopy: readOptionalString(renderingAttributes.subcopy, 240) || template.defaultSubcopy,
+      legal: readOptionalString(renderingAttributes.legal, 280) || template.defaultLegal,
+      templateId: readOptionalString(renderingAttributes.templateId, 80) || template.id
+    }),
     OnLoadBeacon: readOptionalString(product.OnLoadBeacon, 500),
     OnViewBeacon: readOptionalString(product.OnViewBeacon, 500),
     OnClickBeacon: readOptionalString(product.OnClickBeacon, 500),
@@ -5514,6 +5603,249 @@ function normalizeError(error) {
     return { status: error.status, message: error.message };
   }
   return { status: 500, message: "Unexpected error." };
+}
+
+const WORKSPACE_SESSION_COOKIE = "instore_demo_session";
+const WORKSPACE_SESSION_COOKIE_MAX_AGE_SECONDS = 30 * 24 * 60 * 60;
+const WORKSPACE_LEASE_MS = 2 * 60 * 60 * 1000;
+const DEMO_WORKSPACES = [
+  { id: "atlas", label: "Atlas", initials: "AT", accent: "#ef7c63" },
+  { id: "nova", label: "Nova", initials: "NV", accent: "#4fa7ff" },
+  { id: "sora", label: "Sora", initials: "SR", accent: "#46b98e" },
+  { id: "flint", label: "Flint", initials: "FL", accent: "#f2a65a" },
+  { id: "juno", label: "Juno", initials: "JN", accent: "#ff8fb1" },
+  { id: "vega", label: "Vega", initials: "VG", accent: "#7c8cff" },
+  { id: "cairo", label: "Cairo", initials: "CA", accent: "#54c2c2" },
+  { id: "marlo", label: "Marlo", initials: "MR", accent: "#d184ff" },
+  { id: "piper", label: "Piper", initials: "PP", accent: "#ffb85c" },
+  { id: "rowan", label: "Rowan", initials: "RW", accent: "#7ad06d" },
+  { id: "quinn", label: "Quinn", initials: "QN", accent: "#56b0f7" },
+  { id: "tatum", label: "Tatum", initials: "TT", accent: "#ff9970" }
+];
+const DEMO_WORKSPACE_MAP = new Map(DEMO_WORKSPACES.map((workspace) => [workspace.id, workspace]));
+
+function parseCookies(rawCookieHeader = "") {
+  const source = typeof rawCookieHeader === "string" ? rawCookieHeader : "";
+  return source.split(";").reduce((cookies, entry) => {
+    const [rawName, ...rawValueParts] = entry.split("=");
+    const name = String(rawName || "").trim();
+    if (!name) {
+      return cookies;
+    }
+    const value = rawValueParts.join("=");
+    cookies[name] = decodeURIComponent(String(value || "").trim());
+    return cookies;
+  }, {});
+}
+
+function serializeCookie(name, value, { maxAgeSeconds = null, httpOnly = true } = {}) {
+  const segments = [`${name}=${encodeURIComponent(String(value || ""))}`, "Path=/", "SameSite=Lax"];
+  if (httpOnly) {
+    segments.push("HttpOnly");
+  }
+  if (Number.isFinite(Number(maxAgeSeconds)) && Number(maxAgeSeconds) >= 0) {
+    segments.push(`Max-Age=${Math.max(0, Math.floor(Number(maxAgeSeconds)))}`);
+  }
+  return segments.join("; ");
+}
+
+function readSessionId(req) {
+  const cookies = parseCookies(req.headers?.cookie || "");
+  return readOptionalString(cookies[WORKSPACE_SESSION_COOKIE], 120);
+}
+
+function ensureSessionId(req, res) {
+  const existing = readSessionId(req);
+  if (existing) {
+    return existing;
+  }
+  const sessionId = randomUUID();
+  res.append(
+    "Set-Cookie",
+    serializeCookie(WORKSPACE_SESSION_COOKIE, sessionId, {
+      maxAgeSeconds: WORKSPACE_SESSION_COOKIE_MAX_AGE_SECONDS
+    })
+  );
+  return sessionId;
+}
+
+function clearSessionCookie(res) {
+  res.append(
+    "Set-Cookie",
+    serializeCookie(WORKSPACE_SESSION_COOKIE, "", {
+      maxAgeSeconds: 0
+    })
+  );
+}
+
+function normalizeWorkspaceState(data) {
+  const source = data && typeof data === "object" ? data : {};
+  return {
+    pages: Array.isArray(source.pages) ? source.pages : [],
+    screens: Array.isArray(source.screens) ? source.screens : [],
+    agentRuns: Array.isArray(source.agentRuns) ? source.agentRuns : [],
+    telemetryEvents: Array.isArray(source.telemetryEvents) ? source.telemetryEvents : [],
+    pricing: source.pricing && typeof source.pricing === "object" ? source.pricing : {}
+  };
+}
+
+function ensureWorkspaceRoot(db) {
+  if (!db.workspaces || typeof db.workspaces !== "object") {
+    db.workspaces = {};
+  }
+  if (!db.workspaceClaims || typeof db.workspaceClaims !== "object") {
+    db.workspaceClaims = {};
+  }
+}
+
+function buildWorkspaceSeedState(sourceDb) {
+  return {
+    pages: structuredClone(Array.isArray(sourceDb.pages) ? sourceDb.pages : []),
+    screens: structuredClone(Array.isArray(sourceDb.screens) ? sourceDb.screens : []),
+    agentRuns: [],
+    telemetryEvents: [],
+    pricing: structuredClone(sourceDb.pricing && typeof sourceDb.pricing === "object" ? sourceDb.pricing : {})
+  };
+}
+
+function getWorkspaceState(rootDb, workspaceId, { create = false, seedState = null } = {}) {
+  ensureWorkspaceRoot(rootDb);
+  const normalizedWorkspaceId = readOptionalString(workspaceId, 80).toLowerCase();
+  if (!normalizedWorkspaceId || !DEMO_WORKSPACE_MAP.has(normalizedWorkspaceId)) {
+    return normalizeWorkspaceState({});
+  }
+
+  const existing = rootDb.workspaces[normalizedWorkspaceId];
+  if (existing && typeof existing === "object") {
+    const normalized = normalizeWorkspaceState(existing);
+    rootDb.workspaces[normalizedWorkspaceId] = normalized;
+    return normalized;
+  }
+
+  const seeded = normalizeWorkspaceState(buildWorkspaceSeedState(seedState || rootDb));
+  if (create) {
+    rootDb.workspaces[normalizedWorkspaceId] = seeded;
+    return rootDb.workspaces[normalizedWorkspaceId];
+  }
+  return seeded;
+}
+
+function findWorkspaceClaimBySession(rootDb, sessionId) {
+  ensureWorkspaceRoot(rootDb);
+  const normalizedSessionId = readOptionalString(sessionId, 120);
+  if (!normalizedSessionId) {
+    return null;
+  }
+  return (
+    Object.values(rootDb.workspaceClaims).find((claim) => readOptionalString(claim?.sessionId, 120) === normalizedSessionId) || null
+  );
+}
+
+function isWorkspaceClaimExpired(claim, now = Date.now()) {
+  const expiresAt = Date.parse(readOptionalString(claim?.expiresAt, 80));
+  return !Number.isFinite(expiresAt) || expiresAt <= now;
+}
+
+function pruneExpiredWorkspaceClaims(rootDb, now = Date.now()) {
+  ensureWorkspaceRoot(rootDb);
+  for (const workspace of DEMO_WORKSPACES) {
+    const claim = rootDb.workspaceClaims[workspace.id];
+    if (claim && isWorkspaceClaimExpired(claim, now)) {
+      delete rootDb.workspaceClaims[workspace.id];
+    }
+  }
+}
+
+function formatLeaseRemainingMs(expiresAt, now = Date.now()) {
+  const parsed = Date.parse(readOptionalString(expiresAt, 80));
+  if (!Number.isFinite(parsed)) {
+    return 0;
+  }
+  return Math.max(0, parsed - now);
+}
+
+function buildWorkspaceStatusPayload(rootDb, sessionId) {
+  ensureWorkspaceRoot(rootDb);
+  const now = Date.now();
+  pruneExpiredWorkspaceClaims(rootDb, now);
+  const currentClaim = findWorkspaceClaimBySession(rootDb, sessionId);
+
+  const workspaces = DEMO_WORKSPACES.map((workspace) => {
+    const claim = rootDb.workspaceClaims[workspace.id] || null;
+    const storedWorkspace = rootDb.workspaces?.[workspace.id];
+    const state = storedWorkspace && typeof storedWorkspace === "object" ? normalizeWorkspaceState(storedWorkspace) : null;
+    const claimedByCurrentSession =
+      Boolean(currentClaim) && readOptionalString(currentClaim?.workspaceId, 80) === workspace.id;
+    const remainingMs = claim ? formatLeaseRemainingMs(claim.expiresAt, now) : 0;
+
+    return {
+      ...workspace,
+      status: claim ? (claimedByCurrentSession ? "claimed-by-you" : "claimed") : "available",
+      claimed: Boolean(claim),
+      claimedByCurrentSession,
+      claimedAt: readOptionalString(claim?.claimedAt, 80),
+      expiresAt: readOptionalString(claim?.expiresAt, 80),
+      remainingMs,
+      hasSavedJourney: Boolean(storedWorkspace),
+      counts: {
+        pages: state ? state.pages.length : 0,
+        screens: state ? state.screens.length : 0,
+        agentRuns: state ? state.agentRuns.length : 0,
+        telemetryEvents: state ? state.telemetryEvents.length : 0
+      }
+    };
+  });
+
+  return {
+    sessionId: readOptionalString(sessionId, 120),
+    leaseDurationMs: WORKSPACE_LEASE_MS,
+    currentWorkspace:
+      currentClaim && DEMO_WORKSPACE_MAP.has(readOptionalString(currentClaim.workspaceId, 80))
+        ? {
+            ...DEMO_WORKSPACE_MAP.get(readOptionalString(currentClaim.workspaceId, 80)),
+            claimedAt: readOptionalString(currentClaim.claimedAt, 80),
+            expiresAt: readOptionalString(currentClaim.expiresAt, 80),
+            remainingMs: formatLeaseRemainingMs(currentClaim.expiresAt, now)
+          }
+        : null,
+    workspaces
+  };
+}
+
+function sendWorkspaceError(res, status, message, code = "WORKSPACE_REQUIRED") {
+  res.status(status).json({
+    error: message,
+    code,
+    workspaceSelectionRequired: true
+  });
+}
+
+async function requireWorkspaceClaim(req, res, next) {
+  try {
+    const sessionId = readSessionId(req);
+    if (!sessionId) {
+      sendWorkspaceError(res, 401, "Select an avatar before opening the demo workspace.");
+      return;
+    }
+
+    const rootDb = await readDb();
+    const claim = findWorkspaceClaimBySession(rootDb, sessionId);
+    if (!claim) {
+      sendWorkspaceError(res, 401, "Select an avatar before opening the demo workspace.");
+      return;
+    }
+    if (isWorkspaceClaimExpired(claim)) {
+      sendWorkspaceError(res, 409, "This avatar lease expired after 2 hours. Pick an avatar again.", "WORKSPACE_EXPIRED");
+      return;
+    }
+
+    req.demoSessionId = sessionId;
+    req.demoWorkspaceId = readOptionalString(claim.workspaceId, 80);
+    next();
+  } catch (error) {
+    const normalized = normalizeError(error);
+    res.status(normalized.status).json({ error: normalized.message });
+  }
 }
 
 function buildSharedPlayerUrl(resolverId = "") {
@@ -6117,9 +6449,87 @@ app.post("/api/product-images/generate", async (req, res) => {
   }
 });
 
-app.get("/api/options", async (_req, res) => {
+app.get("/api/workspaces", async (req, res) => {
   try {
-    const db = await readDb();
+    const sessionId = ensureSessionId(req, res);
+    const payload = await mutateDb(async (rootDb) => buildWorkspaceStatusPayload(rootDb, sessionId));
+    res.json(payload);
+  } catch (error) {
+    const normalized = normalizeError(error);
+    res.status(normalized.status).json({ error: normalized.message });
+  }
+});
+
+app.post("/api/workspaces/claim", async (req, res) => {
+  try {
+    const sessionId = ensureSessionId(req, res);
+    const requestedWorkspaceId = readRequiredString(req.body?.workspaceId, "workspaceId", 80).toLowerCase();
+    const seedDb = await readSeedDb();
+    if (!DEMO_WORKSPACE_MAP.has(requestedWorkspaceId)) {
+      throw new HttpError(404, `Workspace ${requestedWorkspaceId} was not found.`);
+    }
+
+    const payload = await mutateDb(async (rootDb) => {
+      pruneExpiredWorkspaceClaims(rootDb);
+      ensureWorkspaceRoot(rootDb);
+      const currentClaim = findWorkspaceClaimBySession(rootDb, sessionId);
+      if (currentClaim && readOptionalString(currentClaim.workspaceId, 80) !== requestedWorkspaceId) {
+        delete rootDb.workspaceClaims[readOptionalString(currentClaim.workspaceId, 80)];
+      }
+
+      const existingClaim = rootDb.workspaceClaims[requestedWorkspaceId];
+      if (
+        existingClaim &&
+        readOptionalString(existingClaim.sessionId, 120) !== sessionId &&
+        !isWorkspaceClaimExpired(existingClaim)
+      ) {
+        throw new HttpError(409, `${DEMO_WORKSPACE_MAP.get(requestedWorkspaceId)?.label || "This avatar"} is already in use.`);
+      }
+
+      const claimedAt = new Date();
+      rootDb.workspaceClaims[requestedWorkspaceId] = {
+        workspaceId: requestedWorkspaceId,
+        sessionId,
+        claimedAt: claimedAt.toISOString(),
+        expiresAt: new Date(claimedAt.getTime() + WORKSPACE_LEASE_MS).toISOString()
+      };
+      getWorkspaceState(rootDb, requestedWorkspaceId, { create: true, seedState: seedDb });
+      return buildWorkspaceStatusPayload(rootDb, sessionId);
+    });
+
+    res.json(payload);
+  } catch (error) {
+    const normalized = normalizeError(error);
+    res.status(normalized.status).json({ error: normalized.message });
+  }
+});
+
+app.post("/api/workspaces/release", async (req, res) => {
+  try {
+    const sessionId = ensureSessionId(req, res);
+    const payload = await mutateDb(async (rootDb) => {
+      pruneExpiredWorkspaceClaims(rootDb);
+      const currentClaim = findWorkspaceClaimBySession(rootDb, sessionId);
+      if (currentClaim) {
+        delete rootDb.workspaceClaims[readOptionalString(currentClaim.workspaceId, 80)];
+      }
+      return buildWorkspaceStatusPayload(rootDb, sessionId);
+    });
+    clearSessionCookie(res);
+    res.json(payload);
+  } catch (error) {
+    const normalized = normalizeError(error);
+    res.status(normalized.status).json({ error: normalized.message });
+  }
+});
+
+app.use("/api", requireWorkspaceClaim);
+app.use("/collect", requireWorkspaceClaim);
+
+app.get("/api/options", async (req, res) => {
+  try {
+    const rootDb = await readDb();
+    const db = getWorkspaceState(rootDb, req.demoWorkspaceId, { create: true });
     res.json({
       pageTypes: PAGE_TYPES,
       environments: ENVIRONMENTS,
@@ -6144,7 +6554,8 @@ app.get("/api/options", async (_req, res) => {
 app.put("/api/pricing/screen-types", async (req, res) => {
   try {
     const screenTypeRates = readGoalScreenTypeRateCard(req.body?.screenTypeRates);
-    const pricing = await mutateDb(async (db) => {
+    const pricing = await mutateDb(async (rootDb) => {
+      const db = getWorkspaceState(rootDb, req.demoWorkspaceId, { create: true });
       if (!db.pricing || typeof db.pricing !== "object") {
         db.pricing = {};
       }
@@ -6161,9 +6572,10 @@ app.put("/api/pricing/screen-types", async (req, res) => {
   }
 });
 
-app.get("/api/demo/config", async (_req, res) => {
+app.get("/api/demo/config", async (req, res) => {
   try {
-    const db = await readDb();
+    const rootDb = await readDb();
+    const db = getWorkspaceState(rootDb, req.demoWorkspaceId, { create: true });
     res.json(buildDemoConfigSnapshot(db));
   } catch (error) {
     const normalized = normalizeError(error);
@@ -6171,10 +6583,13 @@ app.get("/api/demo/config", async (_req, res) => {
   }
 });
 
-app.post("/api/demo/preset", async (_req, res) => {
+app.post("/api/demo/preset", async (req, res) => {
   try {
     const feed = await readProductFeed();
-    const payload = await mutateDb(async (db) => applyDemoPresetToDb(db, { feed, reset: false }));
+    const payload = await mutateDb(async (rootDb) => {
+      const db = getWorkspaceState(rootDb, req.demoWorkspaceId, { create: true });
+      return applyDemoPresetToDb(db, { feed, reset: false });
+    });
     res.json(payload);
   } catch (error) {
     const normalized = normalizeError(error);
@@ -6182,9 +6597,12 @@ app.post("/api/demo/preset", async (_req, res) => {
   }
 });
 
-app.post("/api/demo/reset", async (_req, res) => {
+app.post("/api/demo/reset", async (req, res) => {
   try {
-    const payload = await mutateDb(async (db) => resetDemoInDb(db));
+    const payload = await mutateDb(async (rootDb) => {
+      const db = getWorkspaceState(rootDb, req.demoWorkspaceId, { create: true });
+      return resetDemoInDb(db);
+    });
     res.json(payload);
   } catch (error) {
     const normalized = normalizeError(error);
@@ -6192,9 +6610,12 @@ app.post("/api/demo/reset", async (_req, res) => {
   }
 });
 
-async function handleTelemetryCollect(input, res, { responseMode = "json" } = {}) {
+async function handleTelemetryCollect(req, input, res, { responseMode = "json" } = {}) {
   try {
-    const event = await mutateDb(async (db) => recordTelemetryEvent(db, input));
+    const event = await mutateDb(async (rootDb) => {
+      const db = getWorkspaceState(rootDb, req.demoWorkspaceId, { create: true });
+      return recordTelemetryEvent(db, input);
+    });
     if (responseMode === "empty") {
       res.status(204).end();
       return;
@@ -6211,16 +6632,17 @@ async function handleTelemetryCollect(input, res, { responseMode = "json" } = {}
 }
 
 app.get("/collect", async (req, res) => {
-  await handleTelemetryCollect(req.query, res, { responseMode: "empty" });
+  await handleTelemetryCollect(req, req.query, res, { responseMode: "empty" });
 });
 
 app.post("/collect", async (req, res) => {
-  await handleTelemetryCollect(req.body, res);
+  await handleTelemetryCollect(req, req.body, res);
 });
 
 app.get("/api/telemetry/summary", async (req, res) => {
   try {
-    const db = await readDb();
+    const rootDb = await readDb();
+    const db = getWorkspaceState(rootDb, req.demoWorkspaceId, { create: true });
     const planId = readOptionalString(req.query.planId, 120);
     res.json(buildTelemetrySummary(db, planId));
   } catch (error) {
@@ -6303,7 +6725,8 @@ app.post("/api/goal-skus/infer", async (req, res) => {
       return;
     }
 
-    const [db, feed] = await Promise.all([readDb(), readProductFeed()]);
+    const [rootDb, feed] = await Promise.all([readDb(), readProductFeed()]);
+    const db = getWorkspaceState(rootDb, req.demoWorkspaceId, { create: true });
     const allScreens = Array.isArray(db.screens) ? db.screens : [];
     const scopedScreens = filterGoalScopeScreens(allScreens, goal);
     const resolved = await resolveGoalTargetProducts(goal, feed, scopedScreens.length > 0 ? scopedScreens : allScreens, {
@@ -6324,8 +6747,9 @@ app.post("/api/goal-skus/infer", async (req, res) => {
   }
 });
 
-app.get("/api/pages", async (_req, res) => {
-  const db = await readDb();
+app.get("/api/pages", async (req, res) => {
+  const rootDb = await readDb();
+  const db = getWorkspaceState(rootDb, req.demoWorkspaceId, { create: true });
   const pages = [...db.pages].sort((a, b) => a.pageId.localeCompare(b.pageId));
   res.json({ pages });
 });
@@ -6341,7 +6765,8 @@ app.post("/api/pages", async (req, res) => {
     ensureAllowed(environment, ENVIRONMENTS, "environment");
     ensureAllowed(verbosity, VERBOSITY_OPTIONS, "verbosity");
 
-    const page = await mutateDb(async (db) => {
+    const page = await mutateDb(async (rootDb) => {
+      const db = getWorkspaceState(rootDb, req.demoWorkspaceId, { create: true });
       const exists = db.pages.some((entry) => entry.pageId.toLowerCase() === pageId.toLowerCase());
       if (exists) {
         throw new HttpError(409, `Page ${pageId} already exists.`);
@@ -6371,7 +6796,8 @@ app.post("/api/pages", async (req, res) => {
 });
 
 app.get("/api/screens", async (req, res) => {
-  const db = await readDb();
+  const rootDb = await readDb();
+  const db = getWorkspaceState(rootDb, req.demoWorkspaceId, { create: true });
   const pageIdFilter = toTrimmedString(req.query.pageId);
   const storeIdFilter = toTrimmedString(req.query.storeId);
   const includeLineItems = readBoolean(req.query.includeLineItems, false);
@@ -6428,7 +6854,8 @@ app.post("/api/screens", async (req, res) => {
     const fallbackProduct = buildStorageProduct(req.body.product, screenId, location, template.id);
     const rawLineItems = Array.isArray(req.body.lineItems) ? req.body.lineItems : [];
 
-    const screen = await mutateDb(async (db) => {
+    const screen = await mutateDb(async (rootDb) => {
+      const db = getWorkspaceState(rootDb, req.demoWorkspaceId, { create: true });
       const page = db.pages.find((entry) => entry.pageId === pageId);
       if (!page) {
         throw new HttpError(400, `Page ${pageId} does not exist. Create the page first.`);
@@ -6496,7 +6923,8 @@ app.post("/api/screens", async (req, res) => {
 app.put("/api/screens/:screenId", async (req, res) => {
   try {
     const screenId = readRequiredString(req.params.screenId, "screenId", 80);
-    const screen = await mutateDb(async (db) => {
+    const screen = await mutateDb(async (rootDb) => {
+      const db = getWorkspaceState(rootDb, req.demoWorkspaceId, { create: true });
       const record = db.screens.find((entry) => entry.screenId === screenId);
       if (!record) {
         throw new HttpError(404, `Screen ${screenId} was not found.`);
@@ -6605,7 +7033,8 @@ app.put("/api/screens/:screenId", async (req, res) => {
 app.delete("/api/screens/:screenId", async (req, res) => {
   try {
     const screenId = readRequiredString(req.params.screenId, "screenId", 80);
-    const deleted = await mutateDb(async (db) => {
+    const deleted = await mutateDb(async (rootDb) => {
+      const db = getWorkspaceState(rootDb, req.demoWorkspaceId, { create: true });
       const index = db.screens.findIndex((entry) => entry.screenId === screenId);
       if (index < 0) {
         throw new HttpError(404, `Screen ${screenId} was not found.`);
@@ -6626,7 +7055,8 @@ app.delete("/api/screens/:screenId", async (req, res) => {
 app.post("/api/screens/:screenId/line-items", async (req, res) => {
   try {
     const screenId = readRequiredString(req.params.screenId, "screenId", 80);
-    const lineItem = await mutateDb(async (db) => {
+    const lineItem = await mutateDb(async (rootDb) => {
+      const db = getWorkspaceState(rootDb, req.demoWorkspaceId, { create: true });
       const screen = db.screens.find((entry) => entry.screenId === screenId);
       if (!screen) {
         throw new HttpError(404, `Screen ${screenId} was not found.`);
@@ -6654,8 +7084,9 @@ app.post("/api/screens/:screenId/line-items", async (req, res) => {
   }
 });
 
-app.get("/api/agent/goals/runs", async (_req, res) => {
-  const db = await readDb();
+app.get("/api/agent/goals/runs", async (req, res) => {
+  const rootDb = await readDb();
+  const db = getWorkspaceState(rootDb, req.demoWorkspaceId, { create: true });
   const runs = Array.isArray(db.agentRuns) ? db.agentRuns : [];
   res.json({ runs: runs.slice(0, 20) });
 });
@@ -6663,7 +7094,8 @@ app.get("/api/agent/goals/runs", async (_req, res) => {
 app.get("/api/agent/goals/live", async (req, res) => {
   try {
     const planId = readRequiredString(req.query.planId, "planId", 120);
-    const db = await readDb();
+    const rootDb = await readDb();
+    const db = getWorkspaceState(rootDb, req.demoWorkspaceId, { create: true });
     const runs = Array.isArray(db.agentRuns) ? db.agentRuns : [];
     const run = runs.find((entry) => entry.planId === planId);
     if (!run) {
@@ -6691,7 +7123,8 @@ app.post("/api/agent/goals/plan", async (req, res) => {
     const goal = readGoalRequest(req.body);
     const feed = await readProductFeed();
 
-    const run = await mutateDb(async (db) => {
+    const run = await mutateDb(async (rootDb) => {
+      const db = getWorkspaceState(rootDb, req.demoWorkspaceId, { create: true });
       const allStoreScreens = Array.isArray(db.screens) ? db.screens : [];
       const screenTypeRates = getStoredScreenTypeRates(db);
       const shouldUseDemoInventory = DEMO_SCREEN_SPECS.length > 0 && (!goal.storeId || DEMO_STORE_ID_SET.has(goal.storeId));
@@ -6784,7 +7217,8 @@ app.post("/api/agent/goals/apply", async (req, res) => {
     );
     const feed = await readProductFeed();
 
-    const result = await mutateDb(async (db) => {
+    const result = await mutateDb(async (rootDb) => {
+      const db = getWorkspaceState(rootDb, req.demoWorkspaceId, { create: true });
       const runs = ensureAgentRunsArray(db);
       const run = runs.find((entry) => entry.planId === planId);
       if (!run) {
@@ -7031,7 +7465,8 @@ app.post("/api/agent/goals/apply", async (req, res) => {
 
 app.get("/api/screen-ad", async (req, res) => {
   try {
-    const db = await readDb();
+    const rootDb = await readDb();
+    const db = getWorkspaceState(rootDb, req.demoWorkspaceId, { create: true });
     const feed = await readProductFeed();
     const feedLookup = buildProductFeedLookup(feed);
     const resolved = resolveScreenRequest(db, req);

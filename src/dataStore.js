@@ -7,7 +7,15 @@ const DB_FILE =
   typeof process.env.DB_FILE === "string" && process.env.DB_FILE.trim().length > 0
     ? path.resolve(process.env.DB_FILE.trim())
     : DEFAULT_DB_FILE;
-const EMPTY_DB = { pages: [], screens: [], agentRuns: [], telemetryEvents: [], pricing: {} };
+const EMPTY_DB = {
+  pages: [],
+  screens: [],
+  agentRuns: [],
+  telemetryEvents: [],
+  pricing: {},
+  workspaces: {},
+  workspaceClaims: {}
+};
 let dbAccessQueue = Promise.resolve();
 let lastKnownDb = null;
 
@@ -19,7 +27,9 @@ function normalizeDbShape(data) {
     screens: Array.isArray(source.screens) ? source.screens : [],
     agentRuns: Array.isArray(source.agentRuns) ? source.agentRuns : [],
     telemetryEvents: Array.isArray(source.telemetryEvents) ? source.telemetryEvents : [],
-    pricing: source.pricing && typeof source.pricing === "object" ? source.pricing : {}
+    pricing: source.pricing && typeof source.pricing === "object" ? source.pricing : {},
+    workspaces: source.workspaces && typeof source.workspaces === "object" ? source.workspaces : {},
+    workspaceClaims: source.workspaceClaims && typeof source.workspaceClaims === "object" ? source.workspaceClaims : {}
   };
 }
 
@@ -29,10 +39,6 @@ function parseDbPayload(raw) {
 }
 
 async function loadInitialDb() {
-  if (path.resolve(DB_FILE) === path.resolve(SEED_DB_FILE)) {
-    return EMPTY_DB;
-  }
-
   try {
     const raw = await fs.readFile(SEED_DB_FILE, "utf8");
     return parseDbPayload(raw);
@@ -42,6 +48,10 @@ async function loadInitialDb() {
     }
     throw error;
   }
+}
+
+export async function readSeedDb() {
+  return structuredClone(await loadInitialDb());
 }
 
 async function writeDbFileUnlocked(data) {

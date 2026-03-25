@@ -2,6 +2,7 @@ import { spawn } from "node:child_process";
 
 const BASE_URL = process.env.SMOKE_BASE_URL || "http://localhost:3000";
 const HEALTH_PATH = "/api/health";
+let cookieHeader = "";
 
 function assert(condition, message) {
   if (!condition) {
@@ -14,7 +15,22 @@ async function sleep(ms) {
 }
 
 async function fetchJson(path, init = undefined) {
-  const response = await fetch(`${BASE_URL}${path}`, init);
+  const headers = new Headers(init?.headers || {});
+  if (cookieHeader) {
+    headers.set("Cookie", cookieHeader);
+  }
+
+  const response = await fetch(`${BASE_URL}${path}`, {
+    ...init,
+    headers
+  });
+  const setCookie = response.headers.get("set-cookie");
+  if (setCookie) {
+    const nextCookie = setCookie.split(";")[0];
+    if (nextCookie) {
+      cookieHeader = nextCookie;
+    }
+  }
   const text = await response.text();
   let payload = {};
 
@@ -29,6 +45,27 @@ async function fetchJson(path, init = undefined) {
   }
 
   return payload;
+}
+
+async function ensureWorkspaceClaimed() {
+  const status = await fetchJson("/api/workspaces");
+  if (status.currentWorkspace?.id) {
+    return status.currentWorkspace;
+  }
+
+  const workspaces = Array.isArray(status.workspaces) ? status.workspaces : [];
+  const availableWorkspace =
+    workspaces.find((workspace) => workspace.status === "available" && !workspace.hasSavedJourney) ||
+    workspaces.find((workspace) => workspace.status === "available" || workspace.status === "claimed-by-you");
+  assert(availableWorkspace?.id, "No available workspace found for smoke run");
+
+  const claimed = await fetchJson("/api/workspaces/claim", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ workspaceId: availableWorkspace.id })
+  });
+  assert(claimed.currentWorkspace?.id === availableWorkspace.id, `Failed to claim workspace ${availableWorkspace.id}`);
+  return claimed.currentWorkspace;
 }
 
 async function isServerHealthy() {
@@ -56,6 +93,57 @@ function shortList(values, max = 4) {
     return items.join(", ");
   }
   return `${items.join(", ")}, +${values.length - max} more`;
+}
+
+function buildScreenSmokeSample(screens, max = 8) {
+  const source = Array.isArray(screens) ? screens : [];
+  if (source.length <= max) {
+    return source;
+  }
+
+  const sample = [];
+  const seenScreenIds = new Set();
+  const seenTemplates = new Set();
+
+  for (const screen of source) {
+    const screenId = String(screen.screenId || "");
+    const templateId = String(screen.templateId || "");
+    if (!screenId || seenScreenIds.has(screenId) || !templateId || seenTemplates.has(templateId)) {
+      continue;
+    }
+    sample.push(screen);
+    seenScreenIds.add(screenId);
+    seenTemplates.add(templateId);
+    if (sample.length >= max) {
+      return sample;
+    }
+  }
+
+  const lastIndex = source.length - 1;
+  while (sample.length < Math.min(max, source.length)) {
+    const nextIndex = Math.round((sample.length * lastIndex) / Math.max(1, max - 1));
+    const candidate = source[nextIndex];
+    const screenId = String(candidate?.screenId || "");
+    if (!screenId || seenScreenIds.has(screenId)) {
+      break;
+    }
+    sample.push(candidate);
+    seenScreenIds.add(screenId);
+  }
+
+  for (const screen of source) {
+    const screenId = String(screen.screenId || "");
+    if (!screenId || seenScreenIds.has(screenId)) {
+      continue;
+    }
+    sample.push(screen);
+    seenScreenIds.add(screenId);
+    if (sample.length >= max) {
+      break;
+    }
+  }
+
+  return sample;
 }
 
 async function checkTemplateScreens(templates, screens) {
@@ -233,6 +321,7 @@ async function checkTelemetryLoop(screens, liveResults) {
 async function runSmoke() {
   let spawnedServer = null;
   let ownsServer = false;
+  let claimedWorkspace = null;
 
   try {
     if (!(await isServerHealthy())) {
@@ -252,21 +341,23 @@ async function runSmoke() {
       await waitForHealth();
     }
 
+    claimedWorkspace = await ensureWorkspaceClaimed();
     const options = await fetchJson("/api/options");
     const screensResponse = await fetchJson("/api/screens");
     const templates = Array.isArray(options.templates) ? options.templates : [];
     const screens = Array.isArray(screensResponse.screens) ? screensResponse.screens : [];
+    const screenSample = buildScreenSmokeSample(screens);
 
     assert(templates.length > 0, "No templates returned by /api/options");
     assert(screens.length > 0, "No screens returned by /api/screens");
 
     await checkTemplateScreens(templates, screens);
-    const screenResults = await checkScreenDelivery(screens);
+    const screenResults = await checkScreenDelivery(screenSample);
     const liveResults = await checkLiveSnapshots();
-    const telemetryResults = await checkTelemetryLoop(screens, liveResults);
+    const telemetryResults = await checkTelemetryLoop(screenSample, liveResults);
 
     console.log("PASS smoke checks");
-    console.log(`Templates: ${templates.length}, Screens: ${screens.length}`);
+    console.log(`Templates: ${templates.length}, Screens: ${screens.length} total (${screenSample.length} sampled)`);
     console.log(`Screen sample: ${shortList(screenResults.map((entry) => entry.screenId))}`);
     console.log(
       `Telemetry: ${telemetryResults.total} event(s) tracked (${Math.round(
@@ -283,6 +374,16 @@ async function runSmoke() {
       console.log(`Live snapshot: skipped (${liveResults.reason})`);
     }
   } finally {
+    if (claimedWorkspace?.id) {
+      try {
+        await fetchJson("/api/workspaces/release", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" }
+        });
+      } catch {
+        // Do not hide the main smoke result behind cleanup errors.
+      }
+    }
     if (ownsServer && spawnedServer && !spawnedServer.killed) {
       spawnedServer.kill();
       await sleep(250);

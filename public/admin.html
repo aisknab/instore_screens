@@ -20,13 +20,19 @@
       <div class="hero__inner">
         <div class="hero__copy">
           <p class="eyebrow">Criteo hackathon demo</p>
-          <h1>Configure once. Roll out every store screen.</h1>
+          <h1>Configure screens in CYield. AI assisted buying in CMax.</h1>
           <p class="hero__lede">
-            Start with one CYield anchor placement, then let the shared player and backend resolver extend that setup across screen types, inventory zones, and store locations without changing the retailer's existing page model.
+            Digital Screens can be configured in the current platform with minimal modification. Paving the way for a new monetisation channel, attribution layer and retail media for criteo and surfaces for AI powered innovation
           </p>
         </div>
 
         <div class="hero__actions">
+          <div id="workspaceBadge" class="workspace-badge is-hidden" aria-live="polite">
+            <span class="workspace-badge__kicker">Active avatar</span>
+            <strong id="workspaceBadgeName">Atlas</strong>
+            <small id="workspaceBadgeStatus">Lease active</small>
+          </div>
+          <button id="switchWorkspaceBtn" type="button" class="btn btn--ghost btn--compact is-hidden">Switch avatar</button>
           <a
             id="demoScreenLink"
             class="btn btn--primary hero__screen-link"
@@ -638,7 +644,7 @@
             <p class="section-kicker">Show it live</p>
             <h2>Monitoring</h2>
             <p class="stage-panel__lede">
-              Review live campaign delivery, shopper response, and in-store sales impact for the selected brand.
+              A client-facing brand dashboard for what is live, how it is performing, and where it is running.
             </p>
           </div>
           <div class="stage-panel__actions">
@@ -654,7 +660,7 @@
               <p id="monitoringOverviewKicker" class="section-kicker">Brand dashboard</p>
               <h3 id="monitoringOverviewTitle">Campaign delivery, engagement, and in-store sales impact</h3>
               <p id="monitoringOverviewLede" class="monitoring-overview__lede">
-                Review live delivery, shopper response, and retail outcomes for the selected brand.
+                A clean view of live delivery, shopper response, and retail impact for the selected brand.
               </p>
               <div id="monitoringOverviewSignals" class="monitoring-overview__signals">
                 <span class="monitoring-signal">Live telemetry</span>
@@ -663,10 +669,10 @@
               </div>
             </div>
             <div class="monitoring-overview__aside">
-              <p id="monitoringOverviewAsideEyebrow" class="monitoring-overview__eyebrow">Account view</p>
+              <p id="monitoringOverviewAsideEyebrow" class="monitoring-overview__eyebrow">Workspace</p>
               <h4 id="monitoringOverviewAsideTitle">Selected brand workspace</h4>
               <p id="monitoringOverviewAsideCopy">
-                The dashboard below is scoped to the active brand and surfaces only that brand's campaigns, live placements, and measured results.
+                Scoped to one brand, with live screens, recent campaigns, and measured results in one place.
               </p>
             </div>
           </section>
@@ -675,22 +681,22 @@
             <article class="kpi-card kpi-card--monitoring">
               <p class="kpi-card__label">Total ad plays</p>
               <strong id="monitorKpiPlays">0</strong>
-              <span class="kpi-card__meta">Proof of play events across the live activation.</span>
+              <span class="kpi-card__meta">Proof of play</span>
             </article>
             <article class="kpi-card kpi-card--monitoring">
               <p class="kpi-card__label">Total exposure time</p>
               <strong id="monitorKpiExposure">0s</strong>
-              <span class="kpi-card__meta">Aggregate visible dwell time captured by the player.</span>
+              <span class="kpi-card__meta">Visible dwell</span>
             </article>
             <article class="kpi-card kpi-card--monitoring">
               <p class="kpi-card__label">Live screens</p>
               <strong id="monitorKpiScreens">0</strong>
-              <span class="kpi-card__meta">Screens currently carrying the active plan.</span>
+              <span class="kpi-card__meta">Active network</span>
             </article>
             <article class="kpi-card kpi-card--monitoring">
               <p class="kpi-card__label">Applied plans</p>
               <strong id="monitorKpiPlans">0</strong>
-              <span class="kpi-card__meta">Campaign plans promoted from recommendation to live proof.</span>
+              <span class="kpi-card__meta">Recent launches</span>
             </article>
           </div>
 
@@ -699,26 +705,25 @@
               <article class="card monitoring-card monitoring-card--measurement">
                 <div class="card__header monitoring-card__header">
                   <div>
-                    <p class="section-kicker">Campaign measurement</p>
+                    <p class="section-kicker">Measurement</p>
                     <h3 id="monitoringMeasurementTitle">Campaign performance</h3>
-                    <p id="monitoringMeasurementIntro">Delivery, shopper action, and retail outcome metrics for the active brand.</p>
+                    <p id="monitoringMeasurementIntro">Observed delivery and modeled retail outcomes for the active brand.</p>
                   </div>
-                  <span class="card__badge">Dashboard view</span>
+                  <span class="card__badge">Live dashboard</span>
                 </div>
 
                 <div class="measurement-board">
                   <div class="measurement-board__top">
                     <section class="measurement-brief">
-                      <p class="measurement-brief__eyebrow">Metric families</p>
+                      <p class="measurement-brief__eyebrow">Focus</p>
                       <h4 id="measurementBriefTitle">How the selected brand is performing in store</h4>
                       <p id="measurementBriefCopy" class="measurement-brief__copy">
-                        Track live delivery, shopper action, and in-store sales impact in one view.
+                        Keep delivery signals and business outcomes in one place.
                       </p>
                       <div class="measurement-brief__chips">
-                        <span class="measurement-chip">Delivery</span>
-                        <span class="measurement-chip">Engagement</span>
-                        <span class="measurement-chip">Sales lift</span>
-                        <span class="measurement-chip">Acquisition</span>
+                        <span class="measurement-chip">Observed</span>
+                        <span class="measurement-chip">Modeled</span>
+                        <span class="measurement-chip">Retail impact</span>
                       </div>
                     </section>
 
@@ -731,46 +736,37 @@
                     <article class="measurement-card">
                       <p class="measurement-card__label">Interaction rate</p>
                       <strong>Engaged shoppers</strong>
-                      <p>Share of exposed shoppers who scan, tap through, or continue their journey on mobile.</p>
+                      <p>Share of shoppers who responded after seeing the ad.</p>
                     </article>
                     <article class="measurement-card">
-                      <p class="measurement-card__label">QR code scans</p>
-                      <strong>Coupon and detail intent</strong>
-                      <p>Captures product-detail or coupon handoff moments that can feed app download and loyalty outcomes.</p>
+                      <p class="measurement-card__label">QR scans</p>
+                      <strong>Store intent</strong>
+                      <p>Coupon or product-detail actions generated by the activation.</p>
                     </article>
                     <article class="measurement-card">
                       <p class="measurement-card__label">Incrementality</p>
-                      <strong>Sales caused by media</strong>
-                      <p>Reserved for ad-vs-control lift readout across stores or screens where ads were not shown.</p>
+                      <strong>Sales lift</strong>
+                      <p>Modeled sales attributable to media.</p>
                     </article>
                     <article class="measurement-card">
-                      <p class="measurement-card__label">New buyer acquisition</p>
+                      <p class="measurement-card__label">New buyers</p>
                       <strong>New-to-brand sales</strong>
-                      <p>Highlights first-time brand purchasers inferred from retail or POS-style transaction signals.</p>
-                    </article>
-                    <article class="measurement-card">
-                      <p class="measurement-card__label">In-store ROAS</p>
-                      <strong>Revenue per impression</strong>
-                      <p>Frames store sales return against on-screen delivery so the retail media value story stays legible.</p>
+                      <p>Modeled first-time buyer contribution.</p>
                     </article>
                     <article class="measurement-card measurement-card--accent">
-                      <p class="measurement-card__label">Proof signals</p>
-                      <strong>Exposure and ad plays</strong>
-                      <p>The live KPI rail anchors the board with foundational delivery evidence before modeled outcomes layer in.</p>
+                      <p class="measurement-card__label">In-store ROAS</p>
+                      <strong>Sales efficiency</strong>
+                      <p>Modeled sales return against live delivery.</p>
                     </article>
                   </div>
 
                   <div class="telemetry-grid telemetry-grid--dashboard">
                     <section class="telemetry-panel telemetry-panel--dashboard">
-                      <h4 class="telemetry-panel__title">By Screen</h4>
+                      <h4 class="telemetry-panel__title">Top screens</h4>
                       <div id="telemetryByScreen" class="stack-list telemetry-list"></div>
                     </section>
                     <section class="telemetry-panel telemetry-panel--dashboard">
-                      <h4 class="telemetry-panel__title">By Template</h4>
-                      <div id="telemetryByTemplate" class="stack-list telemetry-list"></div>
-                    </section>
-                    <section class="telemetry-panel telemetry-panel--dashboard">
-                      <h4 class="telemetry-panel__title">By SKU</h4>
+                      <h4 class="telemetry-panel__title">Top products</h4>
                       <div id="telemetryBySku" class="stack-list telemetry-list"></div>
                     </section>
                   </div>
@@ -780,17 +776,31 @@
               <article class="card monitoring-card monitoring-card--live">
                 <div class="card__header monitoring-card__header">
                   <div>
-                    <p class="section-kicker">Live proof</p>
-                    <h3>Screen snapshot</h3>
-                    <p>Keep the live payload visible so the dashboard never loses contact with the activation itself.</p>
+                    <p class="section-kicker">Live screens</p>
+                    <h3>Screen inspector</h3>
+                    <p>Search and inspect one placement at a time instead of loading the full network into the page.</p>
                   </div>
-                  <button id="nextToMonitoringBtnSecondary" type="button" class="btn btn--ghost js-stage-jump" data-stage="monitoring">
-                    Stay on monitoring
-                  </button>
                 </div>
 
                 <div id="goalLiveSummary" class="goal-summary empty">Apply a plan to view live screens and creatives.</div>
-                <div id="goalLiveScreens" class="stack-list"></div>
+                <div class="goal-live-browser">
+                  <div class="goal-live-browser__toolbar">
+                    <div class="field goal-live-browser__search">
+                      <label for="goalLiveSearch">Find a screen</label>
+                      <input
+                        id="goalLiveSearch"
+                        type="search"
+                        placeholder="Search by screen, store, page, or location"
+                        autocomplete="off"
+                      />
+                    </div>
+                    <p id="goalLiveSearchMeta" class="goal-live-browser__meta">No live screens yet.</p>
+                  </div>
+                  <div class="goal-live-browser__content">
+                    <div id="goalLiveScreens" class="goal-live-results"></div>
+                    <div id="goalLiveDetail" class="goal-live-detail"></div>
+                  </div>
+                </div>
               </article>
             </div>
 
@@ -798,9 +808,9 @@
               <article class="card monitoring-card monitoring-card--preview">
                 <div class="card__header monitoring-card__header">
                   <div>
-                    <p class="section-kicker">Optional preview</p>
-                    <h3>Monitoring preview rail</h3>
-                    <p>Use a live player or recent creative frame without leaving the dashboard.</p>
+                    <p class="section-kicker">Preview</p>
+                    <h3>Live creative</h3>
+                    <p>Keep a single live preview close to the dashboard.</p>
                   </div>
                   <a id="monitorPreviewLink" class="btn btn--ghost btn--compact" href="/screen.html?preview=showcase" target="_blank" rel="noreferrer">
                     Open preview
@@ -819,11 +829,10 @@
               <article class="card monitoring-card monitoring-card--runs">
                 <div class="card__header monitoring-card__header">
                   <div>
-                    <p class="section-kicker">Campaign history</p>
-                    <h3>Campaign timeline</h3>
-                    <p>Keep recent campaign plans close to the measurement board so delivery and optimization stay in one workspace.</p>
+                    <p class="section-kicker">Campaigns</p>
+                    <h3>Recent launches</h3>
+                    <p>Keep the latest plans and live launches close to the measurement view.</p>
                   </div>
-                  <span class="card__badge">Ops log</span>
                 </div>
 
                 <div id="agentRunsList" class="stack-list"></div>
@@ -837,6 +846,18 @@
     <p id="statusText" class="status-text"></p>
 
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
+    <section id="workspaceOverlay" class="workspace-overlay" aria-live="polite" hidden>
+      <div class="workspace-overlay__backdrop" aria-hidden="true"></div>
+      <div class="workspace-overlay__panel" role="dialog" aria-modal="true" aria-labelledby="workspaceOverlayTitle">
+        <p class="section-kicker">Presenter access</p>
+        <h2 id="workspaceOverlayTitle">Select your avatar</h2>
+        <p class="workspace-overlay__lede">
+          Each avatar is a separate demo workspace. Occupied avatars are locked, and every lease expires after 2 hours so abandoned tabs do not block the next presenter.
+        </p>
+        <p id="workspaceOverlayMessage" class="workspace-overlay__message"></p>
+        <div id="workspaceGrid" class="workspace-grid"></div>
+      </div>
+    </section>
     <script type="module" src="/admin.js"></script>
   </body>
 </html>

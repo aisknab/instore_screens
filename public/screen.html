@@ -70,51 +70,51 @@
       });
       const TEMPLATE_DISPLAY_DEFAULTS = {
         "fullscreen-banner": {
-          badge: "In-Store Exclusive",
-          promotion: "Limited-time event pricing",
-          cta: "Find in aisle",
-          subcopy: "Top offers available in this store today.",
-          legal: "While stock lasts.",
+          badge: "At the Entrance",
+          promotion: "Store arrival offer",
+          cta: "Find it in store",
+          subcopy: "Built for broad-reach retail messaging that shoppers can action immediately inside the store.",
+          legal: "Pricing and availability vary by location.",
           image: "/assets/products/category-general.svg"
         },
         "fullscreen-hero": {
-          badge: "Featured Product",
-          promotion: "Premium pick of the day",
-          cta: "See product display",
-          subcopy: "Compare key features before you buy.",
+          badge: "On the Feature Wall",
+          promotion: "Category feature",
+          cta: "See the live display",
+          subcopy: "Designed for premium comparisons, launches, and high-intent category traffic.",
           legal: "Selection may vary by location.",
           image: "/assets/products/category-electronics.svg"
         },
         "carousel-banner": {
-          badge: "Trending Deals",
-          promotion: "Rotating aisle highlights",
-          cta: "Browse this aisle",
-          subcopy: "Fresh recommendations rotate automatically.",
+          badge: "This Zone Today",
+          promotion: "Rotating range highlights",
+          cta: "Explore the full range",
+          subcopy: "A rotating wall format for showcasing multiple products in the same aisle or category.",
           legal: "Offers rotate throughout the day.",
           image: "/assets/products/category-electronics.svg"
         },
         "kiosk-interactive": {
-          badge: "Kiosk Display",
-          promotion: "Assisted kiosk offers",
-          cta: "Scan QR or ask staff",
-          subcopy: "Use QR handoff or staff assistance to continue on mobile.",
-          legal: "Digital offers applied at checkout.",
+          badge: "Mobile Handoff",
+          promotion: "Continue on your phone",
+          cta: "Scan to keep this offer",
+          subcopy: "Designed for QR-assisted journeys, account sign-in, and deeper product detail away from the screen.",
+          legal: "Digital offers and sign-in flows vary by store.",
           image: "/assets/products/category-general.svg"
         },
         "shelf-spotlight": {
-          badge: "Shelf Edge Deal",
-          promotion: "Grab-and-go savings",
-          cta: "Pick up nearby",
-          subcopy: "High-conversion offer near shelf location.",
-          legal: "Price valid for this location only.",
+          badge: "Compare Here",
+          promotion: "Shelf-side feature",
+          cta: "Scan for details",
+          subcopy: "Compact creative for price, savings, and product proof at decision distance.",
+          legal: "Price and availability are specific to this location.",
           image: "/assets/products/category-aisle.svg"
         },
         "menu-loop": {
-          badge: "Now Serving",
-          promotion: "Chef-picked specials",
-          cta: "Order at counter",
-          subcopy: "Menu board rotates through daypart favorites.",
-          legal: "Preparation times may vary.",
+          badge: "Today's Picks",
+          promotion: "Counter highlight",
+          cta: "Scan for ingredients",
+          subcopy: "Menu-board creative built for daypart offers, combos, and service counter upsell.",
+          legal: "Preparation times and availability may vary.",
           image: "/assets/products/category-foodcourt.svg"
         }
       };
@@ -258,6 +258,636 @@
           TEMPLATE_DISPLAY_DEFAULTS[templateId] ||
           TEMPLATE_DISPLAY_DEFAULTS["fullscreen-banner"]
         );
+      }
+
+      const OBJECTIVE_AUDIENCES = {
+        awareness: "high-traffic shoppers",
+        "checkout-attach": "queue-side shoppers",
+        clearance: "value-driven shoppers",
+        premium: "high-intent category shoppers"
+      };
+
+      const QR_TEMPLATE_DEFAULTS = {
+        "kiosk-interactive": {
+          asset: "/assets/qr/qr-mobile-handoff.svg",
+          label: "Scan to keep this offer",
+          caption: "Continue on your phone and bring the offer back to checkout."
+        },
+        "shelf-spotlight": {
+          asset: "/assets/qr/qr-shelf-callout.svg",
+          label: "Scan for price and details",
+          caption: "Open specs, ratings, and product comparison on your phone."
+        },
+        "menu-loop": {
+          asset: "/assets/qr/qr-menu-board.svg",
+          label: "Scan for ingredients",
+          caption: "View ingredients, allergy notes, and current offers on mobile."
+        }
+      };
+
+      const GENERIC_COPY_PATTERN =
+        /demo|featured this hour|now live in-store|in-store exclusive|featured product|trending deals|kiosk display|shelf edge deal|now serving|storewide offer|weekly highlights|chef-picked specials|coverage view|brand spotlight|cyield|cmax|turn supply into demand|demo baseline/i;
+
+      function titleCaseWords(value) {
+        const raw = readText(String(value ?? "")).replace(/[_-]+/g, " ");
+        if (!raw) {
+          return "";
+        }
+        return raw.replace(/\b\w/g, (character) => character.toUpperCase());
+      }
+
+      function compactProductName(value, limit = 4) {
+        const raw = readText(value);
+        if (!raw) {
+          return "Featured";
+        }
+        const words = raw.split(/\s+/).filter(Boolean);
+        if (words.length <= limit) {
+          return raw;
+        }
+        return `${words.slice(0, limit).join(" ")}...`;
+      }
+
+      function looksGenericCopy(value) {
+        const raw = readText(value);
+        if (!raw) {
+          return true;
+        }
+        return GENERIC_COPY_PATTERN.test(raw);
+      }
+
+      function selectStoryText(value, fallback) {
+        const raw = readText(value);
+        if (!raw || looksGenericCopy(raw)) {
+          return fallback;
+        }
+        return raw;
+      }
+
+      function buildLocationLabel(location) {
+        const normalized = readText(location).toLowerCase();
+        if (!normalized) {
+          return "Store floor";
+        }
+        if (normalized.includes("entrance")) {
+          return "Entrance zone";
+        }
+        if (normalized.includes("checkout")) {
+          return "Checkout";
+        }
+        if (normalized.includes("electronics")) {
+          return "Electronics";
+        }
+        if (normalized.includes("whitegoods")) {
+          return "Appliance wall";
+        }
+        if (normalized.includes("aisle")) {
+          return "Shelf edge";
+        }
+        if (normalized.includes("foodcourt")) {
+          return "Food court";
+        }
+        return titleCaseWords(normalized) || "Store floor";
+      }
+
+      function buildCategoryLabel(category, location = "") {
+        const normalized = readText(category).toLowerCase() || readText(location).toLowerCase();
+        if (!normalized) {
+          return "Retail";
+        }
+        if (normalized.includes("electronics")) {
+          return "Electronics";
+        }
+        if (normalized.includes("whitegoods")) {
+          return "Appliances";
+        }
+        if (normalized.includes("foodcourt")) {
+          return "Menu";
+        }
+        if (normalized.includes("aisle")) {
+          return "Impulse aisle";
+        }
+        if (normalized.includes("checkout")) {
+          return "Checkout";
+        }
+        return titleCaseWords(normalized) || "Retail";
+      }
+
+      function inferBrand(entry, attributes) {
+        const fromAttributes = readText(attributes.targetBrand);
+        if (fromAttributes) {
+          return fromAttributes;
+        }
+        const advertiserId = readText(entry.ClientAdvertiserId).replace(/^advertiser[-_]/i, "");
+        return advertiserId ? titleCaseWords(advertiserId) : "";
+      }
+
+      function buildSavingsDetail(priceValue, compareValue) {
+        const priceNumber = toNumber(priceValue);
+        const compareNumber = toNumber(compareValue);
+        if (!Number.isFinite(priceNumber) || !Number.isFinite(compareNumber) || compareNumber <= priceNumber) {
+          return {
+            amountText: "",
+            percentText: "",
+            lineText: ""
+          };
+        }
+        const amount = compareNumber - priceNumber;
+        const percent = Math.round((amount / compareNumber) * 100);
+        return {
+          amountText: moneyFormatter.format(amount),
+          percentText: `${percent}% off`,
+          lineText: `Save ${moneyFormatter.format(amount)}`
+        };
+      }
+
+      function buildQrConfig(templateId, objectiveId, attributes = {}) {
+        const explicitAsset = readText(attributes.qrAsset);
+        const explicitLabel = readText(attributes.qrLabel);
+        const explicitCaption = readText(attributes.qrCaption);
+        const templateDefault = QR_TEMPLATE_DEFAULTS[templateId];
+
+        if (explicitAsset || explicitLabel || explicitCaption) {
+          return {
+            show: true,
+            asset: explicitAsset || templateDefault?.asset || "/assets/qr/qr-handoff.svg",
+            label: explicitLabel || templateDefault?.label || "Scan for details",
+            caption: explicitCaption || templateDefault?.caption || "Open additional store information on your phone."
+          };
+        }
+
+        if (templateDefault) {
+          return {
+            show: true,
+            ...templateDefault
+          };
+        }
+
+        if (objectiveId === "clearance" && templateId === "fullscreen-banner") {
+          return {
+            show: true,
+            asset: "/assets/qr/qr-clearance.svg",
+            label: "Scan for clearance map",
+            caption: "See markdown locations and related products on your phone."
+          };
+        }
+
+        return {
+          show: false,
+          asset: "",
+          label: "",
+          caption: ""
+        };
+      }
+
+      function buildGeneratedCopy(context) {
+        const audience = OBJECTIVE_AUDIENCES[context.objectiveId] || "store shoppers";
+        const rangeLabel = context.brand ? `${context.brand} ${context.categoryLabel}` : context.categoryLabel;
+        const savingsLead = context.savings.lineText
+          ? `${context.savings.lineText} on ${context.name}.`
+          : `${context.name} is being surfaced for ${audience}.`;
+
+        switch (context.templateId) {
+          case "fullscreen-hero":
+            return {
+              badge: "Feature Wall",
+              promotion: `${rangeLabel} spotlight`,
+              cta: "See the live display",
+              subcopy: `${savingsLead} Built for premium comparison moments in ${context.locationLabel.toLowerCase()}.`,
+              supportNote: "Hero-led category messaging"
+            };
+          case "carousel-banner":
+            return {
+              badge: "Range Rotation",
+              promotion: `${context.categoryLabel} assortment live now`,
+              cta: "Explore the full range",
+              subcopy: `${context.name} is part of a rotating lineup designed to help ${audience} compare multiple options quickly.`,
+              supportNote: "Auto-rotating assortment"
+            };
+          case "kiosk-interactive":
+            return {
+              badge: "Mobile Handoff",
+              promotion: "Continue this product on your phone",
+              cta: context.qr.label || "Scan to keep this offer",
+              subcopy: `${context.name} stays with the shopper after they leave the kiosk, keeping specs and the offer available at checkout.`,
+              supportNote: "QR-assisted journey"
+            };
+          case "shelf-spotlight":
+            return {
+              badge: "Shelf Compare",
+              promotion: context.savings.percentText || "Shelf-side feature",
+              cta: context.qr.label || "Scan for details",
+              subcopy: `${context.name} is framed for shoppers making a final decision at shelf edge, with price, proof, and fast comparison cues.`,
+              supportNote: "Decision-point signage"
+            };
+          case "menu-loop":
+            return {
+              badge: "Counter Picks",
+              promotion: "Featured board rotation",
+              cta: context.qr.label || "Scan for ingredients",
+              subcopy: `${context.name} anchors a quick-read menu board built for service counter traffic, pickup, and ingredient lookup.`,
+              supportNote: "Service-counter loop"
+            };
+          default:
+            return {
+              badge: context.objectiveId === "clearance" ? "Store Markdown" : context.locationLabel,
+              promotion: `${rangeLabel} feature`,
+              cta: context.qr.label || "Find it in store",
+              subcopy: `${savingsLead} Positioned at the ${context.locationLabel.toLowerCase()} to reach ${audience} with a fast retail read.`,
+              supportNote: "Arrival-zone messaging"
+            };
+        }
+      }
+
+      function buildProofPoints(context) {
+        const proofPoints = [];
+        if (context.brand) {
+          proofPoints.push(context.brand);
+        }
+        if (context.rating) {
+          proofPoints.push(context.rating);
+        }
+        if (context.savings.percentText) {
+          proofPoints.push(context.savings.percentText);
+        }
+        proofPoints.push(context.locationLabel);
+
+        if (context.objectiveId === "checkout-attach") {
+          proofPoints.push("Basket builder");
+        } else if (context.objectiveId === "premium") {
+          proofPoints.push("Premium range");
+        } else if (context.objectiveId === "clearance") {
+          proofPoints.push("Marked down now");
+        }
+
+        return [...new Set(proofPoints.filter(Boolean))].slice(0, 5);
+      }
+
+      function buildDisplayContext(data, entry, index, products, templateName, supportsLoop, loopInterval) {
+        const settings = data.settings || {};
+        const templateId = String(settings.templateId || "fullscreen-banner");
+        const templateDefaults = readTemplateDefaults(templateId);
+        const attributes = parseRenderingAttributes(entry.RenderingAttributes);
+        const objectiveId = readText(attributes.goalObjective).toLowerCase() || "awareness";
+        const name = readText(entry.ProductName) || "In-Store Promotion";
+        const categoryLabel = buildCategoryLabel(attributes.targetCategory, settings.location);
+        const locationLabel = buildLocationLabel(settings.location);
+        const brand = inferBrand(entry, attributes);
+        const priceDisplay = formatMoney(entry.Price) || "$0.00";
+        const compareDisplay = formatMoney(entry.ComparePrice);
+        const rating = formatRating(entry.Rating);
+        const savings = buildSavingsDetail(entry.Price, entry.ComparePrice);
+        const qr = buildQrConfig(templateId, objectiveId, attributes);
+        const generatedCopy = buildGeneratedCopy({
+          templateId,
+          objectiveId,
+          name,
+          brand,
+          categoryLabel,
+          locationLabel,
+          savings,
+          qr
+        });
+        const badge = selectStoryText(attributes.badge, generatedCopy.badge || templateDefaults.badge);
+        const promotion = selectStoryText(attributes.promotion, generatedCopy.promotion || templateDefaults.promotion);
+        const cta = selectStoryText(attributes.cta, generatedCopy.cta || templateDefaults.cta);
+        const subcopy = selectStoryText(attributes.subcopy, generatedCopy.subcopy || templateDefaults.subcopy);
+        const legal = selectStoryText(attributes.legal, templateDefaults.legal);
+        const image = readText(entry.Image) || templateDefaults.image;
+        const productsSummary = products.map((product, productIndex) => {
+          const productAttributes = parseRenderingAttributes(product.RenderingAttributes);
+          return {
+            name: readText(product.ProductName) || `Featured ${productIndex + 1}`,
+            shortName: compactProductName(readText(product.ProductName) || `Featured ${productIndex + 1}`),
+            price: formatMoney(product.Price) || "$0.00",
+            brand: inferBrand(product, productAttributes),
+            active: productIndex === index
+          };
+        });
+
+        return {
+          templateId,
+          templateName,
+          name,
+          image,
+          badge,
+          promotion,
+          cta,
+          subcopy,
+          legal,
+          brand,
+          categoryLabel,
+          locationLabel,
+          objectiveId,
+          priceDisplay,
+          compareDisplay,
+          showCompare: shouldShowComparePrice(entry.Price, entry.ComparePrice) && Boolean(compareDisplay),
+          rating,
+          savings,
+          qr,
+          supportNote: generatedCopy.supportNote,
+          proofPoints: buildProofPoints({
+            brand,
+            rating,
+            savings,
+            locationLabel,
+            objectiveId
+          }),
+          products: productsSummary,
+          loopLabel:
+            supportsLoop && loopInterval >= 1000
+              ? `Rotates every ${Math.round(loopInterval / 1000)}s`
+              : "",
+          index,
+          totalProducts: products.length
+        };
+      }
+
+      function buildProofMarkup(items = [], accent = "") {
+        const accentClass = accent ? ` ${accent}` : "";
+        return `
+          <ul class="fallback__proof-list${accentClass}">
+            ${items
+              .filter(Boolean)
+              .map((item) => `<li class="fallback__proof-pill">${escapeHtml(item)}</li>`)
+              .join("")}
+          </ul>
+        `;
+      }
+
+      function buildPriceMarkup(context, compact = false) {
+        return `
+          <div class="fallback__price-lockup${compact ? " fallback__price-lockup--compact" : ""}">
+            <div class="fallback__price-main">
+              <strong>${escapeHtml(context.priceDisplay)}</strong>
+              ${
+                context.showCompare
+                  ? `<span class="fallback__price-compare">${escapeHtml(context.compareDisplay)}</span>`
+                  : ""
+              }
+            </div>
+            ${
+              context.savings.lineText
+                ? `<span class="fallback__price-save">${escapeHtml(context.savings.lineText)}</span>`
+                : ""
+            }
+          </div>
+        `;
+      }
+
+      function buildQrMarkup(context, extraClass = "") {
+        if (!context.qr.show) {
+          return "";
+        }
+        return `
+          <div class="fallback__qr-card${extraClass ? ` ${extraClass}` : ""}">
+            <div class="fallback__qr-art">
+              <img src="${escapeHtml(context.qr.asset)}" alt="" aria-hidden="true">
+            </div>
+            <div class="fallback__qr-copy">
+              <span class="fallback__qr-label">${escapeHtml(context.qr.label)}</span>
+              <p class="fallback__qr-caption">${escapeHtml(context.qr.caption)}</p>
+            </div>
+          </div>
+        `;
+      }
+
+      function buildRailMarkup(context) {
+        return `
+          <div class="fallback__rail">
+            ${context.products
+              .map(
+                (product) => `
+                  <div class="fallback__rail-card${product.active ? " is-active" : ""}">
+                    <span class="fallback__rail-eyebrow">${escapeHtml(product.brand || context.categoryLabel)}</span>
+                    <strong>${escapeHtml(product.shortName)}</strong>
+                    <span class="fallback__rail-price">${escapeHtml(product.price)}</span>
+                  </div>
+                `
+              )
+              .join("")}
+          </div>
+        `;
+      }
+
+      function buildMenuBoardMarkup(context) {
+        return `
+          <div class="fallback__board">
+            <div class="fallback__board-head">
+              <span>Today's board</span>
+              <span>${escapeHtml(context.loopLabel || "Updated through the day")}</span>
+            </div>
+            <div class="fallback__board-list">
+              ${context.products
+                .map(
+                  (product) => `
+                    <div class="fallback__board-item${product.active ? " is-active" : ""}">
+                      <div>
+                        <span class="fallback__board-brand">${escapeHtml(product.brand || "Kitchen feature")}</span>
+                        <strong>${escapeHtml(product.name)}</strong>
+                      </div>
+                      <span class="fallback__board-price">${escapeHtml(product.price)}</span>
+                    </div>
+                  `
+                )
+                .join("")}
+            </div>
+          </div>
+        `;
+      }
+
+      function buildFallbackMarkup(context) {
+        const priceMarkup = buildPriceMarkup(context);
+        const proofMarkup = buildProofMarkup(context.proofPoints);
+        const legalMarkup = context.legal
+          ? `<p class="fallback__legal">${escapeHtml(context.legal)}</p>`
+          : "";
+        const actionNote = context.loopLabel || context.supportNote || "";
+
+        switch (context.templateId) {
+          case "fullscreen-hero":
+            return `
+              <div class="fallback__hero-shell">
+                <section class="fallback__copy-panel fallback__copy-panel--hero">
+                  <div class="fallback__meta-row">
+                    <span class="fallback__badge">${escapeHtml(context.badge)}</span>
+                    <span class="fallback__scene">${escapeHtml(context.locationLabel)}</span>
+                  </div>
+                  <p class="fallback__eyebrow">${escapeHtml(context.promotion)}</p>
+                  <h1 class="fallback__headline">${escapeHtml(context.name)}</h1>
+                  <p class="fallback__subcopy">${escapeHtml(context.subcopy)}</p>
+                  ${priceMarkup}
+                  ${proofMarkup}
+                  <div class="fallback__action-row">
+                    <span class="fallback__cta">${escapeHtml(context.cta)}</span>
+                    <span class="fallback__support">${escapeHtml(actionNote)}</span>
+                  </div>
+                  ${legalMarkup}
+                </section>
+                <section class="fallback__hero-stage">
+                  <div class="fallback__hero-frame">
+                    <img class="fallback__product-image fallback__product-image--hero" src="${escapeHtml(context.image)}" alt="${escapeHtml(context.name)}">
+                  </div>
+                  <div class="fallback__metric-stack">
+                    <div class="fallback__metric-card">
+                      <span>Category</span>
+                      <strong>${escapeHtml(context.categoryLabel)}</strong>
+                    </div>
+                    <div class="fallback__metric-card">
+                      <span>Proof</span>
+                      <strong>${escapeHtml(context.rating || context.savings.percentText || "In store now")}</strong>
+                    </div>
+                    <div class="fallback__metric-card">
+                      <span>Display</span>
+                      <strong>${escapeHtml(context.supportNote)}</strong>
+                    </div>
+                  </div>
+                  ${buildQrMarkup(context, "fallback__qr-card--hero")}
+                </section>
+              </div>
+            `;
+          case "carousel-banner":
+            return `
+              <div class="fallback__carousel-shell">
+                <section class="fallback__copy-panel">
+                  <div class="fallback__meta-row">
+                    <span class="fallback__badge">${escapeHtml(context.badge)}</span>
+                    <span class="fallback__scene">${escapeHtml(context.locationLabel)}</span>
+                  </div>
+                  <p class="fallback__eyebrow">${escapeHtml(context.promotion)}</p>
+                  <h1 class="fallback__headline">${escapeHtml(context.name)}</h1>
+                  <p class="fallback__subcopy">${escapeHtml(context.subcopy)}</p>
+                  ${priceMarkup}
+                  ${proofMarkup}
+                  <div class="fallback__action-row">
+                    <span class="fallback__cta">${escapeHtml(context.cta)}</span>
+                    <span class="fallback__support">${escapeHtml(actionNote)}</span>
+                  </div>
+                  ${legalMarkup}
+                </section>
+                <section class="fallback__stage-panel">
+                  <div class="fallback__stage-copy">
+                    <span class="fallback__stage-label">Rotating assortment</span>
+                    <strong>${escapeHtml(context.categoryLabel)}</strong>
+                    <span>${escapeHtml(context.supportNote)}</span>
+                  </div>
+                  <img class="fallback__product-image" src="${escapeHtml(context.image)}" alt="${escapeHtml(context.name)}">
+                  ${buildRailMarkup(context)}
+                </section>
+              </div>
+            `;
+          case "kiosk-interactive":
+            return `
+              <div class="fallback__kiosk-shell">
+                <section class="fallback__copy-panel">
+                  <div class="fallback__meta-row">
+                    <span class="fallback__badge">${escapeHtml(context.badge)}</span>
+                    <span class="fallback__scene">${escapeHtml(context.locationLabel)}</span>
+                  </div>
+                  <p class="fallback__eyebrow">${escapeHtml(context.promotion)}</p>
+                  <h1 class="fallback__headline">${escapeHtml(context.name)}</h1>
+                  <p class="fallback__subcopy">${escapeHtml(context.subcopy)}</p>
+                  ${proofMarkup}
+                  <div class="fallback__action-row">
+                    <span class="fallback__cta">${escapeHtml(context.cta)}</span>
+                    <span class="fallback__support">${escapeHtml(actionNote)}</span>
+                  </div>
+                  ${legalMarkup}
+                </section>
+                <section class="fallback__kiosk-stage">
+                  ${buildQrMarkup(context, "fallback__qr-card--primary")}
+                  <ol class="fallback__step-list">
+                    <li><span>1</span><div><strong>Scan</strong><p>Capture the offer and product details on mobile.</p></div></li>
+                    <li><span>2</span><div><strong>Save</strong><p>Keep the product with the shopper while they continue around the store.</p></div></li>
+                    <li><span>3</span><div><strong>Redeem</strong><p>Bring the saved offer back to checkout or to a staff member.</p></div></li>
+                  </ol>
+                  <div class="fallback__phone-panel">
+                    <div class="fallback__phone-screen">
+                      <img class="fallback__product-image fallback__product-image--phone" src="${escapeHtml(context.image)}" alt="${escapeHtml(context.name)}">
+                    </div>
+                    <span class="fallback__phone-note">Saved to mobile journey</span>
+                  </div>
+                </section>
+              </div>
+            `;
+          case "shelf-spotlight":
+            return `
+              <div class="fallback__shelf-shell">
+                <div class="fallback__shelf-price">
+                  ${buildPriceMarkup(context, true)}
+                </div>
+                <div class="fallback__shelf-copy">
+                  <div class="fallback__meta-row">
+                    <span class="fallback__badge">${escapeHtml(context.badge)}</span>
+                    <span class="fallback__scene">${escapeHtml(context.locationLabel)}</span>
+                  </div>
+                  <p class="fallback__eyebrow">${escapeHtml(context.promotion)}</p>
+                  <h1 class="fallback__headline">${escapeHtml(context.name)}</h1>
+                  <p class="fallback__subcopy">${escapeHtml(context.subcopy)}</p>
+                  ${proofMarkup}
+                </div>
+                <div class="fallback__shelf-product">
+                  <img class="fallback__product-image fallback__product-image--shelf" src="${escapeHtml(context.image)}" alt="${escapeHtml(context.name)}">
+                </div>
+                ${buildQrMarkup(context, "fallback__qr-card--compact")}
+              </div>
+            `;
+          case "menu-loop":
+            return `
+              <div class="fallback__menu-shell">
+                <section class="fallback__copy-panel">
+                  <div class="fallback__meta-row">
+                    <span class="fallback__badge">${escapeHtml(context.badge)}</span>
+                    <span class="fallback__scene">${escapeHtml(context.locationLabel)}</span>
+                  </div>
+                  <p class="fallback__eyebrow">${escapeHtml(context.promotion)}</p>
+                  <h1 class="fallback__headline">${escapeHtml(context.name)}</h1>
+                  <p class="fallback__subcopy">${escapeHtml(context.subcopy)}</p>
+                  ${priceMarkup}
+                  <div class="fallback__action-row">
+                    <span class="fallback__cta">${escapeHtml(context.cta)}</span>
+                    <span class="fallback__support">${escapeHtml(actionNote)}</span>
+                  </div>
+                  ${legalMarkup}
+                </section>
+                <section class="fallback__menu-stage">
+                  <img class="fallback__product-image fallback__product-image--menu" src="${escapeHtml(context.image)}" alt="${escapeHtml(context.name)}">
+                  ${buildQrMarkup(context, "fallback__qr-card--compact")}
+                </section>
+                ${buildMenuBoardMarkup(context)}
+              </div>
+            `;
+          default:
+            return `
+              <div class="fallback__banner-shell">
+                <section class="fallback__copy-panel">
+                  <div class="fallback__meta-row">
+                    <span class="fallback__badge">${escapeHtml(context.badge)}</span>
+                    <span class="fallback__scene">${escapeHtml(context.locationLabel)}</span>
+                  </div>
+                  <p class="fallback__eyebrow">${escapeHtml(context.promotion)}</p>
+                  <h1 class="fallback__headline">${escapeHtml(context.name)}</h1>
+                  <p class="fallback__subcopy">${escapeHtml(context.subcopy)}</p>
+                  ${priceMarkup}
+                  ${proofMarkup}
+                  <div class="fallback__action-row">
+                    <span class="fallback__cta">${escapeHtml(context.cta)}</span>
+                    <span class="fallback__support">${escapeHtml(actionNote)}</span>
+                  </div>
+                  ${legalMarkup}
+                </section>
+                <section class="fallback__stage-panel">
+                  <div class="fallback__stage-copy">
+                    <span class="fallback__stage-label">Arrival display</span>
+                    <strong>${escapeHtml(context.categoryLabel)}</strong>
+                    <span>${escapeHtml(context.supportNote)}</span>
+                  </div>
+                  <img class="fallback__product-image" src="${escapeHtml(context.image)}" alt="${escapeHtml(context.name)}">
+                  ${context.qr.show ? buildQrMarkup(context, "fallback__qr-card--support") : buildRailMarkup(context)}
+                </section>
+              </div>
+            `;
+        }
       }
 
       function parseRenderingAttributes(value) {
@@ -741,7 +1371,6 @@
         const products = Array.isArray(data.products) && data.products.length > 0 ? data.products : [{}];
         const templateId = String(data.settings?.templateId || "fullscreen-banner");
         const templateName = String(data.settings?.templateName || templateId);
-        const templateDefaults = readTemplateDefaults(templateId);
         const supportsLoop = LOOPING_TEMPLATES.has(templateId) && products.length > 1;
         const loopInterval =
           Number(data.settings?.loopIntervalMs) || FALLBACK_LOOP_INTERVALS[templateId] || 0;
@@ -751,176 +1380,24 @@
 
         const card = document.createElement("article");
         card.className = `fallback fallback--${escapeTemplateClass(templateId)}`;
-
-        const content = document.createElement("section");
-        content.className = "fallback__content";
-
-        const tag = document.createElement("span");
-        tag.className = "fallback__tag";
-
-        const cycle = document.createElement("span");
-        cycle.className = "fallback__cycle";
-
-        const title = document.createElement("h1");
-
-        const subcopy = document.createElement("p");
-        subcopy.className = "fallback__subcopy";
-
-        const priceRow = document.createElement("div");
-        priceRow.className = "fallback__price";
-
-        const priceStrong = document.createElement("strong");
-        priceRow.appendChild(priceStrong);
-        const compare = document.createElement("del");
-        priceRow.appendChild(compare);
-
-        const meta = document.createElement("p");
-        meta.className = "fallback__meta";
-
-        const cta = document.createElement("span");
-        cta.className = "fallback__cta";
-
-        const utility = document.createElement("div");
-        utility.className = "fallback__utility";
-        const qr = document.createElement("div");
-        qr.className = "fallback__qr";
-        qr.setAttribute("aria-hidden", "true");
-        const qrNote = document.createElement("p");
-        qrNote.className = "fallback__qr-note";
-        utility.appendChild(qr);
-        utility.appendChild(qrNote);
-
-        const indicators = document.createElement("div");
-        indicators.className = "fallback__indicators";
-        const indicatorDots = [];
-
-        const legal = document.createElement("p");
-        legal.className = "fallback__legal";
-
-        const menuList = document.createElement("ul");
-        menuList.className = "fallback__menu";
-        const menuItems = [];
-
-        content.appendChild(tag);
-        content.appendChild(cycle);
-        content.appendChild(title);
-        content.appendChild(subcopy);
-        content.appendChild(priceRow);
-        content.appendChild(meta);
-        content.appendChild(cta);
-        content.appendChild(utility);
-        content.appendChild(indicators);
-        content.appendChild(legal);
-        content.appendChild(menuList);
-
-        const visual = document.createElement("section");
-        visual.className = "fallback__visual";
-        const img = document.createElement("img");
-        const initialProduct = products[0] || {};
-        img.src = readText(initialProduct.Image) || templateDefaults.image;
-        img.alt = String(initialProduct.ProductName || "In-Store Promotion");
-        const veil = document.createElement("div");
-        veil.className = "fallback__veil";
-        visual.appendChild(img);
-        visual.appendChild(veil);
-
-        card.appendChild(content);
-        card.appendChild(visual);
         adCanvas.appendChild(card);
-
-        if (supportsLoop) {
-          for (let index = 0; index < products.length; index += 1) {
-            const dot = document.createElement("span");
-            dot.className = "fallback__dot";
-            dot.setAttribute("aria-hidden", "true");
-            indicators.appendChild(dot);
-            indicatorDots.push(dot);
-          }
-        }
-
-        if (templateId === "menu-loop" && products.length) {
-          for (let index = 0; index < products.length; index += 1) {
-            const product = products[index] || {};
-            const menuItem = document.createElement("li");
-            menuItem.className = "fallback__menu-item";
-            const menuTitle = document.createElement("span");
-            menuTitle.className = "fallback__menu-title";
-            menuTitle.textContent = readText(product.ProductName) || `Menu Item ${index + 1}`;
-            const menuPrice = document.createElement("span");
-            menuPrice.className = "fallback__menu-price";
-            menuPrice.textContent = formatMoney(product.Price) || "$0.00";
-            menuItem.appendChild(menuTitle);
-            menuItem.appendChild(menuPrice);
-            menuList.appendChild(menuItem);
-            menuItems.push(menuItem);
-          }
-        }
 
         function renderProduct(product, index, { reason = "" } = {}) {
           flushActiveExposure(reason || "rotation");
           const entry = product && typeof product === "object" ? product : {};
-          const attributes = parseRenderingAttributes(entry.RenderingAttributes);
-          const name = readText(entry.ProductName) || "In-Store Promotion";
-          const image = readText(entry.Image) || templateDefaults.image;
-          const price = formatMoney(entry.Price) || "$0.00";
-          const comparePrice = formatMoney(entry.ComparePrice);
-          const rating = formatRating(entry.Rating);
-          const promotion = readText(attributes.promotion) || templateDefaults.promotion;
-          const badge = readText(attributes.badge) || templateDefaults.badge || templateName;
-          const ctaLabel = readText(attributes.cta) || templateDefaults.cta;
-          const subcopyText = readText(attributes.subcopy) || templateDefaults.subcopy;
-          const legalText = readText(attributes.legal) || templateDefaults.legal;
-          title.textContent = name;
-          tag.textContent = badge;
-          subcopy.textContent = subcopyText;
-          img.src = image;
-          img.alt = name;
-          priceStrong.textContent = price;
-          if (shouldShowComparePrice(entry.Price, entry.ComparePrice) && comparePrice) {
-            compare.textContent = comparePrice;
-            compare.style.display = "";
-          } else {
-            compare.textContent = "";
-            compare.style.display = "none";
-          }
+          const context = buildDisplayContext(
+            data,
+            entry,
+            index,
+            products,
+            templateName,
+            supportsLoop,
+            loopInterval
+          );
 
-          if (supportsLoop) {
-            cycle.textContent = `Item ${index + 1}/${products.length} | Rotates every ${Math.round(
-              loopInterval / 1000
-            )}s`;
-          } else if (templateId === "kiosk-interactive") {
-            cycle.textContent = "Staff-assisted kiosk | scan QR to continue on mobile";
-          } else {
-            cycle.textContent = "";
-          }
-
-          const metaParts = [];
-          if (rating) {
-            metaParts.push(rating);
-          }
-          if (promotion) {
-            metaParts.push(promotion);
-          }
-          meta.textContent = metaParts.join(" | ");
-
-          cta.textContent = ctaLabel;
-          cta.style.display = ctaLabel ? "inline-flex" : "none";
-
-          legal.textContent = legalText;
-          legal.style.display = legalText ? "block" : "none";
-
-          qrNote.textContent =
-            templateId === "kiosk-interactive"
-              ? "Scan to continue this offer on your phone"
-              : "";
-
-          indicatorDots.forEach((dot, dotIndex) => {
-            dot.classList.toggle("is-active", dotIndex === index);
-          });
-
-          menuItems.forEach((item, itemIndex) => {
-            item.classList.toggle("is-active", itemIndex === index);
-          });
+          card.className = `fallback fallback--${escapeTemplateClass(templateId)}`;
+          card.dataset.objective = context.objectiveId || "default";
+          card.innerHTML = buildFallbackMarkup(context);
 
           card.classList.remove("is-transition");
           void card.offsetWidth;

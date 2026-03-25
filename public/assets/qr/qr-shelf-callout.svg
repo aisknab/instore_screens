@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 960" role="img" aria-label="Fake QR code placeholder for shelf callout">
+  <rect width="960" height="960" rx="56" fill="#fffdf8"/>
+  <rect x="52" y="52" width="856" height="856" rx="40" fill="#ffffff" stroke="#2d2a24" stroke-width="18"/>
+  <path d="M76 168h120v24H100v96H76z" fill="#f08b57"/>
+  <path d="M884 792H764v-24h96v-96h24z" fill="#f08b57"/>
+  <rect x="116" y="116" width="184" height="184" rx="22" fill="#2d2a24"/>
+  <rect x="150" y="150" width="116" height="116" rx="14" fill="#ffffff"/>
+  <rect x="178" y="178" width="60" height="60" rx="8" fill="#2d2a24"/>
+  <rect x="660" y="116" width="184" height="184" rx="22" fill="#2d2a24"/>
+  <rect x="694" y="150" width="116" height="116" rx="14" fill="#ffffff"/>
+  <rect x="722" y="178" width="60" height="60" rx="8" fill="#2d2a24"/>
+  <rect x="116" y="660" width="184" height="184" rx="22" fill="#2d2a24"/>
+  <rect x="150" y="694" width="116" height="116" rx="14" fill="#ffffff"/>
+  <rect x="178" y="722" width="60" height="60" rx="8" fill="#2d2a24"/>
+  <g fill="#2d2a24">
+    <rect x="384" y="124" width="32" height="32"/>
+    <rect x="448" y="124" width="32" height="32"/>
+    <rect x="544" y="124" width="32" height="32"/>
+    <rect x="608" y="124" width="32" height="32"/>
+    <rect x="384" y="188" width="32" height="32"/>
+    <rect x="480" y="188" width="32" height="32"/>
+    <rect x="576" y="188" width="32" height="32"/>
+    <rect x="640" y="188" width="32" height="32"/>
+    <rect x="384" y="284" width="32" height="32"/>
+    <rect x="448" y="284" width="32" height="32"/>
+    <rect x="512" y="284" width="32" height="32"/>
+    <rect x="608" y="284" width="32" height="32"/>
+    <rect x="384" y="380" width="32" height="32"/>
+    <rect x="512" y="380" width="32" height="32"/>
+    <rect x="576" y="380" width="32" height="32"/>
+    <rect x="672" y="380" width="32" height="32"/>
+    <rect x="384" y="444" width="32" height="32"/>
+    <rect x="448" y="444" width="32" height="32"/>
+    <rect x="544" y="444" width="32" height="32"/>
+    <rect x="640" y="444" width="32" height="32"/>
+    <rect x="720" y="444" width="32" height="32"/>
+    <rect x="384" y="540" width="32" height="32"/>
+    <rect x="480" y="540" width="32" height="32"/>
+    <rect x="544" y="540" width="32" height="32"/>
+    <rect x="608" y="540" width="32" height="32"/>
+    <rect x="704" y="540" width="32" height="32"/>
+    <rect x="384" y="636" width="32" height="32"/>
+    <rect x="448" y="636" width="32" height="32"/>
+    <rect x="512" y="636" width="32" height="32"/>
+    <rect x="576" y="636" width="32" height="32"/>
+    <rect x="672" y="636" width="32" height="32"/>
+    <rect x="736" y="636" width="32" height="32"/>
+    <rect x="384" y="732" width="32" height="32"/>
+    <rect x="512" y="732" width="32" height="32"/>
+    <rect x="608" y="732" width="32" height="32"/>
+    <rect x="704" y="732" width="32" height="32"/>
+    <rect x="768" y="732" width="32" height="32"/>
+  </g>
+  <rect x="382" y="838" width="196" height="30" rx="15" fill="#f08b57"/>
+  <text x="480" y="900" text-anchor="middle" fill="#2d2a24" font-family="Arial, sans-serif" font-size="34" font-weight="700" letter-spacing="2.5">SCAN FOR PRICE AND DETAILS</text>
+</svg>

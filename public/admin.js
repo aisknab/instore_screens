@@ -5,7 +5,9 @@ const PRESENTER_SNAPSHOT_KEY = "instore-demo-presenter-snapshot";
 const DEFAULT_DEMO_STORE_ID = "DEMO-ANCHOR";
 const DEMO_SUPPLY_STARTER_SUFFIX = "CYIELD_ENTRANCE_HERO";
 const DEMO_BUYING_STARTER_SUFFIX = "CMAX_CHECKOUT_KIOSK";
+const LIVE_SCREEN_RESULT_LIMIT = 12;
 let presenterChannel = null;
+let workspaceRecoveryScheduled = false;
 
 function buildDemoScreenId(storeId, suffix) {
   const normalizedStoreId = String(storeId || "").trim();
@@ -191,6 +193,7 @@ const DEFAULT_DEMO_CONFIG = {
 const state = {
   stage: "supply",
   options: null,
+  workspaceStatus: null,
   demo: { ...DEFAULT_DEMO_CONFIG },
   pages: [],
   screens: [],
@@ -223,11 +226,14 @@ const state = {
   goalPlacementSelections: new Map(),
   goalBudgetPlanId: "",
   goalBudgetSpend: null,
+  goalLiveQuery: "",
+  goalLiveSelectedScreenId: "",
   sessionPlanIds: new Set(),
   toastTimeoutId: null,
   previewRailKey: "",
   previewRailRequestId: 0,
-  presetSimulatedInSession: false
+  presetSimulatedInSession: false,
+  workspaceOverlayPollId: null
 };
 // Keep the real preset path for normal-sized demos; only short-circuit massive rollouts that time out the UI.
 const LARGE_DEMO_PRESET_SCREEN_THRESHOLD = 1000;
@@ -243,6 +249,13 @@ function qsa(selector) {
 const elements = {
   statusText: qs("#statusText"),
   toast: qs("#toast"),
+  workspaceOverlay: qs("#workspaceOverlay"),
+  workspaceOverlayMessage: qs("#workspaceOverlayMessage"),
+  workspaceGrid: qs("#workspaceGrid"),
+  workspaceBadge: qs("#workspaceBadge"),
+  workspaceBadgeName: qs("#workspaceBadgeName"),
+  workspaceBadgeStatus: qs("#workspaceBadgeStatus"),
+  switchWorkspaceBtn: qs("#switchWorkspaceBtn"),
   demoScreenLink: qs("#demoScreenLink"),
   presenterNotesLink: qs("#presenterNotesLink"),
   monitorPreviewLink: qs("#monitorPreviewLink"),
@@ -310,7 +323,10 @@ const elements = {
   goalPlanChanges: qs("#goalPlanChanges"),
   goalPlanBudget: qs("#goalPlanBudget"),
   goalLiveSummary: qs("#goalLiveSummary"),
+  goalLiveSearch: qs("#goalLiveSearch"),
+  goalLiveSearchMeta: qs("#goalLiveSearchMeta"),
   goalLiveScreens: qs("#goalLiveScreens"),
+  goalLiveDetail: qs("#goalLiveDetail"),
   telemetrySummary: qs("#telemetrySummary"),
   measurementBoardGrid: qs("#measurementBoardGrid"),
   telemetryByScreen: qs("#telemetryByScreen"),
@@ -1524,6 +1540,16 @@ async function requestJson(url, options = {}) {
   if (!response.ok) {
     const error = new Error(payload.error || `Request failed with status ${response.status}`);
     error.status = response.status;
+    error.code = String(payload.code || "").trim();
+    error.workspaceSelectionRequired = Boolean(payload.workspaceSelectionRequired);
+    if (error.workspaceSelectionRequired && !workspaceRecoveryScheduled) {
+      workspaceRecoveryScheduled = true;
+      showToast(error.message, true);
+      showStatus(error.message, true);
+      window.setTimeout(() => {
+        window.location.reload();
+      }, 240);
+    }
     throw error;
   }
 
@@ -1539,6 +1565,169 @@ async function requestOptionalJson(url, options = {}) {
     }
     throw error;
   }
+}
+
+function getCurrentWorkspace() {
+  return state.workspaceStatus?.currentWorkspace || null;
+}
+
+function formatLeaseRemaining(remainingMs) {
+  const totalMinutes = Math.max(0, Math.ceil(Number(remainingMs || 0) / 60000));
+  if (totalMinutes < 1) {
+    return "less than 1 min left";
+  }
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  if (hours <= 0) {
+    return `${minutes} min left`;
+  }
+  if (minutes <= 0) {
+    return `${hours}h left`;
+  }
+  return `${hours}h ${minutes}m left`;
+}
+
+function stopWorkspaceOverlayPolling() {
+  if (state.workspaceOverlayPollId) {
+    window.clearInterval(state.workspaceOverlayPollId);
+    state.workspaceOverlayPollId = null;
+  }
+}
+
+function beginWorkspaceOverlayPolling() {
+  stopWorkspaceOverlayPolling();
+  state.workspaceOverlayPollId = window.setInterval(() => {
+    refreshWorkspaceStatus({ silent: true }).catch(() => undefined);
+  }, 15000);
+}
+
+function setWorkspaceOverlayVisible(visible) {
+  if (!elements.workspaceOverlay) {
+    return;
+  }
+  elements.workspaceOverlay.hidden = !visible;
+  document.body.classList.toggle("has-workspace-overlay", visible);
+  if (visible) {
+    beginWorkspaceOverlayPolling();
+  } else {
+    stopWorkspaceOverlayPolling();
+  }
+}
+
+function updateWorkspaceBadge() {
+  const current = getCurrentWorkspace();
+  if (!elements.workspaceBadge || !elements.workspaceBadgeName || !elements.workspaceBadgeStatus || !elements.switchWorkspaceBtn) {
+    return;
+  }
+  const hasCurrent = Boolean(current);
+  elements.workspaceBadge.classList.toggle("is-hidden", !hasCurrent);
+  elements.switchWorkspaceBtn.classList.toggle("is-hidden", !hasCurrent);
+  if (!hasCurrent) {
+    return;
+  }
+  elements.workspaceBadgeName.textContent = current.label || "Workspace";
+  elements.workspaceBadgeStatus.textContent = formatLeaseRemaining(current.remainingMs || 0);
+}
+
+function buildWorkspaceCardMeta(workspace) {
+  const counts = workspace?.counts || {};
+  if (!workspace?.hasSavedJourney) {
+    return "Fresh workspace";
+  }
+  return `${Number(counts.screens || 0)} screens | ${Number(counts.agentRuns || 0)} plans`;
+}
+
+function renderWorkspaceSelector(message = "") {
+  if (!elements.workspaceOverlay || !elements.workspaceGrid || !elements.workspaceOverlayMessage) {
+    return;
+  }
+  const workspaces = Array.isArray(state.workspaceStatus?.workspaces) ? state.workspaceStatus.workspaces : [];
+  elements.workspaceOverlayMessage.textContent = String(message || "").trim();
+  elements.workspaceGrid.innerHTML = workspaces
+    .map((workspace) => {
+      const inUseByOther = workspace.status === "claimed";
+      const actionLabel = inUseByOther
+        ? `In use | ${formatLeaseRemaining(workspace.remainingMs || 0)}`
+        : workspace.status === "claimed-by-you"
+          ? "Resume workspace"
+          : "Open workspace";
+      const availabilityLabel =
+        workspace.status === "claimed"
+          ? "Locked"
+          : workspace.status === "claimed-by-you"
+            ? "Yours"
+            : "Available";
+      return `
+        <button
+          type="button"
+          class="workspace-card"
+          data-workspace-id="${escapeHtml(workspace.id)}"
+          data-status="${escapeHtml(workspace.status || "available")}"
+          style="--workspace-accent: ${escapeHtml(workspace.accent || "#4fa7ff")};"
+          ${inUseByOther ? "disabled" : ""}
+        >
+          <span class="workspace-card__avatar">${escapeHtml(workspace.initials || "WS")}</span>
+          <span class="workspace-card__header">
+            <span class="workspace-card__title">${escapeHtml(workspace.label || workspace.id || "Workspace")}</span>
+            <span class="workspace-card__status">${escapeHtml(availabilityLabel)}</span>
+          </span>
+          <span class="workspace-card__meta">${escapeHtml(buildWorkspaceCardMeta(workspace))}</span>
+          <span class="workspace-card__meta">${escapeHtml(
+            workspace.status === "claimed" || workspace.status === "claimed-by-you"
+              ? formatLeaseRemaining(workspace.remainingMs || 0)
+              : "2 hour lease"
+          )}</span>
+          <span class="workspace-card__action">${escapeHtml(actionLabel)}</span>
+        </button>
+      `;
+    })
+    .join("");
+}
+
+async function refreshWorkspaceStatus({ silent = false } = {}) {
+  const payload = await requestJson("/api/workspaces");
+  state.workspaceStatus = payload;
+  updateWorkspaceBadge();
+  if (!getCurrentWorkspace() && !elements.workspaceOverlay?.hidden) {
+    renderWorkspaceSelector(silent ? elements.workspaceOverlayMessage?.textContent || "" : "");
+  }
+  return payload;
+}
+
+async function claimWorkspace(workspaceId) {
+  if (!workspaceId) {
+    return;
+  }
+  try {
+    renderWorkspaceSelector("Claiming workspace...");
+    state.workspaceStatus = await requestJson("/api/workspaces/claim", {
+      method: "POST",
+      body: JSON.stringify({ workspaceId })
+    });
+    window.location.reload();
+  } catch (error) {
+    renderWorkspaceSelector(error.message || "Unable to claim workspace.");
+    throw error;
+  }
+}
+
+async function releaseWorkspace() {
+  await requestJson("/api/workspaces/release", {
+    method: "POST"
+  });
+  window.location.reload();
+}
+
+async function ensureWorkspaceClaim() {
+  await refreshWorkspaceStatus();
+  if (getCurrentWorkspace()) {
+    setWorkspaceOverlayVisible(false);
+    return;
+  }
+  renderWorkspaceSelector();
+  setWorkspaceOverlayVisible(true);
+  showStatus("Select an avatar to open an isolated demo workspace.");
+  await new Promise(() => undefined);
 }
 
 function normalizeStage(rawStage, fallbackStage) {
@@ -4630,13 +4819,13 @@ function renderMonitoringOverview() {
   }
   if (elements.monitoringOverviewTitle) {
     elements.monitoringOverviewTitle.textContent = brandContext.brand
-      ? `${brandName} in-store campaign performance`
-      : "Campaign delivery, engagement, and in-store sales impact";
+      ? `${brandName} in-store performance`
+      : "In-store campaign performance";
   }
   if (elements.monitoringOverviewLede) {
     elements.monitoringOverviewLede.textContent = brandContext.brand
-      ? `Delivery, shopper engagement, and in-store sales impact for ${brandName}'s active retail media campaigns.`
-      : "Review live delivery, shopper response, and retail outcomes for the selected brand.";
+      ? `Live delivery, shopper response, and retail impact for ${brandName}.`
+      : "Live delivery, shopper response, and retail impact for the selected brand.";
   }
   if (elements.monitoringOverviewSignals) {
     const signals = [
@@ -4650,37 +4839,31 @@ function renderMonitoringOverview() {
       .join("");
   }
   if (elements.monitoringOverviewAsideEyebrow) {
-    elements.monitoringOverviewAsideEyebrow.textContent = brandContext.accountLabel ? "Account view" : "Workspace";
+    elements.monitoringOverviewAsideEyebrow.textContent = brandContext.accountLabel ? "Account" : "Workspace";
   }
   if (elements.monitoringOverviewAsideTitle) {
-    elements.monitoringOverviewAsideTitle.textContent = brandContext.brand
-      ? `${brandName} campaign workspace`
-      : "Selected brand workspace";
+    elements.monitoringOverviewAsideTitle.textContent = brandContext.brand ? `${brandName} workspace` : "Selected brand workspace";
   }
   if (elements.monitoringOverviewAsideCopy) {
     elements.monitoringOverviewAsideCopy.textContent = brandContext.accountLabel
-      ? `This dashboard is scoped to ${brandContext.accountLabel}, with live placements, campaign history, and measured results for that brand only.`
-      : "The dashboard below is scoped to the active brand and surfaces only that brand's campaigns, live placements, and measured results.";
+      ? `Scoped to ${brandContext.accountLabel}, with live screens, recent campaigns, and measured results for that brand.`
+      : "Scoped to the active brand, with live screens, recent campaigns, and measured results.";
   }
   if (elements.monitoringMeasurementTitle) {
-    elements.monitoringMeasurementTitle.textContent = brandContext.brand
-      ? `${brandName} campaign performance`
-      : "Campaign performance";
+    elements.monitoringMeasurementTitle.textContent = brandContext.brand ? `${brandName} performance` : "Campaign performance";
   }
   if (elements.monitoringMeasurementIntro) {
     elements.monitoringMeasurementIntro.textContent = brandContext.brand
-      ? `Delivery, shopper action, and retail outcome metrics for ${brandName}'s active campaign.`
-      : "Delivery, shopper action, and retail outcome metrics for the active brand.";
+      ? `Observed delivery and modeled retail outcomes for ${brandName}.`
+      : "Observed delivery and modeled retail outcomes for the active brand.";
   }
   if (elements.measurementBriefTitle) {
-    elements.measurementBriefTitle.textContent = brandContext.brand
-      ? `How ${brandName} is performing in store`
-      : "How the selected brand is performing in store";
+    elements.measurementBriefTitle.textContent = brandContext.brand ? `${brandName} in-store performance` : "In-store performance";
   }
   if (elements.measurementBriefCopy) {
     elements.measurementBriefCopy.textContent = brandContext.brand
-      ? `Track live delivery, shopper action, and in-store sales impact for ${brandName} in one view.`
-      : "Track live delivery, shopper action, and in-store sales impact in one view.";
+      ? `Keep live delivery and retail impact for ${brandName} in one view.`
+      : "Keep live delivery and retail impact in one view.";
   }
 }
 
@@ -4697,12 +4880,21 @@ function renderGoalRuns() {
     return;
   }
 
-  elements.agentRunsList.innerHTML = state.agentRuns
-    .map((run) => {
+  const runs = [...state.agentRuns]
+    .sort((left, right) => {
+      const rightMs = Date.parse(right.appliedAt || right.createdAt || 0) || 0;
+      const leftMs = Date.parse(left.appliedAt || left.createdAt || 0) || 0;
+      return rightMs - leftMs;
+    })
+    .slice(0, 4);
+  const hiddenCount = Math.max(0, state.agentRuns.length - runs.length);
+
+  elements.agentRunsList.innerHTML = [
+    ...runs.map((run) => {
       const canApply = run.status !== "applied" && countPlannedScreens(run) > 0;
       const pillLabel = run.status === "applied" ? "Live" : "Planned";
       const runStoreLabel = String(run.goal?.storeFocusLabel || run.goal?.requestedStoreId || run.goal?.storeId || "All stores").trim() || "All stores";
-      const primaryActionLabel = canApply ? "Review budget" : "Open campaign";
+      const primaryActionLabel = run.status === "applied" ? "Open" : canApply ? "Review" : "View";
       const selectedSpend =
         state.goalBudgetPlanId === run.planId ? getActiveGoalBudgetSpend(run) : Math.max(0, Math.round(Number(run?.budget?.selectedSpend || run?.budget?.maxSpend || 0)));
       const maxSpend = getPlanBudgetMaxSpend(run);
@@ -4712,20 +4904,20 @@ function renderGoalRuns() {
           <strong>${escapeHtml(brandContext.brand ? `${brandContext.brand} | ${objectiveLabelById(run.goal?.objective)}` : objectiveLabelById(run.goal?.objective))}</strong>
           <span class="pill ${run.status === "applied" ? "pill--applied" : "pill--planned"}">${escapeHtml(pillLabel)}</span>
         </div>
-        <p>${escapeHtml(runStoreLabel)} | ${escapeHtml(
-          getGoalScopeLabel(run.goal || {})
+        <p>${escapeHtml(runStoreLabel)} | ${escapeHtml(getGoalScopeLabel(run.goal || {}))}</p>
+        <p>${escapeHtml(countPlannedScreens(run) || 0)} placements | ${escapeHtml(run.liveCount || 0)} live | ${escapeHtml(
+          formatGoalFlightSummary(run.goal?.flightStartDate, run.goal?.flightEndDate)
         )}</p>
-        <p>Placements ${escapeHtml(countPlannedScreens(run) || 0)} | Live ${escapeHtml(run.liveCount || 0)}</p>
-        <p>Flight ${escapeHtml(formatGoalFlightSummary(run.goal?.flightStartDate, run.goal?.flightEndDate))} | Budget ${escapeHtml(
+        <p>Budget ${escapeHtml(
           maxSpend > 0 ? `${formatMoney(selectedSpend)} / ${formatMoney(maxSpend)}` : "Not priced"
-        )}</p>
-        <p>Campaign ${escapeHtml(run.planId || "")} | Created ${escapeHtml(formatTimestamp(run.createdAt))}${run.appliedAt ? ` | Live ${escapeHtml(formatTimestamp(run.appliedAt))}` : ""}</p>
+        )} | ${escapeHtml(run.appliedAt ? `Live ${formatTimestamp(run.appliedAt)}` : `Created ${formatTimestamp(run.createdAt)}`)}</p>
         <span class="record__actions">
           <button type="button" class="btn btn--tiny js-load-goal-plan" data-plan-id="${escapeHtml(run.planId || "")}">${escapeHtml(primaryActionLabel)}</button>
         </span>
       </article>`;
-    })
-    .join("");
+    }),
+    hiddenCount > 0 ? `<p class="monitoring-card__note">Showing the latest ${runs.length} of ${state.agentRuns.length} campaigns.</p>` : ""
+  ].join("");
 }
 
 function renderMonitoringKpis() {
@@ -4753,11 +4945,12 @@ function renderTelemetryList(container, entries, type) {
   }
 
   if (!Array.isArray(entries) || entries.length === 0) {
-    container.innerHTML = '<div class="empty">No campaign data yet.</div>';
+    container.innerHTML = '<div class="empty">No data yet.</div>';
     return;
   }
 
-  container.innerHTML = entries
+  const visibleEntries = entries.slice(0, 6);
+  container.innerHTML = visibleEntries
     .map((entry) => {
       const title =
         type === "screen"
@@ -4778,9 +4971,9 @@ function renderTelemetryList(container, entries, type) {
         </div>
         ${subtitle ? `<p>${escapeHtml(subtitle)}</p>` : ""}
         <p class="telemetry-record__meta">
-          Plays ${escapeHtml(formatCount(entry.playCount || 0))} | Exposure ${escapeHtml(
-            formatDuration(entry.exposureMs || 0)
-          )} | Avg dwell ${escapeHtml(formatDuration(entry.avgExposureMs || 0))}
+          ${escapeHtml(formatCount(entry.playCount || 0))} plays | ${escapeHtml(formatDuration(entry.exposureMs || 0))} exposure | ${escapeHtml(
+            formatDuration(entry.avgExposureMs || 0)
+          )} avg dwell
         </p>
       </article>`;
     })
@@ -4833,12 +5026,36 @@ function getMeasurementComparisonText(metric = {}) {
   return `vs baseline ${baselineText} (${deltaText})`;
 }
 
+function buildMeasurementMetricNote(metric = {}) {
+  const secondaryValueText = String(metric?.secondaryValueText || "").trim();
+  if (secondaryValueText) {
+    switch (metric.key) {
+      case "interactionRate":
+      case "qrScans":
+        return `${secondaryValueText} loyalty actions`;
+      case "incrementality":
+        return `Baseline ${secondaryValueText}`;
+      case "newBuyerAcquisition":
+        return `${secondaryValueText} new-buyer transactions`;
+      default:
+        break;
+    }
+  }
+
+  const sourceTags = Array.isArray(metric?.sourceTags)
+    ? metric.sourceTags.map(formatMeasurementSourceTag).filter(Boolean)
+    : [];
+  return sourceTags.slice(0, 2).join(" + ");
+}
+
 function renderMeasurementBoard(board) {
   if (!elements.measurementBoardGrid) {
     return;
   }
 
-  const metrics = Array.isArray(board?.metrics) ? board.metrics : [];
+  const metrics = Array.isArray(board?.metrics)
+    ? board.metrics.filter((metric) => !["totalExposureTime", "totalAdPlays"].includes(metric?.key))
+    : [];
   if (metrics.length === 0) {
     elements.measurementBoardGrid.innerHTML = DEFAULT_MEASUREMENT_BOARD_GRID_HTML;
     return;
@@ -4847,25 +5064,14 @@ function renderMeasurementBoard(board) {
   elements.measurementBoardGrid.innerHTML = metrics
     .map((metric) => {
       const comparisonText = getMeasurementComparisonText(metric);
-      const sourceTags = Array.isArray(metric?.sourceTags)
-        ? metric.sourceTags.map(formatMeasurementSourceTag).filter(Boolean)
-        : [];
-      const accentClass =
-        metric?.key === "totalExposureTime" || metric?.key === "totalAdPlays" ? " measurement-card--accent" : "";
+      const detailText = buildMeasurementMetricNote(metric);
+      const accentClass = metric?.key === "inStoreROAS" ? " measurement-card--accent" : "";
 
       return `<article class="measurement-card${accentClass}">
         <p class="measurement-card__label">${escapeHtml(metric?.label || "Metric")}</p>
         <strong>${escapeHtml(metric?.valueText || formatCount(metric?.value || 0))}</strong>
-        ${metric?.formula ? `<p class="measurement-card__formula">Formula: ${escapeHtml(metric.formula)}</p>` : ""}
-        ${metric?.description ? `<p class="measurement-card__description">${escapeHtml(metric.description)}</p>` : ""}
         ${comparisonText ? `<p class="measurement-card__comparison">${escapeHtml(comparisonText)}</p>` : ""}
-        ${
-          sourceTags.length > 0
-            ? `<div class="measurement-card__tags">${sourceTags
-                .map((tag) => `<span class="measurement-card__tag">${escapeHtml(tag)}</span>`)
-                .join("")}</div>`
-            : ""
-        }
+        ${detailText ? `<p class="measurement-card__detail">${escapeHtml(detailText)}</p>` : ""}
       </article>`;
     })
     .join("");
@@ -4884,8 +5090,8 @@ function renderTelemetry() {
     const brandContext = getGoalPlanBrandContext();
     elements.telemetrySummary.classList.add("empty");
     elements.telemetrySummary.textContent = brandContext.brand
-      ? `Launch ${brandContext.brand}'s campaign to populate delivery, engagement, and sales metrics.`
-      : "Launch a campaign to populate delivery, engagement, and sales metrics.";
+      ? `Launch ${brandContext.brand}'s campaign to populate the dashboard.`
+      : "Launch a campaign to populate the dashboard.";
     renderMeasurementBoard(null);
     renderTelemetryList(elements.telemetryByScreen, [], "screen");
     renderTelemetryList(elements.telemetryByTemplate, [], "template");
@@ -4902,45 +5108,35 @@ function renderTelemetry() {
     const summaryMeta = [
       brandContext.accountLabel,
       scope.scopeLabel,
-      scope.objective ? `Objective ${titleCase(scope.objective)}` : "",
       Number(scope.storeCount || 0) > 0 ? `${formatCount(scope.storeCount || 0)} store${Number(scope.storeCount || 0) === 1 ? "" : "s"}` : "",
       Number(scope.screenCount || 0) > 0
         ? `${formatCount(scope.screenCount || 0)} screen${Number(scope.screenCount || 0) === 1 ? "" : "s"}`
         : "",
-      Number(scope.targetSkuCount || 0) > 0 ? `${formatCount(scope.targetSkuCount || 0)} target SKU${Number(scope.targetSkuCount || 0) === 1 ? "" : "s"}` : "",
       Number(scope.selectedSpend || 0) > 0 ? `Budget ${formatMoney(scope.selectedSpend || 0)}` : "",
       totals.lastSeenAt ? `Last seen ${formatTimestamp(totals.lastSeenAt)}` : ""
     ].filter(Boolean);
     const summaryHeadline = brandContext.brand
-      ? `${brandContext.brand} campaign results`
-      : measurementBoard.narrative.headline || "Campaign results";
-    const summaryCopy = brandContext.brand
-      ? `Observed delivery and shopper action for ${brandContext.brand}, with modeled QR, incrementality, new-to-brand, and in-store sales impact layered on top of live telemetry.`
-      : measurementBoard.narrative.summary || "Observed and modeled performance signals for the live activation.";
+      ? `${brandContext.brand} dashboard`
+      : measurementBoard.narrative.headline || "Campaign dashboard";
+    const trendText = [
+      `${formatCount(totals.playCount || 0)} plays`,
+      `${formatDuration(totals.exposureMs || 0)} exposure`,
+      `Modeled sales ${formatMoney(measurementBoard?.current?.modeledInStoreSales || 0)}`
+    ].join(" | ");
+    const comparisonText =
+      comparison?.afterApply && comparison?.beforeApply
+        ? `${formatCount(comparison.afterApply.playCount || 0)} plays after apply vs ${formatCount(
+            comparison.beforeApply.playCount || 0
+          )} before apply`
+        : comparison?.planId
+          ? `Plan ${comparison.planId} is loaded. Before/after telemetry will deepen as more live events arrive.`
+          : "";
 
     elements.telemetrySummary.innerHTML = `
       <strong>${escapeHtml(summaryHeadline)}</strong>
-      <p class="measurement-summary__lede">${escapeHtml(summaryCopy)}</p>
       ${summaryMeta.length > 0 ? `<p class="measurement-summary__meta">${escapeHtml(summaryMeta.join(" | "))}</p>` : ""}
-      ${
-        measurementBoard.narrative.trend
-          ? `<p class="measurement-summary__trend">${escapeHtml(measurementBoard.narrative.trend)}</p>`
-          : ""
-      }
-      ${
-        measurementBoard.narrative.comparisonStory
-          ? `<p class="measurement-summary__comparison">${escapeHtml(measurementBoard.narrative.comparisonStory)}</p>`
-          : comparison?.planId
-            ? `<p class="measurement-summary__comparison">Plan ${escapeHtml(
-                comparison.planId
-              )} is loaded. Before/after telemetry will deepen as more live events arrive.</p>`
-            : ""
-      }
-      ${
-        measurementBoard.narrative.sourceNote
-          ? `<p class="measurement-summary__note">${escapeHtml(measurementBoard.narrative.sourceNote)}</p>`
-          : ""
-      }
+      <p class="measurement-summary__trend">${escapeHtml(trendText)}</p>
+      ${comparisonText ? `<p class="measurement-summary__comparison">${escapeHtml(comparisonText)}</p>` : ""}
     `;
   } else {
     const comparisonMarkup =
@@ -4957,16 +5153,14 @@ function renderTelemetry() {
           : "";
 
     elements.telemetrySummary.innerHTML = `
-      <strong>Proof of play</strong>
+      <strong>Campaign dashboard</strong>
       <p class="goal-change__metrics">
-        Events: ${escapeHtml(formatCount(totalEvents))} | Plays: ${escapeHtml(formatCount(totals.playCount || 0))} |
-        Exposure: ${escapeHtml(formatDuration(totals.exposureMs || 0))} | Avg dwell:
-        ${escapeHtml(formatDuration(totals.avgExposureMs || 0))}
+        ${escapeHtml(formatCount(totals.playCount || 0))} plays | ${escapeHtml(formatDuration(totals.exposureMs || 0))} exposure |
+        ${escapeHtml(formatCount(totals.screenCount || 0))} screens
       </p>
       <p class="goal-change__metrics">
-        Screens: ${escapeHtml(formatCount(totals.screenCount || 0))} | Templates:
-        ${escapeHtml(formatCount(totals.templateCount || 0))} | SKUs:
-        ${escapeHtml(formatCount(totals.skuCount || 0))}
+        ${escapeHtml(formatCount(totals.templateCount || 0))} creative${Number(totals.templateCount || 0) === 1 ? "" : "s"} |
+        ${escapeHtml(formatCount(totals.skuCount || 0))} SKU${Number(totals.skuCount || 0) === 1 ? "" : "s"}
         ${totals.lastSeenAt ? ` | Last seen: ${escapeHtml(formatTimestamp(totals.lastSeenAt))}` : ""}
       </p>
       ${comparisonMarkup}
@@ -4997,12 +5191,8 @@ function renderPreviewRail(screenIds) {
   if (uniqueIds.length === 0) {
     elements.monitorPreviewRail.innerHTML = `
       <p class="preview-pane__eyebrow">${escapeHtml(brandContext.brand ? `${brandContext.brand} preview` : "Campaign preview")}</p>
-      <h4>Awaiting live screens</h4>
-      <p id="monitoringNarrative">${escapeHtml(
-        brandContext.brand
-          ? `${brandContext.brand} immersive previews will appear here once the selected campaign is live.`
-          : "Live campaign previews will appear here once the selected brand has active screens."
-      )}</p>
+      <h4>No live campaigns to show a preview</h4>
+      <p id="monitoringNarrative">${escapeHtml("No live campaigns to show a preview.")}</p>
     `;
     elements.monitoringNarrative = qs("#monitoringNarrative");
     return;
@@ -5014,6 +5204,121 @@ function renderPreviewRail(screenIds) {
   });
 }
 
+function buildLiveScreenSearchText(screen = {}) {
+  const products = Array.isArray(screen.products) ? screen.products : [];
+  return [
+    screen.screenId,
+    screen.storeId,
+    screen.pageId,
+    screen.location,
+    screen.screenType,
+    screen.screenSize,
+    screen.templateName || screen.templateId,
+    getScreenResolverId(screen),
+    ...products.flatMap((product) => [product?.sku, product?.name])
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+}
+
+function getFilteredLiveScreens(liveScreens, query) {
+  const normalizedQuery = String(query || "").trim().toLowerCase();
+  if (!normalizedQuery) {
+    return [...liveScreens];
+  }
+  return liveScreens.filter((screen) => buildLiveScreenSearchText(screen).includes(normalizedQuery));
+}
+
+function getSelectedLiveScreenId(filteredScreens) {
+  const currentId = String(state.goalLiveSelectedScreenId || "").trim();
+  if (currentId && filteredScreens.some((screen) => screen.screenId === currentId)) {
+    return currentId;
+  }
+  const fallbackId = String(filteredScreens[0]?.screenId || "").trim();
+  state.goalLiveSelectedScreenId = fallbackId;
+  return fallbackId;
+}
+
+function buildLiveSearchMeta(totalCount, filteredCount, query) {
+  if (totalCount <= 0) {
+    return "No live screens yet.";
+  }
+
+  const shownCount = Math.min(filteredCount, LIVE_SCREEN_RESULT_LIMIT);
+  if (String(query || "").trim()) {
+    if (filteredCount <= 0) {
+      return `No screens match "${query}".`;
+    }
+    return `Showing ${formatCount(shownCount)} of ${formatCount(filteredCount)} matches from ${formatCount(totalCount)} live screens.`;
+  }
+
+  if (totalCount > LIVE_SCREEN_RESULT_LIMIT) {
+    return `${formatCount(totalCount)} live screens. Showing ${formatCount(shownCount)} at a time.`;
+  }
+  return `${formatCount(totalCount)} live screens.`;
+}
+
+function formatLiveRefreshInterval(value) {
+  const refreshMs = Math.max(0, Number(value || 0));
+  if (!refreshMs) {
+    return "";
+  }
+  const seconds = Math.max(1, Math.round(refreshMs / 1000));
+  return `${seconds}s refresh`;
+}
+
+function getLivePreviewScreenIds(liveScreens, selectedScreenId) {
+  return [...new Set([selectedScreenId, ...liveScreens.map((screen) => screen.screenId)].filter(Boolean))].slice(0, 2);
+}
+
+function renderLiveScreenDetail(screen) {
+  if (!elements.goalLiveDetail) {
+    return;
+  }
+
+  if (!screen) {
+    elements.goalLiveDetail.innerHTML = '<div class="empty">Select a screen to inspect the live placement.</div>';
+    return;
+  }
+
+  const products = Array.isArray(screen.products) ? screen.products : [];
+  const productMarkup =
+    products.length > 0
+      ? `<div class="goal-live-products">${products.map((product) => buildGoalLiveProductMarkup(product)).join("")}</div>`
+      : '<div class="empty">No product payload attached to this screen.</div>';
+  const stats = [
+    screen.storeId || "",
+    screen.pageId || "",
+    screen.location || "",
+    screen.screenType || "",
+    screen.screenSize || "",
+    formatLiveRefreshInterval(screen.refreshInterval)
+  ].filter(Boolean);
+
+  elements.goalLiveDetail.innerHTML = `<article class="goal-live-inspector">
+    <div class="goal-live-inspector__top">
+      <div>
+        <p class="section-kicker">Selected screen</p>
+        <h4>${escapeHtml(screen.screenId || "Live screen")}</h4>
+        <p class="goal-live-inspector__copy">${escapeHtml(
+          [screen.storeId, screen.pageId, screen.location].filter(Boolean).join(" | ") || "Active live screen"
+        )}</p>
+      </div>
+      <span class="pill">${escapeHtml(screen.templateName || screen.templateId || "Creative")}</span>
+    </div>
+    ${stats.length > 0 ? `<div class="goal-live-inspector__stats">${stats.map((item) => `<span>${escapeHtml(item)}</span>`).join("")}</div>` : ""}
+    <div class="goal-live-inspector__section">
+      <p class="goal-live-inspector__label">Products</p>
+      ${productMarkup}
+    </div>
+    <div class="record__actions">
+      <a href="${escapeHtml(buildSharedPreviewUrl(screen))}" target="_blank" rel="noreferrer">Immersive preview</a>
+      <a href="${escapeHtml(buildDebugScreenUrl(screen.screenId || ""))}" target="_blank" rel="noreferrer">Debug preview</a>
+    </div>
+  </article>`;
+}
+
 function renderLiveScreens() {
   if (!elements.goalLiveSummary || !elements.goalLiveScreens) {
     return;
@@ -5021,64 +5326,99 @@ function renderLiveScreens() {
 
   const plan = state.activeGoalPlan;
   const brandContext = getGoalPlanBrandContext(plan);
+  if (elements.goalLiveSearch) {
+    elements.goalLiveSearch.value = state.goalLiveQuery;
+  }
+
   if (!plan || plan.status !== "applied") {
     elements.goalLiveSummary.classList.add("empty");
     elements.goalLiveSummary.textContent = brandContext.brand
       ? `Launch ${brandContext.brand}'s campaign to view live placements and creatives.`
       : "Launch the selected campaign to view live placements and creatives.";
+    if (elements.goalLiveSearch) {
+      elements.goalLiveSearch.disabled = true;
+    }
+    if (elements.goalLiveSearchMeta) {
+      elements.goalLiveSearchMeta.textContent = "No live screens yet.";
+    }
     elements.goalLiveScreens.innerHTML = "";
+    renderLiveScreenDetail(null);
+    if (elements.monitorPreviewLink) {
+      elements.monitorPreviewLink.href = buildSharedPreviewUrl(getPreferredPreviewScreenIds()[0] || "");
+    }
     renderPreviewRail(getPreferredPreviewScreenIds());
     return;
   }
 
   const liveScreens = Array.isArray(plan.liveScreens) ? plan.liveScreens : [];
+  if (elements.goalLiveSearch) {
+    elements.goalLiveSearch.disabled = liveScreens.length === 0;
+  }
   elements.goalLiveSummary.classList.remove("empty");
   elements.goalLiveSummary.innerHTML = `
-    <strong>${escapeHtml(brandContext.brand ? `${brandContext.brand} live campaign snapshot` : "Live campaign snapshot")}</strong>
+    <strong>${escapeHtml(brandContext.brand ? `${brandContext.brand} live network` : "Live network")}</strong>
     <p class="goal-change__metrics">
-      ${brandContext.objectiveLabel ? `${escapeHtml(brandContext.objectiveLabel)} | ` : ""}Live screens: ${escapeHtml(formatCount(plan.liveCount || liveScreens.length || 0))} | Live since:
-      ${escapeHtml(formatTimestamp(plan.appliedAt || plan.updatedAt || plan.createdAt))}
+      ${escapeHtml(formatCount(plan.liveCount || liveScreens.length || 0))} screens | ${escapeHtml(
+        brandContext.objectiveLabel || "Active campaign"
+      )} | Live since ${escapeHtml(formatTimestamp(plan.appliedAt || plan.updatedAt || plan.createdAt))}
     </p>
     <p class="goal-change__metrics">
-      ${brandContext.accountLabel ? `Account: ${escapeHtml(brandContext.accountLabel)} | ` : ""}Campaign ID: ${escapeHtml(plan.planId || "")} | Budget:
-      ${escapeHtml(formatMoney(plan?.budget?.selectedSpend || 0))}
+      ${brandContext.accountLabel ? `Account ${escapeHtml(brandContext.accountLabel)} | ` : ""}Campaign ${escapeHtml(plan.planId || "")} | Budget ${escapeHtml(
+        formatMoney(plan?.budget?.selectedSpend || 0)
+      )}
     </p>
   `;
 
   if (liveScreens.length === 0) {
+    if (elements.goalLiveSearchMeta) {
+      elements.goalLiveSearchMeta.textContent = "No live screens were captured for this run.";
+    }
     elements.goalLiveScreens.innerHTML = '<div class="empty">No live screens were captured for this applied run.</div>';
+    renderLiveScreenDetail(null);
+    if (elements.monitorPreviewLink) {
+      elements.monitorPreviewLink.href = buildSharedPreviewUrl(getPreferredPreviewScreenIds()[0] || "");
+    }
     renderPreviewRail(getPreferredPreviewScreenIds());
     return;
   }
 
-  elements.goalLiveScreens.innerHTML = liveScreens
-    .map((screen) => {
-      const products = Array.isArray(screen.products) ? screen.products : [];
-      const productMarkup =
-        products.length > 0
-          ? `<div class="goal-live-products">${products.map((product) => buildGoalLiveProductMarkup(product)).join("")}</div>`
-          : "";
+  const filteredScreens = getFilteredLiveScreens(liveScreens, state.goalLiveQuery);
+  const selectedScreenId = getSelectedLiveScreenId(filteredScreens);
+  const selectedScreen = filteredScreens.find((screen) => screen.screenId === selectedScreenId) || null;
+  const visibleScreens = filteredScreens.slice(0, LIVE_SCREEN_RESULT_LIMIT);
 
-      return `<article class="record">
-        <div class="record__top">
-          <strong>${escapeHtml(screen.screenId || "")}</strong>
-          <span>${escapeHtml(screen.templateName || screen.templateId || "")}</span>
-        </div>
-        <p>${escapeHtml(screen.storeId || "")} | ${escapeHtml(screen.pageId || "")} | ${escapeHtml(screen.location || "")}</p>
-        <p>${escapeHtml(screen.screenType || "")} ${escapeHtml(screen.screenSize || "")} | Refresh ${escapeHtml(
-          screen.refreshInterval || 0
-        )}ms</p>
-        <p>Shared player URL: ${escapeHtml(SHARED_PLAYER_URL)}${getScreenResolverId(screen) ? ` | Resolver key: ${escapeHtml(getScreenResolverId(screen))}` : ""}</p>
-        ${productMarkup}
-        <p class="record__actions">
-          <a href="${escapeHtml(buildSharedPreviewUrl(screen))}" target="_blank" rel="noreferrer">Immersive preview</a>
-          <a href="${escapeHtml(buildDebugScreenUrl(screen.screenId || ""))}" target="_blank" rel="noreferrer">Debug preview</a>
-        </p>
-      </article>`;
-    })
-    .join("");
+  if (elements.goalLiveSearchMeta) {
+    elements.goalLiveSearchMeta.textContent = buildLiveSearchMeta(liveScreens.length, filteredScreens.length, state.goalLiveQuery);
+  }
 
-  renderPreviewRail(liveScreens.map((screen) => screen.screenId));
+  elements.goalLiveScreens.innerHTML =
+    visibleScreens.length > 0
+      ? visibleScreens
+          .map((screen) => {
+            const isActive = screen.screenId === selectedScreenId;
+            const metaLine = [screen.storeId, screen.pageId, screen.location].filter(Boolean).join(" | ");
+            const detailLine = [screen.screenType, screen.screenSize, formatLiveRefreshInterval(screen.refreshInterval)]
+              .filter(Boolean)
+              .join(" | ");
+            return `<button type="button" class="goal-live-result${isActive ? " is-active" : ""} js-select-live-screen" data-screen-id="${escapeHtml(
+              screen.screenId || ""
+            )}">
+              <span class="goal-live-result__top">
+                <strong>${escapeHtml(screen.screenId || "Live screen")}</strong>
+                <span>${escapeHtml(screen.templateName || screen.templateId || "")}</span>
+              </span>
+              ${metaLine ? `<span class="goal-live-result__meta">${escapeHtml(metaLine)}</span>` : ""}
+              ${detailLine ? `<span class="goal-live-result__meta">${escapeHtml(detailLine)}</span>` : ""}
+            </button>`;
+          })
+          .join("")
+      : '<div class="empty">No live screens match this search.</div>';
+
+  renderLiveScreenDetail(selectedScreen);
+  if (elements.monitorPreviewLink) {
+    elements.monitorPreviewLink.href = buildSharedPreviewUrl(selectedScreen || liveScreens[0] || "");
+  }
+  renderPreviewRail(getLivePreviewScreenIds(liveScreens, selectedScreenId));
 }
 
 function updateMonitoringNarrative() {
@@ -5099,9 +5439,7 @@ function updateMonitoringNarrative() {
     return;
   }
 
-  elements.monitoringNarrative.textContent = brandContext.brand
-    ? `${brandContext.brand} immersive previews will appear here once the selected campaign is live.`
-    : "Live campaign previews will appear here once the selected brand has active screens.";
+  elements.monitoringNarrative.textContent = "No live campaigns to show a preview.";
 }
 
 function renderAll() {
@@ -5730,6 +6068,9 @@ async function resetDemo() {
 }
 
 function handleError(error) {
+  if (error?.workspaceSelectionRequired) {
+    return;
+  }
   showToast(error.message, true);
   showStatus(error.message, true);
 }
@@ -5748,6 +6089,17 @@ function continueToBuying() {
 
 function wireEvents() {
   document.addEventListener("click", (event) => {
+    const workspaceCard = event.target.closest(".workspace-card");
+    if (workspaceCard) {
+      claimWorkspace(workspaceCard.dataset.workspaceId || "").catch(handleError);
+      return;
+    }
+
+    if (event.target.closest("#switchWorkspaceBtn")) {
+      releaseWorkspace().catch(handleError);
+      return;
+    }
+
     const stageJump = event.target.closest(".js-stage-jump");
     if (stageJump) {
       setStage(stageJump.dataset.stage || "supply", true);
@@ -5771,6 +6123,13 @@ function wireEvents() {
 
     if (event.target.closest("#resetDemoBtn")) {
       resetDemo().catch(handleError);
+      return;
+    }
+
+    const selectLiveScreenButton = event.target.closest(".js-select-live-screen");
+    if (selectLiveScreenButton) {
+      state.goalLiveSelectedScreenId = selectLiveScreenButton.dataset.screenId || "";
+      renderLiveScreens();
       return;
     }
 
@@ -6044,7 +6403,13 @@ function wireEvents() {
       })
       .catch(handleError);
   });
+  elements.goalLiveSearch?.addEventListener("input", () => {
+    state.goalLiveQuery = elements.goalLiveSearch?.value || "";
+    state.goalLiveSelectedScreenId = "";
+    renderLiveScreens();
+  });
   window.addEventListener("beforeunload", () => {
+    stopWorkspaceOverlayPolling();
     presenterChannel?.close();
     presenterChannel = null;
   });
@@ -6052,6 +6417,8 @@ function wireEvents() {
 
 async function init() {
   try {
+    wireEvents();
+    await ensureWorkspaceClaim();
     await refreshDemoConfig();
     state.options = await requestJson("/api/options");
     state.goalPromptInferenceProvider = readTextValue(state.options?.goalPromptInferenceProvider || "");
@@ -6066,7 +6433,6 @@ async function init() {
 
     await refreshTelemetryData();
 
-    wireEvents();
     renderAll();
     setStage("supply", false);
     showStatus("Ready for the CYield supply setup.");

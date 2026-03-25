@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-label="Fake QR code placeholder for mobile handoff">
+  <rect width="1024" height="1024" rx="72" fill="#f7fbff"/>
+  <rect x="56" y="56" width="912" height="912" rx="48" fill="#ffffff" stroke="#184e77" stroke-width="18"/>
+  <rect x="114" y="114" width="210" height="210" rx="30" fill="#184e77"/>
+  <rect x="154" y="154" width="130" height="130" rx="16" fill="#ffffff"/>
+  <rect x="184" y="184" width="70" height="70" rx="10" fill="#184e77"/>
+  <rect x="700" y="114" width="210" height="210" rx="30" fill="#184e77"/>
+  <rect x="740" y="154" width="130" height="130" rx="16" fill="#ffffff"/>
+  <rect x="770" y="184" width="70" height="70" rx="10" fill="#184e77"/>
+  <rect x="114" y="700" width="210" height="210" rx="30" fill="#184e77"/>
+  <rect x="154" y="740" width="130" height="130" rx="16" fill="#ffffff"/>
+  <rect x="184" y="770" width="70" height="70" rx="10" fill="#184e77"/>
+  <g fill="#184e77">
+    <rect x="390" y="126" width="34" height="34"/>
+    <rect x="458" y="126" width="34" height="34"/>
+    <rect x="526" y="126" width="34" height="34"/>
+    <rect x="594" y="126" width="34" height="34"/>
+    <rect x="662" y="126" width="34" height="34"/>
+    <rect x="390" y="194" width="34" height="34"/>
+    <rect x="492" y="194" width="34" height="34"/>
+    <rect x="594" y="194" width="34" height="34"/>
+    <rect x="662" y="194" width="34" height="34"/>
+    <rect x="390" y="262" width="34" height="34"/>
+    <rect x="458" y="262" width="34" height="34"/>
+    <rect x="560" y="262" width="34" height="34"/>
+    <rect x="628" y="262" width="34" height="34"/>
+    <rect x="390" y="364" width="34" height="34"/>
+    <rect x="492" y="364" width="34" height="34"/>
+    <rect x="560" y="364" width="34" height="34"/>
+    <rect x="628" y="364" width="34" height="34"/>
+    <rect x="730" y="364" width="34" height="34"/>
+    <rect x="390" y="432" width="34" height="34"/>
+    <rect x="458" y="432" width="34" height="34"/>
+    <rect x="560" y="432" width="34" height="34"/>
+    <rect x="662" y="432" width="34" height="34"/>
+    <rect x="390" y="534" width="34" height="34"/>
+    <rect x="492" y="534" width="34" height="34"/>
+    <rect x="560" y="534" width="34" height="34"/>
+    <rect x="628" y="534" width="34" height="34"/>
+    <rect x="696" y="534" width="34" height="34"/>
+    <rect x="390" y="602" width="34" height="34"/>
+    <rect x="458" y="602" width="34" height="34"/>
+    <rect x="560" y="602" width="34" height="34"/>
+    <rect x="662" y="602" width="34" height="34"/>
+    <rect x="390" y="670" width="34" height="34"/>
+    <rect x="492" y="670" width="34" height="34"/>
+    <rect x="560" y="670" width="34" height="34"/>
+    <rect x="628" y="670" width="34" height="34"/>
+    <rect x="696" y="670" width="34" height="34"/>
+    <rect x="390" y="772" width="34" height="34"/>
+    <rect x="458" y="772" width="34" height="34"/>
+    <rect x="560" y="772" width="34" height="34"/>
+    <rect x="628" y="772" width="34" height="34"/>
+  </g>
+  <rect x="378" y="858" width="268" height="34" rx="17" fill="#5cb0ff"/>
+  <text x="512" y="936" text-anchor="middle" fill="#184e77" font-family="Arial, sans-serif" font-size="34" font-weight="700" letter-spacing="2.4">SCAN TO OPEN ON MOBILE</text>
+</svg>

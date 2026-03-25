@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 960" role="img" aria-label="Fake QR code placeholder for product card">
+  <rect width="960" height="960" rx="60" fill="#faf7fb"/>
+  <rect x="48" y="48" width="864" height="864" rx="42" fill="#ffffff" stroke="#4a335d" stroke-width="18"/>
+  <rect x="112" y="112" width="198" height="198" rx="24" fill="#4a335d"/>
+  <rect x="148" y="148" width="126" height="126" rx="16" fill="#ffffff"/>
+  <rect x="178" y="178" width="66" height="66" rx="10" fill="#4a335d"/>
+  <rect x="650" y="112" width="198" height="198" rx="24" fill="#4a335d"/>
+  <rect x="686" y="148" width="126" height="126" rx="16" fill="#ffffff"/>
+  <rect x="716" y="178" width="66" height="66" rx="10" fill="#4a335d"/>
+  <rect x="112" y="650" width="198" height="198" rx="24" fill="#4a335d"/>
+  <rect x="148" y="686" width="126" height="126" rx="16" fill="#ffffff"/>
+  <rect x="178" y="716" width="66" height="66" rx="10" fill="#4a335d"/>
+  <g fill="#4a335d">
+    <rect x="374" y="122" width="30" height="30"/>
+    <rect x="440" y="122" width="30" height="30"/>
+    <rect x="506" y="122" width="30" height="30"/>
+    <rect x="572" y="122" width="30" height="30"/>
+    <rect x="638" y="122" width="30" height="30"/>
+    <rect x="374" y="188" width="30" height="30"/>
+    <rect x="506" y="188" width="30" height="30"/>
+    <rect x="572" y="188" width="30" height="30"/>
+    <rect x="638" y="188" width="30" height="30"/>
+    <rect x="374" y="254" width="30" height="30"/>
+    <rect x="440" y="254" width="30" height="30"/>
+    <rect x="572" y="254" width="30" height="30"/>
+    <rect x="704" y="254" width="30" height="30"/>
+    <rect x="374" y="320" width="30" height="30"/>
+    <rect x="440" y="320" width="30" height="30"/>
+    <rect x="506" y="320" width="30" height="30"/>
+    <rect x="638" y="320" width="30" height="30"/>
+    <rect x="374" y="386" width="30" height="30"/>
+    <rect x="506" y="386" width="30" height="30"/>
+    <rect x="572" y="386" width="30" height="30"/>
+    <rect x="704" y="386" width="30" height="30"/>
+    <rect x="374" y="452" width="30" height="30"/>
+    <rect x="440" y="452" width="30" height="30"/>
+    <rect x="506" y="452" width="30" height="30"/>
+    <rect x="638" y="452" width="30" height="30"/>
+    <rect x="704" y="452" width="30" height="30"/>
+    <rect x="374" y="518" width="30" height="30"/>
+    <rect x="506" y="518" width="30" height="30"/>
+    <rect x="572" y="518" width="30" height="30"/>
+    <rect x="638" y="518" width="30" height="30"/>
+    <rect x="374" y="584" width="30" height="30"/>
+    <rect x="440" y="584" width="30" height="30"/>
+    <rect x="572" y="584" width="30" height="30"/>
+    <rect x="704" y="584" width="30" height="30"/>
+    <rect x="374" y="650" width="30" height="30"/>
+    <rect x="506" y="650" width="30" height="30"/>
+    <rect x="572" y="650" width="30" height="30"/>
+    <rect x="638" y="650" width="30" height="30"/>
+    <rect x="704" y="650" width="30" height="30"/>
+    <rect x="374" y="716" width="30" height="30"/>
+    <rect x="440" y="716" width="30" height="30"/>
+    <rect x="506" y="716" width="30" height="30"/>
+    <rect x="638" y="716" width="30" height="30"/>
+  </g>
+  <rect x="374" y="836" width="212" height="30" rx="15" fill="#cf8ed3"/>
+  <text x="480" y="910" text-anchor="middle" fill="#4a335d" font-family="Arial, sans-serif" font-size="30" font-weight="700" letter-spacing="2.4">SCAN FOR PRODUCT INFO</text>
+</svg>
