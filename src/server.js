@@ -4202,7 +4202,7 @@ function buildTelemetryMeasurementScenario({ totals = {}, run = null, storeSigna
   );
   const newBuyerSales = Math.max(0, Math.round(modeledInStoreSales * newBuyerRate));
   const newBuyerTransactions = Math.max(0, Math.round(newBuyerSales / Math.max(1, Number(storeSignal?.avgBasketValue || 42))));
-  const inStoreROAS = impressionProxy > 0 ? modeledInStoreSales / impressionProxy : 0;
+  const inStoreROAS = selectedSpend > 0 ? modeledInStoreSales / selectedSpend : 0;
 
   return {
     objective,
@@ -4259,8 +4259,8 @@ function buildTelemetryMeasurementBoard(db, telemetryTotals, planComparison, pla
   const metrics = [
     buildTelemetryMetric({
       key: "interactionRate",
-      label: "Interaction rate",
-      description: "Percentage of shoppers who engaged with the screen through a QR scan or loyalty action.",
+      label: "Shopper interaction rate",
+      description: "Estimated share of live plays that drove a QR scan or loyalty action.",
       value: currentScenario.interactionRate,
       unit: "percent",
       formula: "(QR scans + loyalty actions) / ad plays",
@@ -4275,8 +4275,8 @@ function buildTelemetryMeasurementBoard(db, telemetryTotals, planComparison, pla
     }),
     buildTelemetryMetric({
       key: "qrScans",
-      label: "QR code scans",
-      description: "Modeled scans for coupons or product details that can feed app and loyalty handoffs.",
+      label: "Estimated QR scans",
+      description: "Estimated coupon or product-detail opens modeled from live delivery.",
       value: currentScenario.qrScans,
       unit: "count",
       formula: "Impression proxy x modeled QR scan rate",
@@ -4291,8 +4291,8 @@ function buildTelemetryMeasurementBoard(db, telemetryTotals, planComparison, pla
     }),
     buildTelemetryMetric({
       key: "incrementality",
-      label: "Incrementality",
-      description: "Modeled sales attributable to advertising versus a no-ads baseline for the same screens.",
+      label: "Incremental sales",
+      description: "Estimated sales lift attributable to advertising versus a no-media baseline.",
       value: currentScenario.incrementalSales,
       unit: "currency",
       formula: "Modeled in-store sales x incrementality rate",
@@ -4307,8 +4307,8 @@ function buildTelemetryMeasurementBoard(db, telemetryTotals, planComparison, pla
     }),
     buildTelemetryMetric({
       key: "newBuyerAcquisition",
-      label: "New buyer acquisition",
-      description: "New-to-brand sales modeled from POS-style sales signals and the target mix.",
+      label: "New-to-brand sales",
+      description: "Estimated first-time brand purchase value modeled from store sales signals and the target mix.",
       value: currentScenario.newBuyerSales,
       unit: "currency",
       formula: "Modeled in-store sales x new-to-brand rate",
@@ -4323,16 +4323,16 @@ function buildTelemetryMeasurementBoard(db, telemetryTotals, planComparison, pla
     }),
     buildTelemetryMetric({
       key: "inStoreROAS",
-      label: "In-store ROAS",
-      description: "In-store sales divided by the impressions proxy used in the demo.",
+      label: "Return on spend",
+      description: "Estimated in-store sales divided by the selected campaign spend.",
       value: currentScenario.inStoreROAS,
       unit: "ratio",
-      formula: "Modeled in-store sales / ad plays",
-      sourceTags: ["telemetry", "sales-signal", "model"],
+      formula: "Modeled in-store sales / selected spend",
+      sourceTags: ["plan", "sales-signal", "model"],
       numerator: currentScenario.modeledInStoreSales,
-      denominator: currentScenario.impressionProxy,
+      denominator: currentScenario.selectedSpend,
       numeratorLabel: "Modeled sales",
-      denominatorLabel: "Ad plays",
+      denominatorLabel: "Selected spend",
       comparison: baselineScenario ? buildTelemetryComparison(currentScenario.inStoreROAS, baselineScenario.inStoreROAS, "ratio") : null
     }),
     buildTelemetryMetric({
@@ -4366,7 +4366,7 @@ function buildTelemetryMeasurementBoard(db, telemetryTotals, planComparison, pla
   ];
 
   const scopeScreenIds = collectMeasurementScreenIds(run, planComparison);
-  const scopeLabel = scopeScreenIds.length > 0 ? `${scopeScreenIds.length} scoped screen${scopeScreenIds.length === 1 ? "" : "s"}` : "global telemetry";
+  const scopeLabel = scopeScreenIds.length > 0 ? `${scopeScreenIds.length} scoped screen${scopeScreenIds.length === 1 ? "" : "s"}` : "all live telemetry";
   const trendParts = [];
   if (baselineScenario) {
     trendParts.push(
@@ -4376,7 +4376,7 @@ function buildTelemetryMeasurementBoard(db, telemetryTotals, planComparison, pla
   } else {
     trendParts.push(`${formatCount(currentScenario.playCount)} plays`, `${formatDuration(currentScenario.exposureMs)} exposure`);
   }
-  trendParts.push(`${formatMoney(currentScenario.incrementalSales)} modeled incrementality`);
+  trendParts.push(`${formatMoney(currentScenario.incrementalSales)} incremental sales`);
 
   return {
     modelType: "modeled-demo",
@@ -4402,7 +4402,8 @@ function buildTelemetryMeasurementBoard(db, telemetryTotals, planComparison, pla
       impressionProxy: currentScenario.impressionProxy,
       modeledInStoreSales: currentScenario.modeledInStoreSales,
       incrementalSales: currentScenario.incrementalSales,
-      newBuyerSales: currentScenario.newBuyerSales
+      newBuyerSales: currentScenario.newBuyerSales,
+      inStoreROAS: currentScenario.inStoreROAS
     },
     baseline: baselineScenario
       ? {
@@ -4411,24 +4412,25 @@ function buildTelemetryMeasurementBoard(db, telemetryTotals, planComparison, pla
           impressionProxy: baselineScenario.impressionProxy,
           modeledInStoreSales: baselineScenario.modeledInStoreSales,
           incrementalSales: baselineScenario.incrementalSales,
-          newBuyerSales: baselineScenario.newBuyerSales
+          newBuyerSales: baselineScenario.newBuyerSales,
+          inStoreROAS: baselineScenario.inStoreROAS
         }
       : null,
     narrative: {
-      headline: scopeScreenIds.length > 0 ? `Measurement board for ${scopeLabel}.` : "Measurement board for the full telemetry set.",
+      headline: scopeScreenIds.length > 0 ? `Measurement readout for ${scopeLabel}` : "Measurement readout for all live telemetry",
       summary:
-        "Observed play and exposure telemetry anchor the board, while QR scans, incrementality, and new buyer acquisition are modeled from the active plan and store sales signals.",
+        "Live plays and exposure anchor the board, while shopper response, sales lift, new-to-brand value, and return on spend are estimated from the active plan and store sales signals.",
       comparisonStory: baselineScenario
         ? `Compared with the pre-apply window, the scoped inventory is showing ${formatTelemetrySignedPercent(
             currentScenario.interactionRate - baselineScenario.interactionRate
           )} interaction-rate change, ${formatTelemetrySignedMoney(currentScenario.incrementalSales - baselineScenario.incrementalSales)} incremental sales change, and ${formatTelemetrySignedDuration(
             currentScenario.exposureMs - baselineScenario.exposureMs
           )} exposure change.`
-        : `Modeled from the current telemetry set, with ${formatCount(currentScenario.qrScans)} QR scans and ${formatMoney(
+        : `Estimated from the current telemetry set, with ${formatCount(currentScenario.qrScans)} QR scans and ${formatMoney(
             currentScenario.incrementalSales
           )} incremental sales.`,
       sourceNote:
-        "QR scans, loyalty actions, incrementality, and new buyer acquisition are modeled outputs based on the same telemetry and plan inputs used elsewhere in the demo.",
+        "Estimated shopper actions and retail outcomes use the same live telemetry, plan budget, and store sales inputs used elsewhere in the demo.",
       trend: trendParts.join(" | ")
     },
     metrics

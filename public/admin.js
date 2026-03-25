@@ -195,10 +195,10 @@ const MARKET_STORY_STEPS = [
     id: "onsite-base",
     accent: "#2f74ff",
     kicker: "Established revenue base",
-    title: "Onsite ecommerce media is the revenue engine already in market.",
+    title: "Onsite ecommerce media already proves the revenue pool.",
     body:
-      "For this product, the right benchmark is onsite ecommerce media, not total retail media. Statista Market Insights projects global retail platform advertising at $203.89B in 2025, while Grand View Research sizes the global in-store digital advertising display market at $4.59B in 2024. The business case is extension, not reinvention: carry an established onsite budget pool into stores through a measurable screen layer.",
-    note: "Verification context: the cleanest published onsite benchmark comes from Statista's retail platform advertising category, while WARC, EMARKETER, and RetailX each reinforce that onsite still accounts for roughly four-fifths or more of retail media spend.",
+      "The opportunity starts from a proven base. Statista Market Insights projects global retail platform advertising at $203.89B in 2025, while Grand View Research sizes the global in-store digital advertising display market at $4.59B in 2024. The in-store screens proposition extends an established onsite monetization model into the physical store.",
+    note: "Onsite remains the economic center of retail media, corroborated by WARC, EMARKETER, and RetailX.",
     metrics: [
       {
         value: 203.89,
@@ -245,10 +245,10 @@ const MARKET_STORY_STEPS = [
     id: "apac",
     accent: "#2eb7a3",
     kicker: "APAC wedge",
-    title: "APAC combines a large onsite base with early in-store whitespace.",
+    title: "APAC offers scale today and whitespace for growth.",
     body:
-      "The same onsite-only lens holds in APAC. Statista Market Insights projects APAC retail platform advertising at $90.25B in 2025, while Grand View Research sizes the APAC in-store digital advertising display market at $1.31B in 2024. That is the commercially relevant gap: a scaled onsite business next to a much earlier in-store screen layer.",
-    note: "APAC uses the same Statista retail platform advertising category as the global slide, so the regional comparison also stays onsite-only rather than rolling up total retail media.",
+      "The regional profile mirrors the global one. Statista Market Insights projects APAC retail platform advertising at $90.25B in 2025, while Grand View Research sizes the APAC in-store digital advertising display market at $1.31B in 2024. That combination creates an attractive entry point: meaningful demand, early competitive maturity, and room for a differentiated in-store product layer.",
+    note: "The comparison stays disciplined: onsite ecommerce media versus in-store screens, not total retail media.",
     metrics: [
       {
         value: 90.25,
@@ -277,16 +277,53 @@ const MARKET_STORY_STEPS = [
         href: "https://www.grandviewresearch.com/horizon/outlook/in-store-digital-advertising-display-market/asia-pacific"
       }
     ],
-    nextLabel: "Show activation"
+    nextLabel: "Show strategic fit"
+  },
+  {
+    id: "right-to-play",
+    accent: "#6c8f34",
+    kicker: "Right to win",
+    title: "Criteo enters this space from a position of strength.",
+    body:
+      "This is not a category bet from scratch. Criteo already brings retailer relationships, advertiser demand, and an onsite retail media playbook proven in market. Extending that model into stores builds on capabilities already in hand rather than requiring a new commercial system to be invented.",
+    note: "The implementation path is equally pragmatic: extend CYield supply with a lightweight in-store layer and reuse the broader retail media stack.",
+    metrics: [
+      {
+        value: 2,
+        decimals: 0,
+        prefix: "",
+        suffix: "-sided",
+        label: "commercial network already in place",
+        detail: "Retailer and advertiser relationships already exist."
+      },
+      {
+        value: 1,
+        decimals: 0,
+        prefix: "",
+        suffix: " playbook",
+        label: "onsite operating model already proven",
+        detail: "Sales, measurement, and optimization capabilities already exist."
+      },
+      {
+        value: 1,
+        decimals: 0,
+        prefix: "",
+        suffix: " extension",
+        label: "product path into stores",
+        detail: "CYield needs an extension, not a rebuild."
+      }
+    ],
+    sources: [],
+    nextLabel: "Show proof"
   },
   {
     id: "activation",
     accent: "#ef6a3f",
     kicker: "Performance proof",
-    title: "In-store screens can be sold as measurable activation.",
+    title: "The channel already shows measurable sales impact.",
     body:
-      "Commercial proof is already visible in market. Albertsons reported 14% in-store sales lift in a 116-store case study. SMG and Kantar reported 28.3% average product sales lift across 12,558 in-store campaigns. That is strong enough to position screens as a performance extension of onsite media, not as a branding experiment.",
-    note: "The buyer story is familiar: the same retail media logic, carried from the site into the store.",
+      "The value proposition is performance-led, not speculative. Albertsons reported 14% in-store sales lift in a 116-store case study. SMG and Kantar reported 28.3% average product sales lift across 12,558 in-store campaigns. That evidence supports positioning screens as a measurable retail media channel rather than a store-tech upgrade.",
+    note: "The commercial logic stays consistent from site to store: media that can be measured against sales.",
     metrics: [
       {
         value: 14,
@@ -315,28 +352,44 @@ const MARKET_STORY_STEPS = [
         href: "https://smg.team/wp-content/uploads/2025/10/The-Advertising-Effectiveness-of-In-Store-Retail-Media-SMG-Report.pdf"
       }
     ],
-    nextLabel: "Show revenue math"
+    nextLabel: "Show upside"
   },
   {
     id: "modeled-upside",
     accent: "#f0b54b",
     kicker: "Conservative revenue case",
-    title: "The APAC business case works even on cautious assumptions.",
+    title: "Even cautious penetration assumptions produce material upside.",
     body:
-      "If in-store screens captured only 0.1% of APAC onsite ecommerce media, that would represent roughly $90M of media flowing through the capability. If the product captured 1% of the APAC in-store digital advertising display market, that would imply about $13M of adjacent product-layer revenue.",
-    note: "These are scenario models built from published market sizes. The purpose is to show order of magnitude, not to present a forecast.",
+      "At 0.1% of onsite ecommerce media, the opportunity maps to roughly $204M globally and $90M in APAC in media flow. At 1% of the in-store digital display market, the platform layer maps to roughly $45.9M globally and $13.1M in APAC. The point is scale: modest share assumptions already support a meaningful business.",
+    note: "These figures are scenario models built from published market sizes and are intended to show order of magnitude, not forecast revenue.",
     metrics: [
       {
-        value: 90,
-        decimals: 0,
+        value: 203.89,
+        decimals: 2,
         prefix: "$",
         suffix: "M",
-        label: "0.1% attach to APAC onsite ecommerce media",
+        label: "0.1% of global onsite ecommerce media",
         detail: "Modeled media-flow scenario"
       },
       {
-        value: 13,
-        decimals: 0,
+        value: 90.25,
+        decimals: 2,
+        prefix: "$",
+        suffix: "M",
+        label: "0.1% of APAC onsite ecommerce media",
+        detail: "Modeled media-flow scenario"
+      },
+      {
+        value: 45.9,
+        decimals: 1,
+        prefix: "$",
+        suffix: "M",
+        label: "1% of the global in-store display market",
+        detail: "Modeled platform-revenue scenario"
+      },
+      {
+        value: 13.12,
+        decimals: 2,
         prefix: "$",
         suffix: "M",
         label: "1% of the APAC in-store display market",
@@ -345,8 +398,16 @@ const MARKET_STORY_STEPS = [
     ],
     sources: [
       {
+        label: "Statista global retail platform advertising",
+        href: "https://www.statista.com/outlook/amo/advertising/retail-platform-advertising/worldwide"
+      },
+      {
         label: "Statista APAC retail platform advertising",
         href: "https://www.statista.com/outlook/amo/advertising/retail-platform-advertising/apac"
+      },
+      {
+        label: "Grand View global in-store display",
+        href: "https://www.grandviewresearch.com/industry-analysis/in-store-digital-advertising-display-market-report"
       },
       {
         label: "Grand View APAC in-store digital display",
@@ -2978,60 +3039,66 @@ function formatPresenterTelemetryLeader(entries = [], type) {
 
 function buildSupplyMarketIntroPresenterPayload() {
   return {
-    stageDescription: "Lead with the onsite revenue base, the in-store whitespace, and the activation proof before revealing the two-click CYield supply workflow.",
+    stageDescription: "The opening case moves from proven onsite economics to regional whitespace, strategic fit, measurable activation, and conservative upside before the CYield flow begins.",
     speakerSummary:
-      "Open with a clean channel-scope argument: onsite ecommerce media is already a large revenue engine, in-store screens are the adjacent growth layer, and the activation evidence shows the extension can be sold on commercial outcomes.",
+      "The opening argument is straightforward: onsite ecommerce media is already a large revenue engine, APAC offers an attractive wedge, Criteo has the right to win, and in-store screens already show measurable commercial impact.",
     presenterNotes: [
-      "Frame the first slide around channel scope. We are not comparing in-store screens with total retail media; we are comparing them with onsite ecommerce media because that is the part of retail media the current platform already serves.",
-      "Use Statista's retail platform advertising category as the cleanest published onsite sizing source. It is a better benchmark than inferring onsite from total retail media.",
-      "Use WARC, EMARKETER, and RetailX as corroboration that onsite still accounts for roughly 80% or more of retail media spend.",
-      "Use APAC as the regional wedge: a large onsite base at $90.25B sits next to a much earlier $1.31B in-store display market.",
-      "Keep the proof focused on causality and sales lift. The point is not that stores are interesting media; it is that screens can move product.",
-      "Be explicit that the $90M and $13M figures are modeled scenarios from published market sizes, not forecasts."
+      "The benchmark is onsite ecommerce media, not total retail media, because the proposition extends the monetization model Criteo already operates rather than expanding into every retail media channel at once.",
+      "Statista's retail platform advertising category provides the cleanest published onsite benchmark, with WARC, EMARKETER, and RetailX all corroborating that onsite remains the dominant share of retail media spend.",
+      "APAC is the most compelling regional wedge because it combines substantial onsite demand with a relatively early in-store display market.",
+      "Criteo's right to win rests on assets already in hand: retailer relationships, advertiser demand, a proven onsite operating model, and a lightweight extension into CYield supply.",
+      "The activation evidence matters because it reframes in-store screens as a measurable retail media channel rather than as a store-tech deployment.",
+      "The revenue slide is intentionally conservative and shows both global and APAC scenarios to demonstrate scale without overstating certainty."
     ],
     proofPoints: [
       "$203.89B global onsite ecommerce media market",
       "$90.25B APAC onsite ecommerce media market",
-      "$4.59B global and $1.31B APAC in-store digital display markets",
+      "$4.59B global / $1.31B APAC in-store digital display markets",
+      "$203.89M global / $90.25M APAC media-flow scenario at 0.1% share",
+      "$45.9M global / $13.12M APAC platform scenario at 1% share",
       "+14% to +28.3% reported sales lift"
     ],
     supportingModules: [
       "Onsite-only market framing",
       "Global and APAC market sizing",
+      "Right to win",
       "Activation proof",
       "Conservative revenue scenario"
     ],
     demoActions: [
-      "Anchor the story on onsite ecommerce media as the existing revenue engine.",
-      "Use APAC to keep the comparison inside product scope while showing regional scale.",
-      "Use the lift studies to position screens as measurable activation.",
-      "Then reveal CYield step 1 and move into the supply demo."
+      "Establish onsite ecommerce media as the proven economic base.",
+      "Use APAC to show a practical regional wedge with both scale and whitespace.",
+      "Land the right-to-win case around relationships, operating maturity, and a lightweight product extension.",
+      "Use the lift studies to prove the channel can be sold on outcomes.",
+      "Close on global and APAC upside before revealing CYield step 1."
     ],
     qaPrompts: [
       "If someone challenges the onsite number, point to Statista's retail platform advertising market as the cleanest published benchmark and note that WARC, EMARKETER, and RetailX independently show onsite still represents about four-fifths or more of retail media spend.",
       "If someone asks why total retail media is excluded, explain that total retail media includes channels the current platform does not sell; the business case needs to stay inside onsite ecommerce media plus in-store screens.",
-      "If someone asks whether this is a media or product opportunity, explain that the upside combines media budgets flowing through the channel with platform revenue from operating the screen layer."
+      "If someone asks why Criteo should win here, explain that this is an adjacency play built on existing advertiser demand, retailer relationships, onsite execution, and minimal CYield modification.",
+      "If someone asks whether this is a media or product opportunity, explain that the upside combines media budgets flowing through the channel with platform revenue from operating the screen layer.",
+      "If someone challenges the revenue math, position it as scenario modeling from published market sizes rather than a forecast."
     ],
     liveNarrative:
-      "Open on the business case: onsite ecommerce media is already a scaled revenue engine, APAC is large enough to matter, in-store screens remain underdeveloped, and the activation evidence shows the channel can be sold on outcomes.",
+      "The business case is straightforward: a proven onsite revenue engine, an attractive APAC wedge, a credible right to win, measurable activation, and material upside even on modest penetration assumptions.",
     detailRows: [
       buildPresenterDetailRow(
         "Onsite base",
-        "$203.89B global retail platform advertising market in 2025, using Statista's retail-platform category as the cleanest onsite benchmark rather than total retail media."
+        "$203.89B global retail platform advertising market in 2025, with external corroboration that onsite remains the dominant share of retail media spend."
       ),
       buildPresenterDetailRow("Adjacent market", "$4.59B global in-store digital advertising display market in 2024, with APAC at $1.312B."),
-      buildPresenterDetailRow(
-        "Channel validation",
-        "WARC says off-site is less than 20% of retail media spend, EMARKETER says just under 80% of US retail media ad spending stays on owned-and-operated sites and apps in 2025, and RetailX says 80% of retail media is derived from onsite."
-      ),
       buildPresenterDetailRow("APAC wedge", "$90.25B APAC retail platform advertising market in 2025 alongside the $1.312B APAC in-store digital advertising display market."),
+      buildPresenterDetailRow(
+        "Right to win",
+        "Criteo already brings retailer relationships, advertiser demand, a proven onsite operating model, and a lightweight CYield extension path into stores."
+      ),
       buildPresenterDetailRow(
         "Activation proof",
         "Albertsons reported +14% in-store sales lift in a 116-store case study; SMG / Kantar reported +28.3% average product sales lift across 12,558 campaigns."
       ),
       buildPresenterDetailRow(
         "Conservative upside",
-        "0.1% of APAC onsite ecommerce media implies roughly $90M of media flow. 1% of the APAC in-store display market implies roughly $13M of platform revenue."
+        "0.1% of onsite ecommerce media implies about $203.89M globally and $90.25M in APAC in media flow. 1% of the in-store display market implies about $45.9M globally and $13.12M in APAC in platform revenue."
       )
     ]
   };
@@ -3253,8 +3320,8 @@ function buildMonitoringPresenterPayload(stageConfig) {
   const liveNarrative =
     readTextValue(narrative.summary) ||
     (brandContext.brand
-      ? `Observed delivery and shopper action for ${brandContext.brand}, with modeled QR, incrementality, new-to-brand, and in-store sales impact layered on top of live telemetry.`
-      : "Launch a campaign to populate delivery, engagement, and sales metrics.");
+      ? `Live delivery anchors ${brandContext.brand}'s view, with estimated shopper response, sales lift, new-to-brand value, and return on spend layered on top.`
+      : "Launch a campaign to populate live delivery, shopper response, and sales outcomes.");
 
   return {
     supportingModules: readPresenterStringList(stageConfig.supportingModules, [
@@ -5690,16 +5757,16 @@ function renderMonitoringOverview() {
   }
   if (elements.monitoringMeasurementIntro) {
     elements.monitoringMeasurementIntro.textContent = brandContext.brand
-      ? `Observed delivery and modeled retail outcomes for ${brandName}.`
-      : "Observed delivery and modeled retail outcomes for the active brand.";
+      ? `Live delivery first, then estimated shopper and retail outcomes for ${brandName}.`
+      : "Live delivery first, then estimated shopper and retail outcomes for the active brand.";
   }
   if (elements.measurementBriefTitle) {
-    elements.measurementBriefTitle.textContent = brandContext.brand ? `${brandName} in-store performance` : "In-store performance";
+    elements.measurementBriefTitle.textContent = brandContext.brand ? `${brandName} in-store readout` : "In-store readout";
   }
   if (elements.measurementBriefCopy) {
     elements.measurementBriefCopy.textContent = brandContext.brand
-      ? `Keep live delivery and retail impact for ${brandName} in one view.`
-      : "Keep live delivery and retail impact in one view.";
+      ? `See live plays and exposure for ${brandName}, then layer in estimated shopper response and sales impact.`
+      : "See live plays and exposure first, then layer in estimated shopper response and sales impact.";
   }
 }
 
@@ -5862,31 +5929,66 @@ function getMeasurementComparisonText(metric = {}) {
     return deltaText;
   }
   if (!deltaText || comparison.direction === "flat") {
-    return `vs baseline ${baselineText}`;
+    return `vs prior window ${baselineText}`;
   }
-  return `vs baseline ${baselineText} (${deltaText})`;
+  return `vs prior window ${baselineText} (${deltaText})`;
+}
+
+function getMeasurementCardBadge(metric = {}) {
+  switch (metric.key) {
+    case "interactionRate":
+      return { label: "Live + estimate", className: "measurement-card__badge--blend" };
+    case "qrScans":
+      return { label: "Estimated action", className: "measurement-card__badge--modeled" };
+    case "incrementality":
+    case "newBuyerAcquisition":
+      return { label: "Estimated outcome", className: "measurement-card__badge--retail" };
+    case "inStoreROAS":
+      return { label: "Estimated efficiency", className: "measurement-card__badge--accent" };
+    default:
+      return { label: "Estimated metric", className: "measurement-card__badge--modeled" };
+  }
 }
 
 function buildMeasurementMetricNote(metric = {}) {
   const secondaryValueText = String(metric?.secondaryValueText || "").trim();
-  if (secondaryValueText) {
-    switch (metric.key) {
-      case "interactionRate":
-      case "qrScans":
-        return `${secondaryValueText} loyalty actions`;
-      case "incrementality":
-        return `Baseline ${secondaryValueText}`;
-      case "newBuyerAcquisition":
-        return `${secondaryValueText} new-buyer transactions`;
-      default:
-        break;
-    }
+  switch (metric.key) {
+    case "interactionRate":
+      return secondaryValueText
+        ? `${secondaryValueText} loyalty actions included in the response rate.`
+        : "Estimated QR and loyalty response against live plays.";
+    case "qrScans":
+      return secondaryValueText
+        ? `${secondaryValueText} modeled loyalty handoffs from scan intent.`
+        : "Estimated coupon and product-detail opens from screen exposure.";
+    case "incrementality":
+      return secondaryValueText
+        ? `${secondaryValueText} baseline sales without media.`
+        : "Estimated sales lift above the no-media baseline.";
+    case "newBuyerAcquisition":
+      return secondaryValueText
+        ? `${secondaryValueText} estimated new-to-brand transactions.`
+        : "Estimated first-time brand purchase value.";
+    case "inStoreROAS":
+      return "Estimated in-store sales returned per dollar of selected spend.";
+    default:
+      return String(metric?.description || "").trim();
   }
+}
 
-  const sourceTags = Array.isArray(metric?.sourceTags)
-    ? metric.sourceTags.map(formatMeasurementSourceTag).filter(Boolean)
-    : [];
-  return sourceTags.slice(0, 2).join(" + ");
+function buildMeasurementSummaryFacts(items = []) {
+  const facts = items.filter((item) => item?.label && item?.value);
+  if (facts.length === 0) {
+    return "";
+  }
+  return `<div class="measurement-summary__facts">${facts
+    .map(
+      (item) => `<span class="measurement-summary__fact">
+        <span class="measurement-summary__fact-label">${escapeHtml(item.label)}</span>
+        <span class="measurement-summary__fact-value">${escapeHtml(item.value)}</span>
+      </span>`
+    )
+    .join("")}</div>`;
 }
 
 function renderMeasurementBoard(board) {
@@ -5906,9 +6008,11 @@ function renderMeasurementBoard(board) {
     .map((metric) => {
       const comparisonText = getMeasurementComparisonText(metric);
       const detailText = buildMeasurementMetricNote(metric);
+      const badge = getMeasurementCardBadge(metric);
       const accentClass = metric?.key === "inStoreROAS" ? " measurement-card--accent" : "";
 
       return `<article class="measurement-card${accentClass}">
+        <span class="measurement-card__badge ${escapeHtml(badge.className)}">${escapeHtml(badge.label)}</span>
         <p class="measurement-card__label">${escapeHtml(metric?.label || "Metric")}</p>
         <strong>${escapeHtml(metric?.valueText || formatCount(metric?.value || 0))}</strong>
         ${comparisonText ? `<p class="measurement-card__comparison">${escapeHtml(comparisonText)}</p>` : ""}
@@ -5931,8 +6035,8 @@ function renderTelemetry() {
     const brandContext = getGoalPlanBrandContext();
     elements.telemetrySummary.classList.add("empty");
     elements.telemetrySummary.textContent = brandContext.brand
-      ? `Launch ${brandContext.brand}'s campaign to populate the dashboard.`
-      : "Launch a campaign to populate the dashboard.";
+      ? `Launch ${brandContext.brand}'s campaign to populate live delivery first. Estimated shopper and sales outcomes appear once telemetry is flowing.`
+      : "Launch a campaign to populate live delivery first. Estimated shopper and sales outcomes appear once telemetry is flowing.";
     renderMeasurementBoard(null);
     renderTelemetryList(elements.telemetryByScreen, [], "screen");
     renderTelemetryList(elements.telemetryByTemplate, [], "template");
@@ -5946,37 +6050,44 @@ function renderTelemetry() {
   if (measurementBoard?.narrative) {
     const brandContext = getGoalPlanBrandContext();
     const scope = measurementBoard.scope || {};
-    const summaryMeta = [
-      brandContext.accountLabel,
-      scope.scopeLabel,
-      Number(scope.storeCount || 0) > 0 ? `${formatCount(scope.storeCount || 0)} store${Number(scope.storeCount || 0) === 1 ? "" : "s"}` : "",
-      Number(scope.screenCount || 0) > 0
-        ? `${formatCount(scope.screenCount || 0)} screen${Number(scope.screenCount || 0) === 1 ? "" : "s"}`
-        : "",
-      Number(scope.selectedSpend || 0) > 0 ? `Budget ${formatMoney(scope.selectedSpend || 0)}` : "",
-      totals.lastSeenAt ? `Last seen ${formatTimestamp(totals.lastSeenAt)}` : ""
+    const summaryFacts = [
+      scope.scopeLabel ? { label: "Scope", value: scope.scopeLabel } : null,
+      Number(scope.storeCount || 0) > 0 || Number(scope.screenCount || 0) > 0
+        ? {
+            label: "Coverage",
+            value: [
+              Number(scope.storeCount || 0) > 0 ? `${formatCount(scope.storeCount || 0)} store${Number(scope.storeCount || 0) === 1 ? "" : "s"}` : "",
+              Number(scope.screenCount || 0) > 0 ? `${formatCount(scope.screenCount || 0)} screen${Number(scope.screenCount || 0) === 1 ? "" : "s"}` : ""
+            ]
+              .filter(Boolean)
+              .join(" / ")
+          }
+        : null,
+      Number(scope.selectedSpend || 0) > 0 ? { label: "Budget", value: formatMoney(scope.selectedSpend || 0) } : null,
+      totals.lastSeenAt ? { label: "Updated", value: formatTimestamp(totals.lastSeenAt) } : null
     ].filter(Boolean);
     const summaryHeadline = brandContext.brand
-      ? `${brandContext.brand} dashboard`
-      : measurementBoard.narrative.headline || "Campaign dashboard";
-    const trendText = [
-      `${formatCount(totals.playCount || 0)} plays`,
-      `${formatDuration(totals.exposureMs || 0)} exposure`,
-      `Modeled sales ${formatMoney(measurementBoard?.current?.modeledInStoreSales || 0)}`
-    ].join(" | ");
+      ? `${brandContext.brand} measurement readout`
+      : measurementBoard.narrative.headline || "Measurement readout";
+    const trendText = `Live delivery: ${formatCount(totals.playCount || 0)} plays | ${formatDuration(totals.exposureMs || 0)} exposure`;
+    const modeledOutcomeText = `Estimated outcome: ${formatMoney(measurementBoard?.current?.modeledInStoreSales || 0)} in-store sales | ${formatMoney(
+      measurementBoard?.current?.incrementalSales || 0
+    )} incremental sales`;
     const comparisonText =
       comparison?.afterApply && comparison?.beforeApply
-        ? `${formatCount(comparison.afterApply.playCount || 0)} plays after apply vs ${formatCount(
+        ? `Compared with the prior window: ${formatCount(comparison.afterApply.playCount || 0)} plays after apply vs ${formatCount(
             comparison.beforeApply.playCount || 0
           )} before apply`
         : comparison?.planId
-          ? `Plan ${comparison.planId} is loaded. Before/after telemetry will deepen as more live events arrive.`
+          ? `Plan ${comparison.planId} is loaded. Before and after comparison will fill in as more live delivery arrives.`
           : "";
 
     elements.telemetrySummary.innerHTML = `
-      <strong>${escapeHtml(summaryHeadline)}</strong>
-      ${summaryMeta.length > 0 ? `<p class="measurement-summary__meta">${escapeHtml(summaryMeta.join(" | "))}</p>` : ""}
+      <p class="measurement-summary__eyebrow">Measurement snapshot</p>
+      <strong class="measurement-summary__headline">${escapeHtml(summaryHeadline)}</strong>
+      ${buildMeasurementSummaryFacts(summaryFacts)}
       <p class="measurement-summary__trend">${escapeHtml(trendText)}</p>
+      <p class="measurement-summary__comparison">${escapeHtml(modeledOutcomeText)}</p>
       ${comparisonText ? `<p class="measurement-summary__comparison">${escapeHtml(comparisonText)}</p>` : ""}
     `;
   } else {

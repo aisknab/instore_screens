@@ -3644,27 +3644,61 @@ textarea:focus {
   box-shadow: 0 10px 24px rgba(19, 35, 62, 0.06);
 }
 
-.measurement-board__summary strong {
+.measurement-summary__eyebrow {
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-size: 0.68rem;
+  color: color-mix(in srgb, var(--accent-3) 40%, var(--ink-soft));
+}
+
+.measurement-summary__headline {
   display: block;
+  margin-top: 6px;
   font-size: clamp(1.18rem, 1.9vw, 1.6rem);
   letter-spacing: -0.03em;
 }
 
-.measurement-summary__meta,
+.measurement-summary__facts,
 .measurement-summary__trend,
 .measurement-summary__comparison {
   margin-top: 10px;
 }
 
-.measurement-summary__meta,
+.measurement-summary__facts,
 .measurement-summary__trend,
 .measurement-summary__comparison {
   font-size: 0.9rem;
   line-height: 1.5;
 }
 
-.measurement-summary__meta {
-  color: color-mix(in srgb, var(--accent-3) 48%, var(--ink-soft));
+.measurement-summary__facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.measurement-summary__fact {
+  display: grid;
+  gap: 2px;
+  min-width: 124px;
+  padding: 9px 11px;
+  border-radius: 14px;
+  border: 1px solid rgba(47, 116, 255, 0.12);
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.measurement-summary__fact-label {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink-soft);
+}
+
+.measurement-summary__fact-value {
+  color: var(--ink);
+  font-size: 0.86rem;
+  font-weight: 700;
 }
 
 .measurement-summary__trend {
@@ -3678,7 +3712,7 @@ textarea:focus {
 
 .measurement-board__grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
   gap: 12px;
 }
 
@@ -3686,9 +3720,9 @@ textarea:focus {
   position: relative;
   display: grid;
   align-content: start;
-  gap: 7px;
-  min-height: 138px;
-  padding: 15px;
+  gap: 8px;
+  min-height: 158px;
+  padding: 16px;
   border-radius: 18px;
   border: 1px solid rgba(21, 32, 51, 0.08);
   background:
@@ -3704,12 +3738,50 @@ textarea:focus {
   background: linear-gradient(90deg, rgba(47, 116, 255, 0.16), transparent);
 }
 
+.measurement-card__badge {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(47, 116, 255, 0.12);
+  background: rgba(243, 247, 255, 0.92);
+  color: color-mix(in srgb, var(--accent-3) 72%, var(--ink));
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.measurement-card__badge--blend {
+  border-color: rgba(47, 116, 255, 0.16);
+  background: rgba(237, 243, 255, 0.9);
+}
+
+.measurement-card__badge--modeled {
+  border-color: rgba(38, 96, 221, 0.14);
+  background: rgba(243, 247, 255, 0.96);
+}
+
+.measurement-card__badge--retail {
+  border-color: rgba(46, 183, 163, 0.16);
+  background: rgba(239, 250, 248, 0.95);
+  color: color-mix(in srgb, var(--accent-4) 72%, var(--ink));
+}
+
+.measurement-card__badge--accent {
+  border-color: rgba(46, 183, 163, 0.2);
+  background: rgba(234, 249, 246, 0.98);
+  color: color-mix(in srgb, var(--accent-4) 76%, var(--ink));
+}
+
 .measurement-card__label {
   margin: 0;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  font-size: 0.7rem;
-  color: color-mix(in srgb, var(--accent-3) 72%, var(--ink-soft));
+  font-size: 0.96rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--ink);
 }
 
 .measurement-card strong {
@@ -3720,7 +3792,7 @@ textarea:focus {
 
 .measurement-card__comparison {
   color: color-mix(in srgb, var(--accent-3) 60%, var(--ink-soft));
-  font-size: 0.8rem;
+  font-size: 0.79rem;
   line-height: 1.45;
 }
 
@@ -4670,6 +4742,7 @@ body.has-market-story-overlay {
 .market-story-overlay__metrics {
   display: grid;
   gap: 14px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
 }
 
 .market-story-overlay__metric {
