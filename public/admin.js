@@ -195,10 +195,10 @@ const MARKET_STORY_STEPS = [
     id: "onsite-base",
     accent: "#2f74ff",
     kicker: "Established revenue base",
-    title: "We already know the revenue pool exists.",
+    title: "The in-store display revenue pool is real.",
     body:
-      "We are not inventing demand. Statista Market Insights projects global retail platform advertising at $203.89B in 2025, while Grand View Research sizes the global in-store digital advertising display market at $4.59B in 2024. The opportunity is to extend a monetization model we already know works from onsite into the physical store.",
-    note: "Onsite remains the economic center of retail media, which is exactly why extending that model into store is credible.",
+      "This is not demand creation from scratch. Statista Market Insights projects global retail platform advertising at $203.89B in 2025, while Grand View Research sizes the global in-store digital advertising display market at $4.59B in 2024. The opportunity is to extend an onsite monetization model that already works into the physical store.",
+    note: "Onsite remains the economic center of retail media, which is why extending that model into store is credible.",
     metrics: [
       {
         value: 203.89,
@@ -244,11 +244,11 @@ const MARKET_STORY_STEPS = [
   {
     id: "apac",
     accent: "#2eb7a3",
-    kicker: "Beachhead market",
-    title: "We should start with APAC.",
+    kicker: "Regional scale",
+    title: "APAC alone is large enough to matter.",
     body:
-      "The regional profile mirrors the global one. Statista Market Insights projects APAC retail platform advertising at $90.25B in 2025, while Grand View Research sizes the APAC in-store digital advertising display market at $1.31B in 2024. For us, that is the right beachhead dynamic: enough demand to matter, with enough whitespace to win through a focused product.",
-    note: "The comparison stays inside our scope: onsite ecommerce media versus in-store screens.",
+      "The regional profile mirrors the global one. Statista Market Insights projects APAC retail platform advertising at $90.25B in 2025, while Grand View Research sizes the APAC in-store digital advertising display market at $1.31B in 2024. The point is not sequencing. The point is that APAC on its own is already large enough to justify attention.",
+    note: "The comparison stays inside scope: onsite ecommerce media versus in-store screens.",
     metrics: [
       {
         value: 90.25,
@@ -286,7 +286,7 @@ const MARKET_STORY_STEPS = [
     title: "We can grow wallet, not just reshuffle spend.",
     body:
       "The case does not depend on brands taking money away from onsite. A measurable in-store layer can bring shopper and trade budgets into the retail media system, capture the next dollar when onsite marginal returns flatten, and keep more retailer media spend inside one closed-loop platform that we operate.",
-    note: "Our upside starts with wallet expansion. Channel mix optimization is a second-order effect, not the core thesis.",
+    note: "Wallet expansion comes first. Channel mix optimization is a second-order effect, not the core thesis.",
     metrics: [
       {
         headline: "Expand",
@@ -311,10 +311,10 @@ const MARKET_STORY_STEPS = [
     id: "right-to-play",
     accent: "#6c8f34",
     kicker: "Right to win",
-    title: "We enter this space from a position of strength.",
+    title: "We already have structural advantages here.",
     body:
       "This is not a category bet from scratch. We already have retailer access, advertiser demand, and an onsite operating model with sales, optimization, and measurement proven in market. Extending that model into stores builds on strengths we already have rather than requiring a new commercial system to be invented.",
-    note: "Execution risk stays lower when the commercial model, the buyer relationships, and the operating stack are already in place.",
+    note: "Execution risk stays lower when the commercial model, buyer relationships, and operating stack are already in place.",
     metrics: [
       {
         headline: "Relationships",
@@ -339,10 +339,10 @@ const MARKET_STORY_STEPS = [
     id: "activation",
     accent: "#ef6a3f",
     kicker: "Performance proof",
-    title: "We already have enough proof to sell the channel on outcomes.",
+    title: "The channel can already be sold on outcomes.",
     body:
       "The value proposition is performance-led, not speculative. Albertsons reported 14% in-store sales lift in a 116-store case study. SMG and Kantar reported 28.3% average product sales lift across 12,558 in-store campaigns. That gives us permission to position screens as a measurable retail media channel rather than a store-tech upgrade.",
-    note: "The commercial logic is the same one we already use onsite: media that can be measured against sales.",
+    note: "The commercial logic is the same one already used onsite: media that can be measured against sales.",
     metrics: [
       {
         value: 14,
@@ -377,10 +377,10 @@ const MARKET_STORY_STEPS = [
     id: "modeled-upside",
     accent: "#f0b54b",
     kicker: "Adjacency economics",
-    title: "A focused beachhead can scale into a material business for us.",
+    title: "The opportunity is material at both global and APAC scale.",
     body:
-      "The economics should be read in two layers. First, media budgets that can flow through an in-store extension of onsite retail media. Second, platform revenue from operating the screen layer. Under modest penetration assumptions, both the global market and the APAC beachhead are large enough to support a meaningful new business line for us.",
-    note: "This is why the idea matters internally: the core market is large, the entry point is focused, and the share assumptions remain conservative.",
+      "The economics should be read in two layers. First, media budgets that can flow through an in-store extension of onsite retail media. Second, platform revenue from operating the screen layer. Under modest penetration assumptions, both the global market and APAC are large enough to support a meaningful new business line.",
+    note: "The core market is large, the regional opportunity is meaningful, and the share assumptions remain conservative.",
     metricSections: [
       {
         kicker: "Media flow",
@@ -3103,19 +3103,19 @@ function formatPresenterTelemetryLeader(entries = [], type) {
 
 function buildSupplyMarketIntroPresenterPayload() {
   return {
-    stageDescription: "The opening case moves from proven onsite economics to a focused beachhead, funding logic, structural right to win, measurable activation, and adjacency economics before the CYield flow begins.",
+    stageDescription: "The opening case moves from proven onsite economics to regional scale, funding logic, structural right to win, measurable activation, and adjacency economics before the CYield flow begins.",
     speakerSummary:
-      "The opening argument is straightforward: we already have a proven onsite revenue engine, APAC gives us a beachhead with room to win, the funding model can grow wallet rather than just cannibalize onsite, and the scale story works under conservative share assumptions.",
+      "The opening argument is straightforward: there is already a proven onsite revenue engine, APAC adds meaningful regional scale, the funding model can grow wallet rather than just cannibalize onsite, and the scale story works under conservative share assumptions.",
     presenterNotes: [
-      "The benchmark is onsite ecommerce media rather than total retail media because the proposition extends a monetization model we already operate instead of entering every channel at once.",
+      "The benchmark is onsite ecommerce media rather than total retail media because the proposition extends a monetization model already in place instead of entering every channel at once.",
       "Statista's retail platform advertising category provides the cleanest published onsite benchmark, with WARC, EMARKETER, and RetailX corroborating that onsite remains the dominant share of retail media spend.",
-      "APAC is the natural beachhead because it combines substantial onsite demand with a relatively early in-store display market.",
+      "APAC is included to show regional scale, not to argue for a market-by-market rollout. The point is that the opportunity is meaningful there as well as globally.",
       "The funding logic does not depend on taking dollars out of onsite. The stronger case is wallet expansion through shopper, trade, and in-store activation budgets becoming measurable retail media.",
       "Where reallocation does happen, the portfolio logic is still favorable: the next dollar can move to the highest marginal ROI across site and store while we capture a larger share of the retailer media stack.",
       "Our right to win rests on assets already in hand: retailer relationships, advertiser demand, a proven onsite operating model, and a lightweight extension into CYield supply.",
       "The activation evidence matters because it positions in-store screens as a measurable retail media channel rather than a store-tech deployment.",
       "The economics are presented in two layers: media flow through the channel and platform revenue from operating the in-store layer.",
-      "Global numbers establish that the adjacency can matter; APAC numbers show that a focused beachhead can still be material."
+      "Global numbers establish that the adjacency can matter; APAC numbers show that the regional opportunity is material too."
     ],
     proofPoints: [
       "$203.89B global onsite ecommerce media market",
@@ -3129,7 +3129,7 @@ function buildSupplyMarketIntroPresenterPayload() {
     supportingModules: [
       "Onsite-only market framing",
       "Global market proof",
-      "APAC beachhead",
+      "APAC regional scale",
       "Funding logic",
       "Right to win",
       "Activation proof",
@@ -3137,7 +3137,7 @@ function buildSupplyMarketIntroPresenterPayload() {
     ],
     demoActions: [
       "Proven onsite economics establish the revenue pool.",
-      "APAC demonstrates the most attractive beachhead market.",
+      "APAC demonstrates that the regional opportunity is meaningful in its own right.",
       "The model expands wallet first and optimizes mix second.",
       "Our right to win is grounded in relationships, operating maturity, and lightweight implementation.",
       "Activation evidence proves the channel can be sold on outcomes.",
@@ -3151,14 +3151,14 @@ function buildSupplyMarketIntroPresenterPayload() {
       "Why the revenue math is credible: it is scenario modeling from published market sizes rather than a forecast."
     ],
     liveNarrative:
-      "The business case is straightforward: we already have a proven onsite revenue engine, APAC gives us a compelling beachhead, the funding logic grows wallet, we have a credible right to win, and the upside is material even on modest penetration assumptions.",
+      "The business case is straightforward: there is already a proven onsite revenue engine, APAC adds meaningful regional scale, the funding logic grows wallet, there is a credible right to win, and the upside is material even on modest penetration assumptions.",
     detailRows: [
       buildPresenterDetailRow(
         "Onsite base",
         "$203.89B global retail platform advertising market in 2025, with external corroboration that onsite remains the dominant share of retail media spend."
       ),
       buildPresenterDetailRow("Adjacent market", "$4.59B global in-store digital advertising display market in 2024, with APAC at $1.312B."),
-      buildPresenterDetailRow("Beachhead market", "$90.25B APAC retail platform advertising market in 2025 alongside the $1.312B APAC in-store digital advertising display market."),
+      buildPresenterDetailRow("APAC scale", "$90.25B APAC retail platform advertising market in 2025 alongside the $1.312B APAC in-store digital advertising display market."),
       buildPresenterDetailRow(
         "Funding logic",
         "The primary value creation path is wallet expansion from shopper, trade, and in-store budgets becoming measurable retail media; any mix shift from onsite is secondary and still strategically favorable if we capture more share of wallet."
