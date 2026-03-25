@@ -4740,9 +4740,13 @@ body.has-market-story-overlay {
 }
 
 .market-story-overlay__note {
+  margin-top: 4px;
   max-width: 56ch;
-  color: color-mix(in srgb, var(--story-accent) 60%, rgba(255, 255, 255, 0.86));
-  font-weight: 700;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  color: rgba(214, 226, 242, 0.76);
+  font-size: 0.96rem;
+  font-weight: 600;
   line-height: 1.55;
   overflow-wrap: anywhere;
 }

@@ -195,10 +195,10 @@ const MARKET_STORY_STEPS = [
     id: "onsite-base",
     accent: "#2f74ff",
     kicker: "Established revenue base",
-    title: "Onsite ecommerce media already proves the revenue pool.",
+    title: "We already know the revenue pool exists.",
     body:
-      "The opportunity starts from a proven base. Statista Market Insights projects global retail platform advertising at $203.89B in 2025, while Grand View Research sizes the global in-store digital advertising display market at $4.59B in 2024. The in-store screens proposition extends an established onsite monetization model into the physical store.",
-    note: "Onsite remains the economic center of retail media, corroborated by WARC, EMARKETER, and RetailX.",
+      "We are not inventing demand. Statista Market Insights projects global retail platform advertising at $203.89B in 2025, while Grand View Research sizes the global in-store digital advertising display market at $4.59B in 2024. The opportunity is to extend a monetization model we already know works from onsite into the physical store.",
+    note: "Onsite remains the economic center of retail media, which is exactly why extending that model into store is credible.",
     metrics: [
       {
         value: 203.89,
@@ -245,10 +245,10 @@ const MARKET_STORY_STEPS = [
     id: "apac",
     accent: "#2eb7a3",
     kicker: "Beachhead market",
-    title: "APAC is the right beachhead for expansion.",
+    title: "We should start with APAC.",
     body:
-      "The regional profile mirrors the global one. Statista Market Insights projects APAC retail platform advertising at $90.25B in 2025, while Grand View Research sizes the APAC in-store digital advertising display market at $1.31B in 2024. That creates the classic beachhead dynamic: enough demand to matter, but enough whitespace to win with a focused product.",
-    note: "The comparison stays disciplined: onsite ecommerce media versus in-store screens, not total retail media.",
+      "The regional profile mirrors the global one. Statista Market Insights projects APAC retail platform advertising at $90.25B in 2025, while Grand View Research sizes the APAC in-store digital advertising display market at $1.31B in 2024. For us, that is the right beachhead dynamic: enough demand to matter, with enough whitespace to win through a focused product.",
+    note: "The comparison stays inside our scope: onsite ecommerce media versus in-store screens.",
     metrics: [
       {
         value: 90.25,
@@ -283,10 +283,10 @@ const MARKET_STORY_STEPS = [
     id: "funding-logic",
     accent: "#5f8f46",
     kicker: "Funding logic",
-    title: "The model can grow wallet, not just reshuffle spend.",
+    title: "We can grow wallet, not just reshuffle spend.",
     body:
-      "The case does not depend on brands taking money away from onsite. A measurable in-store layer can bring shopper and trade budgets into the retail media system, capture the next dollar when onsite marginal returns flatten, and keep more retailer media spend inside one closed-loop platform.",
-    note: "Even when some budget is reallocated across channels, the strategic outcome is stronger if Criteo captures a larger share of measurable commerce media spend.",
+      "The case does not depend on brands taking money away from onsite. A measurable in-store layer can bring shopper and trade budgets into the retail media system, capture the next dollar when onsite marginal returns flatten, and keep more retailer media spend inside one closed-loop platform that we operate.",
+    note: "Our upside starts with wallet expansion. Channel mix optimization is a second-order effect, not the core thesis.",
     metrics: [
       {
         headline: "Expand",
@@ -300,7 +300,7 @@ const MARKET_STORY_STEPS = [
       },
       {
         headline: "Retain",
-        label: "Criteo captures more share of wallet",
+        label: "we capture more share of wallet",
         detail: "Some mix shift is acceptable if the spend stays inside one closed-loop stack."
       }
     ],
@@ -311,10 +311,10 @@ const MARKET_STORY_STEPS = [
     id: "right-to-play",
     accent: "#6c8f34",
     kicker: "Right to win",
-    title: "Criteo enters this space from a position of strength.",
+    title: "We enter this space from a position of strength.",
     body:
-      "This is not a category bet from scratch. Criteo already has retailer access, advertiser demand, and an onsite operating model with sales, optimization, and measurement proven in market. Extending that model into stores builds on existing strengths rather than requiring a new commercial system to be invented.",
-    note: "Execution risk stays lower when the commercial model, the buyer relationships, and the operating stack already exist.",
+      "This is not a category bet from scratch. We already have retailer access, advertiser demand, and an onsite operating model with sales, optimization, and measurement proven in market. Extending that model into stores builds on strengths we already have rather than requiring a new commercial system to be invented.",
+    note: "Execution risk stays lower when the commercial model, the buyer relationships, and the operating stack are already in place.",
     metrics: [
       {
         headline: "Relationships",
@@ -339,10 +339,10 @@ const MARKET_STORY_STEPS = [
     id: "activation",
     accent: "#ef6a3f",
     kicker: "Performance proof",
-    title: "The channel already shows measurable sales impact.",
+    title: "We already have enough proof to sell the channel on outcomes.",
     body:
-      "The value proposition is performance-led, not speculative. Albertsons reported 14% in-store sales lift in a 116-store case study. SMG and Kantar reported 28.3% average product sales lift across 12,558 in-store campaigns. That evidence supports positioning screens as a measurable retail media channel rather than a store-tech upgrade.",
-    note: "The commercial logic stays consistent from site to store: media that can be measured against sales.",
+      "The value proposition is performance-led, not speculative. Albertsons reported 14% in-store sales lift in a 116-store case study. SMG and Kantar reported 28.3% average product sales lift across 12,558 in-store campaigns. That gives us permission to position screens as a measurable retail media channel rather than a store-tech upgrade.",
+    note: "The commercial logic is the same one we already use onsite: media that can be measured against sales.",
     metrics: [
       {
         value: 14,
@@ -377,10 +377,10 @@ const MARKET_STORY_STEPS = [
     id: "modeled-upside",
     accent: "#f0b54b",
     kicker: "Adjacency economics",
-    title: "A focused beachhead can scale into a material business.",
+    title: "A focused beachhead can scale into a material business for us.",
     body:
-      "The economics should be read in two layers. First, media budgets that can flow through an in-store extension of onsite retail media. Second, platform revenue from operating the screen layer. Under modest penetration assumptions, both the global market and the APAC beachhead are large enough to support a meaningful new business line.",
-    note: "This is a classic adjacency case: large core market, focused beachhead, credible right to win, and conservative share assumptions.",
+      "The economics should be read in two layers. First, media budgets that can flow through an in-store extension of onsite retail media. Second, platform revenue from operating the screen layer. Under modest penetration assumptions, both the global market and the APAC beachhead are large enough to support a meaningful new business line for us.",
+    note: "This is why the idea matters internally: the core market is large, the entry point is focused, and the share assumptions remain conservative.",
     metricSections: [
       {
         kicker: "Media flow",
@@ -3105,14 +3105,14 @@ function buildSupplyMarketIntroPresenterPayload() {
   return {
     stageDescription: "The opening case moves from proven onsite economics to a focused beachhead, funding logic, structural right to win, measurable activation, and adjacency economics before the CYield flow begins.",
     speakerSummary:
-      "The opening argument is straightforward: a proven onsite revenue engine, an APAC beachhead with room to win, a funding model that can grow wallet rather than just cannibalize onsite, a credible right to win for Criteo, and a scale story that works under conservative share assumptions.",
+      "The opening argument is straightforward: we already have a proven onsite revenue engine, APAC gives us a beachhead with room to win, the funding model can grow wallet rather than just cannibalize onsite, and the scale story works under conservative share assumptions.",
     presenterNotes: [
-      "The benchmark is onsite ecommerce media rather than total retail media because the proposition extends an existing monetization model instead of entering every channel at once.",
+      "The benchmark is onsite ecommerce media rather than total retail media because the proposition extends a monetization model we already operate instead of entering every channel at once.",
       "Statista's retail platform advertising category provides the cleanest published onsite benchmark, with WARC, EMARKETER, and RetailX corroborating that onsite remains the dominant share of retail media spend.",
       "APAC is the natural beachhead because it combines substantial onsite demand with a relatively early in-store display market.",
       "The funding logic does not depend on taking dollars out of onsite. The stronger case is wallet expansion through shopper, trade, and in-store activation budgets becoming measurable retail media.",
-      "Where reallocation does happen, the portfolio logic is still favorable: the next dollar can move to the highest marginal ROI across site and store while Criteo captures a larger share of the retailer media stack.",
-      "Criteo's right to win rests on assets already in hand: retailer relationships, advertiser demand, a proven onsite operating model, and a lightweight extension into CYield supply.",
+      "Where reallocation does happen, the portfolio logic is still favorable: the next dollar can move to the highest marginal ROI across site and store while we capture a larger share of the retailer media stack.",
+      "Our right to win rests on assets already in hand: retailer relationships, advertiser demand, a proven onsite operating model, and a lightweight extension into CYield supply.",
       "The activation evidence matters because it positions in-store screens as a measurable retail media channel rather than a store-tech deployment.",
       "The economics are presented in two layers: media flow through the channel and platform revenue from operating the in-store layer.",
       "Global numbers establish that the adjacency can matter; APAC numbers show that a focused beachhead can still be material."
@@ -3139,19 +3139,19 @@ function buildSupplyMarketIntroPresenterPayload() {
       "Proven onsite economics establish the revenue pool.",
       "APAC demonstrates the most attractive beachhead market.",
       "The model expands wallet first and optimizes mix second.",
-      "Criteo's right to win is grounded in relationships, operating maturity, and lightweight implementation.",
+      "Our right to win is grounded in relationships, operating maturity, and lightweight implementation.",
       "Activation evidence proves the channel can be sold on outcomes.",
       "The closing economics show material upside globally and in APAC."
     ],
     qaPrompts: [
-      "Why onsite rather than total retail media: the proposition extends the monetization model Criteo already runs instead of broadening into channels the platform does not yet serve.",
+      "Why onsite rather than total retail media: the proposition extends the monetization model we already run instead of broadening into channels the platform does not yet serve.",
       "Why this does not require onsite cannibalization: the primary thesis is wallet expansion from shopper, trade, and in-store budgets becoming measurable retail media.",
-      "Why some reallocation is still acceptable: Criteo is better off owning a larger share of measurable commerce media spend across site and store than protecting onsite share in isolation.",
-      "Why Criteo can win: retailer relationships, advertiser demand, onsite execution, and limited CYield modification are already in place.",
+      "Why some reallocation is still acceptable: we are better off owning a larger share of measurable commerce media spend across site and store than protecting onsite share in isolation.",
+      "Why we can win: retailer relationships, advertiser demand, onsite execution, and limited CYield modification are already in place.",
       "Why the revenue math is credible: it is scenario modeling from published market sizes rather than a forecast."
     ],
     liveNarrative:
-      "The business case is straightforward: a proven onsite revenue engine, a compelling APAC beachhead, funding logic that grows wallet, a credible right to win, measurable activation, and material upside even on modest penetration assumptions.",
+      "The business case is straightforward: we already have a proven onsite revenue engine, APAC gives us a compelling beachhead, the funding logic grows wallet, we have a credible right to win, and the upside is material even on modest penetration assumptions.",
     detailRows: [
       buildPresenterDetailRow(
         "Onsite base",
@@ -3161,11 +3161,11 @@ function buildSupplyMarketIntroPresenterPayload() {
       buildPresenterDetailRow("Beachhead market", "$90.25B APAC retail platform advertising market in 2025 alongside the $1.312B APAC in-store digital advertising display market."),
       buildPresenterDetailRow(
         "Funding logic",
-        "The primary value creation path is wallet expansion from shopper, trade, and in-store budgets becoming measurable retail media; any mix shift from onsite is secondary and still strategically favorable if Criteo captures more share of wallet."
+        "The primary value creation path is wallet expansion from shopper, trade, and in-store budgets becoming measurable retail media; any mix shift from onsite is secondary and still strategically favorable if we capture more share of wallet."
       ),
       buildPresenterDetailRow(
         "Right to win",
-        "Criteo already brings retailer relationships, advertiser demand, a proven onsite operating model, and a lightweight CYield extension path into stores."
+        "We already bring retailer relationships, advertiser demand, a proven onsite operating model, and a lightweight CYield extension path into stores."
       ),
       buildPresenterDetailRow(
         "Activation proof",
