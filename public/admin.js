@@ -988,6 +988,120 @@ function getProductLabelBySku(sku) {
   return product?.name || normalizedSku;
 }
 
+function getProductBySku(sku, products = state.productFeed || []) {
+  const normalizedSku = normalizeSku(sku);
+  if (!normalizedSku) {
+    return null;
+  }
+  return (products || []).find((entry) => normalizeSku(entry?.sku || entry?.ProductId || entry?.productId) === normalizedSku) || null;
+}
+
+function getProductDisplayName(product = {}) {
+  return readTextValue(product?.name || product?.ProductName || product?.productName);
+}
+
+function getProductDisplayBrand(product = {}) {
+  return readTextValue(product?.brand);
+}
+
+function getProductDisplayCategory(product = {}) {
+  return readTextValue(product?.category);
+}
+
+function getProductDisplayImage(product = {}) {
+  return readTextValue(product?.image || product?.Image);
+}
+
+function buildProductThumbMarkup(product = {}, { className = "product-thumb", alt = "" } = {}) {
+  const label =
+    readTextValue(alt) ||
+    getProductDisplayName(product) ||
+    normalizeSku(product?.sku || product?.ProductId || product?.productId) ||
+    "Product";
+  const image = getProductDisplayImage(product);
+  const fallbackLabel = normalizeSku(product?.sku || product?.ProductId || product?.productId) || label;
+  const fallbackText = fallbackLabel.slice(0, 4) || "SKU";
+
+  if (image) {
+    return `<span class="${escapeHtml(className)}"><img src="${escapeHtml(image)}" alt="${escapeHtml(label)}" loading="lazy"></span>`;
+  }
+
+  return `<span class="${escapeHtml(`${className} product-thumb--fallback`)}" aria-hidden="true">${escapeHtml(
+    fallbackText
+  )}</span>`;
+}
+
+function getProductsForSkuList(skus = [], fallbackProducts = []) {
+  const fallbackBySku = new Map(
+    uniqueGoalProductsBySku(fallbackProducts)
+      .map((product) => [normalizeSku(product?.sku || product?.ProductId || product?.productId), product])
+      .filter(([sku]) => Boolean(sku))
+  );
+
+  return uniqueGoalProductsBySku(
+    (Array.isArray(skus) ? skus : [])
+      .map((sku) => fallbackBySku.get(normalizeSku(sku)) || getProductBySku(sku))
+      .filter(Boolean)
+  );
+}
+
+function buildProductThumbStripMarkup(products = [], { className = "product-thumb product-thumb--xs", maxItems = 3 } = {}) {
+  const uniqueProducts = uniqueGoalProductsBySku(products);
+  if (uniqueProducts.length === 0) {
+    return "";
+  }
+
+  const visibleProducts = uniqueProducts.slice(0, maxItems);
+  const overflow = uniqueProducts.length - visibleProducts.length;
+
+  return `<div class="goal-product-strip">
+    ${visibleProducts
+      .map((product) => {
+        const label =
+          getProductDisplayName(product) ||
+          normalizeSku(product?.sku || product?.ProductId || product?.productId) ||
+          "Priority SKU";
+        return `<span class="goal-product-strip__item" title="${escapeHtml(label)}">${buildProductThumbMarkup(product, {
+          className,
+          alt: label
+        })}</span>`;
+      })
+      .join("")}
+    ${overflow > 0 ? `<span class="goal-product-strip__more">+${escapeHtml(String(overflow))}</span>` : ""}
+  </div>`;
+}
+
+function buildGoalLiveProductMarkup(product = {}) {
+  const name =
+    getProductDisplayName(product) ||
+    normalizeSku(product?.sku || product?.ProductId || product?.productId) ||
+    "Featured product";
+  const sku = normalizeSku(product?.sku || product?.ProductId || product?.productId);
+  const price = formatPreviewPrice(readTextValue(product?.price || product?.Price));
+  const comparePrice = formatPreviewPrice(readTextValue(product?.comparePrice || product?.ComparePrice));
+  const priceLine =
+    price || comparePrice
+      ? [price, comparePrice ? `Was ${comparePrice}` : ""].filter(Boolean).join(" | ")
+      : "";
+
+  return `<div class="goal-live-product">
+    ${buildProductThumbMarkup(product, { className: "product-thumb product-thumb--live", alt: name })}
+    <div class="goal-live-product__body">
+      <strong>${escapeHtml(name)}</strong>
+      ${
+        sku || getProductDisplayCategory(product)
+          ? `<span class="goal-live-product__meta">${escapeHtml(
+              [sku, getProductDisplayCategory(product) ? titleCase(getProductDisplayCategory(product)) : ""]
+                .filter(Boolean)
+                .join(" | ")
+            )}</span>`
+          : ""
+      }
+      ${priceLine ? `<span class="goal-live-product__price">${escapeHtml(priceLine)}</span>` : ""}
+    </div>
+  </div>`;
+}
+
 function screenContainsAnyTargetSkuLocal(screen, targetSkuIds) {
   const targetSkuSet = new Set((targetSkuIds || []).map((sku) => normalizeSku(sku)).filter(Boolean));
   if (targetSkuSet.size === 0) {
@@ -3359,6 +3473,10 @@ function renderGoalSelectedSkus() {
       .map((product) => {
         const sku = normalizeSku(product.sku);
         return `<button type="button" class="goal-chip js-remove-goal-sku" data-sku="${escapeHtml(sku)}">
+          ${buildProductThumbMarkup(product, {
+            className: "product-thumb product-thumb--sm",
+            alt: getProductDisplayName(product) || sku
+          })}
           <span class="goal-chip__body">
             <span class="goal-chip__name">${escapeHtml(product.name)}</span>
             <span class="goal-chip__meta">${escapeHtml(product.brand)} | ${escapeHtml(titleCase(product.category))}</span>
@@ -3411,6 +3529,10 @@ function renderGoalProducts() {
       const selected = state.selectedGoalSkuIds.has(sku);
       return `<label class="goal-products__item${selected ? " goal-products__item--selected" : ""}">
         <input type="checkbox" class="js-goal-product-sku" value="${escapeHtml(sku)}" ${selected ? "checked" : ""}>
+        ${buildProductThumbMarkup(product, {
+          className: "product-thumb goal-products__thumb",
+          alt: getProductDisplayName(product) || sku
+        })}
         <span class="goal-products__label">
           <span class="goal-products__sku">${escapeHtml(sku)}</span>
           <span class="goal-products__name">${escapeHtml(product.name)}</span>
@@ -4215,6 +4337,8 @@ function renderGoalPlan() {
           ? (plan.proposedChanges || []).find((change) => String(change.screenId || "") === screenId)?.recommendedTargetSkus
           : [];
       const recommendedSkuLabels = recommendedSkus.map((sku) => getProductLabelBySku(sku)).filter(Boolean);
+      const priorityProducts = getProductsForSkuList(recommendedSkus, targetProducts);
+      const visiblePriorityProducts = priorityProducts.length > 0 ? priorityProducts : uniqueGoalProductsBySku(targetProducts);
       const placementLabel = available
         ? "Available"
         : plan.status === "applied"
@@ -4302,6 +4426,10 @@ function renderGoalPlan() {
                   ? goalTargetSourceLabel(plan.goal?.targetSource)
                   : focusLabel
             )}</strong>
+            ${buildProductThumbStripMarkup(visiblePriorityProducts, {
+              className: "product-thumb product-thumb--xs",
+              maxItems: 3
+            })}
             ${
               available
                 ? '<span class="goal-placement-card__meta-copy">Add this placement to include it before budgeting.</span>'
@@ -4832,7 +4960,7 @@ function renderLiveScreens() {
       const products = Array.isArray(screen.products) ? screen.products : [];
       const productMarkup =
         products.length > 0
-          ? `<p class="goal-change__metrics">Products: ${escapeHtml(products.map((product) => product.name || product.sku).join(", "))}</p>`
+          ? `<div class="goal-live-products">${products.map((product) => buildGoalLiveProductMarkup(product)).join("")}</div>`
           : "";
 
       return `<article class="record">

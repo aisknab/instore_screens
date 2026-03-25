@@ -1462,12 +1462,60 @@ textarea:focus {
   line-height: 1.45;
 }
 
+.product-thumb {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  aspect-ratio: 1;
+  overflow: hidden;
+  flex: 0 0 auto;
+  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, var(--stage-accent, var(--accent)) 14%, var(--line));
+  background:
+    radial-gradient(circle at 30% 22%, color-mix(in srgb, var(--stage-accent, var(--accent)) 16%, #fff), transparent 56%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(240, 245, 252, 0.92));
+  box-shadow: 0 8px 18px rgba(20, 39, 66, 0.08);
+}
+
+.product-thumb img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+}
+
+.product-thumb--fallback {
+  color: var(--ink-soft);
+  font-size: 0.64rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.product-thumb--sm {
+  width: 36px;
+  border-radius: 10px;
+}
+
+.product-thumb--xs {
+  width: 30px;
+  border-radius: 9px;
+}
+
+.product-thumb--live {
+  width: 56px;
+  border-radius: 14px;
+}
+
 .goal-chip {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   min-height: 38px;
-  padding: 8px 10px;
+  max-width: 100%;
+  padding: 8px 12px 8px 8px;
   border-radius: 999px;
   border: 1px solid color-mix(in srgb, var(--stage-accent, var(--accent)) 18%, var(--line));
   background: #fff;
@@ -1483,6 +1531,7 @@ textarea:focus {
 .goal-chip__body {
   display: grid;
   gap: 1px;
+  min-width: 0;
   text-align: left;
 }
 
@@ -1490,15 +1539,22 @@ textarea:focus {
   font-size: 0.84rem;
   font-weight: 800;
   line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .goal-chip__meta {
   color: var(--ink-soft);
   font-size: 0.75rem;
   line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .goal-chip__remove {
+  margin-left: auto;
   color: var(--ink-soft);
   font-size: 0.78rem;
   font-weight: 800;
@@ -1514,7 +1570,7 @@ textarea:focus {
 
 .goal-products__item {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 10px;
   padding: 10px 12px;
   border-bottom: 1px solid #edf1f7;
@@ -1532,14 +1588,18 @@ textarea:focus {
 .goal-products__item input {
   width: 16px;
   height: 16px;
-  margin-top: 2px;
   flex: 0 0 auto;
+}
+
+.goal-products__thumb {
+  width: 50px;
 }
 
 .goal-products__label {
   display: flex;
   flex-direction: column;
   gap: 3px;
+  min-width: 0;
 }
 
 .goal-products__sku {
@@ -1555,6 +1615,33 @@ textarea:focus {
 .goal-products__meta {
   color: var(--ink-soft);
   font-size: 0.82rem;
+}
+
+.goal-product-strip {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.goal-product-strip__item {
+  display: inline-flex;
+}
+
+.goal-product-strip__more {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 30px;
+  min-height: 30px;
+  padding: 0 8px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--stage-accent, var(--accent)) 16%, var(--line));
+  background: color-mix(in srgb, var(--stage-accent, var(--accent)) 8%, #fff);
+  color: var(--ink-soft);
+  font-size: 0.74rem;
+  font-weight: 800;
 }
 
 .goal-summary__lede {
@@ -2331,6 +2418,51 @@ textarea:focus {
   color: var(--ink-soft);
   font-size: 0.84rem;
   line-height: 1.45;
+}
+
+.goal-live-products {
+  margin-top: 10px;
+  display: grid;
+  gap: 8px;
+}
+
+.goal-live-product {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+  padding: 10px;
+  border-radius: 14px;
+  border: 1px solid color-mix(in srgb, var(--stage-accent, var(--accent)) 12%, var(--line));
+  background: color-mix(in srgb, var(--stage-accent, var(--accent)) 4%, #fff);
+}
+
+.goal-live-product__body {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.goal-live-product__body strong {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.goal-live-product__meta,
+.goal-live-product__price {
+  color: var(--ink-soft);
+  font-size: 0.8rem;
+  line-height: 1.35;
+}
+
+.goal-live-product__meta {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .goal-placement-card--excluded .goal-placement-card__eyebrow,
