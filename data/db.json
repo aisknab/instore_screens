@@ -58,7 +58,7 @@
     {
       "pageId": "FOODCOURT",
       "pageType": "Merchandising",
-      "environment": "Desktop",
+      "environment": "In-Store",
       "verbosity": "Min",
       "firePageBeacons": true,
       "oneTagHybridIntegration": false,
