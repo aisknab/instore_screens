@@ -94,10 +94,10 @@
           image: "/assets/products/category-electronics.svg"
         },
         "kiosk-interactive": {
-          badge: "Mobile Handoff",
-          promotion: "Continue on your phone",
+          badge: "Checkout Handoff",
+          promotion: "Take it to your phone",
           cta: "Scan to keep this offer",
-          subcopy: "Designed for QR-assisted journeys, account sign-in, and deeper product detail away from the screen.",
+          subcopy: "Built for queue-side handoff so the offer moves to mobile before the shopper reaches checkout.",
           legal: "Digital offers and sign-in flows vary by store.",
           image: "/assets/products/category-general.svg"
         },
@@ -452,40 +452,40 @@
             return {
               badge: "Feature Wall",
               promotion: `${rangeLabel} spotlight`,
-              cta: "See the live display",
-              subcopy: `${savingsLead} Built for premium comparison moments in ${context.locationLabel.toLowerCase()}.`,
+              cta: "See the hero wall",
+              subcopy: `${savingsLead} Built for a fast premium read in ${context.locationLabel.toLowerCase()}.`,
               supportNote: "Hero-led category messaging"
             };
           case "carousel-banner":
             return {
               badge: "Range Rotation",
               promotion: `${context.categoryLabel} assortment live now`,
-              cta: "Explore the full range",
-              subcopy: `${context.name} is part of a rotating lineup designed to help ${audience} compare multiple options quickly.`,
+              cta: "See the range",
+              subcopy: `${context.name} is part of a rotating lineup built for quick compare at a distance.`,
               supportNote: "Auto-rotating assortment"
             };
           case "kiosk-interactive":
             return {
-              badge: "Mobile Handoff",
-              promotion: "Continue this product on your phone",
+              badge: "Checkout Handoff",
+              promotion: "Take this offer to your phone",
               cta: context.qr.label || "Scan to keep this offer",
-              subcopy: `${context.name} stays with the shopper after they leave the kiosk, keeping specs and the offer available at checkout.`,
-              supportNote: "QR-assisted journey"
+              subcopy: `Scan once to save ${context.name}, pricing, and the offer for the aisle or checkout.`,
+              supportNote: "Queue-side QR"
             };
           case "shelf-spotlight":
             return {
               badge: "Shelf Compare",
-              promotion: context.savings.percentText || "Shelf-side feature",
+              promotion: context.savings.percentText || "Best value in this bay",
               cta: context.qr.label || "Scan for details",
-              subcopy: `${context.name} is framed for shoppers making a final decision at shelf edge, with price, proof, and fast comparison cues.`,
+              subcopy: `${context.name} is framed for a quick shelf-edge decision with price and proof up front.`,
               supportNote: "Decision-point signage"
             };
           case "menu-loop":
             return {
               badge: "Counter Picks",
-              promotion: "Featured board rotation",
+              promotion: "Fast board pickup",
               cta: context.qr.label || "Scan for ingredients",
-              subcopy: `${context.name} anchors a quick-read menu board built for service counter traffic, pickup, and ingredient lookup.`,
+              subcopy: `${context.name} is built for fast counter reads, pickup, and ingredient lookup.`,
               supportNote: "Service-counter loop"
             };
           default:
@@ -493,7 +493,7 @@
               badge: context.objectiveId === "clearance" ? "Store Markdown" : context.locationLabel,
               promotion: `${rangeLabel} feature`,
               cta: context.qr.label || "Find it in store",
-              subcopy: `${savingsLead} Positioned at the ${context.locationLabel.toLowerCase()} to reach ${audience} with a fast retail read.`,
+              subcopy: `${savingsLead} Built for a fast in-store read at the ${context.locationLabel.toLowerCase()}.`,
               supportNote: "Arrival-zone messaging"
             };
         }
@@ -520,7 +520,14 @@
           proofPoints.push("Marked down now");
         }
 
-        return [...new Set(proofPoints.filter(Boolean))].slice(0, 5);
+        const limit =
+          context.templateId === "kiosk-interactive" || context.templateId === "menu-loop"
+            ? 2
+            : context.templateId === "shelf-spotlight"
+              ? 3
+              : 3;
+
+        return [...new Set(proofPoints.filter(Boolean))].slice(0, limit);
       }
 
       function buildDisplayContext(data, entry, index, products, templateName, supportsLoop, loopInterval) {
@@ -587,6 +594,7 @@
           qr,
           supportNote: generatedCopy.supportNote,
           proofPoints: buildProofPoints({
+            templateId,
             brand,
             rating,
             savings,
@@ -696,6 +704,29 @@
         `;
       }
 
+      function buildFallbackClassName(templateId, settings = {}) {
+        const size = parseScreenSize(settings.screenSize, settings.screenType);
+        const shortestSide = Math.min(size.width, size.height);
+        const longestSide = Math.max(size.width, size.height);
+        const classes = ["fallback", `fallback--${escapeTemplateClass(templateId)}`];
+
+        classes.push(size.orientation === "portrait" ? "is-portrait-canvas" : "is-landscape-canvas");
+        if (shortestSide <= 900 || longestSide <= 1600) {
+          classes.push("is-compact-canvas");
+        }
+
+        const screenType = readText(settings.screenType).toLowerCase();
+        if (screenType === "kiosk") {
+          classes.push("is-kiosk-screen");
+        } else if (screenType.includes("menu")) {
+          classes.push("is-menu-screen");
+        } else if (screenType.includes("shelf") || screenType.includes("endcap")) {
+          classes.push("is-shelf-screen");
+        }
+
+        return classes.join(" ");
+      }
+
       function buildFallbackMarkup(context) {
         const priceMarkup = buildPriceMarkup(context);
         const proofMarkup = buildProofMarkup(context.proofPoints);
@@ -779,33 +810,56 @@
           case "kiosk-interactive":
             return `
               <div class="fallback__kiosk-shell">
-                <section class="fallback__copy-panel">
+                <section class="fallback__copy-panel fallback__copy-panel--kiosk">
                   <div class="fallback__meta-row">
                     <span class="fallback__badge">${escapeHtml(context.badge)}</span>
                     <span class="fallback__scene">${escapeHtml(context.locationLabel)}</span>
                   </div>
-                  <p class="fallback__eyebrow">${escapeHtml(context.promotion)}</p>
-                  <h1 class="fallback__headline">${escapeHtml(context.name)}</h1>
-                  <p class="fallback__subcopy">${escapeHtml(context.subcopy)}</p>
-                  ${proofMarkup}
-                  <div class="fallback__action-row">
+                  <p class="fallback__eyebrow">${escapeHtml(context.brand || context.categoryLabel)}</p>
+                  <h1 class="fallback__headline fallback__headline--kiosk">${escapeHtml(context.promotion)}</h1>
+                  <div class="fallback__action-row fallback__action-row--kiosk">
                     <span class="fallback__cta">${escapeHtml(context.cta)}</span>
                     <span class="fallback__support">${escapeHtml(actionNote)}</span>
                   </div>
+                  <p class="fallback__kiosk-product">${escapeHtml(context.name)}</p>
+                  <p class="fallback__subcopy fallback__subcopy--kiosk">${escapeHtml(context.subcopy)}</p>
+                  ${proofMarkup}
                   ${legalMarkup}
                 </section>
                 <section class="fallback__kiosk-stage">
-                  ${buildQrMarkup(context, "fallback__qr-card--primary")}
-                  <ol class="fallback__step-list">
-                    <li><span>1</span><div><strong>Scan</strong><p>Capture the offer and product details on mobile.</p></div></li>
-                    <li><span>2</span><div><strong>Save</strong><p>Keep the product with the shopper while they continue around the store.</p></div></li>
-                    <li><span>3</span><div><strong>Redeem</strong><p>Bring the saved offer back to checkout or to a staff member.</p></div></li>
-                  </ol>
-                  <div class="fallback__phone-panel">
-                    <div class="fallback__phone-screen">
-                      <img class="fallback__product-image fallback__product-image--phone" src="${escapeHtml(context.image)}" alt="${escapeHtml(context.name)}">
+                  <div class="fallback__kiosk-primary">
+                    <span class="fallback__stage-label">Scan at the kiosk</span>
+                    ${buildQrMarkup(context, "fallback__qr-card--primary fallback__qr-card--kiosk")}
+                  </div>
+                  <div class="fallback__benefit-strip" aria-label="Checkout handoff flow">
+                    <div class="fallback__benefit-card">
+                      <span>01</span>
+                      <strong>Scan</strong>
+                      <p>Save the offer instantly.</p>
                     </div>
-                    <span class="fallback__phone-note">Saved to mobile journey</span>
+                    <div class="fallback__benefit-card">
+                      <span>02</span>
+                      <strong>Keep</strong>
+                      <p>Carry it around the store.</p>
+                    </div>
+                    <div class="fallback__benefit-card">
+                      <span>03</span>
+                      <strong>Redeem</strong>
+                      <p>Bring it back to checkout.</p>
+                    </div>
+                  </div>
+                  <div class="fallback__phone-panel">
+                    <div class="fallback__phone-shell">
+                      <span class="fallback__phone-status">Saved offer</span>
+                      <div class="fallback__phone-screen">
+                        <img class="fallback__product-image fallback__product-image--phone" src="${escapeHtml(context.image)}" alt="${escapeHtml(context.name)}">
+                      </div>
+                      <div class="fallback__phone-summary">
+                        <strong>${escapeHtml(compactProductName(context.name))}</strong>
+                        <span>${escapeHtml(context.priceDisplay)}</span>
+                      </div>
+                    </div>
+                    <span class="fallback__phone-note">Offer follows the shopper</span>
                   </div>
                 </section>
               </div>
@@ -1056,7 +1110,7 @@
         const isEntrance = location.includes("entrance");
         const isCategory = location.includes("electronics") || location.includes("whitegoods");
 
-        if (screenType === "kiosk" || location.includes("checkout")) {
+        if (screenType === "kiosk" || (location.includes("checkout") && isPortrait)) {
           return {
             sceneId: "checkout",
             deviceFamily: "kiosk",
@@ -1065,6 +1119,18 @@
             heading: `${templateName} on kiosk`,
             narrative:
               "The creative is staged as a freestanding checkout screen so the CTA and QR handoff are judged at queue distance rather than at full-browser scale."
+          };
+        }
+
+        if (location.includes("checkout")) {
+          return {
+            sceneId: "checkout",
+            deviceFamily: "landscape-wall",
+            placementLabel: "Checkout queue banner",
+            eyebrow: "Checkout queue preview",
+            heading: `${templateName} at checkout`,
+            narrative:
+              "The creative is staged as a checkout queue banner so the offer can be judged like a last-moment conversion screen rather than a freestanding kiosk."
           };
         }
 
@@ -1379,7 +1445,7 @@
         adCanvas.innerHTML = "";
 
         const card = document.createElement("article");
-        card.className = `fallback fallback--${escapeTemplateClass(templateId)}`;
+        card.className = buildFallbackClassName(templateId, data.settings);
         adCanvas.appendChild(card);
 
         function renderProduct(product, index, { reason = "" } = {}) {
@@ -1395,7 +1461,7 @@
             loopInterval
           );
 
-          card.className = `fallback fallback--${escapeTemplateClass(templateId)}`;
+          card.className = buildFallbackClassName(templateId, data.settings);
           card.dataset.objective = context.objectiveId || "default";
           card.innerHTML = buildFallbackMarkup(context);
 
