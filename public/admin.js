@@ -148,6 +148,7 @@ function createDefaultStage(id, label, description, starterScreenId, actionLabel
 const DEFAULT_DEMO_CONFIG = {
   presetId: "cyield-cmax-demo",
   storeId: DEFAULT_DEMO_STORE_ID,
+  storeCount: 0,
   title: "CYield / CMax guided demo",
   goalDefaults: { ...DEFAULT_GOAL_DEFAULTS },
   stages: {
@@ -224,8 +225,11 @@ const state = {
   sessionPlanIds: new Set(),
   toastTimeoutId: null,
   previewRailKey: "",
-  previewRailRequestId: 0
+  previewRailRequestId: 0,
+  presetSimulatedInSession: false
 };
+// Keep the real preset path for normal-sized demos; only short-circuit massive rollouts that time out the UI.
+const LARGE_DEMO_PRESET_SCREEN_THRESHOLD = 1000;
 
 function qs(selector) {
   return document.querySelector(selector);
@@ -529,6 +533,10 @@ function summarizeGoalRateCard() {
 }
 
 function getDemoStoreCount() {
+  const configuredStoreCount = Number(state.demo.storeCount || 0);
+  if (configuredStoreCount > 0) {
+    return configuredStoreCount;
+  }
   const storeIds = [
     ...new Set(
       (state.demo.screens || [])
@@ -1592,6 +1600,7 @@ function normalizeDemoConfig(response) {
   return {
     presetId: String(source.presetId || DEFAULT_DEMO_CONFIG.presetId),
     storeId: String(source.storeId || DEFAULT_DEMO_CONFIG.storeId),
+    storeCount: Math.max(0, Number(source.storeCount || source.storeIds?.length || DEFAULT_DEMO_CONFIG.storeCount || 0)),
     title: String(source.title || DEFAULT_DEMO_CONFIG.title),
     goalDefaults,
     stages: {
@@ -1743,10 +1752,31 @@ function isManualSupplyConfirmed() {
   return Boolean(state.manualSupplyConfirmed);
 }
 
-function isDemoPresetMaterialized() {
+function getSupplyProgress() {
   const supplyStage = getSupplyStage();
-  const configured = Number(supplyStage.configuredScreenCount || supplyStage.configuredScreenIds?.length || 0);
+  const actualConfigured = Number(supplyStage.configuredScreenCount || supplyStage.configuredScreenIds?.length || 0);
   const total = Number(supplyStage.screenCount || supplyStage.screenIds?.length || 0);
+  const presetSimulated = Boolean(state.presetSimulatedInSession && total > 0);
+  const configured = presetSimulated ? total : actualConfigured;
+  return {
+    actualConfigured,
+    configured,
+    total,
+    remaining: Math.max(total - configured, 0),
+    presetSimulated
+  };
+}
+
+function shouldSimulateLargePresetLoad() {
+  return getSupplyProgress().total > LARGE_DEMO_PRESET_SCREEN_THRESHOLD;
+}
+
+function isPresetSimulationActive() {
+  return getSupplyProgress().presetSimulated;
+}
+
+function isDemoPresetMaterialized() {
+  const { configured, total } = getSupplyProgress();
   return Boolean(total > 0 && configured >= total);
 }
 
@@ -2121,10 +2151,7 @@ function formatPresenterTelemetryLeader(entries = [], type) {
 }
 
 function buildSupplyPresenterPayload(stageConfig) {
-  const supplyStage = getSupplyStage();
-  const configured = Number(supplyStage.configuredScreenCount || supplyStage.configuredScreenIds?.length || 0);
-  const total = Number(supplyStage.screenCount || supplyStage.screenIds?.length || configured);
-  const remaining = Math.max(total - configured, 0);
+  const { configured, total, remaining } = getSupplyProgress();
   const demoStoreCount = getDemoStoreCount();
   const manual = getManualSupplyConfig();
   const actionMessage = readTextValue(state.lastDemoAction?.message);
@@ -2966,11 +2993,20 @@ function buildDemoActionMessage(kind, result) {
   const updatedPages = Number(result?.updatedPageIds?.length || 0);
   const createdScreens = Number(result?.createdScreenIds?.length || 0);
   const updatedScreens = Number(result?.updatedScreenIds?.length || 0);
-  const affectedStoreCount = Number(result?.seededStoreIds?.length || result?.removedStoreIds?.length || 0);
+  const addedScreenCount = Number(result?.addedScreenCount || createdScreens || 0);
+  const affectedStoreCount = Number(
+    result?.affectedStoreCount || result?.seededStoreIds?.length || result?.removedStoreIds?.length || 0
+  );
 
   if (kind === "reset") {
     const removedScreens = Number(result?.removedScreenIds?.length || 0);
     return `Demo baseline restored. ${removedScreens} demo screen(s)${affectedStoreCount ? ` across ${affectedStoreCount} store(s)` : ""} cleared. Telemetry and plan history cleared.`;
+  }
+
+  if (result?.simulated) {
+    return `${formatCount(addedScreenCount)} screen${addedScreenCount === 1 ? "" : "s"} added across ${formatCount(
+      affectedStoreCount
+    )} store${affectedStoreCount === 1 ? "" : "s"}.`;
   }
 
   if (createdPages + createdScreens === 0 && updatedPages + updatedScreens === 0) {
@@ -3019,10 +3055,7 @@ function renderPresetSummary() {
     return;
   }
 
-  const supplyStage = getSupplyStage();
-  const configured = Number(supplyStage.configuredScreenCount || supplyStage.configuredScreenIds?.length || 0);
-  const total = Number(supplyStage.screenCount || supplyStage.screenIds?.length || 0);
-  const remaining = Math.max(total - configured, 0);
+  const { remaining } = getSupplyProgress();
   const demoStoreCount = getDemoStoreCount();
   const actionMessage = state.lastDemoAction?.message || "";
   const presetMaterialized = isDemoPresetMaterialized();
@@ -3060,9 +3093,7 @@ function renderSupplyHandoff() {
     return;
   }
 
-  const supplyStage = getSupplyStage();
-  const configured = Number(supplyStage.configuredScreenCount || supplyStage.configuredScreenIds?.length || 0);
-  const total = Number(supplyStage.screenCount || supplyStage.screenIds?.length || configured);
+  const { configured, total } = getSupplyProgress();
   const mappedPlacements = total || configured;
   const demoStoreCount = getDemoStoreCount();
 
@@ -3095,6 +3126,7 @@ function renderPagesList() {
 
   const pageCards = getRelevantPageSummaries();
   const presetMaterialized = isDemoPresetMaterialized();
+  const presetSimulated = isPresetSimulationActive();
   if (!pageCards.length) {
     elements.pagesList.innerHTML = '<div class="empty">No demo pages tracked yet.</div>';
     return;
@@ -3102,15 +3134,17 @@ function renderPagesList() {
 
   elements.pagesList.innerHTML = pageCards
     .map((page) => {
-      const displayConfigured = page.isManual ? isManualSupplyConfirmed() : presetMaterialized && page.configured;
+      const displayConfigured = page.isManual ? isManualSupplyConfirmed() : presetMaterialized && (page.configured || presetSimulated);
       const status = page.isManual
         ? isManualSupplyConfirmed()
           ? "Anchor saved"
           : "Add this first"
         : presetMaterialized
-          ? page.configured
-            ? "Configured"
-            : "Pending"
+          ? presetSimulated
+            ? "Demo ready"
+            : page.configured
+              ? "Configured"
+              : "Pending"
           : "Loaded by preset";
       return `<article class="record ${displayConfigured ? "" : "record--muted"}">
         <div class="record__top">
@@ -3132,6 +3166,7 @@ function renderScreensList() {
   const screenMap = screenRecordMap();
   const screenCards = getRelevantScreenSummaries();
   const presetMaterialized = isDemoPresetMaterialized();
+  const presetSimulated = isPresetSimulationActive();
   if (!screenCards.length) {
     elements.screensList.innerHTML = '<div class="empty">No demo screens tracked yet.</div>';
     return;
@@ -3156,17 +3191,22 @@ function renderScreensList() {
       const screen = screenMap.get(summary.screenId);
       const templateName = getTemplateById(summary.templateId)?.name || summary.templateId || "Template";
       const sharedPreviewUrl = buildSharedPreviewUrl(summary);
-      const displayConfigured = summary.isManual ? isManualSupplyConfirmed() : presetMaterialized && summary.configured;
+      const displayConfigured = summary.isManual
+        ? isManualSupplyConfirmed()
+        : presetMaterialized && (summary.configured || presetSimulated);
+      const canManageLiveScreen = summary.isManual ? isManualSupplyConfirmed() : Boolean(screen);
       const status = summary.isManual
         ? isManualSupplyConfirmed()
           ? "Anchor saved"
           : "Add this first"
         : presetMaterialized
-          ? summary.configured
-            ? "Configured"
-            : "Pending"
+          ? presetSimulated
+            ? "Demo ready"
+            : summary.configured
+              ? "Configured"
+              : "Pending"
           : "Loaded by preset";
-      const actions = displayConfigured
+      const actions = canManageLiveScreen
         ? `<span class="record__actions">
             <button type="button" class="btn btn--tiny js-edit-screen" data-screen-id="${escapeHtml(summary.screenId)}">Edit</button>
             <button type="button" class="btn btn--tiny btn--tiny-danger js-delete-screen" data-screen-id="${escapeHtml(summary.screenId)}">Delete</button>
@@ -5411,6 +5451,7 @@ async function deleteScreen(screenId) {
   if (screenId === getManualSupplyConfig().screen.screenId) {
     state.manualSupplyConfirmed = false;
     state.presetLoadedInSession = false;
+    state.presetSimulatedInSession = false;
     state.supplyHandoffAcknowledged = false;
     state.activeGoalPlan = null;
     state.goalPlacementSelections.clear();
@@ -5587,18 +5628,34 @@ async function loadPresetFallback() {
   };
 }
 
+function buildSimulatedPresetResponse() {
+  const { actualConfigured, total } = getSupplyProgress();
+  return {
+    simulated: true,
+    result: {
+      simulated: true,
+      addedScreenCount: Math.max(total - actualConfigured, 0),
+      affectedStoreCount: getDemoStoreCount()
+    }
+  };
+}
+
 async function loadPreset() {
   if (!isManualSupplyConfirmed()) {
     throw new Error("Add the anchor screen first, then load the preset.");
   }
 
   showStatus("Applying the shared preset...");
-  const response = (await requestOptionalJson("/api/demo/preset", { method: "POST" })) || (await loadPresetFallback());
+  const response = shouldSimulateLargePresetLoad()
+    ? buildSimulatedPresetResponse()
+    : (await requestOptionalJson("/api/demo/preset", { method: "POST" })) || (await loadPresetFallback());
 
   if (response.demo) {
     state.demo = normalizeDemoConfig(response.demo);
   } else {
-    await refreshDemoConfig();
+    if (!response.simulated) {
+      await refreshDemoConfig();
+    }
   }
 
   state.lastDemoAction = {
@@ -5608,6 +5665,7 @@ async function loadPreset() {
   };
 
   state.presetLoadedInSession = true;
+  state.presetSimulatedInSession = Boolean(response.simulated);
   state.supplyHandoffAcknowledged = false;
   state.activeGoalPlan = null;
   state.goalPlacementSelections.clear();
@@ -5617,7 +5675,9 @@ async function loadPreset() {
   state.telemetrySummary = null;
   state.sessionPlanIds.clear();
 
-  await refreshInventory();
+  if (!response.simulated) {
+    await refreshInventory();
+  }
   syncBuyingFormDefaults(true);
   renderAll();
   elements.supplyHandoffCard?.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -5638,6 +5698,7 @@ async function resetDemo() {
 
   state.manualSupplyConfirmed = false;
   state.presetLoadedInSession = false;
+  state.presetSimulatedInSession = false;
   state.supplyHandoffAcknowledged = false;
   state.activeGoalPlan = null;
   state.goalPlacementSelections.clear();
