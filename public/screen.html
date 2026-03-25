@@ -41,7 +41,9 @@
                 <div class="preview-device__screen">
                   <div id="statusBadge" class="status-badge">Booting screen player...</div>
                   <div id="ad-container">
-                    <div class="loading">Loading ad...</div>
+                    <div id="ad-canvas">
+                      <div class="loading">Loading ad...</div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -124,6 +126,7 @@
         return ["https://delivery.retailmedia.com/Delivery/ClientPaths/Library/rm.js?a=89627"];
       })();
       const adContainer = document.getElementById("ad-container");
+      const adCanvas = document.getElementById("ad-canvas");
       const statusBadge = document.getElementById("statusBadge");
       const previewPanel = document.getElementById("previewPanel");
       const previewStage = document.getElementById("previewStage");
@@ -144,6 +147,7 @@
       let rmjsChecked = false;
       let rmjsAvailable = Boolean(window.RMJS && typeof window.RMJS.render === "function");
       let currentResolvedScreenId = screenIdOverride;
+      let currentCanvasSize = { width: 1920, height: 1080 };
       const LOOPING_TEMPLATES = new Set(["carousel-banner", "menu-loop"]);
       const FALLBACK_LOOP_INTERVALS = {
         "carousel-banner": 4000,
@@ -322,6 +326,50 @@
         return String(value).replace(/[^a-z0-9-]/gi, "").toLowerCase();
       }
 
+      function syncAdCanvasLayout() {
+        if (!adContainer) {
+          return;
+        }
+
+        if (!isShowcaseMode) {
+          adContainer.style.removeProperty("--ad-canvas-width");
+          adContainer.style.removeProperty("--ad-canvas-height");
+          adContainer.style.removeProperty("--ad-canvas-scale");
+          return;
+        }
+
+        const width = Number(currentCanvasSize?.width);
+        const height = Number(currentCanvasSize?.height);
+        if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) {
+          return;
+        }
+
+        const containerWidth = adContainer.clientWidth;
+        const containerHeight = adContainer.clientHeight;
+        if (!containerWidth || !containerHeight) {
+          window.requestAnimationFrame(syncAdCanvasLayout);
+          return;
+        }
+
+        const scale = Math.max(0.01, Math.min(containerWidth / width, containerHeight / height, 1));
+        adContainer.style.setProperty("--ad-canvas-width", `${width}px`);
+        adContainer.style.setProperty("--ad-canvas-height", `${height}px`);
+        adContainer.style.setProperty("--ad-canvas-scale", String(scale));
+      }
+
+      function updateAdCanvasSize(size = {}) {
+        const width = Number(size?.width);
+        const height = Number(size?.height);
+        if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) {
+          return;
+        }
+
+        currentCanvasSize = { width, height };
+        window.requestAnimationFrame(() => {
+          window.requestAnimationFrame(syncAdCanvasLayout);
+        });
+      }
+
       function parseScreenSize(value, screenType = "") {
         const raw = readText(String(value ?? ""));
         const matched = raw.match(/(\d{3,5})\D+(\d{3,5})/);
@@ -367,10 +415,16 @@
         };
       }
 
-      function resolvePreviewScene(settings = {}) {
+      function resolvePreviewScene(settings = {}, size = null) {
         const location = readText(settings.location).toLowerCase();
         const screenType = readText(settings.screenType).toLowerCase();
         const templateName = readText(settings.templateName) || readText(settings.templateId) || "Creative";
+        const resolvedSize = size && Number.isFinite(size.width) && Number.isFinite(size.height)
+          ? size
+          : parseScreenSize(settings.screenSize, settings.screenType);
+        const isPortrait = resolvedSize.height > resolvedSize.width;
+        const isEntrance = location.includes("entrance");
+        const isCategory = location.includes("electronics") || location.includes("whitegoods");
 
         if (screenType === "kiosk" || location.includes("checkout")) {
           return {
@@ -408,23 +462,47 @@
           };
         }
 
-        if (screenType.includes("vertical") || location.includes("electronics") || location.includes("entrance")) {
+        if (isPortrait || screenType.includes("vertical")) {
           return {
-            sceneId: location.includes("entrance") ? "entrance" : "electronics",
+            sceneId: isEntrance ? "entrance" : isCategory ? "electronics" : "sales-floor",
             deviceFamily: "portrait-wall",
-            placementLabel: location.includes("entrance") ? "Entrance portrait screen" : "Category portrait screen",
-            eyebrow: location.includes("entrance") ? "Entrance hero preview" : "Category hero preview",
+            placementLabel: isEntrance ? "Entrance portrait screen" : isCategory ? "Category portrait screen" : "Portrait wall screen",
+            eyebrow: isEntrance ? "Entrance hero preview" : isCategory ? "Category hero preview" : "Portrait display preview",
             heading: `${templateName} on portrait display`,
             narrative:
               "The creative is framed as a portrait in-store display so the product image, headline scale, and motion cues read more like a real wayfinding moment."
           };
         }
 
+        if (isEntrance) {
+          return {
+            sceneId: "entrance",
+            deviceFamily: "landscape-wall",
+            placementLabel: "Entrance wall screen",
+            eyebrow: "Entrance wall preview",
+            heading: `${templateName} on entrance wall`,
+            narrative:
+              "The creative is staged as a landscape entrance display so headline balance, product scale, and motion can be judged at arrival distance."
+          };
+        }
+
+        if (isCategory) {
+          return {
+            sceneId: "electronics",
+            deviceFamily: "landscape-wall",
+            placementLabel: "Category wall screen",
+            eyebrow: "Category wall preview",
+            heading: `${templateName} on category wall`,
+            narrative:
+              "The ad is framed as a landscape category screen so composition and pacing read more like a real sales-floor display."
+          };
+        }
+
         return {
-          sceneId: location.includes("entrance") ? "entrance" : "sales-floor",
+          sceneId: isEntrance ? "entrance" : "sales-floor",
           deviceFamily: "landscape-wall",
-          placementLabel: location.includes("entrance") ? "Entrance wall screen" : "Wall-mounted screen",
-          eyebrow: location.includes("entrance") ? "Entrance wall preview" : "Sales-floor preview",
+          placementLabel: isEntrance ? "Entrance wall screen" : "Wall-mounted screen",
+          eyebrow: isEntrance ? "Entrance wall preview" : "Sales-floor preview",
           heading: `${templateName} on wall display`,
           narrative:
             "The ad is mounted as a landscape retail screen so composition can be judged in context instead of being stretched to match the laptop window."
@@ -451,13 +529,14 @@
         }
 
         const size = parseScreenSize(settings.screenSize, settings.screenType);
-        const scene = resolvePreviewScene(settings);
+        const scene = resolvePreviewScene(settings, size);
         const templateName = readText(settings.templateName) || readText(settings.templateId) || "Creative";
         const screenType = readText(settings.screenType) || "Screen";
         const productName = readText(product.ProductName);
         const screenLabel = readText(settings.screenId) || currentResolvedScreenId || screenIdOverride || deviceId || "Preview";
 
         previewDevice.style.setProperty("--preview-device-aspect", size.aspectCss);
+        updateAdCanvasSize(size);
         document.body.dataset.scene = scene.sceneId;
         document.body.dataset.deviceFamily = scene.deviceFamily;
 
@@ -668,7 +747,7 @@
           Number(data.settings?.loopIntervalMs) || FALLBACK_LOOP_INTERVALS[templateId] || 0;
         let currentIndex = 0;
 
-        adContainer.innerHTML = "";
+        adCanvas.innerHTML = "";
 
         const card = document.createElement("article");
         card.className = `fallback fallback--${escapeTemplateClass(templateId)}`;
@@ -747,7 +826,7 @@
 
         card.appendChild(content);
         card.appendChild(visual);
-        adContainer.appendChild(card);
+        adCanvas.appendChild(card);
 
         if (supportsLoop) {
           for (let index = 0; index < products.length; index += 1) {
@@ -871,6 +950,7 @@
           return false;
         }
         clearFallbackLoop();
+        adCanvas.innerHTML = "";
 
         window.RMJS.render({
           Status: "OK",
@@ -881,7 +961,7 @@
               RenderingSettings: data.settings || {}
             }
           ],
-          InjectionPoint: "#ad-container",
+          InjectionPoint: "#ad-canvas",
           Environment: "instore"
         });
 
@@ -937,7 +1017,7 @@
             {},
             `Preview unavailable. ${String(error.message || "Unknown error")}`
           );
-          adContainer.innerHTML = "";
+          adCanvas.innerHTML = "";
           const wrapper = document.createElement("div");
           wrapper.style.textAlign = "center";
           wrapper.style.padding = "24px";
@@ -956,12 +1036,13 @@
           wrapper.appendChild(title);
           wrapper.appendChild(message);
           wrapper.appendChild(screen);
-          adContainer.appendChild(wrapper);
+          adCanvas.appendChild(wrapper);
           scheduleRefresh(15000);
         }
       }
 
       seedPreviewShell();
+      window.addEventListener("resize", syncAdCanvasLayout);
       window.addEventListener("load", loadAndRenderAd);
       window.addEventListener("beforeunload", () => {
         clearFallbackLoop();

@@ -128,9 +128,35 @@ body[data-device-family="menu-board"] {
 #ad-container {
   width: 100%;
   height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+#ad-canvas {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  overflow: hidden;
+}
+
+#ad-canvas > .loading {
+  place-self: center;
+}
+
+#ad-canvas iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+body.body--showcase #ad-canvas {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: var(--ad-canvas-width, 100%);
+  height: var(--ad-canvas-height, 100%);
+  transform: translate(-50%, -50%) scale(var(--ad-canvas-scale, 1));
+  transform-origin: center center;
 }
 
 .loading {

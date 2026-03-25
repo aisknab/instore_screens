@@ -4,6 +4,12 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { mutateDb, readDb } from "./dataStore.js";
+import {
+  DEMO_ANCHOR_STORE,
+  DEMO_STORE_IDS,
+  DEMO_STORE_PROFILES,
+  LEGACY_DEMO_STORE_IDS
+} from "./demoStoreCatalog.js";
 
 const PAGE_TYPES = [
   "Homepage",
@@ -209,141 +215,10 @@ const GOAL_OBJECTIVE_MAP = new Map(GOAL_OBJECTIVES.map((entry) => [entry.id, ent
 const SHARED_PLAYER_URL = "/screen.html";
 
 const DEMO_PRESET_ID = "cyield-cmax-demo";
-const DEMO_STORE_ID = "STORE_42";
-const DEMO_STORE_PROFILES = [
-  {
-    storeId: "STORE_42",
-    storeLabel: "Store 42",
-    stockBase: 18,
-    categoryBias: { electronics: 1.32, whitegoods: 1.05, aisle: 0.9, foodcourt: 0.78, general: 1.0 },
-    screenConfigs: {
-      entrance: { screenType: "Horizontal Screen", screenSize: "1920x1080", templateId: "fullscreen-banner", refreshInterval: 30000 },
-      electronics: { screenType: "Vertical Screen", screenSize: "1080x1920", templateId: "fullscreen-hero", refreshInterval: 30000 },
-      whitegoods: { screenType: "Horizontal Screen", screenSize: "1920x1080", templateId: "carousel-banner", refreshInterval: 14000 },
-      aisle: { screenType: "Shelf Edge", screenSize: "1280x720", templateId: "shelf-spotlight", refreshInterval: 12000 },
-      checkout: { screenType: "Kiosk", screenSize: "1080x1920", templateId: "kiosk-interactive", refreshInterval: 15000 }
-    }
-  },
-  {
-    storeId: "STORE_17",
-    storeLabel: "Store 17",
-    stockBase: 14,
-    categoryBias: { electronics: 1.08, whitegoods: 0.94, aisle: 1.04, foodcourt: 0.84, general: 0.98 },
-    screenConfigs: {
-      entrance: { screenType: "Vertical Screen", screenSize: "1080x1920", templateId: "fullscreen-hero", refreshInterval: 26000 },
-      electronics: { screenType: "Horizontal Screen", screenSize: "1920x1080", templateId: "fullscreen-banner", refreshInterval: 24000 },
-      whitegoods: { screenType: "Horizontal Screen", screenSize: "1600x900", templateId: "carousel-banner", refreshInterval: 18000 },
-      aisle: { screenType: "Endcap", screenSize: "1080x1920", templateId: "shelf-spotlight", refreshInterval: 11000 },
-      checkout: { screenType: "Kiosk", screenSize: "1080x1920", templateId: "kiosk-interactive", refreshInterval: 14000 }
-    }
-  },
-  {
-    storeId: "STORE_08",
-    storeLabel: "Store 08",
-    stockBase: 12,
-    categoryBias: { electronics: 0.9, whitegoods: 0.86, aisle: 1.24, foodcourt: 0.92, general: 0.96 },
-    screenConfigs: {
-      entrance: { screenType: "Horizontal Screen", screenSize: "1600x900", templateId: "fullscreen-banner", refreshInterval: 22000 },
-      electronics: { screenType: "Vertical Screen", screenSize: "1200x1920", templateId: "fullscreen-hero", refreshInterval: 28000 },
-      whitegoods: { screenType: "Horizontal Screen", screenSize: "1920x1080", templateId: "fullscreen-banner", refreshInterval: 22000 },
-      aisle: { screenType: "Shelf Edge", screenSize: "1024x600", templateId: "shelf-spotlight", refreshInterval: 10000 },
-      checkout: { screenType: "Horizontal Screen", screenSize: "1920x1080", templateId: "fullscreen-banner", refreshInterval: 18000 }
-    }
-  },
-  {
-    storeId: "STORE_21",
-    storeLabel: "Store 21",
-    stockBase: 16,
-    categoryBias: { electronics: 0.94, whitegoods: 1.22, aisle: 0.9, foodcourt: 0.76, general: 1.0 },
-    screenConfigs: {
-      entrance: { screenType: "Horizontal Screen", screenSize: "1920x1080", templateId: "fullscreen-banner", refreshInterval: 26000 },
-      electronics: { screenType: "Vertical Screen", screenSize: "1080x1920", templateId: "fullscreen-hero", refreshInterval: 26000 },
-      whitegoods: { screenType: "Horizontal Screen", screenSize: "1920x1080", templateId: "carousel-banner", refreshInterval: 12000 },
-      aisle: { screenType: "Endcap", screenSize: "1080x1920", templateId: "shelf-spotlight", refreshInterval: 12000 },
-      checkout: { screenType: "Kiosk", screenSize: "1080x1920", templateId: "kiosk-interactive", refreshInterval: 15000 }
-    }
-  },
-  {
-    storeId: "STORE_33",
-    storeLabel: "Store 33",
-    stockBase: 17,
-    categoryBias: { electronics: 1.4, whitegoods: 0.96, aisle: 0.82, foodcourt: 0.74, general: 1.02 },
-    screenConfigs: {
-      entrance: { screenType: "Vertical Screen", screenSize: "1080x1920", templateId: "fullscreen-hero", refreshInterval: 24000 },
-      electronics: { screenType: "Vertical Screen", screenSize: "1080x1920", templateId: "fullscreen-hero", refreshInterval: 22000 },
-      whitegoods: { screenType: "Horizontal Screen", screenSize: "1920x1080", templateId: "fullscreen-banner", refreshInterval: 18000 },
-      aisle: { screenType: "Shelf Edge", screenSize: "1280x720", templateId: "shelf-spotlight", refreshInterval: 12000 },
-      checkout: { screenType: "Kiosk", screenSize: "1080x1920", templateId: "kiosk-interactive", refreshInterval: 15000 }
-    }
-  },
-  {
-    storeId: "STORE_55",
-    storeLabel: "Store 55",
-    stockBase: 11,
-    categoryBias: { electronics: 0.92, whitegoods: 0.84, aisle: 1.08, foodcourt: 1.14, general: 0.95 },
-    screenConfigs: {
-      entrance: { screenType: "Horizontal Screen", screenSize: "1366x768", templateId: "fullscreen-banner", refreshInterval: 20000 },
-      electronics: { screenType: "Horizontal Screen", screenSize: "1920x1080", templateId: "carousel-banner", refreshInterval: 20000 },
-      whitegoods: { screenType: "Horizontal Screen", screenSize: "1600x900", templateId: "fullscreen-banner", refreshInterval: 20000 },
-      aisle: { screenType: "Endcap", screenSize: "1080x1920", templateId: "shelf-spotlight", refreshInterval: 10000 },
-      checkout: { screenType: "Horizontal Screen", screenSize: "1920x1080", templateId: "fullscreen-banner", refreshInterval: 15000 }
-    }
-  },
-  {
-    storeId: "STORE_64",
-    storeLabel: "Store 64",
-    stockBase: 19,
-    categoryBias: { electronics: 0.98, whitegoods: 1.34, aisle: 0.88, foodcourt: 0.72, general: 1.04 },
-    screenConfigs: {
-      entrance: { screenType: "Horizontal Screen", screenSize: "1920x1080", templateId: "fullscreen-banner", refreshInterval: 28000 },
-      electronics: { screenType: "Vertical Screen", screenSize: "1080x1920", templateId: "fullscreen-hero", refreshInterval: 26000 },
-      whitegoods: { screenType: "Horizontal Screen", screenSize: "1920x1080", templateId: "carousel-banner", refreshInterval: 10000 },
-      aisle: { screenType: "Shelf Edge", screenSize: "1280x720", templateId: "shelf-spotlight", refreshInterval: 12000 },
-      checkout: { screenType: "Kiosk", screenSize: "1080x1920", templateId: "kiosk-interactive", refreshInterval: 14000 }
-    }
-  },
-  {
-    storeId: "STORE_71",
-    storeLabel: "Store 71",
-    stockBase: 15,
-    categoryBias: { electronics: 1.14, whitegoods: 0.88, aisle: 0.96, foodcourt: 0.88, general: 1.0 },
-    screenConfigs: {
-      entrance: { screenType: "Vertical Screen", screenSize: "1080x1920", templateId: "fullscreen-hero", refreshInterval: 24000 },
-      electronics: { screenType: "Horizontal Screen", screenSize: "1920x1080", templateId: "fullscreen-banner", refreshInterval: 22000 },
-      whitegoods: { screenType: "Horizontal Screen", screenSize: "1600x900", templateId: "carousel-banner", refreshInterval: 18000 },
-      aisle: { screenType: "Endcap", screenSize: "1080x1920", templateId: "shelf-spotlight", refreshInterval: 11000 },
-      checkout: { screenType: "Kiosk", screenSize: "1080x1920", templateId: "kiosk-interactive", refreshInterval: 12000 }
-    }
-  },
-  {
-    storeId: "STORE_88",
-    storeLabel: "Store 88",
-    stockBase: 13,
-    categoryBias: { electronics: 0.86, whitegoods: 0.82, aisle: 1.36, foodcourt: 0.94, general: 0.97 },
-    screenConfigs: {
-      entrance: { screenType: "Horizontal Screen", screenSize: "1600x900", templateId: "fullscreen-banner", refreshInterval: 22000 },
-      electronics: { screenType: "Vertical Screen", screenSize: "1080x1920", templateId: "fullscreen-hero", refreshInterval: 26000 },
-      whitegoods: { screenType: "Horizontal Screen", screenSize: "1366x768", templateId: "fullscreen-banner", refreshInterval: 22000 },
-      aisle: { screenType: "Shelf Edge", screenSize: "1024x600", templateId: "shelf-spotlight", refreshInterval: 9000 },
-      checkout: { screenType: "Horizontal Screen", screenSize: "1920x1080", templateId: "fullscreen-banner", refreshInterval: 16000 }
-    }
-  },
-  {
-    storeId: "STORE_95",
-    storeLabel: "Store 95",
-    stockBase: 17,
-    categoryBias: { electronics: 1.02, whitegoods: 1.16, aisle: 1.12, foodcourt: 0.78, general: 1.03 },
-    screenConfigs: {
-      entrance: { screenType: "Horizontal Screen", screenSize: "1920x1080", templateId: "fullscreen-banner", refreshInterval: 26000 },
-      electronics: { screenType: "Horizontal Screen", screenSize: "1920x1080", templateId: "carousel-banner", refreshInterval: 20000 },
-      whitegoods: { screenType: "Horizontal Screen", screenSize: "1920x1080", templateId: "carousel-banner", refreshInterval: 12000 },
-      aisle: { screenType: "Endcap", screenSize: "1080x1920", templateId: "shelf-spotlight", refreshInterval: 10000 },
-      checkout: { screenType: "Kiosk", screenSize: "1080x1920", templateId: "kiosk-interactive", refreshInterval: 13000 }
-    }
-  }
-];
-const DEMO_STORE_IDS = DEMO_STORE_PROFILES.map((profile) => profile.storeId);
+const DEMO_STORE_ID = readOptionalString(DEMO_ANCHOR_STORE?.storeId, 80) || DEMO_STORE_IDS[0] || "";
+const DEMO_STORE_LABEL = readOptionalString(DEMO_ANCHOR_STORE?.storeLabel, 80) || DEMO_STORE_ID;
 const DEMO_STORE_ID_SET = new Set(DEMO_STORE_IDS);
+const LEGACY_DEMO_STORE_ID_SET = new Set(LEGACY_DEMO_STORE_IDS);
 
 function clampNumber(value, min = 0, max = 1) {
   const parsed = Number(value);
@@ -403,7 +278,7 @@ function formatDuration(ms) {
 }
 
 function buildDemoStoreSalesSignalMap() {
-  const rawEntries = DEMO_STORE_PROFILES.map((profile, index) => {
+  const rawEntries = DEMO_STORE_PROFILES.map((profile) => {
     const screenConfigs = Object.values(profile?.screenConfigs || {});
     const screenCount = screenConfigs.length;
     const verticalCount = screenConfigs.filter((config) => toTrimmedString(config?.screenType).toLowerCase().includes("vertical")).length;
@@ -420,9 +295,14 @@ function buildDemoStoreSalesSignalMap() {
     const whitegoodsBias = Number(profile?.categoryBias?.whitegoods || 1);
     const aisleBias = Number(profile?.categoryBias?.aisle || 1);
     const foodcourtBias = Number(profile?.categoryBias?.foodcourt || 1);
+    const inventoryScale = getStoreInventoryScale(profile);
+    const trafficScale = getStoreTrafficScale(profile);
+    const marketVariance = (hashText(`${profile?.market || ""}-${profile?.tradeArea || ""}`) % 17) * 24000;
     const totalSales =
-      520000 +
-      Number(profile?.stockBase || 0) * 64000 +
+      2400000 +
+      Number(profile?.stockBase || 0) * 42000 +
+      inventoryScale * 1650000 +
+      trafficScale * 1380000 +
       electronicsBias * 135000 +
       whitegoodsBias * 112000 +
       aisleBias * 54000 +
@@ -431,13 +311,14 @@ function buildDemoStoreSalesSignalMap() {
       kioskCount * 24000 +
       shelfCount * 16000 +
       screenCount * 12000 +
-      index * 3500;
-    const avgBasketValue = 34 + Number(profile?.stockBase || 0) * 0.95 + whitegoodsBias * 8 + electronicsBias * 6 + aisleBias * 3;
+      marketVariance;
+    const avgBasketValue =
+      58 + Number(profile?.stockBase || 0) * 0.18 + whitegoodsBias * 12 + electronicsBias * 8 + aisleBias * 4 + trafficScale * 3;
     const estimatedTransactions = Math.max(1, Math.round(totalSales / Math.max(24, avgBasketValue)));
-    const inferredFootTraffic = Math.round(estimatedTransactions * (1.18 + entranceCount * 0.07 + screenCount * 0.01));
-    const checkoutIntent = estimatedTransactions * (0.34 + kioskCount * 0.08 + shelfCount * 0.03 + aisleBias * 0.05);
-    const premiumDemand = totalSales * (0.08 + electronicsBias * 0.11 + verticalCount * 0.05);
-    const clearancePressure = Number(profile?.stockBase || 0) * 6 + aisleBias * 22 + whitegoodsBias * 11 + shelfCount * 6;
+    const inferredFootTraffic = Math.round(estimatedTransactions * (1.24 + trafficScale * 0.18 + entranceCount * 0.07 + screenCount * 0.01));
+    const checkoutIntent = estimatedTransactions * (0.32 + trafficScale * 0.05 + kioskCount * 0.08 + shelfCount * 0.03 + aisleBias * 0.05);
+    const premiumDemand = totalSales * (0.08 + electronicsBias * 0.11 + inventoryScale * 0.05 + verticalCount * 0.05);
+    const clearancePressure = Number(profile?.stockBase || 0) * 2.6 + inventoryScale * 24 + aisleBias * 22 + whitegoodsBias * 11 + shelfCount * 6;
 
     return {
       storeId: readOptionalString(profile?.storeId, 80),
@@ -701,13 +582,16 @@ function buildDemoScreenSpec(storeProfile, blueprint, storeIndex) {
 const DEMO_SCREEN_SPECS = DEMO_STORE_PROFILES.flatMap((storeProfile, index) =>
   DEMO_SCREEN_BLUEPRINTS.map((blueprint) => buildDemoScreenSpec(storeProfile, blueprint, index))
 );
+const DEMO_SCREEN_ID_SET = new Set(DEMO_SCREEN_SPECS.map((screenSpec) => screenSpec.screenId));
+const DEMO_SUPPLY_STARTER_SCREEN_ID = `${DEMO_STORE_ID}_CYIELD_ENTRANCE_HERO`;
+const DEMO_BUYING_STARTER_SCREEN_ID = `${DEMO_STORE_ID}_CMAX_CHECKOUT_KIOSK`;
 const DEMO_STAGE_TEMPLATES = [
   {
     id: "cyield-supply",
     label: "CYield Supply Setup",
     description: "Use the two-action supply flow to show one manual CYield anchor, then fan the shared player across the rest of the store.",
     actionLabel: "Load supply preset",
-    starterScreenId: "STORE_42_CYIELD_ENTRANCE_HERO",
+    starterScreenId: DEMO_SUPPLY_STARTER_SCREEN_ID,
     speakerSummary:
       "Keep supply tight: one manual CYield-style mapping proves the integration point, then the preset, rate card, and handoff show how the same shared player scales across stores.",
     presenterNotes: [
@@ -745,14 +629,14 @@ const DEMO_STAGE_TEMPLATES = [
     label: "CMax Buying / Demand",
     description: "Switch into the planner, generate a goal-led line-up, edit the mix if needed, then fund the final activation.",
     actionLabel: "Generate buying plan",
-    starterScreenId: "STORE_42_CMAX_CHECKOUT_KIOSK",
+    starterScreenId: DEMO_BUYING_STARTER_SCREEN_ID,
     goalDefaults: {
       objective: "checkout-attach",
       aggressiveness: "Balanced",
       storeId: "",
       pageId: "CHECKOUT",
       advertiserId: "advertiser-northfield",
-      prompt: "Drive checkout demand for Northfield accessories in STORE_42.",
+      prompt: `Drive checkout demand for Northfield accessories in ${DEMO_STORE_LABEL}.`,
       targetSkuIds: ["ACC-MOUSE-001"]
     },
     speakerSummary:
@@ -792,7 +676,7 @@ const DEMO_STAGE_TEMPLATES = [
     label: "Monitoring",
     description: "Use the live brand dashboard, measurement board, preview rail, and campaign history to show operational proof after launch.",
     actionLabel: "Open monitoring",
-    starterScreenId: "STORE_42_CMAX_CHECKOUT_KIOSK",
+    starterScreenId: DEMO_BUYING_STARTER_SCREEN_ID,
     speakerSummary:
       "Monitoring turns the launch into an operational story: the same shared player now feeds a brand dashboard, measurement board, preview rail, and campaign history.",
     presenterNotes: [
@@ -875,68 +759,7 @@ const PRODUCT_IMAGE_MANIFEST_FILE = resolvePathFromEnv(
 const PRODUCT_IMAGE_OUTPUT_DIR = resolvePathFromEnv("PRODUCT_IMAGE_OUTPUT_DIR", DEFAULT_PRODUCT_IMAGE_OUTPUT_DIR);
 const PRODUCT_IMAGE_GENERATOR_SCRIPT = path.resolve(process.cwd(), "scripts", "generate-product-images.mjs");
 const PRODUCT_IMAGE_JOB_LOG_LIMIT = 200;
-const DEMO_STOCK_BY_SKU = {
-  "LAP-CREATOR-15-005": {
-    STORE_42: 34,
-    STORE_17: 18,
-    STORE_08: 12,
-    STORE_21: 16,
-    STORE_33: 46,
-    STORE_55: 14,
-    STORE_64: 20,
-    STORE_71: 28,
-    STORE_88: 11,
-    STORE_95: 22
-  },
-  "ACC-MOUSE-001": {
-    STORE_42: 48,
-    STORE_17: 26,
-    STORE_08: 15,
-    STORE_21: 18,
-    STORE_33: 21,
-    STORE_55: 31,
-    STORE_64: 14,
-    STORE_71: 52,
-    STORE_88: 12,
-    STORE_95: 24
-  },
-  "ACC-DOCK-003": {
-    STORE_42: 29,
-    STORE_17: 16,
-    STORE_08: 9,
-    STORE_21: 12,
-    STORE_33: 24,
-    STORE_55: 13,
-    STORE_64: 11,
-    STORE_71: 27,
-    STORE_88: 8,
-    STORE_95: 19
-  },
-  "WG-OVEN-003": {
-    STORE_42: 23,
-    STORE_17: 14,
-    STORE_08: 10,
-    STORE_21: 34,
-    STORE_33: 12,
-    STORE_55: 9,
-    STORE_64: 39,
-    STORE_71: 11,
-    STORE_88: 8,
-    STORE_95: 28
-  },
-  "GR-PROTEIN-001": {
-    STORE_42: 41,
-    STORE_17: 22,
-    STORE_08: 31,
-    STORE_21: 18,
-    STORE_33: 12,
-    STORE_55: 26,
-    STORE_64: 10,
-    STORE_71: 19,
-    STORE_88: 45,
-    STORE_95: 29
-  }
-};
+const DEMO_STOCK_BY_SKU = Object.freeze({});
 const PRODUCT_FEED_DEFAULT = [];
 const PRODUCT_IMAGE_BASE_PATH = "/assets/products";
 const DEMO_SKU_IMAGE_PREFIXES = ["LAP-", "WG-", "FS-", "GR-", "ACC-"];
@@ -950,6 +773,7 @@ const DEMO_CATEGORY_IMAGE_FALLBACKS = new Set([
 const REMOTE_URL_PATTERN = /^https?:\/\//i;
 const rotationState = new Map();
 let productImageGenerationJob = null;
+let cachedProductFeed = null;
 const TOUCH_FORWARD_CTA_PATTERN =
   /\b(tap|click|touch|swipe|press|shop now|learn more|buy now|start now|order now)\b/i;
 const TOUCH_FORWARD_COPY_PATTERN = /\b(tap|click|touch|swipe|press)\b/i;
@@ -1025,25 +849,195 @@ function hashText(value) {
   return hash;
 }
 
-function buildGeneratedDemoStockByStore({ sku = "", category = "", tags = [] }, index = 0) {
+function buildProductInventoryProfile({ sku = "", category = "", tags = [] }) {
   const normalizedSku = normalizeSku(sku);
   const normalizedCategory = readOptionalString(category, 80).toLowerCase();
   const tagSet = new Set((Array.isArray(tags) ? tags : []).map((entry) => readOptionalString(entry, 40).toLowerCase()));
-  const baseUnits = 12 + (index % 5) * 4 + (hashText(normalizedSku) % 6);
-  const demandKey = tagSet.has("clearance")
-    ? "aisle"
-    : tagSet.has("checkout-attach")
-      ? "electronics"
-      : normalizedCategory || "general";
 
+  if (normalizedCategory === "foodcourt") {
+    return { baseUnits: 180, variableUnits: 150, demandKey: "foodcourt" };
+  }
+  if (normalizedCategory === "aisle") {
+    if (tagSet.has("coffee") || normalizedSku.startsWith("GR-BEAN") || normalizedSku.startsWith("GRWB-") || normalizedSku.startsWith("GRGD-")) {
+      return { baseUnits: 96, variableUnits: 110, demandKey: "aisle" };
+    }
+    if (tagSet.has("protein") || normalizedSku.startsWith("GR-PROTEIN") || normalizedSku.startsWith("GRPW-") || normalizedSku.startsWith("GRBR-")) {
+      return { baseUnits: 130, variableUnits: 150, demandKey: "aisle" };
+    }
+    return { baseUnits: 88, variableUnits: 120, demandKey: "aisle" };
+  }
+  if (normalizedCategory === "whitegoods") {
+    if (
+      tagSet.has("fridge") ||
+      tagSet.has("washer") ||
+      tagSet.has("dryer") ||
+      tagSet.has("oven") ||
+      tagSet.has("cooktop") ||
+      normalizedSku.startsWith("WGFR-") ||
+      normalizedSku.startsWith("WGFZ-") ||
+      normalizedSku.startsWith("WGOV-") ||
+      normalizedSku.startsWith("WGCT-") ||
+      normalizedSku.startsWith("WGWA-") ||
+      normalizedSku.startsWith("WGDR-") ||
+      normalizedSku.startsWith("WGCM-") ||
+      normalizedSku.startsWith("WGRG-")
+    ) {
+      return { baseUnits: 4, variableUnits: 11, demandKey: "whitegoods" };
+    }
+    return { baseUnits: 18, variableUnits: 34, demandKey: "whitegoods" };
+  }
+  if (normalizedCategory === "electronics") {
+    if (tagSet.has("laptop") || normalizedSku.startsWith("LAP-")) {
+      return { baseUnits: 10, variableUnits: 18, demandKey: "electronics" };
+    }
+    if (normalizedSku.startsWith("TAB-") || tagSet.has("tablet")) {
+      return { baseUnits: 14, variableUnits: 22, demandKey: "electronics" };
+    }
+    if (normalizedSku.startsWith("MON-") || tagSet.has("monitor")) {
+      return { baseUnits: 16, variableUnits: 20, demandKey: "electronics" };
+    }
+    if (normalizedSku.startsWith("ACC-") || tagSet.has("accessory")) {
+      return { baseUnits: 42, variableUnits: 74, demandKey: "electronics" };
+    }
+    if (normalizedSku.startsWith("AUD-") || tagSet.has("audio")) {
+      return { baseUnits: 24, variableUnits: 32, demandKey: "electronics" };
+    }
+    if (normalizedSku.startsWith("CAM-") || tagSet.has("camera") || tagSet.has("capture")) {
+      return { baseUnits: 12, variableUnits: 18, demandKey: "electronics" };
+    }
+    return { baseUnits: 20, variableUnits: 24, demandKey: "electronics" };
+  }
+
+  return { baseUnits: 22, variableUnits: 16, demandKey: normalizedCategory || "general" };
+}
+
+function getStoreInventoryScale(storeProfile = {}) {
+  const explicitScale = Number(storeProfile?.inventoryScale);
+  if (Number.isFinite(explicitScale) && explicitScale > 0) {
+    return explicitScale;
+  }
+  const stockBase = Number(storeProfile?.stockBase || 0);
+  if (Number.isFinite(stockBase) && stockBase > 0) {
+    return Math.max(0.72, Math.min(1.58, stockBase / 13));
+  }
+  return 1;
+}
+
+function getStoreTrafficScale(storeProfile = {}) {
+  const explicitScale = Number(storeProfile?.trafficScale);
+  if (Number.isFinite(explicitScale) && explicitScale > 0) {
+    return explicitScale;
+  }
+  const inventoryScale = Number(storeProfile?.inventoryScale);
+  if (Number.isFinite(inventoryScale) && inventoryScale > 0) {
+    return inventoryScale;
+  }
+  return getStoreInventoryScale(storeProfile);
+}
+
+function estimateGeneratedStoreStockUnits(product = {}, storeProfile = {}) {
+  const normalizedSku = normalizeSku(product?.sku || product?.ProductId);
+  const inventoryProfile = buildProductInventoryProfile(product);
+  const inventoryScale = getStoreInventoryScale(storeProfile);
+  const trafficScale = getStoreTrafficScale(storeProfile);
+  const categoryBias =
+    Number(
+      storeProfile?.categoryBias?.[inventoryProfile.demandKey] ||
+        storeProfile?.categoryBias?.[readOptionalString(product?.category, 80).toLowerCase()] ||
+        storeProfile?.categoryBias?.general ||
+        1
+    ) || 1;
+  const skuVariability = hashText(`${normalizedSku}-${storeProfile?.storeId || ""}`) % Math.max(8, inventoryProfile.variableUnits);
+  const areaVariability = (hashText(`${storeProfile?.tradeArea || storeProfile?.storeLabel || ""}-${normalizedSku}`) % 9) * 0.03;
+  const tagSet = new Set(readStringArray(product?.tags, 16, 40).map((entry) => entry.toLowerCase()));
+  const tagMultiplier = tagSet.has("premium")
+    ? 0.84
+    : tagSet.has("value")
+      ? 1.12
+      : tagSet.has("checkout-attach")
+        ? 1.18
+        : tagSet.has("clearance")
+          ? 1.1
+          : 1;
+  const units =
+    (inventoryProfile.baseUnits + skuVariability) *
+    inventoryScale *
+    (0.9 + trafficScale * 0.1) *
+    categoryBias *
+    tagMultiplier *
+    (1 + areaVariability);
+
+  return Math.max(0, Math.round(units));
+}
+
+function buildGeneratedDemoStockByStore(product = {}) {
   return Object.fromEntries(
-    DEMO_STORE_PROFILES.map((storeProfile, storeIndex) => {
-      const categoryBias = Number(storeProfile.categoryBias?.[demandKey] || storeProfile.categoryBias?.[normalizedCategory] || 1);
-      const variability = hashText(`${normalizedSku}-${storeProfile.storeId}`) % 7;
-      const units = Math.max(0, Math.round((baseUnits + variability + Number(storeProfile.stockBase || 0) + (storeIndex % 3)) * categoryBias));
-      return [storeProfile.storeId, units];
-    })
+    DEMO_STORE_PROFILES.map((storeProfile) => [storeProfile.storeId, estimateGeneratedStoreStockUnits(product, storeProfile)])
   );
+}
+
+function buildGeneratedDemoStockSummary(product = {}) {
+  let totalStock = 0;
+  let maxStoreStock = 0;
+
+  for (const storeProfile of DEMO_STORE_PROFILES) {
+    const quantity = estimateGeneratedStoreStockUnits(product, storeProfile);
+    totalStock += quantity;
+    if (quantity > maxStoreStock) {
+      maxStoreStock = quantity;
+    }
+  }
+
+  return {
+    storeCount: DEMO_STORE_PROFILES.length,
+    totalStock,
+    maxStoreStock,
+    averageStock: DEMO_STORE_PROFILES.length > 0 ? Math.round(totalStock / DEMO_STORE_PROFILES.length) : 0
+  };
+}
+
+function getProductStockForStore(product = {}, storeId = "") {
+  const normalizedStoreId = readOptionalString(storeId, 80);
+  if (!normalizedStoreId) {
+    return 0;
+  }
+  if (product?.stockByStore && typeof product.stockByStore === "object" && normalizedStoreId in product.stockByStore) {
+    return Math.max(0, Number(product.stockByStore[normalizedStoreId]) || 0);
+  }
+  const storeProfile = DEMO_STORE_PROFILES.find((entry) => entry.storeId === normalizedStoreId);
+  if (!storeProfile) {
+    return 0;
+  }
+  return estimateGeneratedStoreStockUnits(product, storeProfile);
+}
+
+function buildProductFeedResponseItem(product = {}, { includeStockByStore = false } = {}) {
+  const responseItem = {
+    sku: product.sku,
+    name: product.name,
+    category: product.category,
+    brand: product.brand,
+    productPage: product.productPage,
+    image: product.image,
+    price: product.price,
+    comparePrice: product.comparePrice,
+    rating: product.rating,
+    advertiserId: product.advertiserId,
+    tags: Array.isArray(product.tags) ? product.tags : [],
+    stockSummary:
+      product.stockSummary && typeof product.stockSummary === "object"
+        ? product.stockSummary
+        : buildGeneratedDemoStockSummary(product)
+  };
+
+  if (includeStockByStore) {
+    responseItem.stockByStore =
+      product.stockByStore && typeof product.stockByStore === "object"
+        ? product.stockByStore
+        : buildGeneratedDemoStockByStore(product);
+  }
+
+  return responseItem;
 }
 
 class HttpError extends Error {
@@ -1848,7 +1842,7 @@ function resolveProductImagePath(
   return explicitImage;
 }
 
-function normalizeProductFeedItem(rawProduct, index) {
+function normalizeProductFeedItem(rawProduct, index, { includeStockByStore = false } = {}) {
   const product = rawProduct && typeof rawProduct === "object" ? rawProduct : {};
   const sku = normalizeSku(product.sku || product.ProductId || `SKU-FEED-${index + 1}`);
   const name = readOptionalString(product.name || product.ProductName, 180) || `Feed Product ${index + 1}`;
@@ -1871,29 +1865,7 @@ function normalizeProductFeedItem(rawProduct, index) {
     readOptionalString(product.advertiserId || product.ClientAdvertiserId, 120) ||
     `advertiser-${slugify(brand) || "store"}`;
   const tags = readStringArray(product.tags, 12, 40).map((entry) => entry.toLowerCase());
-  const fallbackStockByStore =
-    DEMO_STOCK_BY_SKU[sku] ||
-    buildGeneratedDemoStockByStore(
-      {
-        sku,
-        category,
-        tags
-      },
-      index
-    );
-  const stockByStoreInput =
-    product.stockByStore && typeof product.stockByStore === "object"
-      ? product.stockByStore
-      : product.inventoryByStore && typeof product.inventoryByStore === "object"
-        ? product.inventoryByStore
-        : fallbackStockByStore;
-  const stockByStore = Object.fromEntries(
-    Object.entries(stockByStoreInput)
-      .map(([storeId, quantity]) => [readOptionalString(storeId, 80), Math.max(0, Number(quantity) || 0)])
-      .filter(([storeId]) => Boolean(storeId))
-  );
-
-  return {
+  const normalized = {
     sku,
     name,
     category,
@@ -1905,18 +1877,37 @@ function normalizeProductFeedItem(rawProduct, index) {
     rating,
     advertiserId,
     tags,
-    stockByStore
+    stockSummary: buildGeneratedDemoStockSummary({ sku, category, tags })
   };
+
+  if (includeStockByStore) {
+    normalized.stockByStore = DEMO_STOCK_BY_SKU[sku] || buildGeneratedDemoStockByStore({ sku, category, tags });
+  }
+
+  return normalized;
 }
 
-async function readProductFeed() {
+async function readProductFeed(options = {}) {
+  const includeStockByStore = readBoolean(options?.includeStockByStore, false);
+  if (!includeStockByStore && Array.isArray(cachedProductFeed)) {
+    return cachedProductFeed.map((product) => ({ ...product, tags: [...(product.tags || [])], stockSummary: { ...(product.stockSummary || {}) } }));
+  }
+
   try {
     const raw = await fs.readFile(PRODUCT_FEED_FILE, "utf8");
     const parsed = JSON.parse(raw.replace(/^\uFEFF/, ""));
     const source = Array.isArray(parsed) ? parsed : PRODUCT_FEED_DEFAULT;
-    return source.map((product, index) => normalizeProductFeedItem(product, index));
+    const normalized = source.map((product, index) => normalizeProductFeedItem(product, index, { includeStockByStore }));
+    if (!includeStockByStore) {
+      cachedProductFeed = normalized;
+    }
+    return normalized;
   } catch {
-    return PRODUCT_FEED_DEFAULT.map((product, index) => normalizeProductFeedItem(product, index));
+    const normalized = PRODUCT_FEED_DEFAULT.map((product, index) => normalizeProductFeedItem(product, index, { includeStockByStore }));
+    if (!includeStockByStore) {
+      cachedProductFeed = normalized;
+    }
+    return normalized;
   }
 }
 
@@ -2541,11 +2532,11 @@ function buildGoalStoreStrategy(goal, targetProducts, screens, planningSignals =
 
   const stockEntries = [...screensByStore.keys()].map((storeId) => {
     const stockUnits = Array.isArray(targetProducts)
-      ? targetProducts.reduce((sum, product) => sum + Math.max(0, Number(product?.stockByStore?.[storeId]) || 0), 0)
+      ? targetProducts.reduce((sum, product) => sum + getProductStockForStore(product, storeId), 0)
       : 0;
     const stockedSkuCount =
       Array.isArray(targetProducts) && targetProducts.length > 0
-        ? targetProducts.filter((product) => Math.max(0, Number(product?.stockByStore?.[storeId]) || 0) > 0).length
+        ? targetProducts.filter((product) => getProductStockForStore(product, storeId) > 0).length
         : 0;
     return {
       storeId,
@@ -3048,7 +3039,7 @@ function buildGoalStockSummary(goal, targetProducts, screens) {
   const consideredStoreIds = requestedStoreId ? [requestedStoreId] : screenStoreIds;
   const totalsByStore = consideredStoreIds.map((storeId) => ({
     storeId,
-    totalUnits: targetProducts.reduce((sum, product) => sum + Math.max(0, Number(product?.stockByStore?.[storeId]) || 0), 0)
+    totalUnits: targetProducts.reduce((sum, product) => sum + getProductStockForStore(product, storeId), 0)
   }));
   totalsByStore.sort((left, right) => right.totalUnits - left.totalUnits || left.storeId.localeCompare(right.storeId));
   const best = totalsByStore[0] || { storeId: requestedStoreId || screenStoreIds[0] || "", totalUnits: 0 };
@@ -3148,17 +3139,14 @@ function buildMetricRange(values = []) {
 }
 
 function summarizeProductStockSignals(product, storeId = "") {
-  const stockByStore =
-    product?.stockByStore && typeof product.stockByStore === "object"
-      ? product.stockByStore
-      : {};
-  const numericStockValues = Object.values(stockByStore)
-    .map((quantity) => Math.max(0, Number(quantity) || 0))
-    .filter((quantity) => Number.isFinite(quantity));
+  const stockSummary =
+    product?.stockSummary && typeof product.stockSummary === "object"
+      ? product.stockSummary
+      : buildGeneratedDemoStockSummary(product);
   const normalizedStoreId = readOptionalString(storeId, 80);
-  const storeStock = normalizedStoreId ? Math.max(0, Number(stockByStore[normalizedStoreId]) || 0) : 0;
-  const totalStock = numericStockValues.reduce((sum, quantity) => sum + quantity, 0);
-  const maxStoreStock = numericStockValues.length > 0 ? Math.max(...numericStockValues) : 0;
+  const storeStock = normalizedStoreId ? getProductStockForStore(product, normalizedStoreId) : 0;
+  const totalStock = Math.max(0, Number(stockSummary.totalStock) || 0);
+  const maxStoreStock = Math.max(0, Number(stockSummary.maxStoreStock) || 0);
   return {
     storeStock,
     totalStock,
@@ -3411,9 +3399,7 @@ async function inferTargetProductsFromPromptWithAi(prompt, feed, scopedScreens =
     price: readNumericValue(entry.product.price, 0),
     comparePrice: readNumericValue(entry.product.comparePrice, 0),
     rating: readNumericValue(entry.product.rating, 0),
-    relevantStock: entry.product.stockByStore && goal?.storeId
-      ? Math.max(0, Number(entry.product.stockByStore[goal.storeId]) || 0)
-      : summarizeProductStockSignals(entry.product, goal?.storeId).relevantStock,
+    relevantStock: summarizeProductStockSignals(entry.product, goal?.storeId).relevantStock,
     totalStock: summarizeProductStockSignals(entry.product, "").totalStock
   }));
 
@@ -5758,23 +5744,49 @@ function upsertDemoScreenRecord(db, screenSpec, feed, nowIso) {
   return { action: "created", screen: record };
 }
 
+function sampleList(items = [], limit = 0) {
+  const source = Array.isArray(items) ? items : [];
+  const maxItems = Math.max(0, Number(limit) || 0);
+  if (maxItems === 0 || source.length <= maxItems) {
+    return [...source];
+  }
+
+  const sampled = [];
+  const lastIndex = source.length - 1;
+  for (let index = 0; index < maxItems; index += 1) {
+    const sampleIndex = Math.min(lastIndex, Math.round((index * lastIndex) / Math.max(1, maxItems - 1)));
+    sampled.push(source[sampleIndex]);
+  }
+
+  return sampled.filter((item, index) => sampled.indexOf(item) === index);
+}
+
 function buildDemoConfigSnapshot(db) {
+  const stageScreenSampleLimit = 36;
+  const pageScreenSampleLimit = 24;
+  const screenSummarySampleLimit = 72;
+  const quickLinkSampleLimit = 48;
+  const storeIdSampleLimit = 240;
   const pages = Array.isArray(db.pages) ? db.pages : [];
   const screens = Array.isArray(db.screens) ? db.screens : [];
   const pageMap = new Map(pages.map((page) => [page.pageId, page]));
   const screenMap = new Map(screens.map((screen) => [screen.screenId, screen]));
   const stageDefinitions = getDemoStageDefinitions().map((stage) => {
     const configuredScreenIds = stage.screenIds.filter((screenId) => screenMap.has(screenId));
+    const sampledScreenIds = sampleList(stage.screenIds, stageScreenSampleLimit);
     return {
       ...stage,
       goalDefaults: stage.goalDefaults || null,
-      screenIds: stage.screenIds,
+      screenIds: sampledScreenIds,
       screenCount: stage.screenCount,
-      configuredScreenIds,
-      missingScreenIds: stage.screenIds.filter((screenId) => !screenMap.has(screenId)),
+      configuredScreenIds: sampledScreenIds.filter((screenId) => screenMap.has(screenId)),
+      configuredScreenCount: configuredScreenIds.length,
+      missingScreenIds: sampledScreenIds.filter((screenId) => !screenMap.has(screenId)),
+      missingScreenCount: Math.max(0, stage.screenIds.length - configuredScreenIds.length),
       configured: configuredScreenIds.length === stage.screenIds.length,
       completed: configuredScreenIds.length === stage.screenIds.length,
-      quickLinks: stage.screenIds.map((screenId) => {
+      sampled: sampledScreenIds.length < stage.screenIds.length,
+      quickLinks: sampledScreenIds.map((screenId) => {
         const screenSpec = getDemoScreenSpec(screenId);
         const current = screenMap.get(screenId);
         const deviceHints = current
@@ -5802,15 +5814,16 @@ function buildDemoConfigSnapshot(db) {
   const pageSummaries = DEMO_PAGE_SPECS.map((pageSpec) => ({
     ...pageSpec,
     configured: pageMap.has(pageSpec.pageId),
-    screenIds: DEMO_SCREEN_SPECS.filter((screenSpec) => screenSpec.pageId === pageSpec.pageId).map(
-      (screenSpec) => screenSpec.screenId
+    screenIds: sampleList(
+      DEMO_SCREEN_SPECS.filter((screenSpec) => screenSpec.pageId === pageSpec.pageId).map((screenSpec) => screenSpec.screenId),
+      pageScreenSampleLimit
     ),
     screenCount: DEMO_SCREEN_SPECS.filter((screenSpec) => screenSpec.pageId === pageSpec.pageId).length,
     updatedAt: pageMap.get(pageSpec.pageId)?.updatedAt || "",
     createdAt: pageMap.get(pageSpec.pageId)?.createdAt || ""
   }));
 
-  const screenSummaries = DEMO_SCREEN_SPECS.map((screenSpec) => {
+  const allScreenSummaries = DEMO_SCREEN_SPECS.map((screenSpec) => {
     const current = screenMap.get(screenSpec.screenId);
     const deviceHints = current
       ? getScreenDeviceHints(current)
@@ -5847,12 +5860,13 @@ function buildDemoConfigSnapshot(db) {
       updatedAt: current?.updatedAt || ""
     };
   });
+  const screenSummaries = sampleList(allScreenSummaries, screenSummarySampleLimit);
 
   const counts = {
     baselinePages: DEMO_PAGE_SPECS.length,
     baselineScreens: DEMO_SCREEN_SPECS.length,
     configuredPages: pageSummaries.filter((entry) => entry.configured).length,
-    configuredScreens: screenSummaries.filter((entry) => entry.configured).length,
+    configuredScreens: allScreenSummaries.filter((entry) => entry.configured).length,
     agentRuns: Array.isArray(db.agentRuns) ? db.agentRuns.length : 0,
     telemetryEvents: Array.isArray(db.telemetryEvents) ? db.telemetryEvents.length : 0
   };
@@ -5860,7 +5874,7 @@ function buildDemoConfigSnapshot(db) {
   return {
     presetId: DEMO_PRESET_ID,
     storeId: DEMO_STORE_ID,
-    storeIds: DEMO_STORE_IDS,
+    storeIds: sampleList(DEMO_STORE_IDS, storeIdSampleLimit),
     storeCount: DEMO_STORE_IDS.length,
     title: "CYield / CMax guided demo",
     stageOrder: DEMO_STAGE_ORDER,
@@ -5874,7 +5888,7 @@ function buildDemoConfigSnapshot(db) {
         storeId: "",
         pageId: "CHECKOUT",
         advertiserId: "advertiser-northfield",
-        prompt: "Drive checkout demand for Northfield accessories in STORE_42.",
+        prompt: `Drive checkout demand for Northfield accessories in ${DEMO_STORE_LABEL}.`,
         targetSkuIds: ["ACC-MOUSE-001"]
       },
     counts,
@@ -5882,15 +5896,28 @@ function buildDemoConfigSnapshot(db) {
       preset: "/api/demo/preset",
       reset: "/api/demo/reset"
     },
-    quickLinks: screenSummaries.map((screen) => ({
+    quickLinks: sampleList(screenSummaries, quickLinkSampleLimit).map((screen) => ({
       screenId: screen.screenId,
       label: screen.label,
       stageId: screen.stageId,
       screenUrl: screen.screenUrl,
       resolverId: screen.resolverId,
       configured: screen.configured
-    }))
+    })),
+    samples: {
+      storeIds: Math.min(storeIdSampleLimit, DEMO_STORE_IDS.length),
+      stageScreens: stageScreenSampleLimit,
+      pageScreens: pageScreenSampleLimit,
+      screenSummaries: screenSummaries.length,
+      quickLinks: Math.min(quickLinkSampleLimit, screenSummaries.length)
+    }
   };
+}
+
+function isManagedDemoScreen(screen = {}) {
+  const screenId = readOptionalString(screen?.screenId, 80);
+  const storeId = readOptionalString(screen?.storeId, 80);
+  return DEMO_SCREEN_ID_SET.has(screenId) || DEMO_STORE_ID_SET.has(storeId) || LEGACY_DEMO_STORE_ID_SET.has(storeId);
 }
 
 async function applyDemoPresetToDb(db, { feed = [], reset = false } = {}) {
@@ -5899,6 +5926,7 @@ async function applyDemoPresetToDb(db, { feed = [], reset = false } = {}) {
     demoId: DEMO_PRESET_ID,
     storeId: DEMO_STORE_ID,
     seededStoreIds: DEMO_STORE_IDS,
+    prunedScreenIds: [],
     createdPageIds: [],
     updatedPageIds: [],
     createdScreenIds: [],
@@ -5919,6 +5947,14 @@ async function applyDemoPresetToDb(db, { feed = [], reset = false } = {}) {
   if (!Array.isArray(db.telemetryEvents)) {
     db.telemetryEvents = [];
   }
+
+  db.screens = db.screens.filter((screen) => {
+    if (!isManagedDemoScreen(screen)) {
+      return true;
+    }
+    result.prunedScreenIds.push(readOptionalString(screen?.screenId, 80));
+    return false;
+  });
 
   for (const pageSpec of DEMO_PAGE_SPECS) {
     const existingIndex = db.pages.findIndex((page) => page.pageId === pageSpec.pageId);
@@ -5959,7 +5995,7 @@ async function resetDemoInDb(db) {
   const result = {
     demoId: DEMO_PRESET_ID,
     storeId: DEMO_STORE_ID,
-    removedStoreIds: DEMO_STORE_IDS,
+    removedStoreIds: [...new Set([...DEMO_STORE_IDS, ...LEGACY_DEMO_STORE_IDS])],
     removedScreenIds: [],
     clearedAgentRuns: 0,
     clearedTelemetryEvents: 0
@@ -5975,12 +6011,10 @@ async function resetDemoInDb(db) {
     db.telemetryEvents = [];
   }
 
-  const demoScreenIds = new Set(DEMO_SCREEN_SPECS.map((screenSpec) => screenSpec.screenId));
   const retainedScreens = [];
   for (const screen of db.screens) {
-    const screenId = readOptionalString(screen?.screenId, 80);
-    if (demoScreenIds.has(screenId)) {
-      result.removedScreenIds.push(screenId);
+    if (isManagedDemoScreen(screen)) {
+      result.removedScreenIds.push(readOptionalString(screen?.screenId, 80));
       continue;
     }
     retainedScreens.push(screen);
@@ -6166,6 +6200,7 @@ app.get("/api/products", async (req, res) => {
     const category = readOptionalString(req.query.category, 80).toLowerCase();
     const parsedLimit = Number(req.query.limit);
     const limit = Number.isInteger(parsedLimit) ? Math.max(1, Math.min(parsedLimit, 2000)) : 120;
+    const includeStockByStore = readBoolean(req.query.includeStockByStore, false);
 
     let products = [...feed];
     if (category) {
@@ -6196,7 +6231,7 @@ app.get("/api/products", async (req, res) => {
       ).values()
     ].sort((left, right) => left.brand.localeCompare(right.brand) || left.advertiserId.localeCompare(right.advertiserId));
     res.json({
-      products: products.slice(0, limit),
+      products: products.slice(0, limit).map((product) => buildProductFeedResponseItem(product, { includeStockByStore })),
       total: products.length,
       categories,
       accounts
@@ -6303,6 +6338,7 @@ app.get("/api/screens", async (req, res) => {
   const db = await readDb();
   const pageIdFilter = toTrimmedString(req.query.pageId);
   const storeIdFilter = toTrimmedString(req.query.storeId);
+  const includeLineItems = readBoolean(req.query.includeLineItems, false);
   let screens = [...db.screens];
 
   if (pageIdFilter) {
@@ -6313,7 +6349,24 @@ app.get("/api/screens", async (req, res) => {
   }
 
   screens.sort((a, b) => a.screenId.localeCompare(b.screenId));
-  res.json({ screens });
+  res.json({
+    screens: includeLineItems
+      ? screens
+      : screens.map((screen) => ({
+          screenId: screen.screenId,
+          storeId: screen.storeId,
+          location: screen.location,
+          pageId: screen.pageId,
+          screenType: screen.screenType,
+          screenSize: screen.screenSize,
+          format: screen.format,
+          templateId: screen.templateId,
+          refreshInterval: screen.refreshInterval,
+          resolverId: getScreenDeviceHints(screen).resolverId,
+          createdAt: screen.createdAt,
+          updatedAt: screen.updatedAt
+        }))
+  });
 });
 
 app.post("/api/screens", async (req, res) => {
