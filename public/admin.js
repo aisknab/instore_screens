@@ -190,6 +190,73 @@ const DEFAULT_DEMO_CONFIG = {
   }
 };
 
+const SUPPLY_STAGE_COPY = {
+  intro: {
+    kicker: "Commercial case",
+    title: "Why build digital screens now",
+    lede: "Open with the revenue opportunity and activation proof first, then reveal the CYield supply setup."
+  },
+  workflow: {
+    kicker: "Start here",
+    title: "CYield Supply Setup",
+    lede: "Keep this to two clicks: add one anchor placement, then apply the shared preset."
+  }
+};
+
+const SUPPLY_MARKET_INTRO_CARDS = [
+  {
+    eyebrow: "Global retail media",
+    value: "$201.6B",
+    label: "2026 worldwide retail media spend forecast",
+    detail: "WARC, published March 19, 2025. +13.5% versus 2025."
+  },
+  {
+    eyebrow: "Screen management layer",
+    value: "$6.9B",
+    label: "2025 digital signage software market",
+    detail: "Grand View Research. Projected to $13.4B by 2033."
+  },
+  {
+    eyebrow: "APAC build case",
+    value: "$4.3B + $1.3B",
+    label: "2024 APAC retail media platform plus in-store digital display markets",
+    detail: "Grand View Research. Platform to $7.4B by 2030; display to $3.6B by 2033."
+  },
+  {
+    eyebrow: "Proven activation",
+    value: "+14% to +28.3%",
+    label: "reported in-store sales lift",
+    detail: "Albertsons Media Collective 2026 case study and SMG / Kantar 2025 benchmark."
+  }
+];
+
+const SUPPLY_MARKET_INTRO_SOURCE_LINKS = [
+  {
+    label: "WARC Retail Media Radar",
+    href: "https://www.warc.com/content/article/retail-media-radar-q1-2025/en-gb/159606"
+  },
+  {
+    label: "Grand View digital signage software",
+    href: "https://www.grandviewresearch.com/horizon/statistics/digital-signage-market/component/software/global"
+  },
+  {
+    label: "Grand View APAC retail media platform",
+    href: "https://www.grandviewresearch.com/horizon/outlook/retail-media-platform-market/asia-pacific"
+  },
+  {
+    label: "Grand View APAC in-store digital display",
+    href: "https://www.grandviewresearch.com/horizon/outlook/in-store-digital-advertising-display-market/asia-pacific"
+  },
+  {
+    label: "Albertsons Media Collective",
+    href: "https://www.retailtouchpoints.com/news/albertsons-media-collective-launches-store-level-measurement-to-gauge-ads-true-impact/156271/"
+  },
+  {
+    label: "SMG / Kantar effectiveness study",
+    href: "https://smg.team/wp-content/uploads/2025/10/The-Advertising-Effectiveness-of-In-Store-Retail-Media-SMG-Report.pdf"
+  }
+];
+
 const state = {
   stage: "supply",
   options: null,
@@ -222,6 +289,7 @@ const state = {
   goalPromptInferenceModel: "",
   goalPromptInferenceReasoning: "",
   goalPromptInferenceTargetSource: "",
+  goalPromptAwaitingRun: false,
   goalRetailerRateCard: null,
   goalPlacementSelections: new Map(),
   goalBudgetPlanId: "",
@@ -233,7 +301,9 @@ const state = {
   previewRailKey: "",
   previewRailRequestId: 0,
   presetSimulatedInSession: false,
-  workspaceOverlayPollId: null
+  marketIntroAcknowledged: false,
+  workspaceOverlayPollId: null,
+  pendingActions: new Set()
 };
 // Keep the real preset path for normal-sized demos; only short-circuit massive rollouts that time out the UI.
 const LARGE_DEMO_PRESET_SCREEN_THRESHOLD = 1000;
@@ -244,6 +314,75 @@ function qs(selector) {
 
 function qsa(selector) {
   return [...document.querySelectorAll(selector)];
+}
+
+function normalizePendingActionKey(actionKey) {
+  return String(actionKey || "").trim();
+}
+
+function hasPendingAction(actionKey) {
+  const normalizedKey = normalizePendingActionKey(actionKey);
+  if (!normalizedKey) {
+    return false;
+  }
+  for (const pendingKey of state.pendingActions) {
+    if (pendingKey === normalizedKey || pendingKey.startsWith(`${normalizedKey}:`)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function getPendingActionValue(actionKey) {
+  const normalizedKey = normalizePendingActionKey(actionKey);
+  if (!normalizedKey) {
+    return "";
+  }
+  for (const pendingKey of state.pendingActions) {
+    if (pendingKey === normalizedKey) {
+      return "";
+    }
+    if (pendingKey.startsWith(`${normalizedKey}:`)) {
+      return pendingKey.slice(normalizedKey.length + 1);
+    }
+  }
+  return "";
+}
+
+function setPendingAction(actionKey, pending) {
+  const normalizedKey = normalizePendingActionKey(actionKey);
+  if (!normalizedKey) {
+    return;
+  }
+  const hadKey = state.pendingActions.has(normalizedKey);
+  if (pending) {
+    if (!hadKey) {
+      state.pendingActions.add(normalizedKey);
+      renderAll();
+    }
+    return;
+  }
+  if (hadKey) {
+    state.pendingActions.delete(normalizedKey);
+    renderAll();
+  }
+}
+
+async function runPendingAction(actionKey, task, { lockKey = actionKey } = {}) {
+  const normalizedActionKey = normalizePendingActionKey(actionKey);
+  const normalizedLockKey = normalizePendingActionKey(lockKey);
+  if (!normalizedActionKey || typeof task !== "function") {
+    return undefined;
+  }
+  if (normalizedLockKey && hasPendingAction(normalizedLockKey)) {
+    return undefined;
+  }
+  setPendingAction(normalizedActionKey, true);
+  try {
+    return await task();
+  } finally {
+    setPendingAction(normalizedActionKey, false);
+  }
 }
 
 const elements = {
@@ -275,6 +414,7 @@ const elements = {
   pagesList: qs("#pagesList"),
   screensList: qs("#screensList"),
   pageForm: qs("#page-form"),
+  pageSubmitBtn: qs("#page-form button[type='submit']"),
   pageId: qs("#pageId"),
   pageIdCount: qs("#pageIdCount"),
   pageTypeGrid: qs("#pageTypeGrid"),
@@ -306,6 +446,8 @@ const elements = {
   goalFlightStart: qs("#goalFlightStart"),
   goalFlightEnd: qs("#goalFlightEnd"),
   goalPrompt: qs("#goalPrompt"),
+  goalPromptRunBtn: qs("#goalPromptRunBtn"),
+  goalPromptAiStatus: qs("#goalPromptAiStatus"),
   goalBrandAccount: qs("#goalBrandAccount"),
   goalProductCategory: qs("#goalProductCategory"),
   goalProductSearch: qs("#goalProductSearch"),
@@ -335,6 +477,12 @@ const elements = {
   monitoringOverviewKicker: qs("#monitoringOverviewKicker"),
   monitoringOverviewTitle: qs("#monitoringOverviewTitle"),
   monitoringOverviewLede: qs("#monitoringOverviewLede"),
+  supplyStageKicker: qs("#supplyStageKicker"),
+  supplyStageTitle: qs("#supplyStageTitle"),
+  supplyStageLede: qs("#supplyStageLede"),
+  supplyMarketIntro: qs("#supplyMarketIntro"),
+  supplyWorkflowShell: qs("#supplyWorkflowShell"),
+  supplyAdvancedCard: qs("#supplyAdvancedCard"),
   monitoringOverviewSignals: qs("#monitoringOverviewSignals"),
   monitoringOverviewAsideEyebrow: qs("#monitoringOverviewAsideEyebrow"),
   monitoringOverviewAsideTitle: qs("#monitoringOverviewAsideTitle"),
@@ -365,6 +513,42 @@ function escapeHtml(value) {
     .replaceAll('"', "&quot;");
 }
 
+function buildAiAssistMarkup({
+  kicker = "AI Assist",
+  title = "",
+  body = "",
+  detail = "",
+  variant = "ready",
+  compact = false
+} = {}) {
+  const classNames = [
+    "ai-ass",
+    variant ? `ai-ass--${variant}` : "",
+    compact ? "ai-ass--compact" : ""
+  ]
+    .filter(Boolean)
+    .join(" ");
+  const busyAttr = variant === "loading" ? ' aria-busy="true"' : "";
+  return `
+    <section class="${escapeHtml(classNames)}"${busyAttr}>
+      <div class="ai-ass__visual" aria-hidden="true">
+        <span class="ai-ass__orb"></span>
+        <span class="ai-ass__orb"></span>
+        <span class="ai-ass__orb"></span>
+        <span class="ai-ass__spark"></span>
+        <span class="ai-ass__spark"></span>
+        <span class="ai-ass__spark"></span>
+      </div>
+      <div class="ai-ass__copy">
+        <p class="ai-ass__kicker">${escapeHtml(kicker)}</p>
+        <strong>${escapeHtml(title)}</strong>
+        <p>${escapeHtml(body)}</p>
+        ${detail ? `<span class="ai-ass__detail">${escapeHtml(detail)}</span>` : ""}
+      </div>
+    </section>
+  `;
+}
+
 function defaultValue(options, preferred) {
   if (!Array.isArray(options) || options.length === 0) {
     return preferred || "";
@@ -378,6 +562,47 @@ function formatCount(value) {
 
 function formatMoney(value) {
   return `$${Math.round(Number(value || 0)).toLocaleString()}`;
+}
+
+function getMarketIntroStorageKey(workspaceId = getCurrentWorkspace()?.id) {
+  const normalizedWorkspaceId = String(workspaceId || "").trim();
+  return normalizedWorkspaceId ? `instore-demo-market-intro:${normalizedWorkspaceId}` : "";
+}
+
+function readMarketIntroAcknowledged(workspaceId = getCurrentWorkspace()?.id) {
+  const storageKey = getMarketIntroStorageKey(workspaceId);
+  if (!storageKey) {
+    return false;
+  }
+  try {
+    return window.sessionStorage.getItem(storageKey) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function syncMarketIntroAcknowledged(workspaceId = getCurrentWorkspace()?.id) {
+  state.marketIntroAcknowledged = readMarketIntroAcknowledged(workspaceId);
+}
+
+function setMarketIntroAcknowledged(acknowledged) {
+  const storageKey = getMarketIntroStorageKey();
+  state.marketIntroAcknowledged = Boolean(acknowledged);
+  if (storageKey) {
+    try {
+      if (state.marketIntroAcknowledged) {
+        window.sessionStorage.setItem(storageKey, "1");
+      } else {
+        window.sessionStorage.removeItem(storageKey);
+      }
+    } catch {
+      // Ignore storage failures and keep the in-memory state.
+    }
+  }
+}
+
+function isSupplyMarketIntroActive() {
+  return !state.marketIntroAcknowledged;
 }
 
 function parseDateInputValue(value) {
@@ -630,6 +855,37 @@ function clearGoalPromptInferenceTimer() {
   }
 }
 
+function exitPromptSelectionMode() {
+  if (state.goalSkuSelectionMode === "prompt") {
+    setGoalSkuSelectionMode(state.selectedGoalSkuIds.size > 0 ? "manual" : "");
+  }
+}
+
+function resetGoalPromptInferenceState({ awaitingRun = false } = {}) {
+  clearGoalPromptInferenceTimer();
+  state.goalPromptInferenceRequestId += 1;
+  state.goalPromptInferencePending = false;
+  state.goalPromptInferenceReasoning = "";
+  state.goalPromptInferenceTargetSource = "";
+  state.goalPromptAwaitingRun = awaitingRun && Boolean(getGoalPromptText());
+}
+
+function markGoalPromptSelectionDirty() {
+  exitPromptSelectionMode();
+  resetGoalPromptInferenceState({ awaitingRun: Boolean(getGoalPromptText()) });
+  renderGoalProducts();
+}
+
+function canRunGoalPromptSelection() {
+  return (
+    Boolean(getGoalPromptText()) &&
+    Boolean(getSelectedGoalAdvertiserId()) &&
+    !state.goalPromptInferencePending &&
+    !hasPendingAction("goalPlan") &&
+    !hasPendingAction("goalPlanApply")
+  );
+}
+
 function tokenizeGoalMatch(value) {
   return readTextValue(value)
     .toLowerCase()
@@ -844,89 +1100,67 @@ function buildGoalPromptInferencePayload() {
   };
 }
 
-function applyGoalPromptSelection({ passiveRender = false } = {}) {
-  const prompt = getGoalPromptText();
-  clearGoalPromptInferenceTimer();
-  if (!prompt) {
-    state.goalPromptInferenceRequestId += 1;
-    state.goalPromptInferencePending = false;
-    state.goalPromptInferenceReasoning = "";
-    state.goalPromptInferenceTargetSource = "";
-    if (state.goalSkuSelectionMode === "prompt") {
-      setGoalSkuSelectionMode("");
-      setSelectedGoalSkus([]);
-      return;
-    }
-    renderGoalProducts();
+async function applyGoalPromptSelection() {
+  if (!canRunGoalPromptSelection()) {
+    showStatus("Add a brief and choose an account before asking AI to choose SKU's.", true);
     return;
   }
 
   const payload = buildGoalPromptInferencePayload();
-  if (!payload.advertiserId) {
-    state.goalPromptInferenceRequestId += 1;
-    state.goalPromptInferencePending = false;
-    state.goalPromptInferenceReasoning = "";
-    state.goalPromptInferenceTargetSource = "";
-    if (state.goalSkuSelectionMode === "prompt") {
-      setGoalSkuSelectionMode("");
-      setSelectedGoalSkus([]);
-      return;
-    }
-    renderGoalProducts();
-    return;
-  }
-
   const requestId = state.goalPromptInferenceRequestId + 1;
+  clearGoalPromptInferenceTimer();
   state.goalPromptInferenceRequestId = requestId;
   state.goalPromptInferencePending = true;
+  state.goalPromptInferenceReasoning = "";
+  state.goalPromptInferenceTargetSource = "";
+  state.goalPromptAwaitingRun = false;
   renderGoalProducts();
 
-  const runInference = async () => {
-    try {
-      const response = await requestJson("/api/goal-skus/infer", {
-        method: "POST",
-        body: JSON.stringify(payload)
-      });
-      if (requestId !== state.goalPromptInferenceRequestId) {
-        return;
-      }
-      state.goalPromptInferencePending = false;
-      state.goalPromptInferenceProvider = readTextValue(
-        response?.inferenceProvider || state.options?.goalPromptInferenceProvider || ""
-      );
-      state.goalPromptInferenceModel = readTextValue(
-        response?.inferenceModel || state.options?.goalPromptInferenceModel || ""
-      );
-      state.goalPromptInferenceReasoning = readTextValue(response?.inferenceReasoning || "");
-      state.goalPromptInferenceTargetSource = readTextValue(response?.targetSource || "");
-      setGoalSkuSelectionMode("prompt", response?.matchedTerms || []);
-      if (String(response?.targetSource || "").startsWith("prompt")) {
-        setSelectedGoalSkus(response?.targetSkuIds || []);
-      } else {
-        setSelectedGoalSkus([]);
-      }
-    } catch (error) {
-      if (requestId !== state.goalPromptInferenceRequestId) {
-        return;
-      }
-      state.goalPromptInferencePending = false;
-      state.goalPromptInferenceTargetSource = "prompt";
-      state.goalPromptInferenceReasoning = "";
-      const inferred = inferGoalSkuProductsFromPrompt(payload.prompt);
-      setGoalSkuSelectionMode("prompt", inferred.matchedTerms);
-      setSelectedGoalSkus(inferred.products.map((product) => product.sku));
-      if (!passiveRender) {
-        showStatus("AI brief fell back to local matching because the server inference request failed.", true);
-      }
-      // Keep working locally if the server-side inference path is unavailable.
-      // eslint-disable-next-line no-console
-      console.warn(error);
+  try {
+    const response = await requestJson("/api/goal-skus/infer", {
+      method: "POST",
+      body: JSON.stringify(payload)
+    });
+    if (requestId !== state.goalPromptInferenceRequestId) {
+      return;
     }
-  };
-
-  state.goalPromptInferenceTimer = window.setTimeout(() => {
-    runInference().catch(handleError);
-  }, passiveRender ? 280 : 0);
+    state.goalPromptInferencePending = false;
+    state.goalPromptInferenceProvider = readTextValue(
+      response?.inferenceProvider || state.options?.goalPromptInferenceProvider || ""
+    );
+    state.goalPromptInferenceModel = readTextValue(
+      response?.inferenceModel || state.options?.goalPromptInferenceModel || ""
+    );
+    state.goalPromptInferenceReasoning = readTextValue(response?.inferenceReasoning || "");
+    state.goalPromptInferenceTargetSource = readTextValue(response?.targetSource || "");
+    state.goalPromptAwaitingRun = false;
+    setGoalSkuSelectionMode("prompt", response?.matchedTerms || []);
+    if (String(response?.targetSource || "").startsWith("prompt")) {
+      setSelectedGoalSkus(response?.targetSkuIds || []);
+    } else {
+      setSelectedGoalSkus([]);
+    }
+    if (state.selectedGoalSkuIds.size > 0) {
+      showStatus(`AI chose ${state.selectedGoalSkuIds.size} priority SKU(s) from the brief.`);
+    } else {
+      showStatus("AI reviewed the brief but did not find a strong SKU shortlist yet.");
+    }
+  } catch (error) {
+    if (requestId !== state.goalPromptInferenceRequestId) {
+      return;
+    }
+    state.goalPromptInferencePending = false;
+    state.goalPromptInferenceTargetSource = "prompt";
+    state.goalPromptInferenceReasoning = "";
+    state.goalPromptAwaitingRun = false;
+    const inferred = inferGoalSkuProductsFromPrompt(payload.prompt);
+    setGoalSkuSelectionMode("prompt", inferred.matchedTerms);
+    setSelectedGoalSkus(inferred.products.map((product) => product.sku));
+    showStatus("AI brief fell back to local matching because the server inference request failed.", true);
+    // Keep working locally if the server-side inference path is unavailable.
+    // eslint-disable-next-line no-console
+    console.warn(error);
+  }
 }
 
 function getGoalPromptSelectionNote() {
@@ -937,7 +1171,10 @@ function getGoalPromptSelectionNote() {
     return "";
   }
   if (state.goalPromptInferencePending) {
-    return "AI is reviewing the assortment...";
+    return "AI is choosing the shortlist...";
+  }
+  if (state.goalPromptAwaitingRun) {
+    return "Brief ready. Click Let AI choose SKU's to refresh the shortlist.";
   }
   if (isGoalPromptSelectionActive()) {
     if (state.selectedGoalSkuIds.size > 0) {
@@ -946,7 +1183,7 @@ function getGoalPromptSelectionNote() {
       }
       return matchedTerms.length > 0
         ? `AI brief matched ${matchedTerms.join(", ")}.`
-        : `AI brief selected ${state.selectedGoalSkuIds.size} SKU(s) in real time.`;
+        : `AI brief selected ${state.selectedGoalSkuIds.size} SKU(s).`;
     }
     if (reasoning) {
       return reasoning;
@@ -954,9 +1191,101 @@ function getGoalPromptSelectionNote() {
     return "AI brief is active, but no matching SKUs were found yet.";
   }
   if (state.selectedGoalSkuIds.size > 0) {
-    return "Manual SKU picks are active. Edit the AI brief again to switch back to AI selection.";
+    return prompt
+      ? "Manual SKU picks are active. Click Let AI choose SKU's if you want to refresh them from the brief."
+      : "Manual SKU picks are active.";
   }
-  return "Pick SKUs below, or edit the AI brief to auto-select them.";
+  return "Pick SKUs below, or use the AI brief button to shortlist them.";
+}
+
+function renderGoalPromptAssistant() {
+  const prompt = getGoalPromptText();
+  const hasAccount = Boolean(getSelectedGoalAdvertiserId());
+  const hasSelection = state.selectedGoalSkuIds.size > 0;
+  const loading = state.goalPromptInferencePending;
+  const runDisabled = !prompt || !hasAccount || loading || hasPendingAction("goalPlan") || hasPendingAction("goalPlanApply");
+  if (elements.goalPromptRunBtn) {
+    elements.goalPromptRunBtn.disabled = runDisabled;
+    elements.goalPromptRunBtn.textContent = loading ? "AI choosing SKU's..." : "Let AI choose SKU's";
+  }
+  if (!elements.goalPromptAiStatus) {
+    return;
+  }
+
+  if (!prompt) {
+    elements.goalPromptAiStatus.innerHTML = buildAiAssistMarkup({
+      kicker: "AI Shortlist",
+      title: "Optional shortlist help",
+      body: "Write a brief, then click Let AI choose SKU's to build a priority product shortlist.",
+      detail: "AI reads your brief, account, assortment filters, and placement scope.",
+      variant: "ready",
+      compact: true
+    });
+    return;
+  }
+
+  if (!hasAccount) {
+    elements.goalPromptAiStatus.innerHTML = buildAiAssistMarkup({
+      kicker: "AI Shortlist",
+      title: "Choose an account first",
+      body: "The brief is ready, but AI needs a brand account before it can choose the right SKU's.",
+      detail: "Step 1 sets the assortment AI is allowed to search.",
+      variant: "ready",
+      compact: true
+    });
+    return;
+  }
+
+  if (loading) {
+    elements.goalPromptAiStatus.innerHTML = buildAiAssistMarkup({
+      kicker: "AI Working",
+      title: "Choosing the best SKU shortlist",
+      body: "Scanning the brief, assortment signals, and placement scope for the strongest in-store fit.",
+      detail: "This updates the shortlist without changing your manual filters.",
+      variant: "loading",
+      compact: true
+    });
+    return;
+  }
+
+  if (state.goalPromptAwaitingRun) {
+    elements.goalPromptAiStatus.innerHTML = buildAiAssistMarkup({
+      kicker: "Brief Ready",
+      title: "AI is standing by",
+      body: "Click Let AI choose SKU's when you want this brief to replace or refresh the current shortlist.",
+      detail: hasSelection ? "Your current SKU picks stay in place until you ask AI to update them." : "No AI shortlist has been generated for this brief yet.",
+      variant: "ready",
+      compact: true
+    });
+    return;
+  }
+
+  if (isGoalPromptSelectionActive()) {
+    elements.goalPromptAiStatus.innerHTML = buildAiAssistMarkup({
+      kicker: "AI Shortlist Ready",
+      title: hasSelection ? `AI picked ${state.selectedGoalSkuIds.size} SKU(s)` : "AI reviewed the brief",
+      body:
+        readTextValue(state.goalPromptInferenceReasoning) ||
+        (hasSelection
+          ? "The shortlist now reflects the current brief and assortment scope."
+          : "The brief is active, but AI did not find a strong shortlist yet."),
+      detail: getGoalPromptSelectionNote(),
+      variant: "success",
+      compact: true
+    });
+    return;
+  }
+
+  elements.goalPromptAiStatus.innerHTML = buildAiAssistMarkup({
+    kicker: "AI Shortlist",
+    title: hasSelection ? "Current picks are manual" : "Brief ready for AI",
+    body: hasSelection
+      ? "The current shortlist is manual. Click Let AI choose SKU's if you want the brief to replace it."
+      : "Click Let AI choose SKU's to build a shortlist from this brief.",
+    detail: getGoalPromptSelectionNote(),
+    variant: "ready",
+    compact: true
+  });
 }
 
 function getSelectedGoalProducts() {
@@ -1641,13 +1970,18 @@ function renderWorkspaceSelector(message = "") {
   if (!elements.workspaceOverlay || !elements.workspaceGrid || !elements.workspaceOverlayMessage) {
     return;
   }
+  const pendingWorkspaceId = getPendingActionValue("workspaceClaim");
+  const workspaceClaimPending = hasPendingAction("workspaceClaim");
   const workspaces = Array.isArray(state.workspaceStatus?.workspaces) ? state.workspaceStatus.workspaces : [];
   elements.workspaceOverlayMessage.textContent = String(message || "").trim();
   elements.workspaceGrid.innerHTML = workspaces
     .map((workspace) => {
       const inUseByOther = workspace.status === "claimed";
+      const claimingThisWorkspace = pendingWorkspaceId === String(workspace.id || "").trim();
       const actionLabel = inUseByOther
         ? `In use | ${formatLeaseRemaining(workspace.remainingMs || 0)}`
+        : claimingThisWorkspace
+          ? "Claiming workspace..."
         : workspace.status === "claimed-by-you"
           ? "Resume workspace"
           : "Open workspace";
@@ -1664,7 +1998,7 @@ function renderWorkspaceSelector(message = "") {
           data-workspace-id="${escapeHtml(workspace.id)}"
           data-status="${escapeHtml(workspace.status || "available")}"
           style="--workspace-accent: ${escapeHtml(workspace.accent || "#4fa7ff")};"
-          ${inUseByOther ? "disabled" : ""}
+          ${inUseByOther || workspaceClaimPending ? "disabled" : ""}
         >
           <span class="workspace-card__avatar">${escapeHtml(workspace.initials || "WS")}</span>
           <span class="workspace-card__header">
@@ -1687,6 +2021,7 @@ function renderWorkspaceSelector(message = "") {
 async function refreshWorkspaceStatus({ silent = false } = {}) {
   const payload = await requestJson("/api/workspaces");
   state.workspaceStatus = payload;
+  syncMarketIntroAcknowledged();
   updateWorkspaceBadge();
   if (!getCurrentWorkspace() && !elements.workspaceOverlay?.hidden) {
     renderWorkspaceSelector(silent ? elements.workspaceOverlayMessage?.textContent || "" : "");
@@ -1698,24 +2033,28 @@ async function claimWorkspace(workspaceId) {
   if (!workspaceId) {
     return;
   }
-  try {
-    renderWorkspaceSelector("Claiming workspace...");
-    state.workspaceStatus = await requestJson("/api/workspaces/claim", {
-      method: "POST",
-      body: JSON.stringify({ workspaceId })
-    });
-    window.location.reload();
-  } catch (error) {
-    renderWorkspaceSelector(error.message || "Unable to claim workspace.");
-    throw error;
-  }
+  return runPendingAction(`workspaceClaim:${workspaceId}`, async () => {
+    try {
+      renderWorkspaceSelector("Claiming workspace...");
+      state.workspaceStatus = await requestJson("/api/workspaces/claim", {
+        method: "POST",
+        body: JSON.stringify({ workspaceId })
+      });
+      window.location.reload();
+    } catch (error) {
+      renderWorkspaceSelector(error.message || "Unable to claim workspace.");
+      throw error;
+    }
+  }, { lockKey: "workspaceClaim" });
 }
 
 async function releaseWorkspace() {
-  await requestJson("/api/workspaces/release", {
-    method: "POST"
+  return runPendingAction("workspaceRelease", async () => {
+    await requestJson("/api/workspaces/release", {
+      method: "POST"
+    });
+    window.location.reload();
   });
-  window.location.reload();
 }
 
 async function ensureWorkspaceClaim() {
@@ -1728,6 +2067,81 @@ async function ensureWorkspaceClaim() {
   setWorkspaceOverlayVisible(true);
   showStatus("Select an avatar to open an isolated demo workspace.");
   await new Promise(() => undefined);
+}
+
+function applySupplyStageCopy() {
+  const stageCopy = isSupplyMarketIntroActive() ? SUPPLY_STAGE_COPY.intro : SUPPLY_STAGE_COPY.workflow;
+  if (elements.supplyStageKicker) {
+    elements.supplyStageKicker.textContent = stageCopy.kicker;
+  }
+  if (elements.supplyStageTitle) {
+    elements.supplyStageTitle.textContent = stageCopy.title;
+  }
+  if (elements.supplyStageLede) {
+    elements.supplyStageLede.textContent = stageCopy.lede;
+  }
+}
+
+function buildSupplyMarketIntroMarkup() {
+  const currentWorkspace = getCurrentWorkspace();
+  const avatarLabel = currentWorkspace?.label || "This avatar";
+  const metricCards = SUPPLY_MARKET_INTRO_CARDS.map(
+    (card) => `
+      <article class="supply-market-intro__metric">
+        <p class="section-kicker">${escapeHtml(card.eyebrow)}</p>
+        <strong>${escapeHtml(card.value)}</strong>
+        <span>${escapeHtml(card.label)}</span>
+        <p>${escapeHtml(card.detail)}</p>
+      </article>
+    `
+  ).join("");
+  const sourceLinks = SUPPLY_MARKET_INTRO_SOURCE_LINKS.map(
+    (link) =>
+      `<a href="${escapeHtml(link.href)}" target="_blank" rel="noreferrer">${escapeHtml(link.label)}</a>`
+  ).join('<span aria-hidden="true"> | </span>');
+
+  return `
+    <section class="supply-market-intro__hero">
+      <div class="supply-market-intro__copy">
+        <p class="section-kicker">Open With The Revenue Story</p>
+        <h4>${escapeHtml(avatarLabel)} starts on the commercial proof, not on configuration.</h4>
+        <p class="supply-market-intro__lede">
+          Retail media is already at platform scale, the screen-management layer is already a software market, APAC is already large enough to matter on its own, and measured in-store campaigns are already moving sales. The feature is not inventing demand. It gives Criteo a way to configure, monetize, and measure an existing spend pool on real retail screens.
+        </p>
+      </div>
+      <div class="supply-market-intro__actions">
+        <button id="marketIntroContinueBtn" type="button" class="btn btn--primary btn--large">Reveal CYield step 1</button>
+        <p class="supply-market-intro__hint">
+          Use the cards below to land the revenue case first, then move into the two-click supply workflow.
+        </p>
+      </div>
+    </section>
+    <div class="supply-market-intro__grid">${metricCards}</div>
+    <section class="supply-market-intro__scenario">
+      <p class="section-kicker">Modeled Revenue Scenario</p>
+      <h4>Small share assumptions already turn into meaningful upside.</h4>
+      <p>
+        If this capability routed even 0.25% of WARC's $201.6B global retail media forecast for 2026, that would equal roughly $504M of media flowing through the feature. If Criteo captured 1% of the 2024 APAC retail media platform pool, that is about $43M in platform-style revenue. These are scenario models, not committed bookings.
+      </p>
+    </section>
+    <p class="supply-market-intro__sources"><strong>Sources:</strong> ${sourceLinks}</p>
+  `;
+}
+
+function renderSupplyMarketIntro() {
+  applySupplyStageCopy();
+  const introActive = isSupplyMarketIntroActive();
+
+  if (elements.supplyMarketIntro) {
+    elements.supplyMarketIntro.hidden = !introActive;
+    elements.supplyMarketIntro.innerHTML = introActive ? buildSupplyMarketIntroMarkup() : "";
+  }
+  if (elements.supplyWorkflowShell) {
+    elements.supplyWorkflowShell.hidden = introActive;
+  }
+  if (elements.supplyAdvancedCard) {
+    elements.supplyAdvancedCard.hidden = introActive;
+  }
 }
 
 function normalizeStage(rawStage, fallbackStage) {
@@ -2341,7 +2755,62 @@ function formatPresenterTelemetryLeader(entries = [], type) {
   return `Top SKU ${entry.productName || entry.sku || "Tracked item"} (${formatCount(entry.playCount || 0)} plays)`;
 }
 
+function buildSupplyMarketIntroPresenterPayload() {
+  return {
+    stageDescription: "Lead with the revenue case and activation proof, then reveal the two-click CYield supply workflow.",
+    speakerSummary:
+      "Before touching the workflow, anchor the story on market size and proof: retail media is already massive, the screen-management layer is already a software market, APAC is already material, and in-store activation is already showing measurable lift.",
+    presenterNotes: [
+      "Start on the market, not on the mechanics: this is a revenue opening, not a UI opening.",
+      "Use the global retail media number to show budget scale, then use signage software and APAC platform numbers to prove the tooling layer is also real.",
+      "Call out the activation studies as operational proof that these screens can move sales, not just generate impressions.",
+      "Be explicit that the $504M and $43M figures are modeled scenarios from published market sizes, not committed forecasts."
+    ],
+    proofPoints: [
+      "$201.6B global retail media by 2026",
+      "$6.9B digital signage software layer",
+      "$4.3B APAC retail media platform market",
+      "+14% to +28.3% reported sales lift"
+    ],
+    supportingModules: [
+      "Commercial opening story",
+      "Global and APAC market sizing",
+      "Activation proof",
+      "Modeled revenue scenario"
+    ],
+    demoActions: [
+      "Land the global retail media number first.",
+      "Bridge into the screen-management and APAC opportunity.",
+      "Use the lift studies to show the inventory can drive outcomes.",
+      "Then reveal CYield step 1 and move into the supply demo."
+    ],
+    qaPrompts: [
+      "If someone challenges the upside math, state that the scenario uses 0.25% of global retail media spend and 1% of the APAC platform pool.",
+      "If someone asks whether this is media or software, explain that the feature sits between both markets: monetizable media supply plus the management layer behind it."
+    ],
+    liveNarrative:
+      "Open on the business case: $201.6B global retail media, $6.9B signage software, a $4.3B APAC retail media platform market, and measured in-store sales lift already on the board.",
+    detailRows: [
+      buildPresenterDetailRow("Global market", "$201.6B retail media spend forecast for 2026, with WARC projecting +13.5% versus 2025."),
+      buildPresenterDetailRow("Screen-management layer", "$6.9B global digital signage software market in 2025, projected to $13.4B by 2033."),
+      buildPresenterDetailRow("APAC opening", "$4.3B APAC retail media platform market in 2024 plus a $1.3B APAC in-store digital display market."),
+      buildPresenterDetailRow(
+        "Activation proof",
+        "Albertsons reported +14% in-store sales lift in a 116-store case study; SMG / Kantar reported +28.3% average product sales lift across 12,558 campaigns."
+      ),
+      buildPresenterDetailRow(
+        "Modeled upside",
+        "0.25% of $201.6B implies roughly $504M of routed media. 1% of $4.3B implies roughly $43M of platform revenue."
+      )
+    ]
+  };
+}
+
 function buildSupplyPresenterPayload(stageConfig) {
+  if (isSupplyMarketIntroActive()) {
+    return buildSupplyMarketIntroPresenterPayload();
+  }
+
   const { configured, total, remaining } = getSupplyProgress();
   const demoStoreCount = getDemoStoreCount();
   const manual = getManualSupplyConfig();
@@ -2614,16 +3083,28 @@ function buildPresenterSnapshot() {
   const telemetryTotals = state.telemetrySummary?.totals || {};
   const primaryScreenId = getPrimaryScreenId();
   const stagePayload = buildPresenterStagePayload(stageConfig);
+  const presenterNotes =
+    Array.isArray(stagePayload.presenterNotes) && stagePayload.presenterNotes.length > 0
+      ? stagePayload.presenterNotes
+      : Array.isArray(stageConfig.presenterNotes)
+        ? stageConfig.presenterNotes
+        : [];
+  const proofPoints =
+    Array.isArray(stagePayload.proofPoints) && stagePayload.proofPoints.length > 0
+      ? stagePayload.proofPoints
+      : Array.isArray(stageConfig.proofPoints)
+        ? stageConfig.proofPoints
+        : [];
   return {
     updatedAt: new Date().toISOString(),
     updatedAtText: formatTimestamp(new Date()),
     stage: state.stage,
     stageLabel: stageConfig.label || titleCase(state.stage),
-    stageDescription: stageConfig.description || "",
+    stageDescription: readTextValue(stagePayload.stageDescription) || stageConfig.description || "",
     stagePill: getStagePillText(state.stage),
-    speakerSummary: String(stageConfig.speakerSummary || "").trim(),
-    presenterNotes: Array.isArray(stageConfig.presenterNotes) ? stageConfig.presenterNotes : [],
-    proofPoints: Array.isArray(stageConfig.proofPoints) ? stageConfig.proofPoints : [],
+    speakerSummary: readTextValue(stagePayload.speakerSummary) || String(stageConfig.speakerSummary || "").trim(),
+    presenterNotes,
+    proofPoints,
     supportingModules: Array.isArray(stagePayload.supportingModules) ? stagePayload.supportingModules : [],
     demoActions: Array.isArray(stagePayload.demoActions) ? stagePayload.demoActions : [],
     qaPrompts: Array.isArray(stagePayload.qaPrompts) ? stagePayload.qaPrompts : [],
@@ -2729,8 +3210,9 @@ function syncGoalFormFromRun(run) {
   }
   clearGoalPromptInferenceTimer();
   state.goalPromptInferencePending = false;
-  state.goalPromptInferenceReasoning = "";
-  state.goalPromptInferenceTargetSource = "";
+  state.goalPromptInferenceReasoning = readTextValue(run?.goal?.inferenceReasoning || "");
+  state.goalPromptInferenceTargetSource = readTextValue(run?.goal?.targetSource || "");
+  state.goalPromptAwaitingRun = false;
   state.goalScopeStepAcknowledged = Boolean(run?.goal);
   state.goalPlanningStep = run?.goal ? 3 : 1;
   setGoalSkuSelectionMode(
@@ -2996,6 +3478,7 @@ function syncBuyingFormDefaults(force = false) {
     state.goalPlanningStep = 1;
     state.goalScopeStepAcknowledged = false;
     setGoalSkuSelectionMode("");
+    resetGoalPromptInferenceState();
     state.goalRetailerRateCard = null;
     state.goalPlacementSelections.clear();
     state.goalBudgetPlanId = "";
@@ -3015,11 +3498,7 @@ function syncBuyingFormDefaults(force = false) {
   renderGoalProductCategoryOptions();
   renderRetailerRateCard(state.options?.screenTypePricingDefaults || null);
   renderGoalRateCard();
-  if (isGoalPromptSelectionActive()) {
-    applyGoalPromptSelection();
-  } else {
-    renderGoalProducts();
-  }
+  renderGoalProducts();
 }
 
 function beginScreenEdit(screenId) {
@@ -3117,11 +3596,13 @@ function updateStagePills() {
 
   if (elements.supplyStagePill) {
     elements.supplyStagePill.textContent =
-      supplyReady
-        ? "Preset ready"
-        : manualReady
-          ? "Anchor added"
-          : "Start here";
+      isSupplyMarketIntroActive()
+        ? "Business case"
+        : supplyReady
+          ? "Preset ready"
+          : manualReady
+            ? "Anchor added"
+            : "Start here";
   }
   if (elements.buyingStagePill) {
     elements.buyingStagePill.textContent =
@@ -3146,15 +3627,30 @@ function updateActionButtons() {
   const hasAppliedPlan = state.activeGoalPlan?.status === "applied";
   const primaryScreenId = manualReady ? getPrimaryScreenId() : "";
   const presetMaterialized = isDemoPresetMaterialized();
+  const inventoryBusy = hasPendingAction("inventory");
+  const anchorPending = hasPendingAction("inventory:anchor");
+  const presetPending = hasPendingAction("inventory:preset");
+  const resetPending = hasPendingAction("inventory:reset");
+  const pagePending = hasPendingAction("inventory:page");
+  const screenPending = hasPendingAction("inventory:screen");
+  const pricingPending = hasPendingAction("pricing");
+  const goalPlanPending = hasPendingAction("goalPlan");
+  const runsRefreshPending = hasPendingAction("goalRunsRefresh");
+  const telemetryRefreshPending = hasPendingAction("telemetryRefresh");
+  const workspaceReleasePending = hasPendingAction("workspaceRelease");
 
   if (elements.createAnchorBtn) {
-    elements.createAnchorBtn.disabled = manualReady;
-    elements.createAnchorBtn.textContent = manualReady ? "Anchor ready" : "Add one anchor placement";
+    elements.createAnchorBtn.disabled = manualReady || inventoryBusy;
+    elements.createAnchorBtn.textContent = anchorPending
+      ? "Creating anchor..."
+      : manualReady
+        ? "Anchor ready"
+        : "Add one anchor placement";
   }
 
   for (const button of qsa("#loadPresetBtn, #loadPresetBtnSecondary")) {
-    button.disabled = !manualReady || presetMaterialized;
-    button.textContent = presetMaterialized ? "Shared preset applied" : "Apply shared preset";
+    button.disabled = !manualReady || presetMaterialized || inventoryBusy;
+    button.textContent = presetPending ? "Applying preset..." : presetMaterialized ? "Shared preset applied" : "Apply shared preset";
   }
 
   for (const button of qsa("#nextToBuyingBtn, #nextToBuyingBtnSecondary")) {
@@ -3167,6 +3663,43 @@ function updateActionButtons() {
     const targetStage = button.dataset.stage || "supply";
     button.disabled =
       (targetStage === "buying" && !isBuyingStageUnlocked()) || (targetStage === "monitoring" && !canOpenMonitoringStage());
+  }
+
+  if (elements.pageSubmitBtn) {
+    elements.pageSubmitBtn.disabled = inventoryBusy;
+    elements.pageSubmitBtn.textContent = pagePending ? "Saving page..." : "Save page";
+  }
+  if (elements.screenSubmitBtn) {
+    elements.screenSubmitBtn.disabled = inventoryBusy;
+    elements.screenSubmitBtn.textContent = screenPending
+      ? "Saving screen..."
+      : String(state.editingScreenId || "").trim()
+        ? "Save changes"
+        : "Create screen";
+  }
+  if (elements.screenCancelBtn) {
+    elements.screenCancelBtn.disabled = inventoryBusy;
+  }
+  if (elements.saveRetailerRatesBtn) {
+    elements.saveRetailerRatesBtn.disabled = pricingPending || goalPlanPending;
+    elements.saveRetailerRatesBtn.textContent = pricingPending ? "Saving CPMs..." : "Save retailer CPM card";
+  }
+  if (elements.refreshRunsBtn) {
+    elements.refreshRunsBtn.disabled = runsRefreshPending || goalPlanPending;
+    elements.refreshRunsBtn.textContent = runsRefreshPending ? "Refreshing..." : "Refresh campaigns";
+  }
+  if (elements.refreshTelemetryBtn) {
+    elements.refreshTelemetryBtn.disabled = telemetryRefreshPending || goalPlanPending;
+    elements.refreshTelemetryBtn.textContent = telemetryRefreshPending ? "Refreshing..." : "Refresh telemetry";
+  }
+  if (elements.switchWorkspaceBtn) {
+    elements.switchWorkspaceBtn.disabled = workspaceReleasePending;
+    elements.switchWorkspaceBtn.textContent = workspaceReleasePending ? "Switching avatar..." : "Switch avatar";
+  }
+  if (qs("#resetDemoBtn")) {
+    const resetButton = qs("#resetDemoBtn");
+    resetButton.disabled = inventoryBusy;
+    resetButton.textContent = resetPending ? "Resetting demo..." : "Reset demo";
   }
 
   if (elements.demoScreenLink) {
@@ -3358,6 +3891,8 @@ function renderScreensList() {
   const screenCards = getRelevantScreenSummaries();
   const presetMaterialized = isDemoPresetMaterialized();
   const presetSimulated = isPresetSimulationActive();
+  const inventoryBusy = hasPendingAction("inventory");
+  const deletingScreenId = getPendingActionValue("inventory:delete");
   if (!screenCards.length) {
     elements.screensList.innerHTML = '<div class="empty">No demo screens tracked yet.</div>';
     return;
@@ -3386,6 +3921,7 @@ function renderScreensList() {
         ? isManualSupplyConfirmed()
         : presetMaterialized && (summary.configured || presetSimulated);
       const canManageLiveScreen = summary.isManual ? isManualSupplyConfirmed() : Boolean(screen);
+      const deletingThisScreen = deletingScreenId === summary.screenId;
       const status = summary.isManual
         ? isManualSupplyConfirmed()
           ? "Anchor saved"
@@ -3399,8 +3935,12 @@ function renderScreensList() {
           : "Loaded by preset";
       const actions = canManageLiveScreen
         ? `<span class="record__actions">
-            <button type="button" class="btn btn--tiny js-edit-screen" data-screen-id="${escapeHtml(summary.screenId)}">Edit</button>
-            <button type="button" class="btn btn--tiny btn--tiny-danger js-delete-screen" data-screen-id="${escapeHtml(summary.screenId)}">Delete</button>
+            <button type="button" class="btn btn--tiny js-edit-screen" data-screen-id="${escapeHtml(summary.screenId)}" ${
+              inventoryBusy ? "disabled" : ""
+            }>Edit</button>
+            <button type="button" class="btn btn--tiny btn--tiny-danger js-delete-screen" data-screen-id="${escapeHtml(
+              summary.screenId
+            )}" ${inventoryBusy ? "disabled" : ""}>${escapeHtml(deletingThisScreen ? "Deleting..." : "Delete")}</button>
             <a href="${escapeHtml(sharedPreviewUrl)}" target="_blank" rel="noreferrer">Immersive preview</a>
             <a href="${escapeHtml(buildDebugScreenUrl(summary.screenId))}" target="_blank" rel="noreferrer">Debug preview</a>
           </span>`
@@ -3543,7 +4083,10 @@ function getGoalPlanningStepSummary(stepNumber) {
     return "Choose an account first to browse its assortment.";
   }
   if (state.goalPromptInferencePending && prompt) {
-    return "AI is reviewing the assortment for the current brief.";
+    return "AI is choosing SKU's for the current brief.";
+  }
+  if (state.goalPromptAwaitingRun && prompt) {
+    return "Brief ready. Click Let AI choose SKU's to build the shortlist.";
   }
   if (isGoalPromptSelectionActive() && selectedCount > 0) {
     return `AI brief selected ${selectedCount} priority SKU(s)${category ? ` in ${titleCase(category)}` : ""}.`;
@@ -3554,12 +4097,12 @@ function getGoalPlanningStepSummary(stepNumber) {
   if (prompt) {
     return isGoalPromptSelectionActive()
       ? "AI brief is active, but no matching SKUs were found yet."
-      : "No priority SKUs selected. Edit the AI brief again to let AI choose them, or pick SKUs manually.";
+      : "No priority SKUs selected. Click Let AI choose SKU's, or pick SKUs manually.";
   }
   if (category) {
     return `Browsing ${titleCase(category)} with no SKU shortlist yet.`;
   }
-  return "Choose SKUs yourself, or brief AI to choose relevant SKUs for you in real time.";
+  return "Choose SKUs yourself, or brief AI and click the button to shortlist them.";
 }
 
 function getGoalPlanningStepStatus(stepNumber) {
@@ -3587,6 +4130,7 @@ function getGoalPlanningStepStatus(stepNumber) {
 
 function renderGoalPlanningFlow() {
   const maxStep = getGoalPlanningMaxStep();
+  const plannerBusy = hasPendingAction("goalPlan");
   if (state.goalPlanningStep > maxStep) {
     state.goalPlanningStep = maxStep;
   }
@@ -3617,19 +4161,42 @@ function renderGoalPlanningFlow() {
 
     const openButton = section.querySelector(".js-open-planner-step");
     if (openButton) {
-      openButton.disabled = !accessible || active;
+      openButton.disabled = !accessible || active || plannerBusy;
       openButton.textContent = !accessible ? "Locked" : completed ? "Edit" : "Open";
     }
   }
 
   if (elements.goalStep1NextBtn) {
-    elements.goalStep1NextBtn.disabled = !briefComplete;
+    elements.goalStep1NextBtn.disabled = !briefComplete || plannerBusy;
   }
   if (elements.goalStep2NextBtn) {
-    elements.goalStep2NextBtn.disabled = !briefComplete || !hasValidGoalFlightDates();
+    elements.goalStep2NextBtn.disabled = !briefComplete || !hasValidGoalFlightDates() || plannerBusy;
   }
   if (elements.goalPlanBtn) {
-    elements.goalPlanBtn.disabled = !briefComplete || !state.goalScopeStepAcknowledged || !hasValidGoalFlightDates();
+    elements.goalPlanBtn.disabled =
+      !briefComplete || !state.goalScopeStepAcknowledged || !hasValidGoalFlightDates() || plannerBusy;
+    elements.goalPlanBtn.textContent = plannerBusy ? "AI building buy..." : "Auto-build in-store buy";
+  }
+  updateGoalPlannerFieldStates();
+}
+
+function updateGoalPlannerFieldStates() {
+  const plannerBusy = hasPendingAction("goalPlan");
+  for (const field of [
+    elements.goalObjective,
+    elements.goalAggressiveness,
+    elements.goalStoreScope,
+    elements.goalPageScope,
+    elements.goalFlightStart,
+    elements.goalFlightEnd,
+    elements.goalPrompt,
+    elements.goalBrandAccount,
+    elements.goalProductCategory,
+    elements.goalProductSearch
+  ]) {
+    if (field) {
+      field.disabled = plannerBusy;
+    }
   }
 }
 
@@ -3733,7 +4300,7 @@ function renderGoalSelectedSkus() {
   const reasoning = readTextValue(state.goalPromptInferenceReasoning);
   elements.goalSelectedSkuHeadline.textContent =
     state.goalPromptInferencePending && getGoalPromptText()
-      ? "AI reviewing"
+      ? "AI choosing"
       : isGoalPromptSelectionActive()
         ? `${selectedProducts.length} AI-selected`
         : `${selectedProducts.length} selected`;
@@ -3741,11 +4308,13 @@ function renderGoalSelectedSkus() {
   if (selectedProducts.length === 0) {
     elements.goalSelectedSkus.classList.add("empty");
     if (state.goalPromptInferencePending && getGoalPromptText()) {
-      elements.goalSelectedSkus.textContent = "AI is reviewing the assortment for the current brief.";
+      elements.goalSelectedSkus.textContent = "AI is choosing SKU's for the current brief.";
     } else if (isGoalPromptSelectionActive()) {
       elements.goalSelectedSkus.textContent = reasoning || "AI brief is active, but no matching SKUs were found yet.";
     } else if (getGoalPromptText()) {
-      elements.goalSelectedSkus.textContent = "No priority SKUs selected. Edit the AI brief to auto-select, or pick SKUs below.";
+      elements.goalSelectedSkus.textContent = state.goalPromptAwaitingRun
+        ? "Brief ready. Click Let AI choose SKU's to build the shortlist, or pick SKUs below."
+        : "No priority SKUs selected. Click Let AI choose SKU's, or pick SKUs below.";
     } else {
       elements.goalSelectedSkus.textContent = "No priority SKUs selected yet. Pick SKUs below or add an AI brief.";
     }
@@ -3775,12 +4344,13 @@ function renderGoalSelectedSkus() {
 }
 
 function renderGoalSelectionActions(products = getFilteredProducts()) {
+  const selectionBusy = state.goalPromptInferencePending || hasPendingAction("goalPlan");
   if (elements.goalSelectCategoryBtn) {
     elements.goalSelectCategoryBtn.textContent = elements.goalProductCategory?.value ? "Select category" : "Select visible";
-    elements.goalSelectCategoryBtn.disabled = products.length === 0;
+    elements.goalSelectCategoryBtn.disabled = products.length === 0 || selectionBusy;
   }
   if (elements.goalClearSkusBtn) {
-    elements.goalClearSkusBtn.disabled = state.selectedGoalSkuIds.size === 0;
+    elements.goalClearSkusBtn.disabled = state.selectedGoalSkuIds.size === 0 || selectionBusy;
   }
 }
 
@@ -3790,11 +4360,13 @@ function renderGoalProducts() {
   }
   const advertiserId = getSelectedGoalAdvertiserId();
   const products = getFilteredProducts();
+  const selectionBusy = state.goalPromptInferencePending || hasPendingAction("goalPlan");
   if (!advertiserId) {
     elements.goalProductList.innerHTML = '<div class="empty">Choose an account in Step 1 to browse that assortment.</div>';
     renderGoalSelectedSkus();
     renderGoalSkuCount();
     renderGoalSelectionActions(products);
+    renderGoalPromptAssistant();
     renderGoalPlanningFlow();
     return;
   }
@@ -3803,6 +4375,7 @@ function renderGoalProducts() {
     renderGoalSelectedSkus();
     renderGoalSkuCount();
     renderGoalSelectionActions(products);
+    renderGoalPromptAssistant();
     renderGoalPlanningFlow();
     return;
   }
@@ -3813,7 +4386,9 @@ function renderGoalProducts() {
       const sku = normalizeSku(product.sku);
       const selected = state.selectedGoalSkuIds.has(sku);
       return `<label class="goal-products__item${selected ? " goal-products__item--selected" : ""}">
-        <input type="checkbox" class="js-goal-product-sku" value="${escapeHtml(sku)}" ${selected ? "checked" : ""}>
+        <input type="checkbox" class="js-goal-product-sku" value="${escapeHtml(sku)}" ${selected ? "checked" : ""} ${
+          selectionBusy ? "disabled" : ""
+        }>
         ${buildProductThumbMarkup(product, {
           className: "product-thumb goal-products__thumb",
           alt: getProductDisplayName(product) || sku
@@ -3830,6 +4405,7 @@ function renderGoalProducts() {
   renderGoalSelectedSkus();
   renderGoalSkuCount();
   renderGoalSelectionActions(products);
+  renderGoalPromptAssistant();
   renderGoalPlanningFlow();
 }
 
@@ -4300,9 +4876,12 @@ function renderGoalPlanBudget(plan, budgetScenario) {
   const flightSummary = formatGoalFlightSummary(plan.goal?.flightStartDate, plan.goal?.flightEndDate);
   const pricingModelLabel = String(plan?.budget?.pricingModelLabel || plan?.goal?.pricingModelLabel || "Retailer-set CPM by screen type").trim();
   const sliderStep = getGoalBudgetSliderStep(maxSpend, selectedSpend);
-  const sliderDisabled = plan.status === "applied" || selectedCount === 0;
+  const pendingApplyPlanId = getPendingActionValue("goalPlanApply");
+  const applyPending = hasPendingAction("goalPlanApply");
+  const applyingThisPlan = pendingApplyPlanId === String(plan.planId || "").trim();
+  const sliderDisabled = plan.status === "applied" || selectedCount === 0 || applyPending;
   const maxShortcutDisabled = sliderDisabled || selectedSpend >= maxSpend;
-  const launchDisabled = plan.status === "applied" || fundedCount === 0 || selectedCount === 0;
+  const launchDisabled = plan.status === "applied" || fundedCount === 0 || selectedCount === 0 || applyPending;
   const sliderProgress = maxSpend > 0 ? ((selectedSpend / maxSpend) * 100).toFixed(2) : "0";
   const estimatedImpressions = Math.max(0, Math.round(Number(budgetScenario.maxEstimatedImpressions || 0)));
   const fundedEstimatedImpressions = Math.max(0, Math.round(Number(budgetScenario.fundedEstimatedImpressions || 0)));
@@ -4355,7 +4934,7 @@ function renderGoalPlanBudget(plan, budgetScenario) {
             class="btn btn--primary js-goal-budget-apply"
             data-plan-id="${escapeHtml(plan.planId || "")}"
             ${launchDisabled ? "disabled" : ""}
-          >Approve and launch</button>
+          >${escapeHtml(applyingThisPlan ? "Launching..." : "Approve and launch")}</button>
         </div>
       </div>
       <div class="goal-budget__totals">
@@ -4403,6 +4982,29 @@ function renderGoalPlanBudget(plan, budgetScenario) {
 
 function renderGoalPlan() {
   if (!elements.goalPlanSummary || !elements.goalPlanChanges) {
+    return;
+  }
+
+  if (hasPendingAction("goalPlan")) {
+    const account = getGoalAccountByAdvertiserId();
+    const objectiveId = String(elements.goalObjective?.value || "").trim();
+    const detail = [
+      account ? getProductAccountLabel(account) : "",
+      objectiveId ? objectiveLabelById(objectiveId) : "",
+      formatGoalFlightSummary()
+    ]
+      .filter(Boolean)
+      .join(" | ");
+    elements.goalPlanSummary.classList.remove("empty");
+    elements.goalPlanSummary.innerHTML = buildAiAssistMarkup({
+      kicker: "AI Planning",
+      title: "Generating the in-store buy",
+      body: "Scoring placements, matching creative logic, and shaping the budget around your brief.",
+      detail,
+      variant: "loading"
+    });
+    elements.goalPlanChanges.innerHTML = '<div class="record record--muted">AI is ranking screens, creative changes, and budget coverage for this shortlist.</div>';
+    renderGoalPlanBudget(null, buildGoalBudgetScenario(null));
     return;
   }
 
@@ -4888,6 +5490,8 @@ function renderGoalRuns() {
     })
     .slice(0, 4);
   const hiddenCount = Math.max(0, state.agentRuns.length - runs.length);
+  const pendingPlanId = getPendingActionValue("goalPlanLoad");
+  const loadPending = hasPendingAction("goalPlanLoad") || hasPendingAction("goalPlan") || hasPendingAction("goalPlanApply");
 
   elements.agentRunsList.innerHTML = [
     ...runs.map((run) => {
@@ -4899,6 +5503,7 @@ function renderGoalRuns() {
         state.goalBudgetPlanId === run.planId ? getActiveGoalBudgetSpend(run) : Math.max(0, Math.round(Number(run?.budget?.selectedSpend || run?.budget?.maxSpend || 0)));
       const maxSpend = getPlanBudgetMaxSpend(run);
       const brandContext = getGoalPlanBrandContext(run);
+      const loadingThisPlan = pendingPlanId === String(run.planId || "").trim();
       return `<article class="record">
         <div class="record__top">
           <strong>${escapeHtml(brandContext.brand ? `${brandContext.brand} | ${objectiveLabelById(run.goal?.objective)}` : objectiveLabelById(run.goal?.objective))}</strong>
@@ -4912,7 +5517,9 @@ function renderGoalRuns() {
           maxSpend > 0 ? `${formatMoney(selectedSpend)} / ${formatMoney(maxSpend)}` : "Not priced"
         )} | ${escapeHtml(run.appliedAt ? `Live ${formatTimestamp(run.appliedAt)}` : `Created ${formatTimestamp(run.createdAt)}`)}</p>
         <span class="record__actions">
-          <button type="button" class="btn btn--tiny js-load-goal-plan" data-plan-id="${escapeHtml(run.planId || "")}">${escapeHtml(primaryActionLabel)}</button>
+          <button type="button" class="btn btn--tiny js-load-goal-plan" data-plan-id="${escapeHtml(run.planId || "")}" ${
+            loadPending ? "disabled" : ""
+          }>${escapeHtml(loadingThisPlan ? "Opening..." : primaryActionLabel)}</button>
         </span>
       </article>`;
     }),
@@ -5443,6 +6050,7 @@ function updateMonitoringNarrative() {
 }
 
 function renderAll() {
+  renderSupplyMarketIntro();
   refreshPageCounter();
   renderSupplySummary();
   renderPresetSummary();
@@ -5451,12 +6059,8 @@ function renderAll() {
   renderGoalScopeSelects();
   renderGoalBrandOptions();
   renderGoalProductCategoryOptions();
-  if (isGoalPromptSelectionActive()) {
-    applyGoalPromptSelection();
-  } else {
-    renderGoalProducts();
-    renderGoalPlanningFlow();
-  }
+  renderGoalProducts();
+  renderGoalPlanningFlow();
   renderGoalPlan();
   renderGoalRuns();
   renderMonitoringOverview();
@@ -5613,23 +6217,25 @@ function prepareGoalPayloadForDemo() {
 }
 
 async function saveRetailerRateCard() {
-  const rateCard = readRetailerRateCardInputs();
-  const response = await requestJson("/api/pricing/screen-types", {
-    method: "PUT",
-    body: JSON.stringify({ screenTypeRates: rateCard })
-  });
+  return runPendingAction("pricing:save", async () => {
+    const rateCard = readRetailerRateCardInputs();
+    const response = await requestJson("/api/pricing/screen-types", {
+      method: "PUT",
+      body: JSON.stringify({ screenTypeRates: rateCard })
+    });
 
-  if (!state.options || typeof state.options !== "object") {
-    state.options = {};
-  }
-  state.options.screenTypePricingDefaults = sanitizeGoalRateCard(response.screenTypeRates || rateCard);
-  renderRetailerRateCard(state.options.screenTypePricingDefaults);
-  state.goalRetailerRateCard = sanitizeGoalRateCard(state.options.screenTypePricingDefaults);
-  renderGoalRateCard(state.goalRetailerRateCard);
-  renderGoalPlanningFlow();
-  renderPresetSummary();
-  showToast("Retailer CPM card saved.");
-  showStatus("Retailer pricing updated. New buying plans will use the saved CPMs and modeled impression delivery.");
+    if (!state.options || typeof state.options !== "object") {
+      state.options = {};
+    }
+    state.options.screenTypePricingDefaults = sanitizeGoalRateCard(response.screenTypeRates || rateCard);
+    renderRetailerRateCard(state.options.screenTypePricingDefaults);
+    state.goalRetailerRateCard = sanitizeGoalRateCard(state.options.screenTypePricingDefaults);
+    renderGoalRateCard(state.goalRetailerRateCard);
+    renderGoalPlanningFlow();
+    renderPresetSummary();
+    showToast("Retailer CPM card saved.");
+    showStatus("Retailer pricing updated. New buying plans will use the saved CPMs and modeled impression delivery.");
+  }, { lockKey: "pricing" });
 }
 
 function updateGoalPlacementSelection(screenId, include) {
@@ -5662,90 +6268,94 @@ function updateGoalPlacementSelection(screenId, include) {
 
 async function handlePageSubmit(event) {
   event.preventDefault();
-  const payload = readPagePayload();
-  if (!findPageRecord(payload.pageId)) {
-    await requestJson("/api/pages", {
-      method: "POST",
-      body: JSON.stringify(payload)
-    });
-    showToast(`Page ${payload.pageId} added.`);
-  } else {
-    showToast(`Page ${payload.pageId} already exists. Continuing with the existing page.`);
-  }
+  return runPendingAction("inventory:page", async () => {
+    const payload = readPagePayload();
+    if (!findPageRecord(payload.pageId)) {
+      await requestJson("/api/pages", {
+        method: "POST",
+        body: JSON.stringify(payload)
+      });
+      showToast(`Page ${payload.pageId} added.`);
+    } else {
+      showToast(`Page ${payload.pageId} already exists. Continuing with the existing page.`);
+    }
 
-  await Promise.all([refreshDemoConfig(), refreshInventory()]);
-  populatePageSelect(payload.pageId);
-  renderAll();
-  showStatus(`Page ${payload.pageId} is ready.`);
+    await Promise.all([refreshDemoConfig(), refreshInventory()]);
+    populatePageSelect(payload.pageId);
+    renderAll();
+    showStatus(`Page ${payload.pageId} is ready.`);
+  }, { lockKey: "inventory" });
 }
 
 async function createAnchorPlacement() {
-  const pagePayload = readPagePayload();
-  const screenPayload = readScreenPayload();
-  screenPayload.pageId = screenPayload.pageId || pagePayload.pageId;
+  return runPendingAction("inventory:anchor", async () => {
+    const pagePayload = readPagePayload();
+    const screenPayload = readScreenPayload();
+    screenPayload.pageId = screenPayload.pageId || pagePayload.pageId;
 
-  if (!pagePayload.pageId) {
-    throw new Error("Anchor page configuration is missing.");
-  }
-  if (!screenPayload.screenId) {
-    throw new Error("Anchor screen configuration is missing.");
-  }
+    if (!pagePayload.pageId) {
+      throw new Error("Anchor page configuration is missing.");
+    }
+    if (!screenPayload.screenId) {
+      throw new Error("Anchor screen configuration is missing.");
+    }
 
-  showStatus("Creating the anchor placement...");
+    showStatus("Creating the anchor placement...");
 
-  const existingPage = findPageRecord(pagePayload.pageId);
-  if (!existingPage) {
-    await requestJson("/api/pages", {
-      method: "POST",
-      body: JSON.stringify(pagePayload)
-    });
-  }
+    const existingPage = findPageRecord(pagePayload.pageId);
+    if (!existingPage) {
+      await requestJson("/api/pages", {
+        method: "POST",
+        body: JSON.stringify(pagePayload)
+      });
+    }
 
-  const existingScreen = findScreenRecord(screenPayload.screenId);
-  if (existingScreen) {
-    await requestJson(`/api/screens/${encodeURIComponent(existingScreen.screenId)}`, {
-      method: "PUT",
-      body: JSON.stringify(screenPayload)
-    });
-  } else {
-    await requestJson("/api/screens", {
-      method: "POST",
-      body: JSON.stringify(screenPayload)
-    });
-  }
+    const existingScreen = findScreenRecord(screenPayload.screenId);
+    if (existingScreen) {
+      await requestJson(`/api/screens/${encodeURIComponent(existingScreen.screenId)}`, {
+        method: "PUT",
+        body: JSON.stringify(screenPayload)
+      });
+    } else {
+      await requestJson("/api/screens", {
+        method: "POST",
+        body: JSON.stringify(screenPayload)
+      });
+    }
 
-  await Promise.all([refreshDemoConfig(), refreshInventory()]);
-  state.manualSupplyConfirmed = state.screens.some((screen) => screen.screenId === getManualSupplyConfig().screen.screenId);
-  state.supplyHandoffAcknowledged = false;
-  state.lastDemoAction = {
-    kind: "anchor",
-    message: `Anchor ready. ${screenPayload.screenId} is mapped to ${pagePayload.pageId}.`
-  };
+    await Promise.all([refreshDemoConfig(), refreshInventory()]);
+    state.manualSupplyConfirmed = state.screens.some((screen) => screen.screenId === getManualSupplyConfig().screen.screenId);
+    state.supplyHandoffAcknowledged = false;
+    state.lastDemoAction = {
+      kind: "anchor",
+      message: `Anchor ready. ${screenPayload.screenId} is mapped to ${pagePayload.pageId}.`
+    };
 
-  syncSupplyFormDefaults();
-  renderAll();
-  showToast("Anchor placement ready.");
-  showStatus("Anchor placement is ready. Apply the shared preset to finish Supply.");
+    syncSupplyFormDefaults();
+    renderAll();
+    showToast("Anchor placement ready.");
+    showStatus("Anchor placement is ready. Apply the shared preset to finish Supply.");
+  }, { lockKey: "inventory" });
 }
 
 async function handleScreenSubmit(event) {
   event.preventDefault();
-  const payload = readScreenPayload();
-  if (!payload.pageId) {
-    throw new Error("A mapped page is required before adding a screen.");
-  }
+  return runPendingAction("inventory:screen", async () => {
+    const payload = readScreenPayload();
+    if (!payload.pageId) {
+      throw new Error("A mapped page is required before adding a screen.");
+    }
 
-  const editingId = String(state.editingScreenId || "").trim();
-  const effectiveScreenId = editingId || payload.screenId;
-  let shouldEnterEditMode = false;
-  if (editingId) {
-    await requestJson(`/api/screens/${encodeURIComponent(editingId)}`, {
-      method: "PUT",
-      body: JSON.stringify(payload)
-    });
-    showToast(`Screen ${editingId} updated.`);
-  } else {
-    if (!findScreenRecord(payload.screenId)) {
+    const editingId = String(state.editingScreenId || "").trim();
+    const effectiveScreenId = editingId || payload.screenId;
+    let shouldEnterEditMode = false;
+    if (editingId) {
+      await requestJson(`/api/screens/${encodeURIComponent(editingId)}`, {
+        method: "PUT",
+        body: JSON.stringify(payload)
+      });
+      showToast(`Screen ${editingId} updated.`);
+    } else if (!findScreenRecord(payload.screenId)) {
       await requestJson("/api/screens", {
         method: "POST",
         body: JSON.stringify(payload)
@@ -5755,26 +6365,26 @@ async function handleScreenSubmit(event) {
       shouldEnterEditMode = true;
       showToast(`Screen ${payload.screenId} already exists. Loading it into edit mode.`);
     }
-  }
 
-  await Promise.all([refreshDemoConfig(), refreshInventory()]);
-  if (
-    effectiveScreenId === getManualSupplyConfig().screen.screenId &&
-    state.screens.some((screen) => screen.screenId === effectiveScreenId)
-  ) {
-    state.manualSupplyConfirmed = true;
-    state.supplyHandoffAcknowledged = false;
-  }
-  syncSupplyFormDefaults();
-  renderAll();
+    await Promise.all([refreshDemoConfig(), refreshInventory()]);
+    if (
+      effectiveScreenId === getManualSupplyConfig().screen.screenId &&
+      state.screens.some((screen) => screen.screenId === effectiveScreenId)
+    ) {
+      state.manualSupplyConfirmed = true;
+      state.supplyHandoffAcknowledged = false;
+    }
+    syncSupplyFormDefaults();
+    renderAll();
 
-  if (!editingId && shouldEnterEditMode && state.screens.some((screen) => screen.screenId === payload.screenId)) {
-    beginScreenEdit(payload.screenId);
-  }
+    if (!editingId && shouldEnterEditMode && state.screens.some((screen) => screen.screenId === payload.screenId)) {
+      beginScreenEdit(payload.screenId);
+    }
 
-  if (effectiveScreenId === getManualSupplyConfig().screen.screenId) {
-    showStatus("Anchor screen is ready. Load the preset to expand the rest of the supply setup.");
-  }
+    if (effectiveScreenId === getManualSupplyConfig().screen.screenId) {
+      showStatus("Anchor screen is ready. Load the preset to expand the rest of the supply setup.");
+    }
+  }, { lockKey: "inventory" });
 }
 
 async function deleteScreen(screenId) {
@@ -5786,62 +6396,66 @@ async function deleteScreen(screenId) {
   if (!confirmed) {
     return;
   }
+  return runPendingAction(`inventory:delete:${screenId}`, async () => {
+    await requestJson(`/api/screens/${encodeURIComponent(screenId)}`, {
+      method: "DELETE"
+    });
 
-  await requestJson(`/api/screens/${encodeURIComponent(screenId)}`, {
-    method: "DELETE"
-  });
+    if (state.editingScreenId === screenId) {
+      syncSupplyFormDefaults();
+    }
 
-  if (state.editingScreenId === screenId) {
-    syncSupplyFormDefaults();
-  }
-
-  await Promise.all([refreshDemoConfig(), refreshInventory()]);
-  if (screenId === getManualSupplyConfig().screen.screenId) {
-    state.manualSupplyConfirmed = false;
-    state.presetLoadedInSession = false;
-    state.presetSimulatedInSession = false;
-    state.supplyHandoffAcknowledged = false;
-    state.activeGoalPlan = null;
-    state.goalPlacementSelections.clear();
-    state.goalBudgetPlanId = "";
-    state.goalBudgetSpend = null;
-    state.agentRuns = [];
-    state.telemetrySummary = null;
-    state.sessionPlanIds.clear();
-  }
-  renderAll();
-  showToast(`Screen ${screenId} deleted.`);
+    await Promise.all([refreshDemoConfig(), refreshInventory()]);
+    if (screenId === getManualSupplyConfig().screen.screenId) {
+      state.manualSupplyConfirmed = false;
+      state.presetLoadedInSession = false;
+      state.presetSimulatedInSession = false;
+      state.supplyHandoffAcknowledged = false;
+      state.activeGoalPlan = null;
+      state.goalPlacementSelections.clear();
+      state.goalBudgetPlanId = "";
+      state.goalBudgetSpend = null;
+      state.agentRuns = [];
+      state.telemetrySummary = null;
+      state.sessionPlanIds.clear();
+    }
+    renderAll();
+    showToast(`Screen ${screenId} deleted.`);
+  }, { lockKey: "inventory" });
 }
 
 async function handleGoalPlanSubmit(event) {
   event.preventDefault();
-  if (!ensureGoalPlanningReadyForSubmit()) {
-    return;
-  }
-  const prepared = prepareGoalPayloadForDemo();
-  const response = await requestJson("/api/agent/goals/plan", {
-    method: "POST",
-    body: JSON.stringify(prepared.payload)
-  });
+  return runPendingAction("goalPlan", async () => {
+    if (!ensureGoalPlanningReadyForSubmit()) {
+      return;
+    }
+    const prepared = prepareGoalPayloadForDemo();
+    showStatus("AI is generating the in-store buy...");
+    const response = await requestJson("/api/agent/goals/plan", {
+      method: "POST",
+      body: JSON.stringify(prepared.payload)
+    });
 
-  state.activeGoalPlan = response.run || null;
-  if (state.activeGoalPlan?.planId) {
-    state.sessionPlanIds.add(state.activeGoalPlan.planId);
-  }
-  syncGoalPlacementSelectionFromPlan(state.activeGoalPlan, { overwrite: true });
-  setGoalBudgetStateFromPlan(state.activeGoalPlan);
-  syncGoalFormFromRun(state.activeGoalPlan);
-  await Promise.all([refreshGoalRunsData(), refreshTelemetryData(state.activeGoalPlan?.planId || "")]);
-  state.supplyHandoffAcknowledged = true;
-  renderAll();
-  setStage("buying", true);
-  showToast("In-store buy ready.");
-  showStatus(
-    state.activeGoalPlan?.goal?.scopeMessage ||
-      state.activeGoalPlan?.goal?.stockMessage ||
-      prepared.scopeMessage ||
-      "In-store buy ready. Edit placements if needed, then set the budget and launch."
-  );
+    state.activeGoalPlan = response.run || null;
+    if (state.activeGoalPlan?.planId) {
+      state.sessionPlanIds.add(state.activeGoalPlan.planId);
+    }
+    syncGoalPlacementSelectionFromPlan(state.activeGoalPlan, { overwrite: true });
+    setGoalBudgetStateFromPlan(state.activeGoalPlan);
+    syncGoalFormFromRun(state.activeGoalPlan);
+    await Promise.all([refreshGoalRunsData(), refreshTelemetryData(state.activeGoalPlan?.planId || "")]);
+    state.supplyHandoffAcknowledged = true;
+    renderAll();
+    setStage("buying", true);
+    showToast("In-store buy ready.");
+    showStatus(
+      state.activeGoalPlan?.goal?.scopeMessage ||
+        state.activeGoalPlan?.goal?.stockMessage ||
+        prepared.scopeMessage ||
+        "In-store buy ready. Edit placements if needed, then set the budget and launch."
+    );
+  });
 }
 
 async function applyGoalPlan(planId = "") {
@@ -5849,37 +6463,40 @@ async function applyGoalPlan(planId = "") {
   if (!chosenPlanId) {
     throw new Error("No plan selected.");
   }
-  const targetPlan =
-    chosenPlanId === state.activeGoalPlan?.planId
-      ? state.activeGoalPlan
-      : state.agentRuns.find((entry) => entry.planId === chosenPlanId) || state.activeGoalPlan;
-  const budgetSpend = getActiveGoalBudgetSpend(targetPlan);
-  const selectedScreenIds = getGoalPlacementSelectionIds(targetPlan);
+  return runPendingAction(`goalPlanApply:${chosenPlanId}`, async () => {
+    const targetPlan =
+      chosenPlanId === state.activeGoalPlan?.planId
+        ? state.activeGoalPlan
+        : state.agentRuns.find((entry) => entry.planId === chosenPlanId) || state.activeGoalPlan;
+    const budgetSpend = getActiveGoalBudgetSpend(targetPlan);
+    const selectedScreenIds = getGoalPlacementSelectionIds(targetPlan);
 
-  const response = await requestJson("/api/agent/goals/apply", {
-    method: "POST",
-    body: JSON.stringify({ planId: chosenPlanId, budgetSpend, selectedScreenIds })
-  });
+    showStatus("Launching the approved buy...");
+    const response = await requestJson("/api/agent/goals/apply", {
+      method: "POST",
+      body: JSON.stringify({ planId: chosenPlanId, budgetSpend, selectedScreenIds })
+    });
 
-  state.activeGoalPlan = response.run || state.activeGoalPlan;
-  state.sessionPlanIds.add(chosenPlanId);
-  syncGoalPlacementSelectionFromPlan(state.activeGoalPlan, { overwrite: true });
-  setGoalBudgetStateFromPlan(state.activeGoalPlan, state.activeGoalPlan?.budget?.selectedSpend ?? budgetSpend);
-  await Promise.all([
-    refreshDemoConfig(),
-    refreshInventory(),
-    refreshGoalRunsData(),
-    refreshLiveState(chosenPlanId),
-    refreshTelemetryData(chosenPlanId)
-  ]);
+    state.activeGoalPlan = response.run || state.activeGoalPlan;
+    state.sessionPlanIds.add(chosenPlanId);
+    syncGoalPlacementSelectionFromPlan(state.activeGoalPlan, { overwrite: true });
+    setGoalBudgetStateFromPlan(state.activeGoalPlan, state.activeGoalPlan?.budget?.selectedSpend ?? budgetSpend);
+    await Promise.all([
+      refreshDemoConfig(),
+      refreshInventory(),
+      refreshGoalRunsData(),
+      refreshLiveState(chosenPlanId),
+      refreshTelemetryData(chosenPlanId)
+    ]);
 
-  state.supplyHandoffAcknowledged = true;
-  renderAll();
-  setStage("monitoring", true);
-  showToast(`Activation live on ${response.liveCount || response.appliedCount || 0} placement(s).`);
-  showStatus(
-    `Activation ${chosenPlanId} is live at ${formatMoney(response.run?.budget?.selectedSpend || budgetSpend)}. Monitoring is ready.`
-  );
+    state.supplyHandoffAcknowledged = true;
+    renderAll();
+    setStage("monitoring", true);
+    showToast(`Activation live on ${response.liveCount || response.appliedCount || 0} placement(s).`);
+    showStatus(
+      `Activation ${chosenPlanId} is live at ${formatMoney(response.run?.budget?.selectedSpend || budgetSpend)}. Monitoring is ready.`
+    );
+  }, { lockKey: "goalPlanApply" });
 }
 
 async function loadGoalPlan(planId) {
@@ -5888,26 +6505,27 @@ async function loadGoalPlan(planId) {
     showToast(`Plan ${planId} not found.`, true);
     return;
   }
+  return runPendingAction(`goalPlanLoad:${planId}`, async () => {
+    state.activeGoalPlan = run;
+    if (run.planId) {
+      state.sessionPlanIds.add(run.planId);
+    }
+    syncGoalPlacementSelectionFromPlan(run, { overwrite: run.status === "applied" });
+    setGoalBudgetStateFromPlan(run);
+    syncGoalFormFromRun(run);
+    state.supplyHandoffAcknowledged = true;
 
-  state.activeGoalPlan = run;
-  if (run.planId) {
-    state.sessionPlanIds.add(run.planId);
-  }
-  syncGoalPlacementSelectionFromPlan(run, { overwrite: run.status === "applied" });
-  setGoalBudgetStateFromPlan(run);
-  syncGoalFormFromRun(run);
-  state.supplyHandoffAcknowledged = true;
+    if (run.status === "applied") {
+      await Promise.all([refreshLiveState(run.planId), refreshTelemetryData(run.planId)]);
+      setStage("monitoring", true);
+    } else {
+      await refreshTelemetryData(run.planId);
+      setStage("buying", true);
+    }
 
-  if (run.status === "applied") {
-    await Promise.all([refreshLiveState(run.planId), refreshTelemetryData(run.planId)]);
-    setStage("monitoring", true);
-  } else {
-    await refreshTelemetryData(run.planId);
-    setStage("buying", true);
-  }
-
-  renderAll();
-  showStatus(`Loaded recommendation ${planId}.`);
+    renderAll();
+    showStatus(`Loaded recommendation ${planId}.`);
+  }, { lockKey: "goalPlanLoad" });
 }
 
 async function loadPresetFallback() {
@@ -5989,82 +6607,84 @@ function buildSimulatedPresetResponse() {
 }
 
 async function loadPreset() {
-  if (!isManualSupplyConfirmed()) {
-    throw new Error("Add the anchor screen first, then load the preset.");
-  }
+  return runPendingAction("inventory:preset", async () => {
+    if (!isManualSupplyConfirmed()) {
+      throw new Error("Add the anchor screen first, then load the preset.");
+    }
 
-  showStatus("Applying the shared preset...");
-  const response = shouldSimulateLargePresetLoad()
-    ? buildSimulatedPresetResponse()
-    : (await requestOptionalJson("/api/demo/preset", { method: "POST" })) || (await loadPresetFallback());
+    showStatus("Applying the shared preset...");
+    const response = shouldSimulateLargePresetLoad()
+      ? buildSimulatedPresetResponse()
+      : (await requestOptionalJson("/api/demo/preset", { method: "POST" })) || (await loadPresetFallback());
 
-  if (response.demo) {
-    state.demo = normalizeDemoConfig(response.demo);
-  } else {
-    if (!response.simulated) {
+    if (response.demo) {
+      state.demo = normalizeDemoConfig(response.demo);
+    } else if (!response.simulated) {
       await refreshDemoConfig();
     }
-  }
 
-  state.lastDemoAction = {
-    kind: "preset",
-    result: response.result || {},
-    message: buildDemoActionMessage("preset", response.result || {})
-  };
+    state.lastDemoAction = {
+      kind: "preset",
+      result: response.result || {},
+      message: buildDemoActionMessage("preset", response.result || {})
+    };
 
-  state.presetLoadedInSession = true;
-  state.presetSimulatedInSession = Boolean(response.simulated);
-  state.supplyHandoffAcknowledged = false;
-  state.activeGoalPlan = null;
-  state.goalPlacementSelections.clear();
-  state.goalBudgetPlanId = "";
-  state.goalBudgetSpend = null;
-  state.agentRuns = [];
-  state.telemetrySummary = null;
-  state.sessionPlanIds.clear();
+    state.presetLoadedInSession = true;
+    state.presetSimulatedInSession = Boolean(response.simulated);
+    state.supplyHandoffAcknowledged = false;
+    state.activeGoalPlan = null;
+    state.goalPlacementSelections.clear();
+    state.goalBudgetPlanId = "";
+    state.goalBudgetSpend = null;
+    state.agentRuns = [];
+    state.telemetrySummary = null;
+    state.sessionPlanIds.clear();
 
-  if (!response.simulated) {
-    await refreshInventory();
-  }
-  syncBuyingFormDefaults(true);
-  renderAll();
-  elements.supplyHandoffCard?.scrollIntoView({ behavior: "smooth", block: "center" });
-  showToast(state.lastDemoAction.message);
-  showStatus("Supply setup is complete. Review the handoff, then continue into CMax buying.");
+    if (!response.simulated) {
+      await refreshInventory();
+    }
+    syncBuyingFormDefaults(true);
+    renderAll();
+    elements.supplyHandoffCard?.scrollIntoView({ behavior: "smooth", block: "center" });
+    showToast(state.lastDemoAction.message);
+    showStatus("Supply setup is complete. Review the handoff, then continue into CMax buying.");
+  }, { lockKey: "inventory" });
 }
 
 async function resetDemo() {
-  showStatus("Resetting the demo...");
-  const response = await requestJson("/api/demo/reset", { method: "POST" });
+  return runPendingAction("inventory:reset", async () => {
+    showStatus("Resetting the demo...");
+    const response = await requestJson("/api/demo/reset", { method: "POST" });
 
-  state.demo = response.demo ? normalizeDemoConfig(response.demo) : state.demo;
-  state.lastDemoAction = {
-    kind: "reset",
-    result: response.result || {},
-    message: buildDemoActionMessage("reset", response.result || {})
-  };
+    state.demo = response.demo ? normalizeDemoConfig(response.demo) : state.demo;
+    state.lastDemoAction = {
+      kind: "reset",
+      result: response.result || {},
+      message: buildDemoActionMessage("reset", response.result || {})
+    };
 
-  state.manualSupplyConfirmed = false;
-  state.presetLoadedInSession = false;
-  state.presetSimulatedInSession = false;
-  state.supplyHandoffAcknowledged = false;
-  state.activeGoalPlan = null;
-  state.goalPlacementSelections.clear();
-  state.goalBudgetPlanId = "";
-  state.goalBudgetSpend = null;
-  state.agentRuns = [];
-  state.telemetrySummary = null;
-  state.selectedGoalSkuIds.clear();
-  state.sessionPlanIds.clear();
-  state.previewRailKey = "";
+    state.manualSupplyConfirmed = false;
+    state.presetLoadedInSession = false;
+    state.presetSimulatedInSession = false;
+    state.supplyHandoffAcknowledged = false;
+    state.activeGoalPlan = null;
+    state.goalPlacementSelections.clear();
+    state.goalBudgetPlanId = "";
+    state.goalBudgetSpend = null;
+    state.agentRuns = [];
+    state.telemetrySummary = null;
+    state.selectedGoalSkuIds.clear();
+    state.sessionPlanIds.clear();
+    state.previewRailKey = "";
 
-  await refreshInventory();
-  syncSupplyFormDefaults();
-  syncBuyingFormDefaults(true);
-  renderAll();
-  setStage("supply", true);
-  showToast(state.lastDemoAction.message);
-  showStatus("Demo reset complete.");
+    await refreshInventory();
+    syncSupplyFormDefaults();
+    syncBuyingFormDefaults(true);
+    renderAll();
+    setStage("supply", true);
+    showToast(state.lastDemoAction.message);
+    showStatus("Demo reset complete.");
+  }, { lockKey: "inventory" });
 }
 
 function handleError(error) {
@@ -6103,6 +6723,14 @@ function wireEvents() {
     const stageJump = event.target.closest(".js-stage-jump");
     if (stageJump) {
       setStage(stageJump.dataset.stage || "supply", true);
+      return;
+    }
+
+    if (event.target.closest("#marketIntroContinueBtn")) {
+      setMarketIntroAcknowledged(true);
+      renderAll();
+      elements.supplyWorkflowShell?.scrollIntoView({ behavior: "smooth", block: "start" });
+      showStatus("Commercial case covered. CYield step 1 is ready.");
       return;
     }
 
@@ -6232,8 +6860,8 @@ function wireEvents() {
   elements.goalBrandAccount?.addEventListener("change", () => {
     const removedCount = reconcileSelectedGoalSkusToBrand();
     renderGoalProductCategoryOptions();
-    if (isGoalPromptSelectionActive()) {
-      applyGoalPromptSelection();
+    if (getGoalPromptText()) {
+      markGoalPromptSelectionDirty();
     } else {
       renderGoalProducts();
     }
@@ -6243,8 +6871,8 @@ function wireEvents() {
       showStatus(`Account changed. Removed ${removedCount} SKU(s) from the previous account.`);
     } else if (account?.brand) {
       showStatus(
-        isGoalPromptSelectionActive()
-          ? `Assortment filtered to ${getProductAccountLabel(account)}. The AI brief refreshed the shortlist.`
+        getGoalPromptText()
+          ? `Assortment filtered to ${getProductAccountLabel(account)}. Click Let AI choose SKU's to refresh the shortlist.`
           : `Assortment filtered to ${getProductAccountLabel(account)}.`
       );
     } else {
@@ -6253,24 +6881,32 @@ function wireEvents() {
     publishPresenterSnapshot();
   });
   elements.goalObjective?.addEventListener("change", () => {
-    renderGoalPlanningFlow();
+    if (getGoalPromptText()) {
+      markGoalPromptSelectionDirty();
+    } else {
+      renderGoalPlanningFlow();
+    }
     publishPresenterSnapshot();
   });
   elements.goalAggressiveness?.addEventListener("change", () => {
-    renderGoalPlanningFlow();
+    if (getGoalPromptText()) {
+      markGoalPromptSelectionDirty();
+    } else {
+      renderGoalPlanningFlow();
+    }
     publishPresenterSnapshot();
   });
   elements.goalStoreScope?.addEventListener("change", () => {
-    if (isGoalPromptSelectionActive()) {
-      applyGoalPromptSelection();
+    if (getGoalPromptText()) {
+      markGoalPromptSelectionDirty();
     } else {
       renderGoalPlanningFlow();
     }
     publishPresenterSnapshot();
   });
   elements.goalPageScope?.addEventListener("change", () => {
-    if (isGoalPromptSelectionActive()) {
-      applyGoalPromptSelection();
+    if (getGoalPromptText()) {
+      markGoalPromptSelectionDirty();
     } else {
       renderGoalPlanningFlow();
     }
@@ -6285,8 +6921,11 @@ function wireEvents() {
     publishPresenterSnapshot();
   });
   elements.goalPrompt?.addEventListener("input", () => {
-    applyGoalPromptSelection({ passiveRender: true });
+    markGoalPromptSelectionDirty();
     publishPresenterSnapshot();
+  });
+  elements.goalPromptRunBtn?.addEventListener("click", () => {
+    applyGoalPromptSelection().catch(handleError);
   });
   elements.retailerRateCard?.addEventListener("input", (event) => {
     if (!event.target.closest(".js-retailer-rate-input")) {
@@ -6298,8 +6937,8 @@ function wireEvents() {
     saveRetailerRateCard().catch(handleError);
   });
   elements.goalProductCategory?.addEventListener("change", () => {
-    if (isGoalPromptSelectionActive()) {
-      applyGoalPromptSelection();
+    if (getGoalPromptText()) {
+      markGoalPromptSelectionDirty();
     } else {
       renderGoalProducts();
     }
@@ -6376,32 +7015,41 @@ function wireEvents() {
     }
   });
   elements.refreshInventoryBtn?.addEventListener("click", () => {
-    Promise.all([refreshDemoConfig(), refreshInventory()])
-      .then(() => {
-        renderAll();
-        showToast("Supply refreshed.");
-      })
-      .catch(handleError);
+    runPendingAction(
+      "inventory:refresh",
+      () =>
+        Promise.all([refreshDemoConfig(), refreshInventory()])
+          .then(() => {
+            renderAll();
+            showToast("Supply refreshed.");
+          })
+          .catch(handleError),
+      { lockKey: "inventory" }
+    );
   });
   elements.refreshRunsBtn?.addEventListener("click", () => {
-    Promise.all([
-      refreshGoalRunsData(),
-      refreshLiveState(state.activeGoalPlan?.planId || ""),
-      refreshTelemetryData(state.activeGoalPlan?.planId || "")
-    ])
-      .then(() => {
-        renderAll();
-        showToast("Runs refreshed.");
-      })
-      .catch(handleError);
+    runPendingAction("goalRunsRefresh", () =>
+      Promise.all([
+        refreshGoalRunsData(),
+        refreshLiveState(state.activeGoalPlan?.planId || ""),
+        refreshTelemetryData(state.activeGoalPlan?.planId || "")
+      ])
+        .then(() => {
+          renderAll();
+          showToast("Runs refreshed.");
+        })
+        .catch(handleError)
+    );
   });
   elements.refreshTelemetryBtn?.addEventListener("click", () => {
-    refreshTelemetryData(state.activeGoalPlan?.planId || "")
-      .then(() => {
-        renderAll();
-        showToast("Telemetry refreshed.");
-      })
-      .catch(handleError);
+    runPendingAction("telemetryRefresh", () =>
+      refreshTelemetryData(state.activeGoalPlan?.planId || "")
+        .then(() => {
+          renderAll();
+          showToast("Telemetry refreshed.");
+        })
+        .catch(handleError)
+    );
   });
   elements.goalLiveSearch?.addEventListener("input", () => {
     state.goalLiveQuery = elements.goalLiveSearch?.value || "";
@@ -6419,6 +7067,7 @@ async function init() {
   try {
     wireEvents();
     await ensureWorkspaceClaim();
+    syncMarketIntroAcknowledged();
     await refreshDemoConfig();
     state.options = await requestJson("/api/options");
     state.goalPromptInferenceProvider = readTextValue(state.options?.goalPromptInferenceProvider || "");
@@ -6435,7 +7084,11 @@ async function init() {
 
     renderAll();
     setStage("supply", false);
-    showStatus("Ready for the CYield supply setup.");
+    showStatus(
+      isSupplyMarketIntroActive()
+        ? "Start with the revenue story, then reveal the CYield supply setup."
+        : "Ready for the CYield supply setup."
+    );
   } catch (error) {
     handleError(error);
   }

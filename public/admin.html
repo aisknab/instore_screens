@@ -90,9 +90,9 @@
       <section id="stage-supply" class="panel stage-panel" data-stage-panel="supply">
         <div class="stage-panel__header">
           <div>
-            <p class="section-kicker">Start here</p>
-            <h2>CYield Supply Setup</h2>
-            <p class="stage-panel__lede">
+            <p id="supplyStageKicker" class="section-kicker">Start here</p>
+            <h2 id="supplyStageTitle">CYield Supply Setup</h2>
+            <p id="supplyStageLede" class="stage-panel__lede">
               Keep this to two clicks: add one anchor placement, then apply the shared preset.
             </p>
           </div>
@@ -116,68 +116,72 @@
               </div>
             </div>
 
-            <div class="supply-flow">
-              <section class="supply-step">
-                <div class="supply-step__index">1</div>
-                <div class="supply-step__body">
-                  <p class="section-kicker">Anchor placement</p>
-                  <h4>Create one page-screen mapping</h4>
-                  <p class="supply-step__lede">
-                    This is the only manual setup step. We prefill the entrance page and hero screen so the shared player can go live immediately.
-                  </p>
-                  <div class="supply-chip-row">
-                    <span class="supply-chip">Page: ENTRANCE</span>
-                    <span class="supply-chip">Screen: Entrance Hero</span>
-                    <span class="supply-chip">URL: /screen.html</span>
+            <section id="supplyMarketIntro" class="supply-market-intro" aria-live="polite"></section>
+
+            <div id="supplyWorkflowShell">
+              <div class="supply-flow">
+                <section class="supply-step">
+                  <div class="supply-step__index">1</div>
+                  <div class="supply-step__body">
+                    <p class="section-kicker">Anchor placement</p>
+                    <h4>Create one page-screen mapping</h4>
+                    <p class="supply-step__lede">
+                      This is the only manual setup step. We prefill the entrance page and hero screen so the shared player can go live immediately.
+                    </p>
+                    <div class="supply-chip-row">
+                      <span class="supply-chip">Page: ENTRANCE</span>
+                      <span class="supply-chip">Screen: Entrance Hero</span>
+                      <span class="supply-chip">URL: /screen.html</span>
+                    </div>
                   </div>
+                  <div class="supply-step__actions">
+                    <button id="createAnchorBtn" type="button" class="btn btn--primary btn--large">Add one anchor placement</button>
+                    <p class="supply-step__hint">Creates the CYield page and the first mapped screen in one action.</p>
+                  </div>
+                </section>
+
+                <section class="supply-step">
+                  <div class="supply-step__index">2</div>
+                  <div class="supply-step__body">
+                    <p class="section-kicker">Preset rollout</p>
+                    <h4>Fan out the rest of the store</h4>
+                    <p class="supply-step__lede">
+                      Once the anchor exists, one preset fills the remaining supply-side screens so you can move straight into buying.
+                    </p>
+                    <div class="supply-chip-row">
+                      <span class="supply-chip">Electronics Hero</span>
+                      <span class="supply-chip">Whitegoods Loop</span>
+                      <span class="supply-chip">Aisle Edge</span>
+                      <span class="supply-chip">Checkout Kiosk</span>
+                    </div>
+                  </div>
+                  <div class="supply-step__actions">
+                    <button id="loadPresetBtn" type="button" class="btn btn--primary btn--large">Apply shared preset</button>
+                    <p class="supply-step__hint">Applies the shared supply preset and prepares the handoff into CMax.</p>
+                  </div>
+                </section>
+              </div>
+
+              <section id="supplyHandoffCard" class="supply-handoff is-hidden" aria-live="polite">
+                <div class="supply-handoff__copy">
+                  <p class="section-kicker">Supply setup complete</p>
+                  <h4>Inventory is now mapped across the retail footprint</h4>
+                  <p id="supplyHandoffMessage" class="supply-handoff__lede">
+                    The shared player is now ready to scale across stores, placements, and inventory types.
+                  </p>
+                  <div id="supplyHandoffStats" class="supply-handoff__stats"></div>
                 </div>
-                <div class="supply-step__actions">
-                  <button id="createAnchorBtn" type="button" class="btn btn--primary btn--large">Add one anchor placement</button>
-                  <p class="supply-step__hint">Creates the CYield page and the first mapped screen in one action.</p>
+                <div class="supply-handoff__actions">
+                  <button id="continueToBuyingBtn" type="button" class="btn btn--primary btn--large">Continue to CMax buying</button>
+                  <p class="supply-handoff__hint">Step 2 stays locked until this handoff is confirmed.</p>
                 </div>
               </section>
 
-              <section class="supply-step">
-                <div class="supply-step__index">2</div>
-                <div class="supply-step__body">
-                  <p class="section-kicker">Preset rollout</p>
-                  <h4>Fan out the rest of the store</h4>
-                  <p class="supply-step__lede">
-                    Once the anchor exists, one preset fills the remaining supply-side screens so you can move straight into buying.
-                  </p>
-                  <div class="supply-chip-row">
-                    <span class="supply-chip">Electronics Hero</span>
-                    <span class="supply-chip">Whitegoods Loop</span>
-                    <span class="supply-chip">Aisle Edge</span>
-                    <span class="supply-chip">Checkout Kiosk</span>
-                  </div>
-                </div>
-                <div class="supply-step__actions">
-                  <button id="loadPresetBtn" type="button" class="btn btn--primary btn--large">Apply shared preset</button>
-                  <p class="supply-step__hint">Applies the shared supply preset and prepares the handoff into CMax.</p>
-                </div>
-              </section>
+              <div id="presetSummary" class="goal-summary">Add one anchor placement, then apply the shared preset.</div>
             </div>
-
-            <section id="supplyHandoffCard" class="supply-handoff is-hidden" aria-live="polite">
-              <div class="supply-handoff__copy">
-                <p class="section-kicker">Supply setup complete</p>
-                <h4>Inventory is now mapped across the retail footprint</h4>
-                <p id="supplyHandoffMessage" class="supply-handoff__lede">
-                  The shared player is now ready to scale across stores, placements, and inventory types.
-                </p>
-                <div id="supplyHandoffStats" class="supply-handoff__stats"></div>
-              </div>
-              <div class="supply-handoff__actions">
-                <button id="continueToBuyingBtn" type="button" class="btn btn--primary btn--large">Continue to CMax buying</button>
-                <p class="supply-handoff__hint">Step 2 stays locked until this handoff is confirmed.</p>
-              </div>
-            </section>
-
-            <div id="presetSummary" class="goal-summary">Add one anchor placement, then apply the shared preset.</div>
           </article>
 
-          <article class="supply-advanced-card">
+          <article id="supplyAdvancedCard" class="supply-advanced-card">
             <details class="advanced-panel">
               <summary>
                 <span class="advanced-panel__summary-copy">
@@ -551,7 +555,7 @@
                       <p class="planner-step__eyebrow">Step 3</p>
                       <h4>Choose the assortment focus</h4>
                       <p class="planner-step__summary" data-planner-step-summary>
-                        Choose SKUs yourself, or brief AI to choose relevant SKUs for you in real time.
+                        Choose SKUs yourself, or ask AI to choose relevant SKUs from the brief.
                       </p>
                     </div>
                     <div class="planner-step__meta">
@@ -564,7 +568,7 @@
                     <div class="field">
                       <label for="goalPrompt">AI SKU Brief (Optional)</label>
                       <p id="goalPromptHint" class="form-section__hint">
-                        Choose SKUs yourself, or brief AI to choose relevant SKUs for you in real time. Editing this brief replaces the shortlist; picking SKUs below switches back to manual selection.
+                        Editing this brief replaces the shortlist. Click the button when you want AI to run, or pick SKUs below to switch back to manual selection.
                       </p>
                       <textarea
                         id="goalPrompt"
@@ -574,6 +578,28 @@
                         aria-describedby="goalPromptHint"
                         placeholder="Example: Prioritize checkout add-ons like batteries, cables, and phone chargers in the Atlanta Buckhead flagship this afternoon."
                       ></textarea>
+                      <div class="goal-prompt-actions">
+                        <button id="goalPromptRunBtn" type="button" class="btn btn--ghost goal-prompt-actions__button">
+                          Let AI choose SKU's
+                        </button>
+                        <div
+                          id="goalPromptAiStatus"
+                          class="ai-ass ai-ass--ready ai-ass--compact goal-prompt-ai-status"
+                          role="status"
+                          aria-live="polite"
+                          aria-atomic="true"
+                        >
+                          <span class="ai-ass__visual" aria-hidden="true">
+                            <span class="ai-ass__orb"></span>
+                            <span class="ai-ass__spark"></span>
+                            <span class="ai-ass__spark"></span>
+                          </span>
+                          <span class="ai-ass__copy">
+                            <span class="ai-ass__kicker">AI brief</span>
+                            <span class="ai-ass__detail">Ready. Click the button to run the brief and refresh the shortlist.</span>
+                          </span>
+                        </div>
+                      </div>
                     </div>
 
                     <div class="field-row">
@@ -597,7 +623,7 @@
                     <div class="field">
                       <label>Priority SKUs</label>
                       <p class="panel__hint goal-products__hint">
-                        Pick SKUs manually, or use the AI brief above to auto-select a shortlist while you type. The selected line-up stays visible while you filter the assortment.
+                        Pick SKUs manually, or use the AI brief above and button to ask AI for a shortlist. The selected line-up stays visible while you filter the assortment.
                       </p>
                       <div class="goal-selected">
                         <div class="goal-selected__header">
