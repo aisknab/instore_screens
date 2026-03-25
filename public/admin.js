@@ -277,6 +277,34 @@ const MARKET_STORY_STEPS = [
         href: "https://www.grandviewresearch.com/horizon/outlook/in-store-digital-advertising-display-market/asia-pacific"
       }
     ],
+    nextLabel: "Show funding logic"
+  },
+  {
+    id: "funding-logic",
+    accent: "#5f8f46",
+    kicker: "Funding logic",
+    title: "The model can grow wallet, not just reshuffle spend.",
+    body:
+      "The case does not depend on brands taking money away from onsite. A measurable in-store layer can bring shopper and trade budgets into the retail media system, capture the next dollar when onsite marginal returns flatten, and keep more retailer media spend inside one closed-loop platform.",
+    note: "Even when some budget is reallocated across channels, the strategic outcome is stronger if Criteo captures a larger share of measurable commerce media spend.",
+    metrics: [
+      {
+        headline: "Expand",
+        label: "new budget enters the system",
+        detail: "Shopper marketing, trade, and in-store activation budgets become measurable media."
+      },
+      {
+        headline: "Optimize",
+        label: "the next dollar can work harder",
+        detail: "Brands can allocate across site and store by marginal ROI, not by channel silos."
+      },
+      {
+        headline: "Retain",
+        label: "Criteo captures more share of wallet",
+        detail: "Some mix shift is acceptable if the spend stays inside one closed-loop stack."
+      }
+    ],
+    sources: [],
     nextLabel: "Show strategic fit"
   },
   {
@@ -285,32 +313,23 @@ const MARKET_STORY_STEPS = [
     kicker: "Right to win",
     title: "Criteo enters this space from a position of strength.",
     body:
-      "This is not a category bet from scratch. Criteo already brings retailer relationships, advertiser demand, and an onsite retail media playbook proven in market. Extending that model into stores builds on capabilities already in hand rather than requiring a new commercial system to be invented.",
-    note: "The implementation path is equally pragmatic: extend CYield supply with a lightweight in-store layer and reuse the broader retail media stack.",
+      "This is not a category bet from scratch. Criteo already has retailer access, advertiser demand, and an onsite operating model with sales, optimization, and measurement proven in market. Extending that model into stores builds on existing strengths rather than requiring a new commercial system to be invented.",
+    note: "Execution risk stays lower when the commercial model, the buyer relationships, and the operating stack already exist.",
     metrics: [
       {
-        value: 2,
-        decimals: 0,
-        prefix: "",
-        suffix: "-sided",
-        label: "commercial network already in place",
-        detail: "Retailer and advertiser relationships already exist."
+        headline: "Relationships",
+        label: "demand and supply already connected",
+        detail: "Retailers and advertisers are already in the system."
       },
       {
-        value: 1,
-        decimals: 0,
-        prefix: "",
-        suffix: " playbook",
-        label: "onsite operating model already proven",
-        detail: "Sales, measurement, and optimization capabilities already exist."
+        headline: "Playbook",
+        label: "onsite execution already proven",
+        detail: "Sales, optimization, and measurement can be extended into store."
       },
       {
-        value: 1,
-        decimals: 0,
-        prefix: "",
-        suffix: " extension",
-        label: "product path into stores",
-        detail: "CYield needs an extension, not a rebuild."
+        headline: "Extension",
+        label: "product path is lightweight",
+        detail: "CYield needs an in-store layer, not a rebuild."
       }
     ],
     sources: [],
@@ -896,15 +915,19 @@ function animateMarketStoryMetrics() {
 }
 
 function buildMarketStoryMetricCardHtml(metric) {
-  return `
-    <article class="market-story-overlay__metric">
-      <strong
+  const staticHeadline = readTextValue(metric?.headline);
+  const valueMarkup = staticHeadline
+    ? `<strong class="market-story-overlay__metric-value market-story-overlay__metric-value--static">${escapeHtml(staticHeadline)}</strong>`
+    : `<strong
         class="market-story-overlay__metric-value js-market-story-metric"
         data-metric-value="${escapeHtml(String(metric.value || 0))}"
         data-metric-decimals="${escapeHtml(String(metric.decimals || 0))}"
         data-metric-prefix="${escapeHtml(metric.prefix || "")}"
         data-metric-suffix="${escapeHtml(metric.suffix || "")}"
-      ></strong>
+      ></strong>`;
+  return `
+    <article class="market-story-overlay__metric">
+      ${valueMarkup}
       <span class="market-story-overlay__metric-label">${escapeHtml(metric.label || "")}</span>
       <p class="market-story-overlay__metric-detail">${escapeHtml(metric.detail || "")}</p>
     </article>
@@ -3080,13 +3103,15 @@ function formatPresenterTelemetryLeader(entries = [], type) {
 
 function buildSupplyMarketIntroPresenterPayload() {
   return {
-    stageDescription: "The opening case moves from proven onsite economics to a focused beachhead, structural right to win, measurable activation, and adjacency economics before the CYield flow begins.",
+    stageDescription: "The opening case moves from proven onsite economics to a focused beachhead, funding logic, structural right to win, measurable activation, and adjacency economics before the CYield flow begins.",
     speakerSummary:
-      "The opening argument is straightforward: a proven onsite revenue engine, an APAC beachhead with room to win, a credible right to win for Criteo, measurable sales impact, and a scale story that works even under conservative share assumptions.",
+      "The opening argument is straightforward: a proven onsite revenue engine, an APAC beachhead with room to win, a funding model that can grow wallet rather than just cannibalize onsite, a credible right to win for Criteo, and a scale story that works under conservative share assumptions.",
     presenterNotes: [
       "The benchmark is onsite ecommerce media rather than total retail media because the proposition extends an existing monetization model instead of entering every channel at once.",
       "Statista's retail platform advertising category provides the cleanest published onsite benchmark, with WARC, EMARKETER, and RetailX corroborating that onsite remains the dominant share of retail media spend.",
       "APAC is the natural beachhead because it combines substantial onsite demand with a relatively early in-store display market.",
+      "The funding logic does not depend on taking dollars out of onsite. The stronger case is wallet expansion through shopper, trade, and in-store activation budgets becoming measurable retail media.",
+      "Where reallocation does happen, the portfolio logic is still favorable: the next dollar can move to the highest marginal ROI across site and store while Criteo captures a larger share of the retailer media stack.",
       "Criteo's right to win rests on assets already in hand: retailer relationships, advertiser demand, a proven onsite operating model, and a lightweight extension into CYield supply.",
       "The activation evidence matters because it positions in-store screens as a measurable retail media channel rather than a store-tech deployment.",
       "The economics are presented in two layers: media flow through the channel and platform revenue from operating the in-store layer.",
@@ -3096,6 +3121,7 @@ function buildSupplyMarketIntroPresenterPayload() {
       "$203.89B global onsite ecommerce media market",
       "$90.25B APAC onsite ecommerce media market",
       "$4.59B global / $1.31B APAC in-store digital display markets",
+      "Budget expansion, portfolio optimization, and share-of-wallet capture",
       "$203.89M global / $90.25M APAC media-flow scenario at 0.1% share",
       "$45.9M global / $13.12M APAC platform scenario at 1% share",
       "+14% to +28.3% reported sales lift"
@@ -3104,6 +3130,7 @@ function buildSupplyMarketIntroPresenterPayload() {
       "Onsite-only market framing",
       "Global market proof",
       "APAC beachhead",
+      "Funding logic",
       "Right to win",
       "Activation proof",
       "Adjacency economics"
@@ -3111,19 +3138,20 @@ function buildSupplyMarketIntroPresenterPayload() {
     demoActions: [
       "Proven onsite economics establish the revenue pool.",
       "APAC demonstrates the most attractive beachhead market.",
+      "The model expands wallet first and optimizes mix second.",
       "Criteo's right to win is grounded in relationships, operating maturity, and lightweight implementation.",
       "Activation evidence proves the channel can be sold on outcomes.",
       "The closing economics show material upside globally and in APAC."
     ],
     qaPrompts: [
-      "If someone challenges the onsite number, point to Statista's retail platform advertising market as the cleanest published benchmark and note that WARC, EMARKETER, and RetailX independently show onsite still represents about four-fifths or more of retail media spend.",
-      "If someone asks why total retail media is excluded, explain that total retail media includes channels the current platform does not sell; the business case needs to stay inside onsite ecommerce media plus in-store screens.",
-      "If someone asks why Criteo should win here, explain that this is an adjacency play built on existing advertiser demand, retailer relationships, onsite execution, and minimal CYield modification.",
-      "If someone asks whether this is a media or product opportunity, explain that the upside combines media budgets flowing through the channel with platform revenue from operating the screen layer.",
-      "If someone challenges the revenue math, position it as scenario modeling from published market sizes rather than a forecast."
+      "Why onsite rather than total retail media: the proposition extends the monetization model Criteo already runs instead of broadening into channels the platform does not yet serve.",
+      "Why this does not require onsite cannibalization: the primary thesis is wallet expansion from shopper, trade, and in-store budgets becoming measurable retail media.",
+      "Why some reallocation is still acceptable: Criteo is better off owning a larger share of measurable commerce media spend across site and store than protecting onsite share in isolation.",
+      "Why Criteo can win: retailer relationships, advertiser demand, onsite execution, and limited CYield modification are already in place.",
+      "Why the revenue math is credible: it is scenario modeling from published market sizes rather than a forecast."
     ],
     liveNarrative:
-      "The business case is straightforward: a proven onsite revenue engine, a compelling APAC beachhead, a credible right to win, measurable activation, and material upside even on modest penetration assumptions.",
+      "The business case is straightforward: a proven onsite revenue engine, a compelling APAC beachhead, funding logic that grows wallet, a credible right to win, measurable activation, and material upside even on modest penetration assumptions.",
     detailRows: [
       buildPresenterDetailRow(
         "Onsite base",
@@ -3131,6 +3159,10 @@ function buildSupplyMarketIntroPresenterPayload() {
       ),
       buildPresenterDetailRow("Adjacent market", "$4.59B global in-store digital advertising display market in 2024, with APAC at $1.312B."),
       buildPresenterDetailRow("Beachhead market", "$90.25B APAC retail platform advertising market in 2025 alongside the $1.312B APAC in-store digital advertising display market."),
+      buildPresenterDetailRow(
+        "Funding logic",
+        "The primary value creation path is wallet expansion from shopper, trade, and in-store budgets becoming measurable retail media; any mix shift from onsite is secondary and still strategically favorable if Criteo captures more share of wallet."
+      ),
       buildPresenterDetailRow(
         "Right to win",
         "Criteo already brings retailer relationships, advertiser demand, a proven onsite operating model, and a lightweight CYield extension path into stores."

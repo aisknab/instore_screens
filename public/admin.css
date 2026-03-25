@@ -4830,6 +4830,12 @@ body.has-market-story-overlay {
   letter-spacing: -0.04em;
 }
 
+.market-story-overlay__metric-value--static {
+  font-size: clamp(1.4rem, 2.2vw, 2rem);
+  line-height: 1.04;
+  letter-spacing: -0.03em;
+}
+
 .market-story-overlay__metric-label {
   display: block;
   margin-top: 14px;
