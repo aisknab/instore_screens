@@ -5744,6 +5744,42 @@ function upsertDemoScreenRecord(db, screenSpec, feed, nowIso) {
   return { action: "created", screen: record };
 }
 
+function buildDemoPlanningScreenRecord(screenSpec, current = null) {
+  if (current && typeof current === "object") {
+    return current;
+  }
+
+  return {
+    screenId: screenSpec.screenId,
+    storeId: screenSpec.storeId,
+    location: screenSpec.location,
+    pageId: screenSpec.pageId,
+    screenType: screenSpec.screenType,
+    screenSize: screenSpec.screenSize,
+    format: buildDefaultFormat(screenSpec.templateId, screenSpec.screenSize),
+    templateId: screenSpec.templateId,
+    refreshInterval: readRefreshInterval(screenSpec.refreshInterval),
+    deviceHints: buildScreenDeviceHints({
+      screenId: screenSpec.screenId,
+      storeId: screenSpec.storeId,
+      pageId: screenSpec.pageId,
+      location: screenSpec.location,
+      screenType: screenSpec.screenType,
+      screenSize: screenSpec.screenSize,
+      resolverId: screenSpec.resolverId || screenSpec.screenId
+    }),
+    lineItems: []
+  };
+}
+
+function buildDemoPlanningScreens(db) {
+  const screens = Array.isArray(db?.screens) ? db.screens : [];
+  const currentById = new Map(
+    screens.map((screen) => [readOptionalString(screen?.screenId, 80), screen]).filter(([screenId]) => Boolean(screenId))
+  );
+  return DEMO_SCREEN_SPECS.map((screenSpec) => buildDemoPlanningScreenRecord(screenSpec, currentById.get(screenSpec.screenId) || null));
+}
+
 function sampleList(items = [], limit = 0) {
   const source = Array.isArray(items) ? items : [];
   const maxItems = Math.max(0, Number(limit) || 0);
@@ -5874,7 +5910,7 @@ function buildDemoConfigSnapshot(db) {
   return {
     presetId: DEMO_PRESET_ID,
     storeId: DEMO_STORE_ID,
-    storeIds: sampleList(DEMO_STORE_IDS, storeIdSampleLimit),
+    storeIds: [...DEMO_STORE_IDS],
     storeCount: DEMO_STORE_IDS.length,
     title: "CYield / CMax guided demo",
     stageOrder: DEMO_STAGE_ORDER,
@@ -6658,10 +6694,8 @@ app.post("/api/agent/goals/plan", async (req, res) => {
     const run = await mutateDb(async (db) => {
       const allStoreScreens = Array.isArray(db.screens) ? db.screens : [];
       const screenTypeRates = getStoredScreenTypeRates(db);
-      const demoScreenIdSet = new Set(DEMO_SCREEN_SPECS.map((screen) => screen.screenId));
-      const demoCandidateScreens = allStoreScreens.filter((screen) => demoScreenIdSet.has(screen.screenId));
-      const shouldUseDemoInventory = demoCandidateScreens.length > 0 && (!goal.storeId || DEMO_STORE_ID_SET.has(goal.storeId));
-      const allScreens = shouldUseDemoInventory ? demoCandidateScreens : allStoreScreens;
+      const shouldUseDemoInventory = DEMO_SCREEN_SPECS.length > 0 && (!goal.storeId || DEMO_STORE_ID_SET.has(goal.storeId));
+      const allScreens = shouldUseDemoInventory ? buildDemoPlanningScreens(db) : allStoreScreens;
       const requestedPageId = readOptionalString(goal.pageId, 40);
       const initialScopedScreens = filterGoalScopeScreens(allScreens, goal);
       const targetResolution = await resolveGoalTargetProducts(goal, feed, initialScopedScreens.length > 0 ? initialScopedScreens : allScreens);
@@ -6847,7 +6881,17 @@ app.post("/api/agent/goals/apply", async (req, res) => {
       const appliedScreenIds = [];
 
       for (const screenId of plannedScreenIds) {
-        const screen = (db.screens || []).find((entry) => entry.screenId === screenId);
+        let screen = (db.screens || []).find((entry) => entry.screenId === screenId);
+        if (!screen) {
+          const screenSpec = getDemoScreenSpec(screenId);
+          if (screenSpec) {
+            const pageSpec = DEMO_PAGE_SPECS.find((page) => page.pageId === screenSpec.pageId) || null;
+            if (pageSpec) {
+              upsertDemoPageRecord(db, pageSpec, now);
+            }
+            screen = upsertDemoScreenRecord(db, screenSpec, feed, now).screen;
+          }
+        }
         if (!screen) {
           skippedCount += 1;
           continue;

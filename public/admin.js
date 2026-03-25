@@ -149,6 +149,7 @@ const DEFAULT_DEMO_CONFIG = {
   presetId: "cyield-cmax-demo",
   storeId: DEFAULT_DEMO_STORE_ID,
   storeCount: 0,
+  storeIds: [],
   title: "CYield / CMax guided demo",
   goalDefaults: { ...DEFAULT_GOAL_DEFAULTS },
   stages: {
@@ -1601,6 +1602,7 @@ function normalizeDemoConfig(response) {
     presetId: String(source.presetId || DEFAULT_DEMO_CONFIG.presetId),
     storeId: String(source.storeId || DEFAULT_DEMO_CONFIG.storeId),
     storeCount: Math.max(0, Number(source.storeCount || source.storeIds?.length || DEFAULT_DEMO_CONFIG.storeCount || 0)),
+    storeIds: Array.isArray(source.storeIds) ? source.storeIds.map((storeId) => String(storeId || "").trim()).filter(Boolean) : [],
     title: String(source.title || DEFAULT_DEMO_CONFIG.title),
     goalDefaults,
     stages: {
@@ -3234,8 +3236,16 @@ function renderSupplyLists() {
 }
 
 function renderGoalScopeSelects() {
-  const stores = Array.isArray(state.inventoryStoreIds) ? state.inventoryStoreIds : [];
-  const pages = Array.isArray(state.inventoryPageIds) ? state.inventoryPageIds : [];
+  const stores = Array.isArray(state.demo.storeIds) && state.demo.storeIds.length > 0
+    ? state.demo.storeIds
+    : Array.isArray(state.inventoryStoreIds)
+      ? state.inventoryStoreIds
+      : [];
+  const pages = Array.isArray(state.demo.pages) && state.demo.pages.length > 0
+    ? state.demo.pages.map((page) => String(page?.pageId || "").trim()).filter(Boolean)
+    : Array.isArray(state.inventoryPageIds)
+      ? state.inventoryPageIds
+      : [];
 
   const currentStore = elements.goalStoreScope?.value || "";
   const currentPage = elements.goalPageScope?.value || "";
