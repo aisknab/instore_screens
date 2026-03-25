@@ -244,10 +244,10 @@ const MARKET_STORY_STEPS = [
   {
     id: "apac",
     accent: "#2eb7a3",
-    kicker: "APAC wedge",
-    title: "APAC offers scale today and whitespace for growth.",
+    kicker: "Beachhead market",
+    title: "APAC is the right beachhead for expansion.",
     body:
-      "The regional profile mirrors the global one. Statista Market Insights projects APAC retail platform advertising at $90.25B in 2025, while Grand View Research sizes the APAC in-store digital advertising display market at $1.31B in 2024. That combination creates an attractive entry point: meaningful demand, early competitive maturity, and room for a differentiated in-store product layer.",
+      "The regional profile mirrors the global one. Statista Market Insights projects APAC retail platform advertising at $90.25B in 2025, while Grand View Research sizes the APAC in-store digital advertising display market at $1.31B in 2024. That creates the classic beachhead dynamic: enough demand to matter, but enough whitespace to win with a focused product.",
     note: "The comparison stays disciplined: onsite ecommerce media versus in-store screens, not total retail media.",
     metrics: [
       {
@@ -357,43 +357,57 @@ const MARKET_STORY_STEPS = [
   {
     id: "modeled-upside",
     accent: "#f0b54b",
-    kicker: "Conservative revenue case",
-    title: "Even cautious penetration assumptions produce material upside.",
+    kicker: "Adjacency economics",
+    title: "A focused beachhead can scale into a material business.",
     body:
-      "At 0.1% of onsite ecommerce media, the opportunity maps to roughly $204M globally and $90M in APAC in media flow. At 1% of the in-store digital display market, the platform layer maps to roughly $45.9M globally and $13.1M in APAC. The point is scale: modest share assumptions already support a meaningful business.",
-    note: "These figures are scenario models built from published market sizes and are intended to show order of magnitude, not forecast revenue.",
-    metrics: [
+      "The economics should be read in two layers. First, media budgets that can flow through an in-store extension of onsite retail media. Second, platform revenue from operating the screen layer. Under modest penetration assumptions, both the global market and the APAC beachhead are large enough to support a meaningful new business line.",
+    note: "This is a classic adjacency case: large core market, focused beachhead, credible right to win, and conservative share assumptions.",
+    metricSections: [
       {
-        value: 203.89,
-        decimals: 2,
-        prefix: "$",
-        suffix: "M",
-        label: "0.1% of global onsite ecommerce media",
-        detail: "Modeled media-flow scenario"
+        kicker: "Media flow",
+        title: "Budgets that could flow through the channel",
+        note: "Modeled at 0.1% of onsite ecommerce media",
+        metrics: [
+          {
+            value: 203.89,
+            decimals: 2,
+            prefix: "$",
+            suffix: "M",
+            label: "Global media flow potential",
+            detail: "0.1% of worldwide onsite ecommerce media"
+          },
+          {
+            value: 90.25,
+            decimals: 2,
+            prefix: "$",
+            suffix: "M",
+            label: "APAC media flow potential",
+            detail: "0.1% of APAC onsite ecommerce media"
+          }
+        ]
       },
       {
-        value: 90.25,
-        decimals: 2,
-        prefix: "$",
-        suffix: "M",
-        label: "0.1% of APAC onsite ecommerce media",
-        detail: "Modeled media-flow scenario"
-      },
-      {
-        value: 45.9,
-        decimals: 1,
-        prefix: "$",
-        suffix: "M",
-        label: "1% of the global in-store display market",
-        detail: "Modeled platform-revenue scenario"
-      },
-      {
-        value: 13.12,
-        decimals: 2,
-        prefix: "$",
-        suffix: "M",
-        label: "1% of the APAC in-store display market",
-        detail: "Modeled platform-revenue scenario"
+        kicker: "Platform revenue",
+        title: "Revenue pool for operating the in-store layer",
+        note: "Modeled at 1% of the in-store digital display market",
+        metrics: [
+          {
+            value: 45.9,
+            decimals: 1,
+            prefix: "$",
+            suffix: "M",
+            label: "Global platform revenue potential",
+            detail: "1% of the worldwide in-store display market"
+          },
+          {
+            value: 13.12,
+            decimals: 2,
+            prefix: "$",
+            suffix: "M",
+            label: "APAC platform revenue potential",
+            detail: "1% of the APAC in-store display market"
+          }
+        ]
       }
     ],
     sources: [
@@ -881,6 +895,45 @@ function animateMarketStoryMetrics() {
   }
 }
 
+function buildMarketStoryMetricCardHtml(metric) {
+  return `
+    <article class="market-story-overlay__metric">
+      <strong
+        class="market-story-overlay__metric-value js-market-story-metric"
+        data-metric-value="${escapeHtml(String(metric.value || 0))}"
+        data-metric-decimals="${escapeHtml(String(metric.decimals || 0))}"
+        data-metric-prefix="${escapeHtml(metric.prefix || "")}"
+        data-metric-suffix="${escapeHtml(metric.suffix || "")}"
+      ></strong>
+      <span class="market-story-overlay__metric-label">${escapeHtml(metric.label || "")}</span>
+      <p class="market-story-overlay__metric-detail">${escapeHtml(metric.detail || "")}</p>
+    </article>
+  `;
+}
+
+function renderMarketStoryMetricsContent(step) {
+  const metricSections = Array.isArray(step?.metricSections) ? step.metricSections : [];
+  if (metricSections.length > 0) {
+    return metricSections
+      .map(
+        (section) => `
+          <section class="market-story-overlay__metric-section">
+            <div class="market-story-overlay__metric-section-head">
+              ${section.kicker ? `<p class="market-story-overlay__metric-section-kicker">${escapeHtml(section.kicker)}</p>` : ""}
+              ${section.title ? `<h3>${escapeHtml(section.title)}</h3>` : ""}
+              ${section.note ? `<p class="market-story-overlay__metric-section-note">${escapeHtml(section.note)}</p>` : ""}
+            </div>
+            <div class="market-story-overlay__metric-grid">
+              ${Array.isArray(section.metrics) ? section.metrics.map((metric) => buildMarketStoryMetricCardHtml(metric)).join("") : ""}
+            </div>
+          </section>
+        `
+      )
+      .join("");
+  }
+  return (step.metrics || []).map((metric) => buildMarketStoryMetricCardHtml(metric)).join("");
+}
+
 function renderMarketStoryOverlay() {
   const active = isSupplyMarketIntroActive();
   setMarketStoryOverlayVisible(active);
@@ -921,23 +974,11 @@ function renderMarketStoryOverlay() {
     ).join("");
   }
   if (elements.marketStoryMetrics) {
-    elements.marketStoryMetrics.innerHTML = (step.metrics || [])
-      .map(
-        (metric) => `
-          <article class="market-story-overlay__metric">
-            <strong
-              class="market-story-overlay__metric-value js-market-story-metric"
-              data-metric-value="${escapeHtml(String(metric.value || 0))}"
-              data-metric-decimals="${escapeHtml(String(metric.decimals || 0))}"
-              data-metric-prefix="${escapeHtml(metric.prefix || "")}"
-              data-metric-suffix="${escapeHtml(metric.suffix || "")}"
-            ></strong>
-            <span class="market-story-overlay__metric-label">${escapeHtml(metric.label || "")}</span>
-            <p class="market-story-overlay__metric-detail">${escapeHtml(metric.detail || "")}</p>
-          </article>
-        `
-      )
-      .join("");
+    elements.marketStoryMetrics.classList.toggle(
+      "market-story-overlay__metrics--sections",
+      Array.isArray(step.metricSections) && step.metricSections.length > 0
+    );
+    elements.marketStoryMetrics.innerHTML = renderMarketStoryMetricsContent(step);
   }
   if (elements.marketStorySources) {
     elements.marketStorySources.innerHTML = (step.sources || [])
@@ -3039,16 +3080,17 @@ function formatPresenterTelemetryLeader(entries = [], type) {
 
 function buildSupplyMarketIntroPresenterPayload() {
   return {
-    stageDescription: "The opening case moves from proven onsite economics to regional whitespace, strategic fit, measurable activation, and conservative upside before the CYield flow begins.",
+    stageDescription: "The opening case moves from proven onsite economics to a focused beachhead, structural right to win, measurable activation, and adjacency economics before the CYield flow begins.",
     speakerSummary:
-      "The opening argument is straightforward: onsite ecommerce media is already a large revenue engine, APAC offers an attractive wedge, Criteo has the right to win, and in-store screens already show measurable commercial impact.",
+      "The opening argument is straightforward: a proven onsite revenue engine, an APAC beachhead with room to win, a credible right to win for Criteo, measurable sales impact, and a scale story that works even under conservative share assumptions.",
     presenterNotes: [
-      "The benchmark is onsite ecommerce media, not total retail media, because the proposition extends the monetization model Criteo already operates rather than expanding into every retail media channel at once.",
-      "Statista's retail platform advertising category provides the cleanest published onsite benchmark, with WARC, EMARKETER, and RetailX all corroborating that onsite remains the dominant share of retail media spend.",
-      "APAC is the most compelling regional wedge because it combines substantial onsite demand with a relatively early in-store display market.",
+      "The benchmark is onsite ecommerce media rather than total retail media because the proposition extends an existing monetization model instead of entering every channel at once.",
+      "Statista's retail platform advertising category provides the cleanest published onsite benchmark, with WARC, EMARKETER, and RetailX corroborating that onsite remains the dominant share of retail media spend.",
+      "APAC is the natural beachhead because it combines substantial onsite demand with a relatively early in-store display market.",
       "Criteo's right to win rests on assets already in hand: retailer relationships, advertiser demand, a proven onsite operating model, and a lightweight extension into CYield supply.",
-      "The activation evidence matters because it reframes in-store screens as a measurable retail media channel rather than as a store-tech deployment.",
-      "The revenue slide is intentionally conservative and shows both global and APAC scenarios to demonstrate scale without overstating certainty."
+      "The activation evidence matters because it positions in-store screens as a measurable retail media channel rather than a store-tech deployment.",
+      "The economics are presented in two layers: media flow through the channel and platform revenue from operating the in-store layer.",
+      "Global numbers establish that the adjacency can matter; APAC numbers show that a focused beachhead can still be material."
     ],
     proofPoints: [
       "$203.89B global onsite ecommerce media market",
@@ -3060,17 +3102,18 @@ function buildSupplyMarketIntroPresenterPayload() {
     ],
     supportingModules: [
       "Onsite-only market framing",
-      "Global and APAC market sizing",
+      "Global market proof",
+      "APAC beachhead",
       "Right to win",
       "Activation proof",
-      "Conservative revenue scenario"
+      "Adjacency economics"
     ],
     demoActions: [
-      "Establish onsite ecommerce media as the proven economic base.",
-      "Use APAC to show a practical regional wedge with both scale and whitespace.",
-      "Land the right-to-win case around relationships, operating maturity, and a lightweight product extension.",
-      "Use the lift studies to prove the channel can be sold on outcomes.",
-      "Close on global and APAC upside before revealing CYield step 1."
+      "Proven onsite economics establish the revenue pool.",
+      "APAC demonstrates the most attractive beachhead market.",
+      "Criteo's right to win is grounded in relationships, operating maturity, and lightweight implementation.",
+      "Activation evidence proves the channel can be sold on outcomes.",
+      "The closing economics show material upside globally and in APAC."
     ],
     qaPrompts: [
       "If someone challenges the onsite number, point to Statista's retail platform advertising market as the cleanest published benchmark and note that WARC, EMARKETER, and RetailX independently show onsite still represents about four-fifths or more of retail media spend.",
@@ -3080,14 +3123,14 @@ function buildSupplyMarketIntroPresenterPayload() {
       "If someone challenges the revenue math, position it as scenario modeling from published market sizes rather than a forecast."
     ],
     liveNarrative:
-      "The business case is straightforward: a proven onsite revenue engine, an attractive APAC wedge, a credible right to win, measurable activation, and material upside even on modest penetration assumptions.",
+      "The business case is straightforward: a proven onsite revenue engine, a compelling APAC beachhead, a credible right to win, measurable activation, and material upside even on modest penetration assumptions.",
     detailRows: [
       buildPresenterDetailRow(
         "Onsite base",
         "$203.89B global retail platform advertising market in 2025, with external corroboration that onsite remains the dominant share of retail media spend."
       ),
       buildPresenterDetailRow("Adjacent market", "$4.59B global in-store digital advertising display market in 2024, with APAC at $1.312B."),
-      buildPresenterDetailRow("APAC wedge", "$90.25B APAC retail platform advertising market in 2025 alongside the $1.312B APAC in-store digital advertising display market."),
+      buildPresenterDetailRow("Beachhead market", "$90.25B APAC retail platform advertising market in 2025 alongside the $1.312B APAC in-store digital advertising display market."),
       buildPresenterDetailRow(
         "Right to win",
         "Criteo already brings retailer relationships, advertiser demand, a proven onsite operating model, and a lightweight CYield extension path into stores."
@@ -3097,8 +3140,8 @@ function buildSupplyMarketIntroPresenterPayload() {
         "Albertsons reported +14% in-store sales lift in a 116-store case study; SMG / Kantar reported +28.3% average product sales lift across 12,558 campaigns."
       ),
       buildPresenterDetailRow(
-        "Conservative upside",
-        "0.1% of onsite ecommerce media implies about $203.89M globally and $90.25M in APAC in media flow. 1% of the in-store display market implies about $45.9M globally and $13.12M in APAC in platform revenue."
+        "Adjacency economics",
+        "0.1% of onsite ecommerce media implies about $203.89M globally and $90.25M in APAC in media flow. Separately, 1% of the in-store display market implies about $45.9M globally and $13.12M in APAC in platform revenue."
       )
     ]
   };
