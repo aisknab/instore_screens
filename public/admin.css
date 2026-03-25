@@ -5292,18 +5292,26 @@ body.admin-app .stage-panel {
 }
 
 body.admin-app .stage-panel[data-stage-panel="supply"] {
+  --stage-art-size: min(62%, 1080px) auto;
+  --stage-art-opacity: 0.62;
   background:
     radial-gradient(900px 280px at 0% 0%, rgba(240, 123, 86, 0.16), transparent 62%),
+    radial-gradient(620px 240px at 100% 0%, rgba(240, 123, 86, 0.1), transparent 64%),
     linear-gradient(180deg, rgba(10, 20, 36, 0.96), rgba(7, 14, 27, 0.92));
 }
 
 body.admin-app .stage-panel[data-stage-panel="buying"] {
+  --stage-art-size: min(56%, 980px) auto;
+  --stage-art-opacity: 0.58;
   background:
     radial-gradient(780px 260px at 100% 0%, rgba(69, 208, 190, 0.16), transparent 62%),
+    radial-gradient(560px 220px at 0% 0%, rgba(69, 208, 190, 0.08), transparent 62%),
     linear-gradient(180deg, rgba(10, 20, 36, 0.96), rgba(7, 14, 27, 0.92));
 }
 
 body.admin-app .stage-panel[data-stage-panel="monitoring"] {
+  --stage-art-size: min(58%, 1020px) auto;
+  --stage-art-opacity: 0.56;
   background:
     radial-gradient(900px 280px at 0% 0%, rgba(90, 157, 255, 0.18), transparent 62%),
     radial-gradient(620px 220px at 100% 10%, rgba(69, 208, 190, 0.12), transparent 60%),
@@ -5325,10 +5333,14 @@ body.admin-app .stage-panel::before {
 
 body.admin-app .stage-panel::after {
   background-image:
-    linear-gradient(90deg, rgba(5, 10, 18, 0.97) 0%, rgba(5, 10, 18, 0.88) 24%, rgba(5, 10, 18, 0.32) 52%, transparent 78%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.02) 46%, rgba(5, 10, 18, 0.48) 100%),
+    linear-gradient(90deg, rgba(5, 10, 18, 0.98) 0%, rgba(5, 10, 18, 0.92) 24%, rgba(5, 10, 18, 0.58) 48%, rgba(5, 10, 18, 0.18) 64%, rgba(5, 10, 18, 0.74) 86%, rgba(5, 10, 18, 0.96) 100%),
+    radial-gradient(68% 92% at 100% 0%, rgba(255, 255, 255, 0.09) 0%, transparent 58%),
+    radial-gradient(72% 112% at 100% 6%, rgba(5, 10, 18, 0) 36%, rgba(5, 10, 18, 0.18) 56%, rgba(5, 10, 18, 0.72) 82%, rgba(5, 10, 18, 0.96) 100%),
     var(--stage-art, none);
-  opacity: 0.46;
+  background-repeat: no-repeat, no-repeat, no-repeat, no-repeat;
+  background-position: 0 0, right -6% top -14%, right -16% top -10%, right -6% top 0;
+  background-size: 100% 100%, 62% 84%, 82% 100%, var(--stage-art-size, min(56%, 980px) auto);
+  opacity: var(--stage-art-opacity, 0.58);
   mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.98), rgba(0, 0, 0, 0.58));
 }
 
@@ -5425,12 +5437,16 @@ body.admin-app .btn {
 
 body.admin-app .btn--primary {
   border-color: color-mix(in srgb, var(--stage-accent, var(--accent)) 34%, rgba(255, 255, 255, 0.16));
-  background: linear-gradient(
-    135deg,
-    color-mix(in srgb, var(--stage-accent, var(--accent)) 78%, #fff),
-    color-mix(in srgb, var(--stage-accent, var(--accent)) 68%, #08111f)
-  );
-  box-shadow: 0 16px 30px color-mix(in srgb, var(--stage-accent, var(--accent)) 24%, transparent);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0) 42%),
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--stage-accent, var(--accent)) 84%, #ffd9cf),
+      color-mix(in srgb, var(--stage-accent, var(--accent)) 64%, #08111f)
+    );
+  box-shadow:
+    0 16px 30px color-mix(in srgb, var(--stage-accent, var(--accent)) 22%, transparent),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18);
 }
 
 body.admin-app .btn--ghost,
@@ -5464,6 +5480,79 @@ body.admin-app .monitoring-card--runs {
   background:
     radial-gradient(460px 180px at 0% 0%, color-mix(in srgb, var(--stage-accent, var(--accent)) 16%, transparent), transparent 68%),
     linear-gradient(180deg, rgba(12, 22, 40, 0.96), rgba(8, 16, 31, 0.9));
+}
+
+body.admin-app .supply-flow-card {
+  border-color: rgba(171, 190, 223, 0.18);
+  box-shadow:
+    0 22px 42px rgba(0, 10, 24, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.07);
+}
+
+body.admin-app .supply-step {
+  grid-template-columns: 64px minmax(0, 1fr) minmax(220px, 280px);
+  border-color: rgba(153, 174, 207, 0.16);
+  border-radius: 24px;
+  padding: 20px 18px;
+  background:
+    radial-gradient(240px 120px at 100% 100%, color-mix(in srgb, var(--stage-accent, var(--accent)) 10%, transparent), transparent 72%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.015)),
+    linear-gradient(180deg, rgba(13, 24, 44, 0.94), rgba(9, 18, 34, 0.88));
+  box-shadow:
+    0 18px 30px rgba(0, 10, 24, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+body.admin-app .supply-step__index {
+  width: 52px;
+  height: 52px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 18px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0) 42%),
+    linear-gradient(135deg, color-mix(in srgb, var(--stage-accent, var(--accent)) 84%, #fff1eb), color-mix(in srgb, var(--stage-accent, var(--accent)) 34%, #08111f));
+  color: #fff7f3;
+  box-shadow:
+    0 14px 24px color-mix(in srgb, var(--stage-accent, var(--accent)) 18%, transparent),
+    inset 0 1px 0 rgba(255, 255, 255, 0.24);
+}
+
+body.admin-app .supply-step__body h4,
+body.admin-app .supply-handoff__copy h4,
+body.admin-app .advanced-panel__summary-title {
+  color: var(--ink);
+}
+
+body.admin-app .supply-step__actions,
+body.admin-app .supply-handoff__actions {
+  justify-items: end;
+  gap: 12px;
+}
+
+body.admin-app .supply-step__actions .btn,
+body.admin-app .supply-handoff__actions .btn {
+  justify-self: end;
+  width: min(100%, 240px);
+  min-width: 200px;
+  border-radius: 16px;
+}
+
+body.admin-app .supply-step__hint,
+body.admin-app .supply-handoff__hint {
+  max-width: 28ch;
+}
+
+body.admin-app .advanced-panel > summary {
+  border-color: rgba(153, 174, 207, 0.18);
+  background:
+    radial-gradient(280px 120px at 0% 0%, color-mix(in srgb, var(--stage-accent, var(--accent)) 10%, transparent), transparent 72%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.015)),
+    linear-gradient(180deg, rgba(12, 22, 40, 0.94), rgba(8, 16, 31, 0.88));
+}
+
+body.admin-app .goal-summary,
+body.admin-app .summary-card {
+  border-color: rgba(153, 174, 207, 0.16);
 }
 
 body.admin-app .goal-rate-card,
@@ -5777,6 +5866,524 @@ body.admin-app .goal-chip:hover {
   border-color: color-mix(in srgb, var(--stage-accent, var(--accent)) 34%, var(--panel-border));
 }
 
+/* Third-pass editorial refinements */
+
+body.admin-app .stage-panel__header {
+  align-items: end;
+  gap: 18px 26px;
+  margin-bottom: 30px;
+}
+
+body.admin-app .stage-panel__header h2 {
+  font-size: clamp(2rem, 2.6vw, 2.85rem);
+  line-height: 0.98;
+  letter-spacing: -0.04em;
+}
+
+body.admin-app .stage-panel__actions {
+  gap: 10px;
+  align-items: center;
+}
+
+body.admin-app .section-kicker,
+body.admin-app .planner-step__eyebrow,
+body.admin-app .advanced-panel__eyebrow,
+body.admin-app .measurement-brief__eyebrow,
+body.admin-app .monitoring-overview__eyebrow {
+  letter-spacing: 0.12em;
+}
+
+body.admin-app .stage-pill,
+body.admin-app .card__badge,
+body.admin-app .monitoring-signal,
+body.admin-app .planner-step__status {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 0 12px;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+body.admin-app .card__badge,
+body.admin-app .monitoring-signal,
+body.admin-app .planner-step__status {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.045);
+  color: rgba(237, 244, 255, 0.76);
+  box-shadow: none;
+}
+
+body.admin-app .stage-pill {
+  border-color: color-mix(in srgb, var(--stage-accent, var(--accent)) 28%, rgba(255, 255, 255, 0.14));
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--stage-accent, var(--accent)) 18%, rgba(255, 255, 255, 0.18)), rgba(255, 255, 255, 0.03)),
+    rgba(255, 255, 255, 0.04);
+  color: rgba(255, 247, 243, 0.92);
+}
+
+body.admin-app .supply-flow-card {
+  position: relative;
+  padding: 28px 26px 24px;
+  border-color: rgba(153, 174, 207, 0.1);
+  background:
+    radial-gradient(760px 220px at 0% 0%, color-mix(in srgb, var(--stage-accent, var(--accent)) 18%, transparent), transparent 58%),
+    linear-gradient(180deg, rgba(10, 20, 36, 0.94), rgba(7, 14, 27, 0.88));
+  box-shadow:
+    0 26px 52px rgba(0, 10, 24, 0.26),
+    inset 0 1px 0 rgba(255, 255, 255, 0.07);
+}
+
+body.admin-app .supply-flow-card__header {
+  align-items: start;
+  gap: 16px 24px;
+  margin-bottom: 20px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid rgba(153, 174, 207, 0.1);
+}
+
+body.admin-app .supply-flow-card__header h3 {
+  font-size: clamp(1.55rem, 2vw, 1.9rem);
+  letter-spacing: -0.03em;
+}
+
+body.admin-app .supply-flow-card__badges {
+  gap: 8px;
+}
+
+body.admin-app .supply-step {
+  grid-template-columns: 64px minmax(0, 1fr);
+  grid-template-areas:
+    "index body"
+    ". actions";
+  gap: 18px 20px;
+  padding: 6px 0 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+body.admin-app .supply-step + .supply-step {
+  margin-top: 18px;
+  padding-top: 24px;
+  border-top: 1px solid rgba(153, 174, 207, 0.1);
+}
+
+body.admin-app .supply-step__index {
+  grid-area: index;
+  align-self: start;
+}
+
+body.admin-app .supply-step__body {
+  grid-area: body;
+  display: grid;
+  gap: 10px;
+}
+
+body.admin-app .supply-step__body h4 {
+  font-size: clamp(1.35rem, 1.7vw, 1.7rem);
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+}
+
+body.admin-app .supply-step__lede,
+body.admin-app .supply-handoff__lede {
+  max-width: 68ch;
+  line-height: 1.65;
+  color: rgba(228, 236, 248, 0.82);
+}
+
+body.admin-app .supply-step__actions {
+  grid-area: actions;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(153, 174, 207, 0.08);
+}
+
+body.admin-app .supply-step__actions .btn {
+  width: auto;
+  min-width: 240px;
+}
+
+body.admin-app .supply-step__hint {
+  margin: 0;
+  max-width: 40ch;
+}
+
+body.admin-app .supply-chip-row {
+  gap: 10px;
+}
+
+body.admin-app .supply-chip {
+  padding: 8px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.035);
+  color: rgba(237, 244, 255, 0.72);
+  box-shadow: none;
+}
+
+body.admin-app .supply-chip:first-child {
+  background: color-mix(in srgb, var(--stage-accent, var(--accent)) 10%, rgba(255, 255, 255, 0.03));
+  color: rgba(255, 247, 243, 0.86);
+}
+
+body.admin-app .supply-handoff {
+  gap: 18px;
+  padding: 24px 24px 22px;
+  border-radius: 26px;
+  border-color: rgba(153, 174, 207, 0.12);
+  background:
+    radial-gradient(560px 180px at 0% 0%, color-mix(in srgb, var(--stage-accent, var(--accent)) 14%, transparent), transparent 60%),
+    linear-gradient(180deg, rgba(10, 20, 36, 0.94), rgba(7, 14, 27, 0.9));
+}
+
+body.admin-app .supply-handoff__copy {
+  display: grid;
+  gap: 8px;
+}
+
+body.admin-app .supply-handoff__copy h4 {
+  font-size: clamp(1.45rem, 1.8vw, 1.8rem);
+  letter-spacing: -0.03em;
+}
+
+body.admin-app .supply-handoff__actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px 20px;
+  padding-top: 18px;
+  border-top: 1px solid rgba(153, 174, 207, 0.08);
+}
+
+body.admin-app .supply-handoff__actions .btn {
+  width: auto;
+  min-width: 300px;
+}
+
+body.admin-app .supply-handoff__hint {
+  margin: 0;
+  max-width: none;
+  color: rgba(228, 236, 248, 0.68);
+}
+
+body.admin-app .supply-handoff__stats {
+  gap: 12px;
+}
+
+body.admin-app .supply-handoff__stat {
+  padding: 14px 14px 12px;
+  border: 0;
+  background: rgba(255, 255, 255, 0.04);
+  box-shadow: none;
+}
+
+body.admin-app #presetSummary {
+  padding: 22px 24px;
+  border-color: rgba(153, 174, 207, 0.1);
+  background:
+    radial-gradient(380px 140px at 0% 0%, color-mix(in srgb, var(--stage-accent, var(--accent)) 12%, transparent), transparent 64%),
+    linear-gradient(180deg, rgba(11, 21, 39, 0.88), rgba(7, 15, 29, 0.82));
+  line-height: 1.65;
+}
+
+body.admin-app #presetSummary strong {
+  display: block;
+  margin-bottom: 4px;
+  font-size: clamp(1.22rem, 1.5vw, 1.42rem);
+  letter-spacing: -0.03em;
+}
+
+body.admin-app .advanced-panel > summary {
+  opacity: 0.78;
+  box-shadow: none;
+  background: linear-gradient(180deg, rgba(11, 21, 39, 0.72), rgba(7, 15, 29, 0.68));
+}
+
+body.admin-app .advanced-panel[open] > summary {
+  opacity: 1;
+}
+
+body.admin-app .stage-grid--buying {
+  gap: 30px;
+  align-items: start;
+}
+
+body.admin-app .stage-grid--buying > .card.card--form {
+  grid-column: span 7;
+  background:
+    radial-gradient(640px 220px at 0% 0%, rgba(69, 208, 190, 0.14), transparent 58%),
+    linear-gradient(180deg, rgba(11, 21, 39, 0.96), rgba(7, 14, 27, 0.9));
+}
+
+body.admin-app .stage-grid--buying > .card:not(.card--form) {
+  grid-column: span 5;
+  background:
+    radial-gradient(720px 260px at 100% 0%, rgba(69, 208, 190, 0.15), transparent 56%),
+    radial-gradient(420px 160px at 0% 100%, rgba(240, 123, 86, 0.08), transparent 60%),
+    linear-gradient(180deg, rgba(10, 19, 36, 0.94), rgba(6, 12, 23, 0.9));
+}
+
+body.admin-app .planner-flow {
+  display: grid;
+  gap: 14px;
+}
+
+body.admin-app .planner-step[data-step-state="active"] {
+  border-color: color-mix(in srgb, var(--stage-accent, var(--accent)) 32%, rgba(255, 255, 255, 0.16));
+  background:
+    radial-gradient(420px 180px at 0% 0%, color-mix(in srgb, var(--stage-accent, var(--accent)) 20%, transparent), transparent 62%),
+    linear-gradient(180deg, rgba(13, 25, 46, 0.98), rgba(8, 17, 31, 0.92));
+  box-shadow:
+    0 22px 44px rgba(0, 10, 24, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+body.admin-app .planner-step[data-step-state="available"],
+body.admin-app .planner-step[data-step-state="complete"] {
+  background:
+    radial-gradient(360px 140px at 0% 0%, rgba(255, 255, 255, 0.05), transparent 68%),
+    linear-gradient(180deg, rgba(11, 21, 39, 0.86), rgba(7, 15, 29, 0.82));
+}
+
+body.admin-app .planner-step[data-step-state="locked"] {
+  opacity: 0.7;
+  border-color: rgba(153, 174, 207, 0.08);
+  background: linear-gradient(180deg, rgba(9, 18, 34, 0.64), rgba(7, 14, 27, 0.6));
+  box-shadow: none;
+}
+
+body.admin-app .planner-step__header {
+  padding-bottom: 14px;
+}
+
+body.admin-app .planner-step__header h4 {
+  font-size: 1.18rem;
+  letter-spacing: -0.02em;
+}
+
+body.admin-app .planner-step__summary {
+  max-width: 54ch;
+  color: rgba(228, 236, 248, 0.8);
+  line-height: 1.55;
+}
+
+body.admin-app .planner-step__meta {
+  gap: 8px;
+  align-items: flex-end;
+}
+
+body.admin-app .planner-step__meta .btn {
+  min-width: 88px;
+  border-radius: 999px;
+}
+
+body.admin-app .planner-step__body {
+  padding-top: 18px;
+  gap: 18px;
+}
+
+body.admin-app .planner-step__actions {
+  margin-top: 6px;
+}
+
+body.admin-app #goalPlanBudget:empty {
+  display: none;
+}
+
+body.admin-app #goalPlanSummary.empty,
+body.admin-app #telemetrySummary.empty,
+body.admin-app #goalLiveSummary.empty {
+  min-height: 220px;
+  padding: 24px 22px;
+  align-content: end;
+  line-height: 1.65;
+}
+
+body.admin-app #goalPlanSummary.empty {
+  min-height: 300px;
+  border-color: rgba(69, 208, 190, 0.18);
+  background:
+    linear-gradient(120deg, rgba(5, 10, 18, 0.72) 0%, rgba(5, 10, 18, 0.34) 34%, rgba(5, 10, 18, 0.84) 100%),
+    radial-gradient(580px 220px at 18% 0%, rgba(69, 208, 190, 0.18), transparent 54%),
+    radial-gradient(260px 160px at 82% 20%, rgba(255, 255, 255, 0.05), transparent 62%),
+    var(--asset-empty-state) right center / 74% auto no-repeat,
+    linear-gradient(180deg, rgba(10, 20, 36, 0.94), rgba(7, 14, 27, 0.9));
+}
+
+body.admin-app #goalPlanChanges.stack-list:empty {
+  min-height: 120px;
+  display: grid;
+  align-content: start;
+  padding-top: 12px;
+}
+
+body.admin-app #goalPlanChanges.stack-list:empty::before {
+  content: "Activation moves, screen picks, and rationale will appear here once the brief runs.";
+  padding: 16px 18px;
+  border: 1px dashed rgba(153, 174, 207, 0.12);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.02);
+  color: rgba(228, 236, 248, 0.72);
+}
+
+body.admin-app .goal-products {
+  border-color: rgba(153, 174, 207, 0.1);
+  background:
+    linear-gradient(180deg, rgba(9, 18, 34, 0.92), rgba(6, 12, 23, 0.88));
+}
+
+body.admin-app .goal-products__item {
+  padding: 12px 14px;
+}
+
+body.admin-app .monitoring-dashboard {
+  gap: 30px;
+}
+
+body.admin-app .monitoring-layout {
+  gap: 28px;
+  grid-template-columns: minmax(0, 1.24fr) minmax(320px, 0.82fr);
+}
+
+body.admin-app .monitoring-layout__primary,
+body.admin-app .monitoring-layout__side {
+  gap: 28px;
+}
+
+body.admin-app .monitoring-card--measurement {
+  border-color: rgba(90, 157, 255, 0.16);
+  background:
+    radial-gradient(720px 240px at 0% 0%, rgba(90, 157, 255, 0.16), transparent 60%),
+    linear-gradient(180deg, rgba(11, 22, 41, 0.96), rgba(7, 14, 27, 0.9));
+}
+
+body.admin-app .monitoring-card--live,
+body.admin-app .monitoring-card--runs {
+  border-color: rgba(153, 174, 207, 0.1);
+  background: linear-gradient(180deg, rgba(9, 18, 34, 0.92), rgba(6, 12, 23, 0.88));
+  box-shadow: 0 18px 36px rgba(0, 10, 24, 0.22);
+}
+
+body.admin-app .monitoring-card--preview {
+  border-color: rgba(90, 157, 255, 0.18);
+  background: linear-gradient(180deg, rgba(10, 20, 36, 0.94), rgba(6, 12, 23, 0.9));
+}
+
+body.admin-app .monitoring-card .card__header {
+  margin-bottom: 18px;
+}
+
+body.admin-app .kpi-grid--monitoring {
+  gap: 14px;
+}
+
+body.admin-app .kpi-card--monitoring {
+  min-height: 132px;
+  padding: 18px 18px 16px;
+}
+
+body.admin-app .kpi-card--monitoring strong {
+  font-size: clamp(1.75rem, 2.1vw, 2.35rem);
+  line-height: 1;
+  letter-spacing: -0.04em;
+}
+
+body.admin-app .kpi-card__label {
+  font-size: 0.75rem;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+body.admin-app .measurement-board__top {
+  gap: 20px;
+  grid-template-columns: minmax(0, 1.14fr) minmax(260px, 0.86fr);
+}
+
+body.admin-app .measurement-board,
+body.admin-app .telemetry-grid--dashboard {
+  gap: 18px;
+}
+
+body.admin-app .measurement-brief {
+  padding: 22px 22px 20px;
+  border: 1px solid rgba(153, 174, 207, 0.1);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+body.admin-app .measurement-brief__copy {
+  line-height: 1.65;
+  color: rgba(228, 236, 248, 0.82);
+}
+
+body.admin-app .preview-pane--monitoring {
+  position: relative;
+  overflow: hidden;
+  min-height: 360px;
+  padding: 26px 24px;
+  border-radius: 28px;
+  border-color: rgba(90, 157, 255, 0.16);
+  background:
+    linear-gradient(145deg, rgba(5, 10, 18, 0.86) 0%, rgba(7, 14, 27, 0.58) 42%, rgba(5, 10, 18, 0.94) 100%),
+    radial-gradient(580px 220px at 0% 0%, rgba(90, 157, 255, 0.22), transparent 60%),
+    var(--asset-side-panel) center / cover no-repeat,
+    linear-gradient(135deg, #091120 0%, #122746 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 22px 40px rgba(0, 10, 24, 0.26);
+}
+
+body.admin-app .preview-pane--monitoring::before {
+  content: "";
+  position: absolute;
+  right: 24px;
+  bottom: 26px;
+  width: min(68%, 250px);
+  height: 132px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 24px;
+  background: linear-gradient(180deg, rgba(12, 22, 40, 0.9), rgba(8, 16, 31, 0.72));
+  box-shadow:
+    0 18px 34px rgba(0, 10, 24, 0.32),
+    inset 0 1px 0 rgba(255, 255, 255, 0.07);
+}
+
+body.admin-app .preview-pane--monitoring::after {
+  content: "";
+  position: absolute;
+  left: 24px;
+  bottom: 52px;
+  width: min(46%, 160px);
+  height: 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.82);
+  opacity: 0.18;
+  box-shadow:
+    0 26px 0 rgba(255, 255, 255, 0.14),
+    0 -26px 0 rgba(255, 255, 255, 0.12);
+}
+
+body.admin-app .preview-pane--monitoring > * {
+  position: relative;
+  z-index: 1;
+  max-width: 22ch;
+}
+
+body.admin-app #agentRunsList .record {
+  border-color: rgba(153, 174, 207, 0.08);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.015));
+  box-shadow: none;
+}
+
 body.admin-app a:focus-visible {
   outline: 2px solid rgba(152, 201, 255, 0.9);
   outline-offset: 3px;
@@ -5817,12 +6424,58 @@ body.admin-app .toast {
   }
 
   body.admin-app .stage-panel::after {
-    background-position: 0 0, 0 0, right -125px top 4px;
-    background-size: 100% 100%, 100% 100%, min(74%, 410px) auto;
-    opacity: 0.1;
+    background-position: 0 0, right -18% top -12%, right -28% top -8%, right -30% top 4px;
+    background-size: 100% 100%, 88% 64%, 110% 88%, min(96%, 520px) auto;
+    opacity: 0.18;
   }
 
   body.admin-app .status-text {
     margin-top: -18px;
+  }
+}
+
+@media (max-width: 980px) {
+  body.admin-app .stage-panel__header {
+    align-items: start;
+  }
+
+  body.admin-app .stage-grid--buying > .card.card--form,
+  body.admin-app .stage-grid--buying > .card:not(.card--form) {
+    grid-column: 1 / -1;
+  }
+
+  body.admin-app .supply-step__actions,
+  body.admin-app .supply-handoff__actions {
+    justify-items: start;
+  }
+
+  body.admin-app .supply-step {
+    grid-template-areas:
+      "index body"
+      "actions actions";
+  }
+
+  body.admin-app .supply-step__actions,
+  body.admin-app .supply-handoff__actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  body.admin-app .supply-step__actions .btn,
+  body.admin-app .supply-handoff__actions .btn {
+    justify-self: start;
+    width: 100%;
+    min-width: 0;
+  }
+
+  body.admin-app .supply-step__hint,
+  body.admin-app .supply-handoff__hint {
+    max-width: none;
+    text-align: left;
+  }
+
+  body.admin-app .monitoring-layout,
+  body.admin-app .measurement-board__top {
+    grid-template-columns: minmax(0, 1fr);
   }
 }

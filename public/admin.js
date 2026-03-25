@@ -5086,9 +5086,10 @@ function getGoalPlacementScoreLine(entry = {}) {
 }
 
 function resolveGoalPlacements(plan = {}) {
-  const plannedScreenIds = Array.isArray(plan.plannedScreenIds) ? plan.plannedScreenIds : [];
-  const recommendedPlacements = Array.isArray(plan.recommendedPlacements) ? plan.recommendedPlacements : [];
-  const proposedChanges = Array.isArray(plan.proposedChanges) ? plan.proposedChanges : [];
+  const safePlan = plan && typeof plan === "object" ? plan : {};
+  const plannedScreenIds = Array.isArray(safePlan.plannedScreenIds) ? safePlan.plannedScreenIds : [];
+  const recommendedPlacements = Array.isArray(safePlan.recommendedPlacements) ? safePlan.recommendedPlacements : [];
+  const proposedChanges = Array.isArray(safePlan.proposedChanges) ? safePlan.proposedChanges : [];
   const sourceEntries = recommendedPlacements.length > 0 ? recommendedPlacements : proposedChanges;
 
   if (plannedScreenIds.length === 0) {
@@ -6842,11 +6843,11 @@ async function deleteScreen(screenId) {
 
 async function handleGoalPlanSubmit(event) {
   event.preventDefault();
+  if (!ensureGoalPlanningReadyForSubmit()) {
+    return;
+  }
+  const prepared = prepareGoalPayloadForDemo();
   return runPendingAction("goalPlan", async () => {
-    if (!ensureGoalPlanningReadyForSubmit()) {
-      return;
-    }
-    const prepared = prepareGoalPayloadForDemo();
     showStatus("AI is generating the in-store buy...");
     const response = await requestJson("/api/agent/goals/plan", {
       method: "POST",
