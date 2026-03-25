@@ -5105,3 +5105,724 @@ body.has-market-story-overlay {
     grid-template-columns: 1fr;
   }
 }
+
+/* Unified immersive admin theme */
+
+:root {
+  --bg-0: #050a17;
+  --bg-1: #0a1427;
+  --bg-2: #10233f;
+  --ink: #edf4ff;
+  --ink-soft: #9bb0ce;
+  --line: rgba(153, 174, 207, 0.18);
+  --surface: rgba(10, 19, 36, 0.82);
+  --surface-strong: rgba(8, 16, 31, 0.92);
+  --surface-muted: rgba(14, 27, 49, 0.78);
+  --accent: #f07b56;
+  --accent-2: #45d0be;
+  --accent-3: #5a9dff;
+  --accent-4: #f2c56f;
+  --success: #60cf9c;
+  --danger: #ff8b7c;
+  --shadow: 0 28px 72px rgba(2, 10, 24, 0.42);
+  --panel-border: rgba(153, 174, 207, 0.16);
+  --field-bg: rgba(6, 13, 26, 0.72);
+  --field-border: rgba(153, 174, 207, 0.18);
+}
+
+body.admin-app {
+  color-scheme: dark;
+  background:
+    radial-gradient(1200px 760px at 110% -8%, rgba(90, 157, 255, 0.22), transparent 58%),
+    radial-gradient(980px 720px at -10% 10%, rgba(240, 123, 86, 0.18), transparent 56%),
+    linear-gradient(180deg, #07101d 0%, #050a17 46%, #091325 100%);
+  color: var(--ink);
+}
+
+body.admin-app::before {
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.06) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.88), rgba(0, 0, 0, 0.24));
+  opacity: 0.32;
+}
+
+body.admin-app::after {
+  background: var(--asset-ambient-pattern) center top / 900px auto repeat;
+  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.56), transparent 90%);
+  mix-blend-mode: screen;
+  opacity: 0.12;
+}
+
+body.admin-app .page-noise {
+  opacity: 0.36;
+}
+
+body.admin-app .hero {
+  border-bottom-color: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 24px 56px rgba(2, 10, 24, 0.3);
+}
+
+body.admin-app .hero::before {
+  background:
+    linear-gradient(90deg, rgba(4, 10, 21, 0.82) 0%, rgba(4, 10, 21, 0.44) 38%, transparent 66%),
+    linear-gradient(120deg, rgba(255, 255, 255, 0.08), transparent 34%),
+    radial-gradient(720px 360px at 74% 8%, rgba(90, 157, 255, 0.28), transparent 58%);
+}
+
+body.admin-app .hero__inner {
+  padding-bottom: 48px;
+}
+
+body.admin-app .shell {
+  position: relative;
+  z-index: 2;
+  margin: -26px auto 72px;
+}
+
+body.admin-app .panel:not(.stage-panel),
+body.admin-app .card,
+body.admin-app .supply-step,
+body.admin-app .supply-handoff,
+body.admin-app .advanced-grid__panel,
+body.admin-app .advanced-panel > summary,
+body.admin-app .template-preview,
+body.admin-app .template-preview__meta-item,
+body.admin-app .goal-summary,
+body.admin-app .summary-card,
+body.admin-app .summary-panel,
+body.admin-app #goalPlanSummary .goal-change__metrics,
+body.admin-app .goal-budget,
+body.admin-app .goal-budget__row,
+body.admin-app .goal-budget__total,
+body.admin-app #goalPlanChanges .record,
+body.admin-app .goal-placement,
+body.admin-app .placement-card,
+body.admin-app .goal-placement-dropdown,
+body.admin-app .goal-placement-card__meta-block,
+body.admin-app .goal-live-result,
+body.admin-app .goal-live-inspector,
+body.admin-app .screen-group,
+body.admin-app .record,
+body.admin-app .empty,
+body.admin-app .goal-products,
+body.admin-app .goal-product-strip__more,
+body.admin-app .choice-card span,
+body.admin-app .telemetry-panel--dashboard,
+body.admin-app .monitoring-overview__aside,
+body.admin-app .kpi-card,
+body.admin-app .measurement-card,
+body.admin-app .goal-live-product,
+body.admin-app .supply-chip,
+body.admin-app .supply-handoff__stat,
+body.admin-app .goal-summary__hero-status,
+body.admin-app .goal-summary__panel,
+body.admin-app .ai-ass {
+  border-color: var(--panel-border);
+  background:
+    radial-gradient(
+      420px 160px at 0% 0%,
+      color-mix(in srgb, var(--stage-accent, var(--accent)) 16%, transparent),
+      transparent 70%
+    ),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.01)),
+    linear-gradient(180deg, rgba(11, 21, 39, 0.96), rgba(7, 15, 29, 0.9));
+  box-shadow:
+    0 18px 38px rgba(0, 10, 24, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(14px);
+}
+
+body.admin-app .panel--stage-nav {
+  background:
+    radial-gradient(720px 220px at 0% 0%, rgba(90, 157, 255, 0.18), transparent 62%),
+    radial-gradient(560px 180px at 100% 100%, rgba(240, 123, 86, 0.14), transparent 54%),
+    linear-gradient(180deg, rgba(12, 22, 40, 0.96), rgba(8, 16, 31, 0.9));
+}
+
+body.admin-app .stage-step {
+  border-color: var(--panel-border);
+  color: var(--ink);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.01)),
+    linear-gradient(180deg, rgba(12, 22, 40, 0.96), rgba(8, 16, 31, 0.9));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 12px 24px rgba(0, 8, 24, 0.22);
+}
+
+body.admin-app .stage-step:not(:disabled):hover {
+  border-color: color-mix(in srgb, var(--accent-3) 28%, var(--panel-border));
+  background:
+    radial-gradient(220px 100px at 0% 0%, rgba(90, 157, 255, 0.12), transparent 70%),
+    linear-gradient(180deg, rgba(13, 24, 44, 0.98), rgba(8, 16, 31, 0.92));
+}
+
+body.admin-app .stage-step.is-active {
+  border-color: color-mix(in srgb, var(--accent-3) 34%, var(--panel-border));
+  background:
+    radial-gradient(280px 120px at 0% 0%, rgba(90, 157, 255, 0.18), transparent 72%),
+    linear-gradient(180deg, rgba(14, 27, 49, 0.98), rgba(9, 18, 34, 0.92));
+  box-shadow:
+    0 18px 32px rgba(20, 78, 164, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+body.admin-app .stage-step__index {
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(227, 236, 248, 0.72);
+}
+
+body.admin-app .stage-step.is-active .stage-step__index {
+  background: rgba(90, 157, 255, 0.16);
+  color: #f7fbff;
+}
+
+body.admin-app .stage-step__copy small {
+  color: var(--ink-soft);
+}
+
+body.admin-app .stage-panel {
+  border-top-color: color-mix(in srgb, var(--stage-accent, var(--accent)) 82%, #fff);
+  border-left: 1px solid var(--panel-border);
+  border-right: 1px solid var(--panel-border);
+  border-bottom: 1px solid var(--panel-border);
+  box-shadow: var(--shadow);
+}
+
+body.admin-app .stage-panel[data-stage-panel="supply"] {
+  background:
+    radial-gradient(900px 280px at 0% 0%, rgba(240, 123, 86, 0.16), transparent 62%),
+    linear-gradient(180deg, rgba(10, 20, 36, 0.96), rgba(7, 14, 27, 0.92));
+}
+
+body.admin-app .stage-panel[data-stage-panel="buying"] {
+  background:
+    radial-gradient(780px 260px at 100% 0%, rgba(69, 208, 190, 0.16), transparent 62%),
+    linear-gradient(180deg, rgba(10, 20, 36, 0.96), rgba(7, 14, 27, 0.92));
+}
+
+body.admin-app .stage-panel[data-stage-panel="monitoring"] {
+  background:
+    radial-gradient(900px 280px at 0% 0%, rgba(90, 157, 255, 0.18), transparent 62%),
+    radial-gradient(620px 220px at 100% 10%, rgba(69, 208, 190, 0.12), transparent 60%),
+    linear-gradient(180deg, rgba(10, 20, 36, 0.96), rgba(7, 14, 27, 0.92));
+}
+
+body.admin-app .stage-panel::before {
+  width: 240px;
+  height: 240px;
+  border-radius: 999px;
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--stage-accent, var(--accent)) 24%, transparent) 0%,
+    transparent 72%
+  );
+  filter: blur(10px);
+  opacity: 0.9;
+}
+
+body.admin-app .stage-panel::after {
+  background-image:
+    linear-gradient(90deg, rgba(5, 10, 18, 0.97) 0%, rgba(5, 10, 18, 0.88) 24%, rgba(5, 10, 18, 0.32) 52%, transparent 78%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.02) 46%, rgba(5, 10, 18, 0.48) 100%),
+    var(--stage-art, none);
+  opacity: 0.46;
+  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.98), rgba(0, 0, 0, 0.58));
+}
+
+body.admin-app .stage-panel__lede,
+body.admin-app .panel__hint,
+body.admin-app .card__header p,
+body.admin-app .supply-step__lede,
+body.admin-app .supply-step__hint,
+body.admin-app .advanced-panel__summary-note,
+body.admin-app .advanced-panel__hint,
+body.admin-app .goal-live-result__top span,
+body.admin-app .goal-live-result__meta,
+body.admin-app .goal-live-browser__meta,
+body.admin-app .goal-products__meta,
+body.admin-app .goal-live-inspector__copy,
+body.admin-app .telemetry-record__meta,
+body.admin-app .record p,
+body.admin-app .monitoring-overview__lede,
+body.admin-app .monitoring-overview__aside p,
+body.admin-app .measurement-card__detail,
+body.admin-app .measurement-summary__comparison,
+body.admin-app .measurement-summary__fact-label,
+body.admin-app .monitoring-card__note,
+body.admin-app .status-text {
+  color: rgba(228, 236, 248, 0.74);
+}
+
+body.admin-app .stage-pill,
+body.admin-app .card__badge,
+body.admin-app .monitoring-signal,
+body.admin-app .measurement-chip,
+body.admin-app .goal-live-inspector__stats span {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.06);
+  color: color-mix(in srgb, var(--stage-accent, var(--accent)) 46%, #f7fbff);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+body.admin-app label,
+body.admin-app legend {
+  color: rgba(236, 243, 255, 0.92);
+}
+
+body.admin-app input,
+body.admin-app select,
+body.admin-app textarea {
+  border-color: var(--field-border);
+  background: var(--field-bg);
+  color: var(--ink);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+body.admin-app input::placeholder,
+body.admin-app textarea::placeholder {
+  color: rgba(155, 176, 206, 0.66);
+}
+
+body.admin-app input:focus,
+body.admin-app select:focus,
+body.admin-app textarea:focus {
+  border-color: color-mix(in srgb, var(--stage-accent, var(--accent)) 56%, rgba(255, 255, 255, 0.18));
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--stage-accent, var(--accent)) 22%, transparent);
+}
+
+body.admin-app .choice-card span::before {
+  border-color: rgba(153, 174, 207, 0.3);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+body.admin-app .choice-card input:checked + span {
+  border-color: color-mix(in srgb, var(--stage-accent, var(--accent)) 52%, var(--panel-border));
+  background:
+    radial-gradient(220px 90px at 0% 0%, color-mix(in srgb, var(--stage-accent, var(--accent)) 20%, transparent), transparent 72%),
+    linear-gradient(180deg, rgba(14, 27, 49, 0.98), rgba(8, 16, 31, 0.92));
+}
+
+body.admin-app .switch-row small,
+body.admin-app .field__meta {
+  color: rgba(200, 214, 236, 0.66);
+}
+
+body.admin-app .slider {
+  background: rgba(153, 174, 207, 0.28);
+}
+
+body.admin-app .slider::before {
+  background: rgba(247, 250, 255, 0.96);
+  box-shadow: 0 2px 8px rgba(1, 8, 20, 0.34);
+}
+
+body.admin-app .btn {
+  color: var(--ink);
+}
+
+body.admin-app .btn--primary {
+  border-color: color-mix(in srgb, var(--stage-accent, var(--accent)) 34%, rgba(255, 255, 255, 0.16));
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--stage-accent, var(--accent)) 78%, #fff),
+    color-mix(in srgb, var(--stage-accent, var(--accent)) 68%, #08111f)
+  );
+  box-shadow: 0 16px 30px color-mix(in srgb, var(--stage-accent, var(--accent)) 24%, transparent);
+}
+
+body.admin-app .btn--ghost,
+body.admin-app .btn--tiny {
+  border-color: var(--panel-border);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--ink);
+}
+
+body.admin-app .btn--ghost:hover,
+body.admin-app .btn--tiny:hover {
+  border-color: color-mix(in srgb, var(--stage-accent, var(--accent)) 34%, var(--panel-border));
+  background: rgba(255, 255, 255, 0.08);
+}
+
+body.admin-app .btn--tiny-danger {
+  border-color: rgba(255, 139, 124, 0.24);
+  background: rgba(255, 139, 124, 0.08);
+  color: #ffd1ca;
+}
+
+body.admin-app .btn--tiny-danger:hover {
+  background: rgba(255, 139, 124, 0.14);
+}
+
+body.admin-app .supply-flow-card,
+body.admin-app .monitoring-card,
+body.admin-app .monitoring-card--measurement,
+body.admin-app .monitoring-card--preview,
+body.admin-app .monitoring-card--runs {
+  background:
+    radial-gradient(460px 180px at 0% 0%, color-mix(in srgb, var(--stage-accent, var(--accent)) 16%, transparent), transparent 68%),
+    linear-gradient(180deg, rgba(12, 22, 40, 0.96), rgba(8, 16, 31, 0.9));
+}
+
+body.admin-app .goal-rate-card,
+body.admin-app .planner-step,
+body.admin-app .advanced-panel > summary,
+body.admin-app .goal-placement-dropdown {
+  border-color: var(--panel-border);
+  background:
+    radial-gradient(460px 180px at 0% 0%, color-mix(in srgb, var(--stage-accent, var(--accent)) 14%, transparent), transparent 68%),
+    linear-gradient(180deg, rgba(12, 22, 40, 0.96), rgba(8, 16, 31, 0.9));
+  box-shadow:
+    0 18px 38px rgba(0, 10, 24, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+body.admin-app .planner-step[data-step-state="locked"],
+body.admin-app .record--muted,
+body.admin-app .goal-placement--muted,
+body.admin-app .placement-card--muted,
+body.admin-app .goal-placement-card--excluded .goal-placement-card__meta-block,
+body.admin-app .goal-placement-card__meta-block--muted {
+  background:
+    radial-gradient(360px 140px at 0% 0%, rgba(153, 174, 207, 0.1), transparent 68%),
+    linear-gradient(180deg, rgba(11, 21, 39, 0.82), rgba(7, 15, 29, 0.76));
+}
+
+body.admin-app .planner-step__body,
+body.admin-app .toggle-list,
+body.admin-app .screen-group__page {
+  border-top-color: var(--panel-border);
+}
+
+body.admin-app .summary-card span,
+body.admin-app .goal-summary__meta,
+body.admin-app .goal-summary__detail-row dt,
+body.admin-app .goal-placement-card__meta-label,
+body.admin-app .goal-placement-card__meta-copy,
+body.admin-app .goal-budget__total span,
+body.admin-app .kpi-card__label,
+body.admin-app .kpi-card__meta,
+body.admin-app .measurement-card__label,
+body.admin-app .measurement-summary__eyebrow,
+body.admin-app .monitoring-overview__eyebrow,
+body.admin-app .measurement-brief__eyebrow,
+body.admin-app .preview-pane__eyebrow,
+body.admin-app .monitoring-preview-card__screen,
+body.admin-app .monitoring-preview-card__meta,
+body.admin-app .goal-live-inspector__label,
+body.admin-app .screen-group__store span,
+body.admin-app .screen-group__page-head span,
+body.admin-app .tree-toggle__chev,
+body.admin-app .goal-products__sku,
+body.admin-app .goal-live-product__meta,
+body.admin-app .goal-live-product__price {
+  color: rgba(194, 209, 232, 0.7);
+}
+
+body.admin-app .monitoring-overview {
+  border-color: rgba(90, 157, 255, 0.22);
+  background:
+    radial-gradient(620px 240px at 0% 0%, rgba(90, 157, 255, 0.18), transparent 62%),
+    radial-gradient(440px 180px at 100% 100%, rgba(69, 208, 190, 0.12), transparent 58%),
+    linear-gradient(180deg, rgba(12, 23, 43, 0.94), rgba(7, 15, 29, 0.9));
+  box-shadow: var(--shadow);
+}
+
+body.admin-app .monitoring-overview::before {
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.07) 1px, transparent 1px);
+  opacity: 0.18;
+}
+
+body.admin-app .kpi-card--monitoring {
+  border-color: rgba(90, 157, 255, 0.2);
+  background:
+    radial-gradient(220px 120px at 100% 0%, rgba(90, 157, 255, 0.18), transparent 72%),
+    linear-gradient(180deg, rgba(14, 26, 47, 0.92), rgba(8, 17, 31, 0.88));
+}
+
+body.admin-app .kpi-card--monitoring::before {
+  background: linear-gradient(180deg, rgba(90, 157, 255, 0.92), rgba(69, 208, 190, 0.82));
+}
+
+body.admin-app .measurement-board__summary {
+  border-color: var(--panel-border);
+  background:
+    radial-gradient(360px 140px at 0% 0%, rgba(90, 157, 255, 0.12), transparent 68%),
+    linear-gradient(180deg, rgba(13, 25, 46, 0.92), rgba(8, 17, 31, 0.88));
+  box-shadow:
+    0 18px 36px rgba(0, 10, 24, 0.24),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+body.admin-app .measurement-summary__fact {
+  border-color: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+body.admin-app .measurement-summary__fact-value,
+body.admin-app .measurement-summary__headline,
+body.admin-app .measurement-card strong,
+body.admin-app .kpi-card strong {
+  color: var(--ink);
+}
+
+body.admin-app .measurement-card {
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+body.admin-app .measurement-card::after {
+  background: linear-gradient(90deg, rgba(90, 157, 255, 0.22), transparent);
+}
+
+body.admin-app .measurement-card__badge {
+  border-color: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(233, 241, 252, 0.88);
+}
+
+body.admin-app .measurement-card__badge--retail,
+body.admin-app .measurement-card__badge--accent {
+  color: #fff2cf;
+}
+
+body.admin-app .measurement-card--accent {
+  background:
+    radial-gradient(240px 120px at 100% 0%, rgba(69, 208, 190, 0.18), transparent 70%),
+    linear-gradient(180deg, rgba(13, 26, 43, 0.96), rgba(8, 17, 31, 0.9));
+}
+
+body.admin-app .preview-pane {
+  border-color: rgba(106, 152, 240, 0.22);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 20px 40px rgba(11, 23, 43, 0.24);
+}
+
+body.admin-app .preview-pane--monitoring {
+  background:
+    linear-gradient(116deg, rgba(6, 12, 23, 0.84) 0%, rgba(6, 12, 23, 0.46) 36%, rgba(6, 12, 23, 0.9) 100%),
+    var(--asset-side-panel) center / cover no-repeat,
+    radial-gradient(520px 220px at 20% 0%, rgba(90, 157, 255, 0.2), transparent 56%),
+    linear-gradient(135deg, #0d182d 0%, #173258 100%);
+}
+
+body.admin-app .goal-products__item {
+  border-bottom-color: rgba(153, 174, 207, 0.14);
+}
+
+body.admin-app .goal-products__item--selected,
+body.admin-app .goal-live-result.is-active,
+body.admin-app .goal-live-product {
+  background:
+    radial-gradient(220px 90px at 0% 0%, color-mix(in srgb, var(--stage-accent, var(--accent)) 16%, transparent), transparent 72%),
+    linear-gradient(180deg, rgba(14, 27, 49, 0.98), rgba(8, 16, 31, 0.92));
+}
+
+body.admin-app .goal-live-result:hover,
+body.admin-app .goal-live-result:focus-visible {
+  border-color: color-mix(in srgb, var(--accent-3) 28%, var(--panel-border));
+  box-shadow: 0 14px 26px rgba(16, 40, 82, 0.18);
+}
+
+body.admin-app .goal-live-inspector__stats span,
+body.admin-app .screen-group__store {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+body.admin-app .screen-group__store {
+  border-bottom: 1px solid var(--panel-border);
+}
+
+body.admin-app .screen-group__page:first-of-type {
+  border-top-color: transparent;
+}
+
+body.admin-app .goal-summary__info-button {
+  border-color: var(--panel-border);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--ink);
+  box-shadow: none;
+}
+
+body.admin-app .goal-summary__info:hover .goal-summary__info-button,
+body.admin-app .goal-summary__info:focus-within .goal-summary__info-button {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+body.admin-app .goal-summary__tooltip {
+  border-color: var(--panel-border);
+  background:
+    radial-gradient(320px 120px at 16% 0%, color-mix(in srgb, var(--stage-accent, var(--accent)) 16%, transparent), transparent 58%),
+    linear-gradient(180deg, rgba(14, 27, 49, 0.98), rgba(8, 16, 31, 0.94));
+  box-shadow: 0 18px 36px rgba(0, 10, 24, 0.36);
+}
+
+body.admin-app .goal-summary__tooltip::before {
+  border-top-color: var(--panel-border);
+  border-left-color: var(--panel-border);
+  background: rgba(14, 27, 49, 0.98);
+}
+
+body.admin-app #goalPlanSummary.empty,
+body.admin-app #telemetrySummary.empty,
+body.admin-app #goalLiveSummary.empty {
+  border-color: var(--panel-border);
+  background:
+    linear-gradient(115deg, rgba(5, 10, 18, 0.8) 0%, rgba(5, 10, 18, 0.52) 38%, rgba(5, 10, 18, 0.84) 100%),
+    radial-gradient(640px 180px at 18% 0%, color-mix(in srgb, var(--stage-accent, var(--accent)) 18%, transparent), transparent 58%),
+    var(--asset-empty-state) center / cover no-repeat,
+    linear-gradient(180deg, rgba(11, 21, 39, 0.94), rgba(7, 15, 29, 0.9));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 18px 36px rgba(0, 10, 24, 0.28);
+}
+
+body.admin-app .goal-budget__range input[type="range"] {
+  background:
+    linear-gradient(
+      90deg,
+      var(--stage-accent, var(--accent)) 0,
+      var(--stage-accent, var(--accent)) var(--goal-budget-progress),
+      rgba(153, 174, 207, 0.2) var(--goal-budget-progress),
+      rgba(153, 174, 207, 0.2) 100%
+    );
+}
+
+body.admin-app .goal-budget__range input[type="range"]::-webkit-slider-thumb,
+body.admin-app .goal-budget__range input[type="range"]::-moz-range-thumb {
+  border-color: rgba(6, 13, 26, 0.92);
+}
+
+body.admin-app .goal-budget__range input[type="range"]::-moz-range-track {
+  background: rgba(153, 174, 207, 0.2);
+}
+
+body.admin-app .goal-budget__range-meta strong,
+body.admin-app .goal-budget__range-head label,
+body.admin-app .goal-summary__detail-row dd,
+body.admin-app .goal-placement-card__reason,
+body.admin-app .goal-live-result,
+body.admin-app .screen-group,
+body.admin-app .record,
+body.admin-app .measurement-summary__trend {
+  color: var(--ink);
+}
+
+body.admin-app .ai-ass {
+  color: var(--ink);
+}
+
+body.admin-app .ai-ass__detail {
+  color: rgba(228, 236, 248, 0.74);
+}
+
+body.admin-app .ai-ass--loading {
+  background:
+    radial-gradient(200px 100px at 14% 18%, rgba(90, 157, 255, 0.22), transparent 64%),
+    linear-gradient(180deg, rgba(13, 25, 46, 0.98), rgba(8, 17, 31, 0.92));
+}
+
+body.admin-app .ai-ass--success {
+  background:
+    radial-gradient(180px 86px at 16% 18%, rgba(96, 207, 156, 0.22), transparent 58%),
+    linear-gradient(180deg, rgba(13, 25, 46, 0.98), rgba(8, 17, 31, 0.92));
+  border-color: rgba(96, 207, 156, 0.26);
+}
+
+body.admin-app .ai-ass--ready {
+  background:
+    radial-gradient(180px 86px at 16% 18%, color-mix(in srgb, var(--stage-accent, var(--accent)) 22%, transparent), transparent 58%),
+    linear-gradient(180deg, rgba(13, 25, 46, 0.98), rgba(8, 17, 31, 0.92));
+}
+
+body.admin-app .goal-selected,
+body.admin-app .goal-selection-reason,
+body.admin-app .goal-rate-card__grid:empty,
+body.admin-app .goal-rate-card .field,
+body.admin-app .goal-budget .field {
+  border-color: var(--panel-border);
+  background:
+    radial-gradient(300px 120px at 0% 0%, color-mix(in srgb, var(--stage-accent, var(--accent)) 14%, transparent), transparent 68%),
+    linear-gradient(180deg, rgba(13, 25, 46, 0.96), rgba(8, 17, 31, 0.9));
+  box-shadow:
+    0 16px 32px rgba(0, 10, 24, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+body.admin-app .goal-selected__header strong,
+body.admin-app .goal-chip__name {
+  color: var(--ink);
+}
+
+body.admin-app .goal-selection-reason,
+body.admin-app .goal-chip__meta,
+body.admin-app .goal-chip__remove {
+  color: rgba(194, 209, 232, 0.74);
+}
+
+body.admin-app .goal-chip {
+  border-color: var(--panel-border);
+  background:
+    radial-gradient(220px 90px at 0% 0%, color-mix(in srgb, var(--stage-accent, var(--accent)) 16%, transparent), transparent 72%),
+    linear-gradient(180deg, rgba(14, 27, 49, 0.98), rgba(8, 16, 31, 0.92));
+  color: var(--ink);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+body.admin-app .goal-chip:hover {
+  border-color: color-mix(in srgb, var(--stage-accent, var(--accent)) 34%, var(--panel-border));
+}
+
+body.admin-app a:focus-visible {
+  outline: 2px solid rgba(152, 201, 255, 0.9);
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+
+body.admin-app .record a,
+body.admin-app .hero__aux-link {
+  color: color-mix(in srgb, var(--accent-3) 54%, #ffffff);
+}
+
+body.admin-app .record a:hover,
+body.admin-app .hero__aux-link:hover {
+  color: #ffffff;
+}
+
+body.admin-app .status-text {
+  margin: -28px auto 52px;
+}
+
+body.admin-app .toast {
+  box-shadow: 0 18px 36px rgba(0, 8, 24, 0.36);
+}
+
+@media (max-width: 1120px) {
+  body.admin-app .shell {
+    margin-top: -18px;
+  }
+}
+
+@media (max-width: 640px) {
+  body.admin-app .hero__inner {
+    padding-bottom: 32px;
+  }
+
+  body.admin-app .shell {
+    margin-top: -10px;
+  }
+
+  body.admin-app .stage-panel::after {
+    background-position: 0 0, 0 0, right -125px top 4px;
+    background-size: 100% 100%, 100% 100%, min(74%, 410px) auto;
+    opacity: 0.1;
+  }
+
+  body.admin-app .status-text {
+    margin-top: -18px;
+  }
+}
