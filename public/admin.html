@@ -116,8 +116,6 @@
               </div>
             </div>
 
-            <section id="supplyMarketIntro" class="supply-market-intro" aria-live="polite"></section>
-
             <div id="supplyWorkflowShell">
               <div class="supply-flow">
                 <section class="supply-step">
@@ -181,7 +179,7 @@
             </div>
           </article>
 
-          <article id="supplyAdvancedCard" class="supply-advanced-card">
+          <article class="supply-advanced-card">
             <details class="advanced-panel">
               <summary>
                 <span class="advanced-panel__summary-copy">
@@ -882,6 +880,37 @@
         </p>
         <p id="workspaceOverlayMessage" class="workspace-overlay__message"></p>
         <div id="workspaceGrid" class="workspace-grid"></div>
+      </div>
+    </section>
+    <section id="marketStoryOverlay" class="market-story-overlay" aria-live="polite" hidden>
+      <div class="market-story-overlay__backdrop" aria-hidden="true"></div>
+      <div id="marketStoryPanel" class="market-story-overlay__panel" role="dialog" aria-modal="true" aria-labelledby="marketStoryTitle">
+        <div class="market-story-overlay__top">
+          <div class="market-story-overlay__stepper">
+            <p id="marketStoryStepLabel" class="section-kicker">Story 1 / 4</p>
+            <div id="marketStoryProgress" class="market-story-overlay__progress" aria-hidden="true"></div>
+          </div>
+          <button id="marketStorySkipBtn" type="button" class="btn btn--ghost btn--compact">Skip to CYield</button>
+        </div>
+
+        <div class="market-story-overlay__content">
+          <div class="market-story-overlay__copy">
+            <p id="marketStoryKicker" class="section-kicker">Opening story</p>
+            <h2 id="marketStoryTitle">Why this feature matters</h2>
+            <p id="marketStoryBody" class="market-story-overlay__lede"></p>
+            <p id="marketStoryNote" class="market-story-overlay__note"></p>
+          </div>
+
+          <div id="marketStoryMetrics" class="market-story-overlay__metrics"></div>
+        </div>
+
+        <div class="market-story-overlay__footer">
+          <div id="marketStorySources" class="market-story-overlay__sources"></div>
+          <div class="market-story-overlay__actions">
+            <button id="marketStoryBackBtn" type="button" class="btn btn--ghost">Back</button>
+            <button id="marketStoryNextBtn" type="button" class="btn btn--primary">Next proof point</button>
+          </div>
+        </div>
       </div>
     </section>
     <script type="module" src="/admin.js"></script>

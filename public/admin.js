@@ -190,70 +190,158 @@ const DEFAULT_DEMO_CONFIG = {
   }
 };
 
-const SUPPLY_STAGE_COPY = {
-  intro: {
-    kicker: "Commercial case",
-    title: "Why build digital screens now",
-    lede: "Open with the revenue opportunity and activation proof first, then reveal the CYield supply setup."
-  },
-  workflow: {
-    kicker: "Start here",
-    title: "CYield Supply Setup",
-    lede: "Keep this to two clicks: add one anchor placement, then apply the shared preset."
-  }
-};
-
-const SUPPLY_MARKET_INTRO_CARDS = [
+const MARKET_STORY_STEPS = [
   {
-    eyebrow: "Global retail media",
-    value: "$201.6B",
-    label: "2026 worldwide retail media spend forecast",
-    detail: "WARC, published March 19, 2025. +13.5% versus 2025."
-  },
-  {
-    eyebrow: "Screen management layer",
-    value: "$6.9B",
-    label: "2025 digital signage software market",
-    detail: "Grand View Research. Projected to $13.4B by 2033."
-  },
-  {
-    eyebrow: "APAC build case",
-    value: "$4.3B + $1.3B",
-    label: "2024 APAC retail media platform plus in-store digital display markets",
-    detail: "Grand View Research. Platform to $7.4B by 2030; display to $3.6B by 2033."
-  },
-  {
-    eyebrow: "Proven activation",
-    value: "+14% to +28.3%",
-    label: "reported in-store sales lift",
-    detail: "Albertsons Media Collective 2026 case study and SMG / Kantar 2025 benchmark."
-  }
-];
-
-const SUPPLY_MARKET_INTRO_SOURCE_LINKS = [
-  {
-    label: "WARC Retail Media Radar",
-    href: "https://www.warc.com/content/article/retail-media-radar-q1-2025/en-gb/159606"
+    id: "global-budget",
+    accent: "#2f74ff",
+    kicker: "Global budget pool",
+    title: "Retail media is already bigger than the feature pitch.",
+    body:
+      "Open on the fact that the money already exists. WARC projects global retail media at $201.6B in 2026, and the screen-management layer behind these placements is already a $6.9B software market. This is not a speculative demand story.",
+    note: "The build case is to route existing retail media and signage budget through a Criteo-managed screen surface.",
+    metrics: [
+      {
+        value: 201.6,
+        decimals: 1,
+        prefix: "$",
+        suffix: "B",
+        label: "Global retail media forecast for 2026",
+        detail: "WARC, March 19, 2025"
+      },
+      {
+        value: 6.9,
+        decimals: 1,
+        prefix: "$",
+        suffix: "B",
+        label: "Digital signage software market in 2025",
+        detail: "Grand View Research"
+      }
+    ],
+    sources: [
+      {
+        label: "WARC Retail Media Radar",
+        href: "https://www.warc.com/content/article/retail-media-radar-q1-2025/en-gb/159606"
+      },
+      {
+        label: "Grand View digital signage software",
+        href: "https://www.grandviewresearch.com/horizon/statistics/digital-signage-market/component/software/global"
+      }
+    ],
+    nextLabel: "Show APAC"
   },
   {
-    label: "Grand View digital signage software",
-    href: "https://www.grandviewresearch.com/horizon/statistics/digital-signage-market/component/software/global"
+    id: "apac",
+    accent: "#2eb7a3",
+    kicker: "APAC opening",
+    title: "APAC is already large enough to justify the build on its own.",
+    body:
+      "The regional case is already material: the APAC retail media platform market sits at $4.3B, and APAC in-store digital advertising display adds another $1.3B. Both pools are growing, which means the feature can land as infrastructure for a market that is still expanding.",
+    note: "This is why the story should feel regional and commercial, not just product-led.",
+    metrics: [
+      {
+        value: 4.3,
+        decimals: 1,
+        prefix: "$",
+        suffix: "B",
+        label: "APAC retail media platform market",
+        detail: "Grand View Research, 2024 base"
+      },
+      {
+        value: 1.3,
+        decimals: 1,
+        prefix: "$",
+        suffix: "B",
+        label: "APAC in-store digital display market",
+        detail: "Grand View Research, 2024 base"
+      }
+    ],
+    sources: [
+      {
+        label: "Grand View APAC retail media platform",
+        href: "https://www.grandviewresearch.com/horizon/outlook/retail-media-platform-market/asia-pacific"
+      },
+      {
+        label: "Grand View APAC in-store digital display",
+        href: "https://www.grandviewresearch.com/horizon/outlook/in-store-digital-advertising-display-market/asia-pacific"
+      }
+    ],
+    nextLabel: "Show activation"
   },
   {
-    label: "Grand View APAC retail media platform",
-    href: "https://www.grandviewresearch.com/horizon/outlook/retail-media-platform-market/asia-pacific"
+    id: "activation",
+    accent: "#ef6a3f",
+    kicker: "Proven activation",
+    title: "These screens are already proving they can move sales.",
+    body:
+      "The presentation should pivot from market size to proof. Albertsons reported a 14% in-store sales lift in a 116-store case study, while SMG and Kantar reported 28.3% average product sales lift across 12,558 in-store campaigns. The pitch is not just inventory. It is measured activation.",
+    note: "That is the bridge from a supply feature into a revenue feature.",
+    metrics: [
+      {
+        value: 14,
+        decimals: 0,
+        prefix: "+",
+        suffix: "%",
+        label: "Albertsons in-store sales lift",
+        detail: "116-store case study, January 6, 2026"
+      },
+      {
+        value: 28.3,
+        decimals: 1,
+        prefix: "+",
+        suffix: "%",
+        label: "Average product sales lift across in-store campaigns",
+        detail: "SMG / Kantar, October 2025"
+      }
+    ],
+    sources: [
+      {
+        label: "Albertsons Media Collective case",
+        href: "https://www.retailtouchpoints.com/news/albertsons-media-collective-launches-store-level-measurement-to-gauge-ads-true-impact/156271/"
+      },
+      {
+        label: "SMG / Kantar effectiveness study",
+        href: "https://smg.team/wp-content/uploads/2025/10/The-Advertising-Effectiveness-of-In-Store-Retail-Media-SMG-Report.pdf"
+      }
+    ],
+    nextLabel: "Show revenue math"
   },
   {
-    label: "Grand View APAC in-store digital display",
-    href: "https://www.grandviewresearch.com/horizon/outlook/in-store-digital-advertising-display-market/asia-pacific"
-  },
-  {
-    label: "Albertsons Media Collective",
-    href: "https://www.retailtouchpoints.com/news/albertsons-media-collective-launches-store-level-measurement-to-gauge-ads-true-impact/156271/"
-  },
-  {
-    label: "SMG / Kantar effectiveness study",
-    href: "https://smg.team/wp-content/uploads/2025/10/The-Advertising-Effectiveness-of-In-Store-Retail-Media-SMG-Report.pdf"
+    id: "modeled-upside",
+    accent: "#f0b54b",
+    kicker: "Modeled revenue upside",
+    title: "Even small share assumptions become real money fast.",
+    body:
+      "Make the final click about commercial leverage. If this feature routed just 0.25% of WARC's 2026 global retail media forecast, that is roughly $504M flowing through the capability. If Criteo captured 1% of the 2024 APAC retail media platform pool, that is about $43M in platform-style revenue.",
+    note: "These are modeled scenarios from published market sizes, not committed forecasts. The point is that the upside is meaningful before the workflow even starts.",
+    metrics: [
+      {
+        value: 504,
+        decimals: 0,
+        prefix: "$",
+        suffix: "M",
+        label: "0.25% of 2026 global retail media spend",
+        detail: "Modeled routed-media scenario"
+      },
+      {
+        value: 43,
+        decimals: 0,
+        prefix: "$",
+        suffix: "M",
+        label: "1% of the 2024 APAC platform market",
+        detail: "Modeled platform-revenue scenario"
+      }
+    ],
+    sources: [
+      {
+        label: "WARC Retail Media Radar",
+        href: "https://www.warc.com/content/article/retail-media-radar-q1-2025/en-gb/159606"
+      },
+      {
+        label: "Grand View APAC retail media platform",
+        href: "https://www.grandviewresearch.com/horizon/outlook/retail-media-platform-market/asia-pacific"
+      }
+    ],
+    nextLabel: "Enter CYield step 1"
   }
 ];
 
@@ -302,6 +390,8 @@ const state = {
   previewRailRequestId: 0,
   presetSimulatedInSession: false,
   marketIntroAcknowledged: false,
+  marketStoryStep: 0,
+  marketStoryAnimationFrameIds: [],
   workspaceOverlayPollId: null,
   pendingActions: new Set()
 };
@@ -477,12 +567,20 @@ const elements = {
   monitoringOverviewKicker: qs("#monitoringOverviewKicker"),
   monitoringOverviewTitle: qs("#monitoringOverviewTitle"),
   monitoringOverviewLede: qs("#monitoringOverviewLede"),
-  supplyStageKicker: qs("#supplyStageKicker"),
-  supplyStageTitle: qs("#supplyStageTitle"),
-  supplyStageLede: qs("#supplyStageLede"),
-  supplyMarketIntro: qs("#supplyMarketIntro"),
   supplyWorkflowShell: qs("#supplyWorkflowShell"),
-  supplyAdvancedCard: qs("#supplyAdvancedCard"),
+  marketStoryOverlay: qs("#marketStoryOverlay"),
+  marketStoryPanel: qs("#marketStoryPanel"),
+  marketStoryStepLabel: qs("#marketStoryStepLabel"),
+  marketStoryProgress: qs("#marketStoryProgress"),
+  marketStoryKicker: qs("#marketStoryKicker"),
+  marketStoryTitle: qs("#marketStoryTitle"),
+  marketStoryBody: qs("#marketStoryBody"),
+  marketStoryNote: qs("#marketStoryNote"),
+  marketStoryMetrics: qs("#marketStoryMetrics"),
+  marketStorySources: qs("#marketStorySources"),
+  marketStoryBackBtn: qs("#marketStoryBackBtn"),
+  marketStoryNextBtn: qs("#marketStoryNextBtn"),
+  marketStorySkipBtn: qs("#marketStorySkipBtn"),
   monitoringOverviewSignals: qs("#monitoringOverviewSignals"),
   monitoringOverviewAsideEyebrow: qs("#monitoringOverviewAsideEyebrow"),
   monitoringOverviewAsideTitle: qs("#monitoringOverviewAsideTitle"),
@@ -521,6 +619,7 @@ function buildAiAssistMarkup({
   variant = "ready",
   compact = false
 } = {}) {
+  const innerMarkup = buildAiAssistInnerMarkup({ kicker, title, body, detail });
   const classNames = [
     "ai-ass",
     variant ? `ai-ass--${variant}` : "",
@@ -531,22 +630,60 @@ function buildAiAssistMarkup({
   const busyAttr = variant === "loading" ? ' aria-busy="true"' : "";
   return `
     <section class="${escapeHtml(classNames)}"${busyAttr}>
-      <div class="ai-ass__visual" aria-hidden="true">
-        <span class="ai-ass__orb"></span>
-        <span class="ai-ass__orb"></span>
-        <span class="ai-ass__orb"></span>
-        <span class="ai-ass__spark"></span>
-        <span class="ai-ass__spark"></span>
-        <span class="ai-ass__spark"></span>
-      </div>
-      <div class="ai-ass__copy">
-        <p class="ai-ass__kicker">${escapeHtml(kicker)}</p>
-        <strong>${escapeHtml(title)}</strong>
-        <p>${escapeHtml(body)}</p>
-        ${detail ? `<span class="ai-ass__detail">${escapeHtml(detail)}</span>` : ""}
-      </div>
+      ${innerMarkup}
     </section>
   `;
+}
+
+function buildAiAssistInnerMarkup({ kicker = "AI Assist", title = "", body = "", detail = "" } = {}) {
+  return `
+    <div class="ai-ass__visual" aria-hidden="true">
+      <span class="ai-ass__orb"></span>
+      <span class="ai-ass__orb"></span>
+      <span class="ai-ass__orb"></span>
+      <span class="ai-ass__spark"></span>
+      <span class="ai-ass__spark"></span>
+      <span class="ai-ass__spark"></span>
+    </div>
+    <div class="ai-ass__copy">
+      <p class="ai-ass__kicker">${escapeHtml(kicker)}</p>
+      <strong>${escapeHtml(title)}</strong>
+      <p>${escapeHtml(body)}</p>
+      ${detail ? `<span class="ai-ass__detail">${escapeHtml(detail)}</span>` : ""}
+    </div>
+  `;
+}
+
+function renderAiAssistStatus(
+  element,
+  {
+    kicker = "AI Assist",
+    title = "",
+    body = "",
+    detail = "",
+    variant = "ready",
+    compact = false,
+    extraClasses = []
+  } = {}
+) {
+  if (!element) {
+    return;
+  }
+  const classNames = [
+    "ai-ass",
+    variant ? `ai-ass--${variant}` : "",
+    compact ? "ai-ass--compact" : "",
+    ...extraClasses
+  ]
+    .filter(Boolean)
+    .join(" ");
+  element.className = classNames;
+  if (variant === "loading") {
+    element.setAttribute("aria-busy", "true");
+  } else {
+    element.removeAttribute("aria-busy");
+  }
+  element.innerHTML = buildAiAssistInnerMarkup({ kicker, title, body, detail });
 }
 
 function defaultValue(options, preferred) {
@@ -583,11 +720,15 @@ function readMarketIntroAcknowledged(workspaceId = getCurrentWorkspace()?.id) {
 
 function syncMarketIntroAcknowledged(workspaceId = getCurrentWorkspace()?.id) {
   state.marketIntroAcknowledged = readMarketIntroAcknowledged(workspaceId);
+  state.marketStoryStep = 0;
 }
 
 function setMarketIntroAcknowledged(acknowledged) {
   const storageKey = getMarketIntroStorageKey();
   state.marketIntroAcknowledged = Boolean(acknowledged);
+  if (state.marketIntroAcknowledged) {
+    state.marketStoryStep = 0;
+  }
   if (storageKey) {
     try {
       if (state.marketIntroAcknowledged) {
@@ -603,6 +744,143 @@ function setMarketIntroAcknowledged(acknowledged) {
 
 function isSupplyMarketIntroActive() {
   return !state.marketIntroAcknowledged;
+}
+
+function getActiveMarketStoryStep() {
+  const maxIndex = Math.max(MARKET_STORY_STEPS.length - 1, 0);
+  return Math.min(Math.max(Number(state.marketStoryStep || 0), 0), maxIndex);
+}
+
+function setMarketStoryOverlayVisible(visible) {
+  if (!elements.marketStoryOverlay) {
+    return;
+  }
+  elements.marketStoryOverlay.hidden = !visible;
+  document.body.classList.toggle("has-market-story-overlay", visible);
+}
+
+function cancelMarketStoryAnimations() {
+  for (const frameId of state.marketStoryAnimationFrameIds) {
+    window.cancelAnimationFrame(frameId);
+  }
+  state.marketStoryAnimationFrameIds = [];
+}
+
+function formatAnimatedMetricValue(metric, value) {
+  const decimals = Math.max(0, Number(metric?.decimals || 0));
+  const numeric = Number.isFinite(Number(value)) ? Number(value) : 0;
+  const formatted = numeric.toLocaleString(undefined, {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals
+  });
+  return `${metric?.prefix || ""}${formatted}${metric?.suffix || ""}`;
+}
+
+function animateMarketStoryMetrics() {
+  cancelMarketStoryAnimations();
+  if (!elements.marketStoryMetrics) {
+    return;
+  }
+
+  for (const metricElement of qsa(".js-market-story-metric")) {
+    const target = Number(metricElement.dataset.metricValue || 0);
+    const decimals = Number(metricElement.dataset.metricDecimals || 0);
+    const prefix = metricElement.dataset.metricPrefix || "";
+    const suffix = metricElement.dataset.metricSuffix || "";
+    const duration = 900;
+    const startTime = performance.now();
+    const metric = { decimals, prefix, suffix };
+
+    const tick = (now) => {
+      const progress = Math.min((now - startTime) / duration, 1);
+      const eased = 1 - (1 - progress) ** 3;
+      const currentValue = target * eased;
+      metricElement.textContent = formatAnimatedMetricValue(metric, progress >= 1 ? target : currentValue);
+      if (progress < 1) {
+        const frameId = window.requestAnimationFrame(tick);
+        state.marketStoryAnimationFrameIds.push(frameId);
+      }
+    };
+
+    metricElement.textContent = formatAnimatedMetricValue(metric, 0);
+    const frameId = window.requestAnimationFrame(tick);
+    state.marketStoryAnimationFrameIds.push(frameId);
+  }
+}
+
+function renderMarketStoryOverlay() {
+  const active = isSupplyMarketIntroActive();
+  setMarketStoryOverlayVisible(active);
+  if (!active) {
+    cancelMarketStoryAnimations();
+    return;
+  }
+
+  const stepIndex = getActiveMarketStoryStep();
+  const step = MARKET_STORY_STEPS[stepIndex] || MARKET_STORY_STEPS[0];
+  if (!step) {
+    return;
+  }
+
+  if (elements.marketStoryPanel) {
+    elements.marketStoryPanel.style.setProperty("--story-accent", step.accent || "#2f74ff");
+  }
+  if (elements.marketStoryStepLabel) {
+    elements.marketStoryStepLabel.textContent = `Story ${stepIndex + 1} / ${MARKET_STORY_STEPS.length}`;
+  }
+  if (elements.marketStoryKicker) {
+    elements.marketStoryKicker.textContent = step.kicker || "Opening story";
+  }
+  if (elements.marketStoryTitle) {
+    elements.marketStoryTitle.textContent = step.title || "Why this feature matters";
+  }
+  if (elements.marketStoryBody) {
+    elements.marketStoryBody.textContent = step.body || "";
+  }
+  if (elements.marketStoryNote) {
+    elements.marketStoryNote.textContent = step.note || "";
+  }
+  if (elements.marketStoryProgress) {
+    elements.marketStoryProgress.innerHTML = MARKET_STORY_STEPS.map(
+      (_entry, index) =>
+        `<span class="market-story-overlay__dot${index === stepIndex ? " is-active" : ""}${index < stepIndex ? " is-complete" : ""}"></span>`
+    ).join("");
+  }
+  if (elements.marketStoryMetrics) {
+    elements.marketStoryMetrics.innerHTML = (step.metrics || [])
+      .map(
+        (metric) => `
+          <article class="market-story-overlay__metric">
+            <strong
+              class="market-story-overlay__metric-value js-market-story-metric"
+              data-metric-value="${escapeHtml(String(metric.value || 0))}"
+              data-metric-decimals="${escapeHtml(String(metric.decimals || 0))}"
+              data-metric-prefix="${escapeHtml(metric.prefix || "")}"
+              data-metric-suffix="${escapeHtml(metric.suffix || "")}"
+            ></strong>
+            <span class="market-story-overlay__metric-label">${escapeHtml(metric.label || "")}</span>
+            <p class="market-story-overlay__metric-detail">${escapeHtml(metric.detail || "")}</p>
+          </article>
+        `
+      )
+      .join("");
+  }
+  if (elements.marketStorySources) {
+    elements.marketStorySources.innerHTML = (step.sources || [])
+      .map(
+        (source) =>
+          `<a href="${escapeHtml(source.href || "")}" target="_blank" rel="noreferrer">${escapeHtml(source.label || "")}</a>`
+      )
+      .join('<span aria-hidden="true"> | </span>');
+  }
+  if (elements.marketStoryBackBtn) {
+    elements.marketStoryBackBtn.disabled = stepIndex === 0;
+  }
+  if (elements.marketStoryNextBtn) {
+    elements.marketStoryNextBtn.textContent = step.nextLabel || "Next";
+  }
+
+  animateMarketStoryMetrics();
 }
 
 function parseDateInputValue(value) {
@@ -1211,9 +1489,14 @@ function renderGoalPromptAssistant() {
   if (!elements.goalPromptAiStatus) {
     return;
   }
+  const renderStatus = (options) =>
+    renderAiAssistStatus(elements.goalPromptAiStatus, {
+      ...options,
+      extraClasses: ["goal-prompt-ai-status"]
+    });
 
   if (!prompt) {
-    elements.goalPromptAiStatus.innerHTML = buildAiAssistMarkup({
+    renderStatus({
       kicker: "AI Shortlist",
       title: "Optional shortlist help",
       body: "Write a brief, then click Let AI choose SKU's to build a priority product shortlist.",
@@ -1225,7 +1508,7 @@ function renderGoalPromptAssistant() {
   }
 
   if (!hasAccount) {
-    elements.goalPromptAiStatus.innerHTML = buildAiAssistMarkup({
+    renderStatus({
       kicker: "AI Shortlist",
       title: "Choose an account first",
       body: "The brief is ready, but AI needs a brand account before it can choose the right SKU's.",
@@ -1237,7 +1520,7 @@ function renderGoalPromptAssistant() {
   }
 
   if (loading) {
-    elements.goalPromptAiStatus.innerHTML = buildAiAssistMarkup({
+    renderStatus({
       kicker: "AI Working",
       title: "Choosing the best SKU shortlist",
       body: "Scanning the brief, assortment signals, and placement scope for the strongest in-store fit.",
@@ -1249,7 +1532,7 @@ function renderGoalPromptAssistant() {
   }
 
   if (state.goalPromptAwaitingRun) {
-    elements.goalPromptAiStatus.innerHTML = buildAiAssistMarkup({
+    renderStatus({
       kicker: "Brief Ready",
       title: "AI is standing by",
       body: "Click Let AI choose SKU's when you want this brief to replace or refresh the current shortlist.",
@@ -1261,7 +1544,7 @@ function renderGoalPromptAssistant() {
   }
 
   if (isGoalPromptSelectionActive()) {
-    elements.goalPromptAiStatus.innerHTML = buildAiAssistMarkup({
+    renderStatus({
       kicker: "AI Shortlist Ready",
       title: hasSelection ? `AI picked ${state.selectedGoalSkuIds.size} SKU(s)` : "AI reviewed the brief",
       body:
@@ -1276,7 +1559,7 @@ function renderGoalPromptAssistant() {
     return;
   }
 
-  elements.goalPromptAiStatus.innerHTML = buildAiAssistMarkup({
+  renderStatus({
     kicker: "AI Shortlist",
     title: hasSelection ? "Current picks are manual" : "Brief ready for AI",
     body: hasSelection
@@ -2067,81 +2350,6 @@ async function ensureWorkspaceClaim() {
   setWorkspaceOverlayVisible(true);
   showStatus("Select an avatar to open an isolated demo workspace.");
   await new Promise(() => undefined);
-}
-
-function applySupplyStageCopy() {
-  const stageCopy = isSupplyMarketIntroActive() ? SUPPLY_STAGE_COPY.intro : SUPPLY_STAGE_COPY.workflow;
-  if (elements.supplyStageKicker) {
-    elements.supplyStageKicker.textContent = stageCopy.kicker;
-  }
-  if (elements.supplyStageTitle) {
-    elements.supplyStageTitle.textContent = stageCopy.title;
-  }
-  if (elements.supplyStageLede) {
-    elements.supplyStageLede.textContent = stageCopy.lede;
-  }
-}
-
-function buildSupplyMarketIntroMarkup() {
-  const currentWorkspace = getCurrentWorkspace();
-  const avatarLabel = currentWorkspace?.label || "This avatar";
-  const metricCards = SUPPLY_MARKET_INTRO_CARDS.map(
-    (card) => `
-      <article class="supply-market-intro__metric">
-        <p class="section-kicker">${escapeHtml(card.eyebrow)}</p>
-        <strong>${escapeHtml(card.value)}</strong>
-        <span>${escapeHtml(card.label)}</span>
-        <p>${escapeHtml(card.detail)}</p>
-      </article>
-    `
-  ).join("");
-  const sourceLinks = SUPPLY_MARKET_INTRO_SOURCE_LINKS.map(
-    (link) =>
-      `<a href="${escapeHtml(link.href)}" target="_blank" rel="noreferrer">${escapeHtml(link.label)}</a>`
-  ).join('<span aria-hidden="true"> | </span>');
-
-  return `
-    <section class="supply-market-intro__hero">
-      <div class="supply-market-intro__copy">
-        <p class="section-kicker">Open With The Revenue Story</p>
-        <h4>${escapeHtml(avatarLabel)} starts on the commercial proof, not on configuration.</h4>
-        <p class="supply-market-intro__lede">
-          Retail media is already at platform scale, the screen-management layer is already a software market, APAC is already large enough to matter on its own, and measured in-store campaigns are already moving sales. The feature is not inventing demand. It gives Criteo a way to configure, monetize, and measure an existing spend pool on real retail screens.
-        </p>
-      </div>
-      <div class="supply-market-intro__actions">
-        <button id="marketIntroContinueBtn" type="button" class="btn btn--primary btn--large">Reveal CYield step 1</button>
-        <p class="supply-market-intro__hint">
-          Use the cards below to land the revenue case first, then move into the two-click supply workflow.
-        </p>
-      </div>
-    </section>
-    <div class="supply-market-intro__grid">${metricCards}</div>
-    <section class="supply-market-intro__scenario">
-      <p class="section-kicker">Modeled Revenue Scenario</p>
-      <h4>Small share assumptions already turn into meaningful upside.</h4>
-      <p>
-        If this capability routed even 0.25% of WARC's $201.6B global retail media forecast for 2026, that would equal roughly $504M of media flowing through the feature. If Criteo captured 1% of the 2024 APAC retail media platform pool, that is about $43M in platform-style revenue. These are scenario models, not committed bookings.
-      </p>
-    </section>
-    <p class="supply-market-intro__sources"><strong>Sources:</strong> ${sourceLinks}</p>
-  `;
-}
-
-function renderSupplyMarketIntro() {
-  applySupplyStageCopy();
-  const introActive = isSupplyMarketIntroActive();
-
-  if (elements.supplyMarketIntro) {
-    elements.supplyMarketIntro.hidden = !introActive;
-    elements.supplyMarketIntro.innerHTML = introActive ? buildSupplyMarketIntroMarkup() : "";
-  }
-  if (elements.supplyWorkflowShell) {
-    elements.supplyWorkflowShell.hidden = introActive;
-  }
-  if (elements.supplyAdvancedCard) {
-    elements.supplyAdvancedCard.hidden = introActive;
-  }
 }
 
 function normalizeStage(rawStage, fallbackStage) {
@@ -3555,6 +3763,9 @@ function renderStageButtons() {
 
 function setStage(stage, shouldScroll = false) {
   let nextStage = UI_STAGES.includes(stage) ? stage : "supply";
+  if (isSupplyMarketIntroActive()) {
+    nextStage = "supply";
+  }
   if (nextStage === "buying" && !isBuyingStageUnlocked()) {
     nextStage = "supply";
   }
@@ -3597,7 +3808,7 @@ function updateStagePills() {
   if (elements.supplyStagePill) {
     elements.supplyStagePill.textContent =
       isSupplyMarketIntroActive()
-        ? "Business case"
+        ? "Story first"
         : supplyReady
           ? "Preset ready"
           : manualReady
@@ -6050,7 +6261,7 @@ function updateMonitoringNarrative() {
 }
 
 function renderAll() {
-  renderSupplyMarketIntro();
+  renderMarketStoryOverlay();
   refreshPageCounter();
   renderSupplySummary();
   renderPresetSummary();
@@ -6726,11 +6937,31 @@ function wireEvents() {
       return;
     }
 
-    if (event.target.closest("#marketIntroContinueBtn")) {
+    if (event.target.closest("#marketStoryBackBtn")) {
+      state.marketStoryStep = Math.max(getActiveMarketStoryStep() - 1, 0);
+      renderAll();
+      return;
+    }
+
+    if (event.target.closest("#marketStoryNextBtn")) {
+      const atLastStep = getActiveMarketStoryStep() >= MARKET_STORY_STEPS.length - 1;
+      if (atLastStep) {
+        setMarketIntroAcknowledged(true);
+        renderAll();
+        elements.supplyWorkflowShell?.scrollIntoView({ behavior: "smooth", block: "start" });
+        showStatus("Commercial case covered. CYield step 1 is ready.");
+      } else {
+        state.marketStoryStep = getActiveMarketStoryStep() + 1;
+        renderAll();
+      }
+      return;
+    }
+
+    if (event.target.closest("#marketStorySkipBtn")) {
       setMarketIntroAcknowledged(true);
       renderAll();
       elements.supplyWorkflowShell?.scrollIntoView({ behavior: "smooth", block: "start" });
-      showStatus("Commercial case covered. CYield step 1 is ready.");
+      showStatus("Skipped the opening story. CYield step 1 is ready.");
       return;
     }
 
@@ -7056,8 +7287,41 @@ function wireEvents() {
     state.goalLiveSelectedScreenId = "";
     renderLiveScreens();
   });
+  document.addEventListener("keydown", (event) => {
+    if (!isSupplyMarketIntroActive()) {
+      return;
+    }
+    if (event.key === "ArrowLeft") {
+      event.preventDefault();
+      state.marketStoryStep = Math.max(getActiveMarketStoryStep() - 1, 0);
+      renderAll();
+      return;
+    }
+    if (event.key === "ArrowRight" || event.key === " " || event.key === "Enter") {
+      event.preventDefault();
+      const atLastStep = getActiveMarketStoryStep() >= MARKET_STORY_STEPS.length - 1;
+      if (atLastStep) {
+        setMarketIntroAcknowledged(true);
+        renderAll();
+        elements.supplyWorkflowShell?.scrollIntoView({ behavior: "smooth", block: "start" });
+        showStatus("Commercial case covered. CYield step 1 is ready.");
+      } else {
+        state.marketStoryStep = getActiveMarketStoryStep() + 1;
+        renderAll();
+      }
+      return;
+    }
+    if (event.key === "Escape") {
+      event.preventDefault();
+      setMarketIntroAcknowledged(true);
+      renderAll();
+      elements.supplyWorkflowShell?.scrollIntoView({ behavior: "smooth", block: "start" });
+      showStatus("Skipped the opening story. CYield step 1 is ready.");
+    }
+  });
   window.addEventListener("beforeunload", () => {
     stopWorkspaceOverlayPolling();
+    cancelMarketStoryAnimations();
     presenterChannel?.close();
     presenterChannel = null;
   });
@@ -7086,7 +7350,7 @@ async function init() {
     setStage("supply", false);
     showStatus(
       isSupplyMarketIntroActive()
-        ? "Start with the revenue story, then reveal the CYield supply setup."
+        ? "Start with the opening story, then enter CYield step 1."
         : "Ready for the CYield supply setup."
     );
   } catch (error) {
