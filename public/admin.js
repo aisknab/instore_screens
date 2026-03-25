@@ -192,28 +192,28 @@ const DEFAULT_DEMO_CONFIG = {
 
 const MARKET_STORY_STEPS = [
   {
-    id: "global-budget",
+    id: "onsite-base",
     accent: "#2f74ff",
-    kicker: "Global budget pool",
-    title: "Retail media is already bigger than the feature pitch.",
+    kicker: "Established revenue base",
+    title: "Onsite retail media is already the core business.",
     body:
-      "Open on the fact that the money already exists. WARC projects global retail media at $201.6B in 2026, and the screen-management layer behind these placements is already a $6.9B software market. This is not a speculative demand story.",
-    note: "The build case is to route existing retail media and signage budget through a Criteo-managed screen surface.",
+      "Retail media is already sold in through ecommerce. Industry estimates suggest more than 80% of RMN spend still sits onsite; applied to WARC's $177.7B 2025 retail media forecast, that implies roughly $142B is already concentrated on retailer sites and apps. In-store screens are the logical extension of a channel that is already proven.",
+    note: "Inference: $142B equals 80% of WARC's 2025 retail media forecast, using the industry view that 80%+ of RMN spend remains onsite.",
     metrics: [
       {
-        value: 201.6,
-        decimals: 1,
+        value: 142,
+        decimals: 0,
         prefix: "$",
         suffix: "B",
-        label: "Global retail media forecast for 2026",
-        detail: "WARC, March 19, 2025"
+        label: "Inferred 2025 onsite retail media base",
+        detail: "Derived from WARC's $177.7B 2025 forecast and 80% onsite share"
       },
       {
         value: 6.9,
         decimals: 1,
         prefix: "$",
         suffix: "B",
-        label: "Digital signage software market in 2025",
+        label: "Global screen-management software market in 2025",
         detail: "Grand View Research"
       }
     ],
@@ -221,6 +221,10 @@ const MARKET_STORY_STEPS = [
       {
         label: "WARC Retail Media Radar",
         href: "https://www.warc.com/content/article/retail-media-radar-q1-2025/en-gb/159606"
+      },
+      {
+        label: "Industry view on onsite share",
+        href: "https://www.techradar.com/pro/from-retail-stores-to-digital-media-powerhouses-the-power-of-modern-retail-media-networks"
       },
       {
         label: "Grand View digital signage software",
@@ -232,11 +236,11 @@ const MARKET_STORY_STEPS = [
   {
     id: "apac",
     accent: "#2eb7a3",
-    kicker: "APAC opening",
-    title: "APAC is already large enough to justify the build on its own.",
+    kicker: "APAC wedge",
+    title: "APAC is large enough to matter and early enough to win.",
     body:
-      "The regional case is already material: the APAC retail media platform market sits at $4.3B, and APAC in-store digital advertising display adds another $1.3B. Both pools are growing, which means the feature can land as infrastructure for a market that is still expanding.",
-    note: "This is why the story should feel regional and commercial, not just product-led.",
+      "APAC already supports a $4.3B retail media platform market and a $1.3B in-store digital display market. That matters because the monetisation infrastructure already exists, while the physical screen layer is still early enough for a differentiated product wedge.",
+    note: "This positions APAC as a commercially credible beachhead, not just a product pilot.",
     metrics: [
       {
         value: 4.3,
@@ -270,11 +274,11 @@ const MARKET_STORY_STEPS = [
   {
     id: "activation",
     accent: "#ef6a3f",
-    kicker: "Proven activation",
-    title: "These screens are already proving they can move sales.",
+    kicker: "Performance proof",
+    title: "In-store screens can be sold as measurable activation.",
     body:
-      "The presentation should pivot from market size to proof. Albertsons reported a 14% in-store sales lift in a 116-store case study, while SMG and Kantar reported 28.3% average product sales lift across 12,558 in-store campaigns. The pitch is not just inventory. It is measured activation.",
-    note: "That is the bridge from a supply feature into a revenue feature.",
+      "Commercial proof is already visible in market. Albertsons reported 14% in-store sales lift in a 116-store case study. SMG and Kantar reported 28.3% average product sales lift across 12,558 in-store campaigns. That is strong enough to position screens as a performance extension of onsite media, not as a branding experiment.",
+    note: "The buyer story is familiar: the same retail media logic, carried from the site into the store.",
     metrics: [
       {
         value: 14,
@@ -308,26 +312,26 @@ const MARKET_STORY_STEPS = [
   {
     id: "modeled-upside",
     accent: "#f0b54b",
-    kicker: "Modeled revenue upside",
-    title: "Even small share assumptions become real money fast.",
+    kicker: "Conservative revenue case",
+    title: "The business case works even on cautious assumptions.",
     body:
-      "Make the final click about commercial leverage. If this feature routed just 0.25% of WARC's 2026 global retail media forecast, that is roughly $504M flowing through the capability. If Criteo captured 1% of the 2024 APAC retail media platform pool, that is about $43M in platform-style revenue.",
-    note: "These are modeled scenarios from published market sizes, not committed forecasts. The point is that the upside is meaningful before the workflow even starts.",
+      "If only 0.1% of the inferred 2025 onsite retail media base migrated into in-store screens, that would represent roughly $142M of media flowing through the capability. If Criteo captured 1% of the 2025 global screen-management software layer, that would imply about $69M in software-style revenue.",
+    note: "These are scenario models built from published market sizes. The purpose is to show order of magnitude, not to present a forecast.",
     metrics: [
       {
-        value: 504,
+        value: 142,
         decimals: 0,
         prefix: "$",
         suffix: "M",
-        label: "0.25% of 2026 global retail media spend",
-        detail: "Modeled routed-media scenario"
+        label: "0.1% attach to the inferred 2025 onsite base",
+        detail: "Modeled media-flow scenario"
       },
       {
-        value: 43,
+        value: 69,
         decimals: 0,
         prefix: "$",
         suffix: "M",
-        label: "1% of the 2024 APAC platform market",
+        label: "1% of the 2025 screen-management software layer",
         detail: "Modeled platform-revenue scenario"
       }
     ],
@@ -337,8 +341,12 @@ const MARKET_STORY_STEPS = [
         href: "https://www.warc.com/content/article/retail-media-radar-q1-2025/en-gb/159606"
       },
       {
-        label: "Grand View APAC retail media platform",
-        href: "https://www.grandviewresearch.com/horizon/outlook/retail-media-platform-market/asia-pacific"
+        label: "Industry view on onsite share",
+        href: "https://www.techradar.com/pro/from-retail-stores-to-digital-media-powerhouses-the-power-of-modern-retail-media-networks"
+      },
+      {
+        label: "Grand View digital signage software",
+        href: "https://www.grandviewresearch.com/horizon/statistics/digital-signage-market/component/software/global"
       }
     ],
     nextLabel: "Enter CYield step 1"
@@ -823,6 +831,7 @@ function renderMarketStoryOverlay() {
   }
 
   if (elements.marketStoryPanel) {
+    elements.marketStoryPanel.classList.remove("is-loading");
     elements.marketStoryPanel.style.setProperty("--story-accent", step.accent || "#2f74ff");
   }
   if (elements.marketStoryStepLabel) {
@@ -832,7 +841,7 @@ function renderMarketStoryOverlay() {
     elements.marketStoryKicker.textContent = step.kicker || "Opening story";
   }
   if (elements.marketStoryTitle) {
-    elements.marketStoryTitle.textContent = step.title || "Why this feature matters";
+    elements.marketStoryTitle.textContent = step.title || "Why the in-store screens business case matters";
   }
   if (elements.marketStoryBody) {
     elements.marketStoryBody.textContent = step.body || "";
@@ -2967,48 +2976,52 @@ function buildSupplyMarketIntroPresenterPayload() {
   return {
     stageDescription: "Lead with the revenue case and activation proof, then reveal the two-click CYield supply workflow.",
     speakerSummary:
-      "Before touching the workflow, anchor the story on market size and proof: retail media is already massive, the screen-management layer is already a software market, APAC is already material, and in-store activation is already showing measurable lift.",
+      "Open with the business case: onsite retail media is already an established revenue line, and in-store screens are the adjacent growth layer that can extend that model into physical stores with measurable activation.",
     presenterNotes: [
-      "Start on the market, not on the mechanics: this is a revenue opening, not a UI opening.",
-      "Use the global retail media number to show budget scale, then use signage software and APAC platform numbers to prove the tooling layer is also real.",
-      "Call out the activation studies as operational proof that these screens can move sales, not just generate impressions.",
-      "Be explicit that the $504M and $43M figures are modeled scenarios from published market sizes, not committed forecasts."
+      "Start with the fact that retail media is already sold in through onsite ecommerce; the business case is to extend that model into stores, not to create a new category from scratch.",
+      "Use the inferred onsite base against the screen-management layer to show that in-store sits next to an established revenue pool and a real software market.",
+      "Use APAC as the regional wedge: enough scale to matter, but still early enough for a differentiated product position.",
+      "Keep the commercial proof tight: sales lift evidence means screens can be sold as performance media, not just as digital fixtures.",
+      "Be explicit that the $142M and $69M figures are modeled scenarios from published market sizes, not forecasts."
     ],
     proofPoints: [
-      "$201.6B global retail media by 2026",
-      "$6.9B digital signage software layer",
+      "$142B inferred onsite retail media base",
+      "$6.9B screen-management software layer",
       "$4.3B APAC retail media platform market",
       "+14% to +28.3% reported sales lift"
     ],
     supportingModules: [
-      "Commercial opening story",
+      "Onsite versus in-store market framing",
       "Global and APAC market sizing",
       "Activation proof",
-      "Modeled revenue scenario"
+      "Conservative revenue scenario"
     ],
     demoActions: [
-      "Land the global retail media number first.",
+      "Anchor the story on onsite as the existing base business.",
       "Bridge into the screen-management and APAC opportunity.",
-      "Use the lift studies to show the inventory can drive outcomes.",
+      "Use the lift studies to show the screen layer can drive commercial outcomes.",
       "Then reveal CYield step 1 and move into the supply demo."
     ],
     qaPrompts: [
-      "If someone challenges the upside math, state that the scenario uses 0.25% of global retail media spend and 1% of the APAC platform pool.",
-      "If someone asks whether this is media or software, explain that the feature sits between both markets: monetizable media supply plus the management layer behind it."
+      "If someone challenges the onsite number, state clearly that it is an inference from WARC's 2025 retail media forecast and the industry estimate that 80%+ of spend remains onsite.",
+      "If someone asks whether this is media or software, explain that the product sits between both pools: incremental media flow plus the screen-management layer required to operate it."
     ],
     liveNarrative:
-      "Open on the business case: $201.6B global retail media, $6.9B signage software, a $4.3B APAC retail media platform market, and measured in-store sales lift already on the board.",
+      "Open on the business case: onsite is already established, the screen-management layer is already a software market, APAC is large enough to matter, and in-store screens already show measurable sales lift.",
     detailRows: [
-      buildPresenterDetailRow("Global market", "$201.6B retail media spend forecast for 2026, with WARC projecting +13.5% versus 2025."),
+      buildPresenterDetailRow(
+        "Established base",
+        "$142B inferred onsite retail media base in 2025, derived from WARC's $177.7B forecast and the industry view that 80%+ of spend remains onsite."
+      ),
       buildPresenterDetailRow("Screen-management layer", "$6.9B global digital signage software market in 2025, projected to $13.4B by 2033."),
-      buildPresenterDetailRow("APAC opening", "$4.3B APAC retail media platform market in 2024 plus a $1.3B APAC in-store digital display market."),
+      buildPresenterDetailRow("APAC wedge", "$4.3B APAC retail media platform market in 2024 plus a $1.3B APAC in-store digital display market."),
       buildPresenterDetailRow(
         "Activation proof",
         "Albertsons reported +14% in-store sales lift in a 116-store case study; SMG / Kantar reported +28.3% average product sales lift across 12,558 campaigns."
       ),
       buildPresenterDetailRow(
-        "Modeled upside",
-        "0.25% of $201.6B implies roughly $504M of routed media. 1% of $4.3B implies roughly $43M of platform revenue."
+        "Conservative upside",
+        "0.1% of the inferred onsite base implies roughly $142M of media flow. 1% of the screen-management software layer implies roughly $69M of platform revenue."
       )
     ]
   };

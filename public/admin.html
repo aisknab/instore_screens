@@ -882,9 +882,23 @@
         <div id="workspaceGrid" class="workspace-grid"></div>
       </div>
     </section>
-    <section id="marketStoryOverlay" class="market-story-overlay" aria-live="polite" hidden>
+    <section id="marketStoryOverlay" class="market-story-overlay" aria-live="polite">
       <div class="market-story-overlay__backdrop" aria-hidden="true"></div>
-      <div id="marketStoryPanel" class="market-story-overlay__panel" role="dialog" aria-modal="true" aria-labelledby="marketStoryTitle">
+      <div id="marketStoryPanel" class="market-story-overlay__panel is-loading" role="dialog" aria-modal="true" aria-labelledby="marketStoryTitle">
+        <div class="market-story-overlay__loading" aria-hidden="true">
+          <div class="market-story-overlay__loading-screen">
+            <span class="market-story-overlay__loading-glow"></span>
+            <span class="market-story-overlay__loading-scan"></span>
+            <span class="market-story-overlay__loading-line"></span>
+            <span class="market-story-overlay__loading-line"></span>
+            <span class="market-story-overlay__loading-line"></span>
+          </div>
+          <div class="market-story-overlay__loading-copy">
+            <p class="section-kicker">Preparing story</p>
+            <strong>Loading the in-store screens business case</strong>
+            <p>Pulling the commercial narrative before the demo workspace appears.</p>
+          </div>
+        </div>
         <div class="market-story-overlay__top">
           <div class="market-story-overlay__stepper">
             <p id="marketStoryStepLabel" class="section-kicker">Story 1 / 4</p>
@@ -896,7 +910,7 @@
         <div class="market-story-overlay__content">
           <div class="market-story-overlay__copy">
             <p id="marketStoryKicker" class="section-kicker">Opening story</p>
-            <h2 id="marketStoryTitle">Why this feature matters</h2>
+            <h2 id="marketStoryTitle">Why the in-store screens business case matters</h2>
             <p id="marketStoryBody" class="market-story-overlay__lede"></p>
             <p id="marketStoryNote" class="market-story-overlay__note"></p>
           </div>
