@@ -681,7 +681,6 @@ const elements = {
   marketStoryKicker: qs("#marketStoryKicker"),
   marketStoryTitle: qs("#marketStoryTitle"),
   marketStoryBody: qs("#marketStoryBody"),
-  marketStoryNote: qs("#marketStoryNote"),
   marketStoryMetrics: qs("#marketStoryMetrics"),
   marketStorySources: qs("#marketStorySources"),
   marketStoryBackBtn: qs("#marketStoryBackBtn"),
@@ -986,9 +985,6 @@ function renderMarketStoryOverlay() {
   }
   if (elements.marketStoryBody) {
     elements.marketStoryBody.textContent = step.body || "";
-  }
-  if (elements.marketStoryNote) {
-    elements.marketStoryNote.textContent = step.note || "";
   }
   if (elements.marketStoryProgress) {
     elements.marketStoryProgress.innerHTML = MARKET_STORY_STEPS.map(
