@@ -195,40 +195,48 @@ const MARKET_STORY_STEPS = [
     id: "onsite-base",
     accent: "#2f74ff",
     kicker: "Established revenue base",
-    title: "Onsite retail media is already the core business.",
+    title: "Onsite ecommerce media is the revenue engine already in market.",
     body:
-      "Retail media is already sold in through ecommerce. Industry estimates suggest more than 80% of RMN spend still sits onsite; applied to WARC's $177.7B 2025 retail media forecast, that implies roughly $142B is already concentrated on retailer sites and apps. In-store screens are the logical extension of a channel that is already proven.",
-    note: "Inference: $142B equals 80% of WARC's 2025 retail media forecast, using the industry view that 80%+ of RMN spend remains onsite.",
+      "For this product, the right benchmark is onsite ecommerce media, not total retail media. Statista Market Insights projects global retail platform advertising at $203.89B in 2025, while Grand View Research sizes the global in-store digital advertising display market at $4.59B in 2024. The business case is extension, not reinvention: carry an established onsite budget pool into stores through a measurable screen layer.",
+    note: "Verification context: the cleanest published onsite benchmark comes from Statista's retail platform advertising category, while WARC, EMARKETER, and RetailX each reinforce that onsite still accounts for roughly four-fifths or more of retail media spend.",
     metrics: [
       {
-        value: 142,
-        decimals: 0,
+        value: 203.89,
+        decimals: 2,
         prefix: "$",
         suffix: "B",
-        label: "Inferred 2025 onsite retail media base",
-        detail: "Derived from WARC's $177.7B 2025 forecast and 80% onsite share"
+        label: "Global onsite ecommerce media market",
+        detail: "Statista retail platform advertising, 2025"
       },
       {
-        value: 6.9,
-        decimals: 1,
+        value: 4.59,
+        decimals: 2,
         prefix: "$",
         suffix: "B",
-        label: "Global screen-management software market in 2025",
-        detail: "Grand View Research"
+        label: "Global in-store digital display market",
+        detail: "Grand View Research, 2024"
       }
     ],
     sources: [
       {
-        label: "WARC Retail Media Radar",
-        href: "https://www.warc.com/content/article/retail-media-radar-q1-2025/en-gb/159606"
+        label: "Statista global retail platform advertising",
+        href: "https://www.statista.com/outlook/amo/advertising/retail-platform-advertising/worldwide"
       },
       {
-        label: "Industry view on onsite share",
-        href: "https://www.techradar.com/pro/from-retail-stores-to-digital-media-powerhouses-the-power-of-modern-retail-media-networks"
+        label: "Grand View global in-store display",
+        href: "https://www.grandviewresearch.com/industry-analysis/in-store-digital-advertising-display-market-report"
       },
       {
-        label: "Grand View digital signage software",
-        href: "https://www.grandviewresearch.com/horizon/statistics/digital-signage-market/component/software/global"
+        label: "WARC off-site share",
+        href: "https://www.warc.com/content/article/warc-curated-datapoints/off-site-accounts-for-less-than-20-of-retail-media-spend/en-gb/162053"
+      },
+      {
+        label: "EMARKETER on-site share",
+        href: "https://www.emarketer.com/content/upper-limits-of-retail-media-s-on-site-monetization-coming-focus"
+      },
+      {
+        label: "RetailX onsite report",
+        href: "https://internetretailing.net/report-hub/retail-media-onsite-2025/"
       }
     ],
     nextLabel: "Show APAC"
@@ -237,32 +245,32 @@ const MARKET_STORY_STEPS = [
     id: "apac",
     accent: "#2eb7a3",
     kicker: "APAC wedge",
-    title: "APAC is large enough to matter and early enough to win.",
+    title: "APAC combines a large onsite base with early in-store whitespace.",
     body:
-      "APAC already supports a $4.3B retail media platform market and a $1.3B in-store digital display market. That matters because the monetisation infrastructure already exists, while the physical screen layer is still early enough for a differentiated product wedge.",
-    note: "This positions APAC as a commercially credible beachhead, not just a product pilot.",
+      "The same onsite-only lens holds in APAC. Statista Market Insights projects APAC retail platform advertising at $90.25B in 2025, while Grand View Research sizes the APAC in-store digital advertising display market at $1.31B in 2024. That is the commercially relevant gap: a scaled onsite business next to a much earlier in-store screen layer.",
+    note: "APAC uses the same Statista retail platform advertising category as the global slide, so the regional comparison also stays onsite-only rather than rolling up total retail media.",
     metrics: [
       {
-        value: 4.3,
-        decimals: 1,
+        value: 90.25,
+        decimals: 2,
         prefix: "$",
         suffix: "B",
-        label: "APAC retail media platform market",
-        detail: "Grand View Research, 2024 base"
+        label: "APAC onsite ecommerce media market",
+        detail: "Statista retail platform advertising, 2025"
       },
       {
-        value: 1.3,
-        decimals: 1,
+        value: 1.312,
+        decimals: 3,
         prefix: "$",
         suffix: "B",
         label: "APAC in-store digital display market",
-        detail: "Grand View Research, 2024 base"
+        detail: "Grand View Research, 2024"
       }
     ],
     sources: [
       {
-        label: "Grand View APAC retail media platform",
-        href: "https://www.grandviewresearch.com/horizon/outlook/retail-media-platform-market/asia-pacific"
+        label: "Statista APAC retail platform advertising",
+        href: "https://www.statista.com/outlook/amo/advertising/retail-platform-advertising/apac"
       },
       {
         label: "Grand View APAC in-store digital display",
@@ -313,40 +321,36 @@ const MARKET_STORY_STEPS = [
     id: "modeled-upside",
     accent: "#f0b54b",
     kicker: "Conservative revenue case",
-    title: "The business case works even on cautious assumptions.",
+    title: "The APAC business case works even on cautious assumptions.",
     body:
-      "If only 0.1% of the inferred 2025 onsite retail media base migrated into in-store screens, that would represent roughly $142M of media flowing through the capability. If Criteo captured 1% of the 2025 global screen-management software layer, that would imply about $69M in software-style revenue.",
+      "If in-store screens captured only 0.1% of APAC onsite ecommerce media, that would represent roughly $90M of media flowing through the capability. If the product captured 1% of the APAC in-store digital advertising display market, that would imply about $13M of adjacent product-layer revenue.",
     note: "These are scenario models built from published market sizes. The purpose is to show order of magnitude, not to present a forecast.",
     metrics: [
       {
-        value: 142,
+        value: 90,
         decimals: 0,
         prefix: "$",
         suffix: "M",
-        label: "0.1% attach to the inferred 2025 onsite base",
+        label: "0.1% attach to APAC onsite ecommerce media",
         detail: "Modeled media-flow scenario"
       },
       {
-        value: 69,
+        value: 13,
         decimals: 0,
         prefix: "$",
         suffix: "M",
-        label: "1% of the 2025 screen-management software layer",
+        label: "1% of the APAC in-store display market",
         detail: "Modeled platform-revenue scenario"
       }
     ],
     sources: [
       {
-        label: "WARC Retail Media Radar",
-        href: "https://www.warc.com/content/article/retail-media-radar-q1-2025/en-gb/159606"
+        label: "Statista APAC retail platform advertising",
+        href: "https://www.statista.com/outlook/amo/advertising/retail-platform-advertising/apac"
       },
       {
-        label: "Industry view on onsite share",
-        href: "https://www.techradar.com/pro/from-retail-stores-to-digital-media-powerhouses-the-power-of-modern-retail-media-networks"
-      },
-      {
-        label: "Grand View digital signage software",
-        href: "https://www.grandviewresearch.com/horizon/statistics/digital-signage-market/component/software/global"
+        label: "Grand View APAC in-store digital display",
+        href: "https://www.grandviewresearch.com/horizon/outlook/in-store-digital-advertising-display-market/asia-pacific"
       }
     ],
     nextLabel: "Enter CYield step 1"
@@ -2974,54 +2978,60 @@ function formatPresenterTelemetryLeader(entries = [], type) {
 
 function buildSupplyMarketIntroPresenterPayload() {
   return {
-    stageDescription: "Lead with the revenue case and activation proof, then reveal the two-click CYield supply workflow.",
+    stageDescription: "Lead with the onsite revenue base, the in-store whitespace, and the activation proof before revealing the two-click CYield supply workflow.",
     speakerSummary:
-      "Open with the business case: onsite retail media is already an established revenue line, and in-store screens are the adjacent growth layer that can extend that model into physical stores with measurable activation.",
+      "Open with a clean channel-scope argument: onsite ecommerce media is already a large revenue engine, in-store screens are the adjacent growth layer, and the activation evidence shows the extension can be sold on commercial outcomes.",
     presenterNotes: [
-      "Start with the fact that retail media is already sold in through onsite ecommerce; the business case is to extend that model into stores, not to create a new category from scratch.",
-      "Use the inferred onsite base against the screen-management layer to show that in-store sits next to an established revenue pool and a real software market.",
-      "Use APAC as the regional wedge: enough scale to matter, but still early enough for a differentiated product position.",
-      "Keep the commercial proof tight: sales lift evidence means screens can be sold as performance media, not just as digital fixtures.",
-      "Be explicit that the $142M and $69M figures are modeled scenarios from published market sizes, not forecasts."
+      "Frame the first slide around channel scope. We are not comparing in-store screens with total retail media; we are comparing them with onsite ecommerce media because that is the part of retail media the current platform already serves.",
+      "Use Statista's retail platform advertising category as the cleanest published onsite sizing source. It is a better benchmark than inferring onsite from total retail media.",
+      "Use WARC, EMARKETER, and RetailX as corroboration that onsite still accounts for roughly 80% or more of retail media spend.",
+      "Use APAC as the regional wedge: a large onsite base at $90.25B sits next to a much earlier $1.31B in-store display market.",
+      "Keep the proof focused on causality and sales lift. The point is not that stores are interesting media; it is that screens can move product.",
+      "Be explicit that the $90M and $13M figures are modeled scenarios from published market sizes, not forecasts."
     ],
     proofPoints: [
-      "$142B inferred onsite retail media base",
-      "$6.9B screen-management software layer",
-      "$4.3B APAC retail media platform market",
+      "$203.89B global onsite ecommerce media market",
+      "$90.25B APAC onsite ecommerce media market",
+      "$4.59B global and $1.31B APAC in-store digital display markets",
       "+14% to +28.3% reported sales lift"
     ],
     supportingModules: [
-      "Onsite versus in-store market framing",
+      "Onsite-only market framing",
       "Global and APAC market sizing",
       "Activation proof",
       "Conservative revenue scenario"
     ],
     demoActions: [
-      "Anchor the story on onsite as the existing base business.",
-      "Bridge into the screen-management and APAC opportunity.",
-      "Use the lift studies to show the screen layer can drive commercial outcomes.",
+      "Anchor the story on onsite ecommerce media as the existing revenue engine.",
+      "Use APAC to keep the comparison inside product scope while showing regional scale.",
+      "Use the lift studies to position screens as measurable activation.",
       "Then reveal CYield step 1 and move into the supply demo."
     ],
     qaPrompts: [
-      "If someone challenges the onsite number, state clearly that it is an inference from WARC's 2025 retail media forecast and the industry estimate that 80%+ of spend remains onsite.",
-      "If someone asks whether this is media or software, explain that the product sits between both pools: incremental media flow plus the screen-management layer required to operate it."
+      "If someone challenges the onsite number, point to Statista's retail platform advertising market as the cleanest published benchmark and note that WARC, EMARKETER, and RetailX independently show onsite still represents about four-fifths or more of retail media spend.",
+      "If someone asks why total retail media is excluded, explain that total retail media includes channels the current platform does not sell; the business case needs to stay inside onsite ecommerce media plus in-store screens.",
+      "If someone asks whether this is a media or product opportunity, explain that the upside combines media budgets flowing through the channel with platform revenue from operating the screen layer."
     ],
     liveNarrative:
-      "Open on the business case: onsite is already established, the screen-management layer is already a software market, APAC is large enough to matter, and in-store screens already show measurable sales lift.",
+      "Open on the business case: onsite ecommerce media is already a scaled revenue engine, APAC is large enough to matter, in-store screens remain underdeveloped, and the activation evidence shows the channel can be sold on outcomes.",
     detailRows: [
       buildPresenterDetailRow(
-        "Established base",
-        "$142B inferred onsite retail media base in 2025, derived from WARC's $177.7B forecast and the industry view that 80%+ of spend remains onsite."
+        "Onsite base",
+        "$203.89B global retail platform advertising market in 2025, using Statista's retail-platform category as the cleanest onsite benchmark rather than total retail media."
       ),
-      buildPresenterDetailRow("Screen-management layer", "$6.9B global digital signage software market in 2025, projected to $13.4B by 2033."),
-      buildPresenterDetailRow("APAC wedge", "$4.3B APAC retail media platform market in 2024 plus a $1.3B APAC in-store digital display market."),
+      buildPresenterDetailRow("Adjacent market", "$4.59B global in-store digital advertising display market in 2024, with APAC at $1.312B."),
+      buildPresenterDetailRow(
+        "Channel validation",
+        "WARC says off-site is less than 20% of retail media spend, EMARKETER says just under 80% of US retail media ad spending stays on owned-and-operated sites and apps in 2025, and RetailX says 80% of retail media is derived from onsite."
+      ),
+      buildPresenterDetailRow("APAC wedge", "$90.25B APAC retail platform advertising market in 2025 alongside the $1.312B APAC in-store digital advertising display market."),
       buildPresenterDetailRow(
         "Activation proof",
         "Albertsons reported +14% in-store sales lift in a 116-store case study; SMG / Kantar reported +28.3% average product sales lift across 12,558 campaigns."
       ),
       buildPresenterDetailRow(
         "Conservative upside",
-        "0.1% of the inferred onsite base implies roughly $142M of media flow. 1% of the screen-management software layer implies roughly $69M of platform revenue."
+        "0.1% of APAC onsite ecommerce media implies roughly $90M of media flow. 1% of the APAC in-store display market implies roughly $13M of platform revenue."
       )
     ]
   };
