@@ -2684,11 +2684,30 @@ textarea:focus {
 }
 
 .monitoring-preview-card {
+  --monitor-device-width: 72%;
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 18px;
+  border-radius: 20px;
   background: rgba(8, 14, 26, 0.34);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 16px 30px rgba(9, 18, 34, 0.2);
+}
+
+.monitoring-preview-card[data-device-family="portrait-wall"] {
+  --monitor-device-width: 34%;
+}
+
+.monitoring-preview-card[data-device-family="kiosk"] {
+  --monitor-device-width: 31%;
+}
+
+.monitoring-preview-card[data-device-family="menu-board"] {
+  --monitor-device-width: 78%;
+}
+
+.monitoring-preview-card[data-device-family="shelf-edge"] {
+  --monitor-device-width: 82%;
 }
 
 .monitoring-preview-card.is-loading,
@@ -2698,13 +2717,237 @@ textarea:focus {
 
 .monitoring-preview-card__media {
   position: relative;
-  aspect-ratio: 16 / 9;
+  isolation: isolate;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  aspect-ratio: 16 / 11;
   background:
-    radial-gradient(320px 180px at 15% 10%, rgba(105, 156, 255, 0.28), transparent 58%),
-    linear-gradient(135deg, rgba(24, 52, 93, 0.96), rgba(11, 23, 43, 0.98));
+    linear-gradient(180deg, rgba(225, 232, 242, 0.96), rgba(200, 210, 223, 0.88));
 }
 
-.monitoring-preview-card.is-loading .monitoring-preview-card__media {
+.monitoring-preview-card__media::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background:
+    radial-gradient(240px 140px at 16% 10%, rgba(255, 255, 255, 0.84), transparent 62%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.76), rgba(215, 223, 235, 0.72) 56%, rgba(177, 189, 206, 0.72) 100%);
+}
+
+.monitoring-preview-card__media::after {
+  content: "";
+  position: absolute;
+  inset: 62% -10% -24% -10%;
+  z-index: 0;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(89, 104, 128, 0.46)),
+    repeating-linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.08) 0,
+      rgba(255, 255, 255, 0.08) 26px,
+      rgba(24, 38, 58, 0.04) 26px,
+      rgba(24, 38, 58, 0.04) 52px
+    );
+  transform: perspective(900px) rotateX(76deg);
+  transform-origin: top center;
+}
+
+.monitoring-preview-card__fixture {
+  position: absolute;
+  z-index: 1;
+  display: block;
+  border-radius: 18px;
+}
+
+.monitoring-preview-card__fixture--header {
+  top: 12%;
+  left: 12%;
+  width: 34%;
+  height: 12%;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(219, 226, 235, 0.66)),
+    linear-gradient(90deg, rgba(84, 145, 255, 0.12), transparent 70%);
+  border: 1px solid rgba(119, 136, 162, 0.12);
+}
+
+.monitoring-preview-card__fixture--counter {
+  left: 12%;
+  bottom: 18%;
+  width: 28%;
+  height: 16%;
+  background:
+    linear-gradient(180deg, rgba(240, 244, 250, 0.88), rgba(200, 210, 222, 0.94)),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.2), transparent 74%);
+  border-radius: 18px 18px 12px 12px;
+}
+
+.monitoring-preview-card__fixture--shelf {
+  right: 8%;
+  bottom: 18%;
+  width: 24%;
+  height: 38%;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.18), transparent 18%),
+    repeating-linear-gradient(
+      180deg,
+      rgba(171, 184, 203, 0.58) 0,
+      rgba(171, 184, 203, 0.58) 8px,
+      rgba(95, 109, 132, 0.22) 8px,
+      rgba(95, 109, 132, 0.22) 52px
+    );
+  border: 1px solid rgba(119, 136, 162, 0.14);
+}
+
+.monitoring-preview-card[data-scene="foodcourt"] .monitoring-preview-card__fixture--header {
+  left: 18%;
+  width: 56%;
+}
+
+.monitoring-preview-card[data-scene="foodcourt"] .monitoring-preview-card__fixture--counter {
+  left: 18%;
+  width: 64%;
+  height: 12%;
+}
+
+.monitoring-preview-card[data-scene="foodcourt"] .monitoring-preview-card__fixture--shelf {
+  display: none;
+}
+
+.monitoring-preview-card[data-scene="checkout"] .monitoring-preview-card__fixture--counter {
+  width: 40%;
+  height: 20%;
+  left: 8%;
+  bottom: 15%;
+}
+
+.monitoring-preview-card[data-scene="aisle"] .monitoring-preview-card__fixture--counter {
+  left: 12%;
+  width: 72%;
+  height: 8%;
+  bottom: 20%;
+}
+
+.monitoring-preview-card[data-scene="aisle"] .monitoring-preview-card__fixture--shelf {
+  width: 30%;
+  height: 40%;
+}
+
+.monitoring-preview-card__device {
+  position: relative;
+  z-index: 2;
+  width: var(--monitor-device-width);
+  aspect-ratio: var(--monitor-preview-aspect, 16 / 9);
+}
+
+.monitoring-preview-card__device::before,
+.monitoring-preview-card__device::after {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+}
+
+.monitoring-preview-card[data-device-family="kiosk"] .monitoring-preview-card__device::before {
+  left: 50%;
+  bottom: -34%;
+  width: 18%;
+  height: 34%;
+  transform: translateX(-50%);
+  border-radius: 0 0 16px 16px;
+  background: linear-gradient(180deg, rgba(232, 238, 246, 0.98), rgba(80, 95, 119, 0.96));
+}
+
+.monitoring-preview-card[data-device-family="kiosk"] .monitoring-preview-card__device::after {
+  left: 50%;
+  bottom: -42%;
+  width: 72%;
+  height: 7%;
+  transform: translateX(-50%);
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(112, 128, 156, 0.92), rgba(48, 60, 80, 0.98));
+}
+
+.monitoring-preview-card[data-device-family="menu-board"] .monitoring-preview-card__device::before {
+  top: -18%;
+  left: 22%;
+  width: 56%;
+  height: 18%;
+  background:
+    linear-gradient(
+      90deg,
+      transparent 0,
+      transparent 19%,
+      rgba(243, 247, 255, 0.78) 19%,
+      rgba(243, 247, 255, 0.78) 23%,
+      transparent 23%,
+      transparent 77%,
+      rgba(243, 247, 255, 0.78) 77%,
+      rgba(243, 247, 255, 0.78) 81%,
+      transparent 81%
+    );
+}
+
+.monitoring-preview-card[data-device-family="menu-board"] .monitoring-preview-card__device::after {
+  top: -2%;
+  left: 18%;
+  right: 18%;
+  height: 4%;
+  border-radius: 999px;
+  background: rgba(10, 18, 34, 0.28);
+}
+
+.monitoring-preview-card[data-device-family="shelf-edge"] .monitoring-preview-card__device::before {
+  left: -4%;
+  right: -4%;
+  bottom: -12%;
+  height: 14%;
+  border-radius: 18px;
+  background:
+    linear-gradient(180deg, rgba(228, 234, 242, 0.96), rgba(170, 181, 198, 0.92)),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.24), transparent 70%);
+}
+
+.monitoring-preview-card[data-device-family="shelf-edge"] .monitoring-preview-card__device::after {
+  left: 4%;
+  right: 4%;
+  bottom: -6%;
+  height: 4%;
+  border-radius: 999px;
+  background: rgba(35, 49, 73, 0.16);
+}
+
+.monitoring-preview-card__device-bezel {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  padding: 8px;
+  border-radius: 20px;
+  background: linear-gradient(145deg, rgba(226, 234, 244, 0.98), rgba(73, 88, 112, 0.96));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.52),
+    0 18px 28px rgba(17, 30, 52, 0.26);
+}
+
+.monitoring-preview-card__device-bezel::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.36), transparent 34%);
+  pointer-events: none;
+}
+
+.monitoring-preview-card__device-screen {
+  position: relative;
+  height: 100%;
+  overflow: hidden;
+  border-radius: 14px;
+  background: #071321;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+
+.monitoring-preview-card.is-loading .monitoring-preview-card__device-screen {
   background:
     linear-gradient(110deg, rgba(255, 255, 255, 0.08) 8%, rgba(255, 255, 255, 0.18) 18%, rgba(255, 255, 255, 0.08) 33%),
     linear-gradient(135deg, rgba(24, 52, 93, 0.96), rgba(11, 23, 43, 0.98));
@@ -2712,7 +2955,7 @@ textarea:focus {
   animation: monitoring-preview-shimmer 1.4s linear infinite;
 }
 
-.monitoring-preview-card__media img {
+.monitoring-preview-card__device-screen img {
   width: 100%;
   height: 100%;
   object-fit: cover;
@@ -2727,6 +2970,7 @@ textarea:focus {
   padding: 16px;
   color: rgba(230, 238, 253, 0.78);
   text-align: center;
+  background: linear-gradient(135deg, rgba(24, 52, 93, 0.88), rgba(11, 23, 43, 0.96));
 }
 
 .monitoring-preview-card__badge {
@@ -2745,7 +2989,7 @@ textarea:focus {
 
 .monitoring-preview-card__body {
   display: grid;
-  gap: 8px;
+  gap: 7px;
   padding: 14px;
 }
 
@@ -2761,6 +3005,15 @@ textarea:focus {
   margin: 0;
   font-size: 1rem;
   line-height: 1.3;
+}
+
+.monitoring-preview-card__context {
+  margin: 0;
+  color: rgba(230, 238, 253, 0.82);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 .monitoring-preview-card__meta {

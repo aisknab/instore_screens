@@ -1933,12 +1933,26 @@ async function readProductImageManifest() {
 async function buildProductImageProgressSnapshot() {
   const [feed, manifest] = await Promise.all([readProductFeed(), readProductImageManifest()]);
   const items = manifest?.items && typeof manifest.items === "object" ? Object.values(manifest.items) : [];
-  const generated = items.filter((entry) => readOptionalString(entry?.status, 40) === "generated").length;
-  const failed = items.filter((entry) => readOptionalString(entry?.status, 40) === "failed").length;
   const total = Array.isArray(feed) ? feed.length : 0;
-  const processed = Math.min(total, generated + failed);
-  const remaining = Math.max(0, total - processed);
-  const percentage = total > 0 ? Math.round((processed / total) * 1000) / 10 : 0;
+  const generatedBasePath = PRODUCT_GENERATED_IMAGE_BASE_PATH.replace(/\/+$/, "");
+  const generatedSkuSet = new Set(
+    (Array.isArray(feed) ? feed : [])
+      .filter((product) => {
+        const image = readOptionalString(product?.image, 500);
+        return image === generatedBasePath || image.startsWith(`${generatedBasePath}/`);
+      })
+      .map((product) => normalizeSku(product?.sku))
+      .filter(Boolean)
+  );
+  const generated = generatedSkuSet.size;
+  const failed = items.filter((entry) => {
+    const sku = normalizeSku(entry?.sku);
+    return readOptionalString(entry?.status, 40) === "failed" && (!sku || !generatedSkuSet.has(sku));
+  }).length;
+  const remaining = Math.max(0, total - generated);
+  const untouched = Math.max(0, remaining - failed);
+  const processed = generated;
+  const percentage = total > 0 ? Math.round((generated / total) * 1000) / 10 : 0;
 
   return {
     total,
@@ -1946,6 +1960,7 @@ async function buildProductImageProgressSnapshot() {
     failed,
     processed,
     remaining,
+    untouched,
     percentage,
     running: Boolean(productImageGenerationJob?.running),
     jobId: readOptionalString(productImageGenerationJob?.jobId, 120),
@@ -6994,6 +7009,7 @@ app.get("/api/screen-ad", async (req, res) => {
         screenId: screen.screenId,
         storeId: screen.storeId,
         screenType: screen.screenType,
+        screenSize: screen.screenSize,
         pageId: screen.pageId,
         location: screen.location,
         lineItemId: selectedLineItem.lineItemId,

@@ -1093,6 +1093,90 @@ function formatPreviewPrice(value) {
   }).format(numeric);
 }
 
+function parsePreviewScreenSize(value, screenType = "") {
+  const raw = readTextValue(value);
+  const matched = raw.match(/(\d{3,5})\D+(\d{3,5})/);
+  if (matched) {
+    const width = Number(matched[1]);
+    const height = Number(matched[2]);
+    if (Number.isFinite(width) && Number.isFinite(height) && width > 0 && height > 0) {
+      return {
+        width,
+        height,
+        label: `${width}x${height}`,
+        orientation: width >= height ? "landscape" : "portrait",
+        aspectCss: `${width} / ${height}`
+      };
+    }
+  }
+
+  const normalizedType = readTextValue(screenType).toLowerCase();
+  if (normalizedType === "kiosk" || normalizedType.includes("vertical") || normalizedType.includes("endcap")) {
+    return {
+      width: 1080,
+      height: 1920,
+      label: "1080x1920",
+      orientation: "portrait",
+      aspectCss: "1080 / 1920"
+    };
+  }
+  if (normalizedType.includes("shelf")) {
+    return {
+      width: 1280,
+      height: 720,
+      label: "1280x720",
+      orientation: "landscape",
+      aspectCss: "1280 / 720"
+    };
+  }
+  return {
+    width: 1920,
+    height: 1080,
+    label: "1920x1080",
+    orientation: "landscape",
+    aspectCss: "1920 / 1080"
+  };
+}
+
+function resolvePreviewSceneForSnapshot(snapshot = {}) {
+  const location = readTextValue(snapshot.location).toLowerCase();
+  const screenType = readTextValue(snapshot.screenType).toLowerCase();
+
+  if (screenType === "kiosk" || location.includes("checkout")) {
+    return {
+      sceneId: "checkout",
+      deviceFamily: "kiosk",
+      placementLabel: "Checkout kiosk"
+    };
+  }
+  if (screenType.includes("menu") || location.includes("foodcourt")) {
+    return {
+      sceneId: "foodcourt",
+      deviceFamily: "menu-board",
+      placementLabel: "Menu board"
+    };
+  }
+  if (screenType.includes("shelf") || screenType.includes("endcap") || location.includes("aisle")) {
+    return {
+      sceneId: "aisle",
+      deviceFamily: "shelf-edge",
+      placementLabel: "Shelf-edge display"
+    };
+  }
+  if (screenType.includes("vertical") || location.includes("electronics") || location.includes("entrance")) {
+    return {
+      sceneId: location.includes("entrance") ? "entrance" : "electronics",
+      deviceFamily: "portrait-wall",
+      placementLabel: location.includes("entrance") ? "Entrance portrait screen" : "Category portrait screen"
+    };
+  }
+  return {
+    sceneId: location.includes("entrance") ? "entrance" : "sales-floor",
+    deviceFamily: "landscape-wall",
+    placementLabel: location.includes("entrance") ? "Entrance wall screen" : "Wall-mounted screen"
+  };
+}
+
 function buildPreviewRailFrameMarkup(bodyMarkup) {
   const brandContext = getGoalPlanBrandContext();
   return `
@@ -1100,8 +1184,8 @@ function buildPreviewRailFrameMarkup(bodyMarkup) {
     <h4>${escapeHtml(brandContext.brand ? `${brandContext.brand} creative in market` : "Creative in market")}</h4>
     <p id="monitoringNarrative">${escapeHtml(
       brandContext.brand
-        ? `${brandContext.brand} creative is running on the active in-store screens below.`
-        : "These previews are pulled from the same live player path used across the active in-store screens."
+        ? `${brandContext.brand} creative is staged below in device-aware retail mockups using the active screen payloads.`
+        : "These previews use the same live player payloads, but keep each creative inside a device-aware retail mockup instead of a browser-sized frame."
     )}</p>
     ${bodyMarkup}
   `;
@@ -1111,6 +1195,9 @@ function buildMonitoringPreviewCardMarkup(snapshot) {
   const sharedPreviewUrl = buildSharedPreviewUrl(snapshot.screenId);
   const debugPreviewUrl = buildDebugScreenUrl(snapshot.screenId);
   const metaParts = [snapshot.templateName, snapshot.location && titleCase(snapshot.location), snapshot.screenType].filter(Boolean);
+  const size = parsePreviewScreenSize(snapshot.screenSize, snapshot.screenType);
+  const scene = resolvePreviewSceneForSnapshot(snapshot);
+  const stateClassNames = [snapshot.loading ? "is-loading" : "", snapshot.error ? "is-error" : ""].filter(Boolean).join(" ");
   const priceMarkup =
     snapshot.price || snapshot.comparePrice
       ? `<div class="monitoring-preview-card__price">
@@ -1118,55 +1205,61 @@ function buildMonitoringPreviewCardMarkup(snapshot) {
           ${snapshot.comparePrice ? `<del>${escapeHtml(snapshot.comparePrice)}</del>` : ""}
         </div>`
       : "";
-  const mediaMarkup = snapshot.image
-    ? `<img src="${escapeHtml(snapshot.image)}" alt="${escapeHtml(snapshot.productName || snapshot.screenId)}" loading="lazy">`
-    : '<div class="monitoring-preview-card__media-fallback">Preview unavailable</div>';
-
-  if (snapshot.loading) {
-    return `
-      <article class="monitoring-preview-card is-loading">
-        <div class="monitoring-preview-card__media"></div>
-        <div class="monitoring-preview-card__body">
-          <p class="monitoring-preview-card__screen">${escapeHtml(snapshot.screenId)}</p>
-          <h5>Loading preview...</h5>
-          <p class="monitoring-preview-card__summary">Fetching the latest creative snapshot for this screen.</p>
-        </div>
-      </article>
-    `;
-  }
-
-  if (snapshot.error) {
-    return `
-      <article class="monitoring-preview-card is-error">
-        <div class="monitoring-preview-card__body">
-          <p class="monitoring-preview-card__screen">${escapeHtml(snapshot.screenId)}</p>
-          <h5>Preview unavailable</h5>
-          <p class="monitoring-preview-card__summary">${escapeHtml(snapshot.error)}</p>
-          <div class="monitoring-preview-card__actions">
-            <a href="${escapeHtml(sharedPreviewUrl)}" target="_blank" rel="noreferrer">Open live preview</a>
-            <a href="${escapeHtml(debugPreviewUrl)}" target="_blank" rel="noreferrer">Open debug view</a>
-          </div>
-        </div>
-      </article>
-    `;
-  }
+  const mediaMarkup = snapshot.loading
+    ? '<div class="monitoring-preview-card__media-fallback">Loading preview...</div>'
+    : snapshot.image
+      ? `<img src="${escapeHtml(snapshot.image)}" alt="${escapeHtml(snapshot.productName || snapshot.screenId)}" loading="lazy">`
+      : '<div class="monitoring-preview-card__media-fallback">Preview unavailable</div>';
+  const title = snapshot.loading
+    ? "Loading preview..."
+    : snapshot.error
+      ? "Preview unavailable"
+      : snapshot.productName || "In-store creative";
+  const summary = snapshot.loading
+    ? "Fetching the latest creative snapshot for this screen."
+    : snapshot.error
+      ? snapshot.error
+      : snapshot.summary || snapshot.promotion || "Live creative snapshot";
+  const contextLabel = [scene.placementLabel, size.label].filter(Boolean).join(" | ");
+  const actionsMarkup = snapshot.loading
+    ? ""
+    : `<div class="monitoring-preview-card__actions">
+        <a href="${escapeHtml(sharedPreviewUrl)}" target="_blank" rel="noreferrer">Immersive preview</a>
+        <a href="${escapeHtml(debugPreviewUrl)}" target="_blank" rel="noreferrer">Debug view</a>
+      </div>`;
 
   return `
-    <article class="monitoring-preview-card">
+    <article
+      class="monitoring-preview-card ${escapeHtml(stateClassNames)}"
+      data-device-family="${escapeHtml(scene.deviceFamily)}"
+      data-scene="${escapeHtml(scene.sceneId)}"
+      style="--monitor-preview-aspect: ${escapeHtml(size.aspectCss)};"
+    >
       <div class="monitoring-preview-card__media">
-        ${mediaMarkup}
-        <span class="monitoring-preview-card__badge">${escapeHtml(snapshot.badge || snapshot.templateName || "Live creative")}</span>
+        <span class="monitoring-preview-card__fixture monitoring-preview-card__fixture--header"></span>
+        <span class="monitoring-preview-card__fixture monitoring-preview-card__fixture--counter"></span>
+        <span class="monitoring-preview-card__fixture monitoring-preview-card__fixture--shelf"></span>
+        <div class="monitoring-preview-card__device">
+          <div class="monitoring-preview-card__device-bezel">
+            <div class="monitoring-preview-card__device-screen">
+              ${mediaMarkup}
+              ${
+                snapshot.loading
+                  ? ""
+                  : `<span class="monitoring-preview-card__badge">${escapeHtml(snapshot.badge || snapshot.templateName || "Live creative")}</span>`
+              }
+            </div>
+          </div>
+        </div>
       </div>
       <div class="monitoring-preview-card__body">
         <p class="monitoring-preview-card__screen">${escapeHtml(snapshot.screenId)}</p>
-        <h5>${escapeHtml(snapshot.productName || "In-store creative")}</h5>
-        <p class="monitoring-preview-card__meta">${escapeHtml(metaParts.join(" | "))}</p>
+        <h5>${escapeHtml(title)}</h5>
+        <p class="monitoring-preview-card__context">${escapeHtml(contextLabel)}</p>
+        ${metaParts.length > 0 ? `<p class="monitoring-preview-card__meta">${escapeHtml(metaParts.join(" | "))}</p>` : ""}
         ${priceMarkup}
-        <p class="monitoring-preview-card__summary">${escapeHtml(snapshot.summary || snapshot.promotion || "Live creative snapshot")}</p>
-        <div class="monitoring-preview-card__actions">
-          <a href="${escapeHtml(sharedPreviewUrl)}" target="_blank" rel="noreferrer">Open live preview</a>
-          <a href="${escapeHtml(debugPreviewUrl)}" target="_blank" rel="noreferrer">Open debug view</a>
-        </div>
+        <p class="monitoring-preview-card__summary">${escapeHtml(summary)}</p>
+        ${actionsMarkup}
       </div>
     </article>
   `;
@@ -1198,9 +1291,11 @@ async function loadPreviewRailSnapshots(screenIds, previewKey, requestId) {
 
         return {
           screenId,
+          templateId,
           templateName,
           location: readTextValue(settings.location),
           screenType: readTextValue(settings.screenType),
+          screenSize: readTextValue(settings.screenSize),
           productName: readTextValue(product.ProductName) || templateName,
           image: readTextValue(product.Image),
           badge: readTextValue(attributes.badge),
@@ -1559,13 +1654,17 @@ function getScreenResolverId(screenRef) {
 
 function buildSharedPreviewUrl(screenRef, { rmjs = "off" } = {}) {
   const params = new URLSearchParams();
+  const screenId = typeof screenRef === "string" ? screenRef : readTextValue(screenRef?.screenId);
   const resolverId = getScreenResolverId(screenRef);
   if (resolverId) {
     params.set("deviceId", resolverId);
+  } else if (screenId) {
+    params.set("screenId", screenId);
   }
   if (rmjs) {
     params.set("rmjs", rmjs);
   }
+  params.set("preview", "showcase");
   const query = params.toString();
   return `${SHARED_PLAYER_URL}${query ? `?${query}` : ""}`;
 }
@@ -2073,9 +2172,9 @@ function buildMonitoringPresenterPayload(stageConfig) {
   const previewNarrative = plan?.status === "applied"
     ? `${brandContext.brand || "The active campaign"} is live across ${
         plan?.liveCount || liveScreens.length || 0
-      } in-store screen(s). The preview rail is scoped to the active campaign only.`
+      } in-store screen(s). The immersive preview rail is scoped to the active campaign only.`
     : brandContext.brand
-      ? `${brandContext.brand} previews will appear here once the selected campaign is live.`
+      ? `${brandContext.brand} immersive previews will appear here once the selected campaign is live.`
       : "Live campaign previews will appear here once the selected brand has active screens.";
   const timelineSummary = latestRun
     ? [
@@ -2173,7 +2272,7 @@ function buildPresenterSnapshot() {
     plannedScreens,
     liveScreens: Number(plan?.liveCount || plan?.liveScreens?.length || 0),
     selectedSkuCount: Number(plan?.goal?.targetSkuIds?.length || state.selectedGoalSkuIds.size || 0),
-    previewUrl: primaryScreenId ? buildSharedPreviewUrl(primaryScreenId) : SHARED_PLAYER_URL,
+    previewUrl: primaryScreenId ? buildSharedPreviewUrl(primaryScreenId) : buildSharedPreviewUrl(""),
     previewLabel: primaryScreenId || "",
     statusText: String(elements.statusText?.textContent || "").trim(),
     telemetryText: `Plays ${formatCount(telemetryTotals.playCount || 0)} | Exposure ${formatDuration(
@@ -2706,11 +2805,12 @@ function updateActionButtons() {
   }
 
   if (elements.demoScreenLink) {
-    elements.demoScreenLink.href = primaryScreenId ? buildSharedPreviewUrl(primaryScreenId) : SHARED_PLAYER_URL;
-    elements.demoScreenLink.textContent = primaryScreenId ? "Open shared player" : "Open player";
+    elements.demoScreenLink.href = primaryScreenId ? buildSharedPreviewUrl(primaryScreenId) : buildSharedPreviewUrl("");
+    elements.demoScreenLink.textContent = primaryScreenId ? "Open immersive preview" : "Open preview";
   }
   if (elements.monitorPreviewLink) {
-    elements.monitorPreviewLink.href = primaryScreenId ? buildSharedPreviewUrl(primaryScreenId) : SHARED_PLAYER_URL;
+    elements.monitorPreviewLink.href = primaryScreenId ? buildSharedPreviewUrl(primaryScreenId) : buildSharedPreviewUrl("");
+    elements.monitorPreviewLink.textContent = primaryScreenId ? "Open immersive preview" : "Open preview";
   }
 }
 
@@ -2906,7 +3006,7 @@ function renderScreensList() {
         ? `<span class="record__actions">
             <button type="button" class="btn btn--tiny js-edit-screen" data-screen-id="${escapeHtml(summary.screenId)}">Edit</button>
             <button type="button" class="btn btn--tiny btn--tiny-danger js-delete-screen" data-screen-id="${escapeHtml(summary.screenId)}">Delete</button>
-            <a href="${escapeHtml(sharedPreviewUrl)}" target="_blank" rel="noreferrer">Shared preview</a>
+            <a href="${escapeHtml(sharedPreviewUrl)}" target="_blank" rel="noreferrer">Immersive preview</a>
             <a href="${escapeHtml(buildDebugScreenUrl(summary.screenId))}" target="_blank" rel="noreferrer">Debug preview</a>
           </span>`
         : "";
@@ -4676,7 +4776,7 @@ function renderPreviewRail(screenIds) {
       <h4>Awaiting live screens</h4>
       <p id="monitoringNarrative">${escapeHtml(
         brandContext.brand
-          ? `${brandContext.brand} previews will appear here once the selected campaign is live.`
+          ? `${brandContext.brand} immersive previews will appear here once the selected campaign is live.`
           : "Live campaign previews will appear here once the selected brand has active screens."
       )}</p>
     `;
@@ -4747,7 +4847,7 @@ function renderLiveScreens() {
         <p>Shared player URL: ${escapeHtml(SHARED_PLAYER_URL)}${getScreenResolverId(screen) ? ` | Resolver key: ${escapeHtml(getScreenResolverId(screen))}` : ""}</p>
         ${productMarkup}
         <p class="record__actions">
-          <a href="${escapeHtml(buildSharedPreviewUrl(screen))}" target="_blank" rel="noreferrer">Shared preview</a>
+          <a href="${escapeHtml(buildSharedPreviewUrl(screen))}" target="_blank" rel="noreferrer">Immersive preview</a>
           <a href="${escapeHtml(buildDebugScreenUrl(screen.screenId || ""))}" target="_blank" rel="noreferrer">Debug preview</a>
         </p>
       </article>`;
@@ -4768,15 +4868,15 @@ function updateMonitoringNarrative() {
     elements.monitoringNarrative.textContent = brandContext.brand
       ? `${brandContext.brand} is live across ${
           state.activeGoalPlan.liveCount || state.activeGoalPlan.liveScreens?.length || 0
-        } in-store screen(s). The preview rail is scoped to the active campaign only.`
+        } in-store screen(s). The immersive preview rail is scoped to the active campaign only.`
       : `The active campaign is live across ${
           state.activeGoalPlan.liveCount || state.activeGoalPlan.liveScreens?.length || 0
-        } in-store screen(s). The preview rail is scoped to the active campaign only.`;
+        } in-store screen(s). The immersive preview rail is scoped to the active campaign only.`;
     return;
   }
 
   elements.monitoringNarrative.textContent = brandContext.brand
-    ? `${brandContext.brand} previews will appear here once the selected campaign is live.`
+    ? `${brandContext.brand} immersive previews will appear here once the selected campaign is live.`
     : "Live campaign previews will appear here once the selected brand has active screens.";
 }
 

@@ -14,9 +14,41 @@
     <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   </head>
   <body>
-    <div id="statusBadge" class="status-badge">Booting screen player...</div>
-    <div id="ad-container">
-      <div class="loading">Loading ad...</div>
+    <div class="screen-app">
+      <div class="screen-app__shell">
+        <aside id="previewPanel" class="preview-panel" aria-live="polite">
+          <p id="previewEyebrow" class="preview-panel__eyebrow">Immersive screen preview</p>
+          <h1 id="previewHeading">Retail display mockup</h1>
+          <p id="previewNarrative" class="preview-panel__narrative">
+            The shared player will load inside a proportionate device frame so the ad can be judged as signage, not as a browser tab.
+          </p>
+          <dl id="previewSpecs" class="preview-panel__specs"></dl>
+        </aside>
+
+        <section id="previewStage" class="preview-stage" aria-label="Retail screen preview stage">
+          <div class="preview-stage__fixtures" aria-hidden="true">
+            <span class="fixture fixture--header"></span>
+            <span class="fixture fixture--counter"></span>
+            <span class="fixture fixture--shelf"></span>
+            <span class="fixture fixture--ambient"></span>
+          </div>
+
+          <div id="previewDeviceMount" class="preview-device-mount">
+            <div class="preview-device__glow" aria-hidden="true"></div>
+            <div id="previewDevice" class="preview-device">
+              <div class="preview-device__bezel">
+                <div class="preview-device__glass" aria-hidden="true"></div>
+                <div class="preview-device__screen">
+                  <div id="statusBadge" class="status-badge">Booting screen player...</div>
+                  <div id="ad-container">
+                    <div class="loading">Loading ad...</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
     </div>
 
     <script type="module">
@@ -26,6 +58,8 @@
       const deviceProfile = (urlParams.get("deviceProfile") || "").trim();
       const apiBase = (urlParams.get("apiBase") || "").replace(/\/$/, "");
       const rmjsMode = (urlParams.get("rmjs") || "auto").toLowerCase();
+      const previewMode = (urlParams.get("preview") || urlParams.get("view") || "").trim().toLowerCase();
+      const isShowcaseMode = ["showcase", "immersive", "mockup"].includes(previewMode);
       const moneyFormatter = new Intl.NumberFormat("en-US", {
         style: "currency",
         currency: "USD",
@@ -91,6 +125,18 @@
       })();
       const adContainer = document.getElementById("ad-container");
       const statusBadge = document.getElementById("statusBadge");
+      const previewPanel = document.getElementById("previewPanel");
+      const previewStage = document.getElementById("previewStage");
+      const previewDevice = document.getElementById("previewDevice");
+      const previewDeviceMount = document.getElementById("previewDeviceMount");
+      const previewEyebrow = document.getElementById("previewEyebrow");
+      const previewHeading = document.getElementById("previewHeading");
+      const previewNarrative = document.getElementById("previewNarrative");
+      const previewSpecs = document.getElementById("previewSpecs");
+
+      document.body.classList.toggle("body--showcase", isShowcaseMode);
+      document.body.dataset.scene = "sales-floor";
+      document.body.dataset.deviceFamily = "landscape-wall";
 
       let refreshTimer = null;
       let fallbackLoopTimer = null;
@@ -195,6 +241,14 @@
         return typeof value === "string" ? value.trim() : "";
       }
 
+      function escapeHtml(value) {
+        return String(value ?? "")
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;");
+      }
+
       function readTemplateDefaults(templateId) {
         return (
           TEMPLATE_DISPLAY_DEFAULTS[templateId] ||
@@ -266,6 +320,179 @@
 
       function escapeTemplateClass(value) {
         return String(value).replace(/[^a-z0-9-]/gi, "").toLowerCase();
+      }
+
+      function parseScreenSize(value, screenType = "") {
+        const raw = readText(String(value ?? ""));
+        const matched = raw.match(/(\d{3,5})\D+(\d{3,5})/);
+        if (matched) {
+          const width = Number(matched[1]);
+          const height = Number(matched[2]);
+          if (Number.isFinite(width) && Number.isFinite(height) && width > 0 && height > 0) {
+            return {
+              width,
+              height,
+              label: `${width}x${height}`,
+              orientation: width >= height ? "landscape" : "portrait",
+              aspectCss: `${width} / ${height}`
+            };
+          }
+        }
+
+        const normalizedType = readText(screenType).toLowerCase();
+        if (normalizedType === "kiosk" || normalizedType.includes("vertical") || normalizedType.includes("endcap")) {
+          return {
+            width: 1080,
+            height: 1920,
+            label: "1080x1920",
+            orientation: "portrait",
+            aspectCss: "1080 / 1920"
+          };
+        }
+        if (normalizedType.includes("shelf")) {
+          return {
+            width: 1280,
+            height: 720,
+            label: "1280x720",
+            orientation: "landscape",
+            aspectCss: "1280 / 720"
+          };
+        }
+        return {
+          width: 1920,
+          height: 1080,
+          label: "1920x1080",
+          orientation: "landscape",
+          aspectCss: "1920 / 1080"
+        };
+      }
+
+      function resolvePreviewScene(settings = {}) {
+        const location = readText(settings.location).toLowerCase();
+        const screenType = readText(settings.screenType).toLowerCase();
+        const templateName = readText(settings.templateName) || readText(settings.templateId) || "Creative";
+
+        if (screenType === "kiosk" || location.includes("checkout")) {
+          return {
+            sceneId: "checkout",
+            deviceFamily: "kiosk",
+            placementLabel: "Checkout kiosk",
+            eyebrow: "Checkout handoff preview",
+            heading: `${templateName} on kiosk`,
+            narrative:
+              "The creative is staged as a freestanding checkout screen so the CTA and QR handoff are judged at queue distance rather than at full-browser scale."
+          };
+        }
+
+        if (screenType.includes("menu") || location.includes("foodcourt")) {
+          return {
+            sceneId: "foodcourt",
+            deviceFamily: "menu-board",
+            placementLabel: "Menu board",
+            eyebrow: "Service counter preview",
+            heading: `${templateName} on menu board`,
+            narrative:
+              "The creative is suspended like an overhead menu board, which makes pace, legibility, and contrast feel closer to a real service-counter read."
+          };
+        }
+
+        if (screenType.includes("shelf") || screenType.includes("endcap") || location.includes("aisle")) {
+          return {
+            sceneId: "aisle",
+            deviceFamily: "shelf-edge",
+            placementLabel: "Shelf-edge display",
+            eyebrow: "Aisle decision-point preview",
+            heading: `${templateName} at shelf`,
+            narrative:
+              "The preview compresses the screen into a shelf-adjacent moment so the price lockup and headline hierarchy can be reviewed at decision distance."
+          };
+        }
+
+        if (screenType.includes("vertical") || location.includes("electronics") || location.includes("entrance")) {
+          return {
+            sceneId: location.includes("entrance") ? "entrance" : "electronics",
+            deviceFamily: "portrait-wall",
+            placementLabel: location.includes("entrance") ? "Entrance portrait screen" : "Category portrait screen",
+            eyebrow: location.includes("entrance") ? "Entrance hero preview" : "Category hero preview",
+            heading: `${templateName} on portrait display`,
+            narrative:
+              "The creative is framed as a portrait in-store display so the product image, headline scale, and motion cues read more like a real wayfinding moment."
+          };
+        }
+
+        return {
+          sceneId: location.includes("entrance") ? "entrance" : "sales-floor",
+          deviceFamily: "landscape-wall",
+          placementLabel: location.includes("entrance") ? "Entrance wall screen" : "Wall-mounted screen",
+          eyebrow: location.includes("entrance") ? "Entrance wall preview" : "Sales-floor preview",
+          heading: `${templateName} on wall display`,
+          narrative:
+            "The ad is mounted as a landscape retail screen so composition can be judged in context instead of being stretched to match the laptop window."
+        };
+      }
+
+      function buildPreviewSpecsMarkup(specs = []) {
+        return specs
+          .filter((entry) => readText(entry?.label) && readText(entry?.value))
+          .map(
+            (entry) => `
+              <div class="preview-panel__spec">
+                <dt>${escapeHtml(entry.label)}</dt>
+                <dd>${escapeHtml(entry.value)}</dd>
+              </div>
+            `
+          )
+          .join("");
+      }
+
+      function updatePreviewShell(settings = {}, product = {}, errorMessage = "") {
+        if (!isShowcaseMode || !previewDevice || !previewSpecs) {
+          return;
+        }
+
+        const size = parseScreenSize(settings.screenSize, settings.screenType);
+        const scene = resolvePreviewScene(settings);
+        const templateName = readText(settings.templateName) || readText(settings.templateId) || "Creative";
+        const screenType = readText(settings.screenType) || "Screen";
+        const productName = readText(product.ProductName);
+        const screenLabel = readText(settings.screenId) || currentResolvedScreenId || screenIdOverride || deviceId || "Preview";
+
+        previewDevice.style.setProperty("--preview-device-aspect", size.aspectCss);
+        document.body.dataset.scene = scene.sceneId;
+        document.body.dataset.deviceFamily = scene.deviceFamily;
+
+        previewEyebrow.textContent = scene.eyebrow;
+        previewHeading.textContent = productName || scene.heading;
+        previewNarrative.textContent =
+          readText(errorMessage) ||
+          `${scene.narrative} Native canvas: ${size.label} ${size.orientation}.`;
+
+        previewSpecs.innerHTML = buildPreviewSpecsMarkup([
+          { label: "Placement", value: scene.placementLabel },
+          { label: "Screen", value: screenType },
+          { label: "Canvas", value: size.label },
+          { label: "Creative", value: templateName },
+          { label: "Player", value: screenLabel }
+        ]);
+
+        previewPanel?.setAttribute("data-ready", errorMessage ? "error" : "true");
+        previewStage?.setAttribute("data-ready", errorMessage ? "error" : "true");
+        previewDeviceMount?.setAttribute("data-device-family", scene.deviceFamily);
+      }
+
+      function seedPreviewShell() {
+        updatePreviewShell(
+          {
+            screenId: currentResolvedScreenId || screenIdOverride || deviceId || "Preview",
+            templateId: "fullscreen-banner",
+            templateName: "Shared Player",
+            screenType: "Horizontal Screen",
+            screenSize: "1920x1080",
+            location: "sales-floor"
+          },
+          {},
+          ""
+        );
       }
 
       function isLocalhost() {
@@ -677,6 +904,7 @@
 
           const payload = await response.json();
           currentResolvedScreenId = readText(payload.settings?.screenId) || currentResolvedScreenId || screenIdOverride;
+          updatePreviewShell(payload.settings || {}, Array.isArray(payload.products) ? payload.products[0] || {} : {});
           const renderedByRmjs = renderWithRmjs(payload);
           if (!renderedByRmjs) {
             renderFallback(payload);
@@ -697,6 +925,18 @@
           clearFallbackLoop();
           flushActiveExposure("load-failed");
           setStatus("Load failed | retrying");
+          updatePreviewShell(
+            {
+              screenId: currentResolvedScreenId || screenIdOverride || deviceId || "Preview",
+              templateId: "fullscreen-banner",
+              templateName: "Shared Player",
+              screenType: "Horizontal Screen",
+              screenSize: "1920x1080",
+              location: "sales-floor"
+            },
+            {},
+            `Preview unavailable. ${String(error.message || "Unknown error")}`
+          );
           adContainer.innerHTML = "";
           const wrapper = document.createElement("div");
           wrapper.style.textAlign = "center";
@@ -721,6 +961,7 @@
         }
       }
 
+      seedPreviewShell();
       window.addEventListener("load", loadAndRenderAd);
       window.addEventListener("beforeunload", () => {
         clearFallbackLoop();

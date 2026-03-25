@@ -1,7 +1,8 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 
-const DEFAULT_DB_FILE = path.join(process.cwd(), "data", "db.json");
+const SEED_DB_FILE = path.join(process.cwd(), "data", "db.json");
+const DEFAULT_DB_FILE = path.join(process.cwd(), "temp", "db.json");
 const DB_FILE =
   typeof process.env.DB_FILE === "string" && process.env.DB_FILE.trim().length > 0
     ? path.resolve(process.env.DB_FILE.trim())
@@ -20,6 +21,27 @@ function normalizeDbShape(data) {
     telemetryEvents: Array.isArray(source.telemetryEvents) ? source.telemetryEvents : [],
     pricing: source.pricing && typeof source.pricing === "object" ? source.pricing : {}
   };
+}
+
+function parseDbPayload(raw) {
+  const normalizedRaw = String(raw).replace(/^\uFEFF/, "");
+  return normalizeDbShape(JSON.parse(normalizedRaw));
+}
+
+async function loadInitialDb() {
+  if (path.resolve(DB_FILE) === path.resolve(SEED_DB_FILE)) {
+    return EMPTY_DB;
+  }
+
+  try {
+    const raw = await fs.readFile(SEED_DB_FILE, "utf8");
+    return parseDbPayload(raw);
+  } catch (error) {
+    if (error?.code === "ENOENT") {
+      return EMPTY_DB;
+    }
+    throw error;
+  }
 }
 
 async function writeDbFileUnlocked(data) {
@@ -56,18 +78,17 @@ async function ensureDbFile() {
   try {
     await fs.access(DB_FILE);
   } catch {
-    await writeDbFileUnlocked(EMPTY_DB);
+    // Keep the tracked seed data separate from the writable runtime DB.
+    await writeDbFileUnlocked(await loadInitialDb());
   }
 }
 
 async function readDbFileUnlocked() {
   await ensureDbFile();
   const raw = await fs.readFile(DB_FILE, "utf8");
-  const normalizedRaw = raw.replace(/^\uFEFF/, "");
 
   try {
-    const parsed = JSON.parse(normalizedRaw);
-    const normalized = normalizeDbShape(parsed);
+    const normalized = parseDbPayload(raw);
     lastKnownDb = structuredClone(normalized);
     return normalized;
   } catch (error) {

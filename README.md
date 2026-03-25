@@ -11,7 +11,7 @@ Hackathon demo for treating physical in-store screens as retail media inventory 
 
 - Admin UI: `http://localhost:3000/admin.html`
 - Screen player: `http://localhost:3000/screen.html`
-- Express middleware API with file-backed storage (`data/db.json`)
+- Express middleware API with file-backed storage (seeded from `data/db.json`, written locally to `temp/db.json` by default)
 - Pre-seeded showcase screens for all template presets
 - Local product image assets for reliable offline/demo rendering (`public/assets/products`)
 
@@ -66,7 +66,7 @@ npm run smoke
 npm run generate:product-images -- --limit 25
 ```
 
-The writable DB file defaults to `data/db.json`. In production, set `DB_FILE` to a path outside the git checkout so runtime changes do not block `git pull`.
+The tracked seed data lives in `data/db.json`. The writable DB file now defaults to ignored `temp/db.json`, bootstrapped from that seed on first run. In production, set `DB_FILE` to a path outside the git checkout so runtime changes persist outside deploys.
 
 Example:
 
