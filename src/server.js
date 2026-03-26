@@ -6390,9 +6390,15 @@ function ensureWorkspaceRoot(db) {
 }
 
 function buildWorkspaceSeedState(sourceDb) {
+  const seededScreens = Array.isArray(sourceDb.screens)
+    ? structuredClone(sourceDb.screens).map((screen) => ({
+        ...screen,
+        lineItems: []
+      }))
+    : [];
   return {
     pages: structuredClone(Array.isArray(sourceDb.pages) ? sourceDb.pages : []),
-    screens: structuredClone(Array.isArray(sourceDb.screens) ? sourceDb.screens : []),
+    screens: seededScreens,
     agentRuns: [],
     telemetryEvents: [],
     pricing: structuredClone(sourceDb.pricing && typeof sourceDb.pricing === "object" ? sourceDb.pricing : {})
