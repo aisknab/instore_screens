@@ -445,9 +445,11 @@ a {
   position: absolute;
   top: calc(100% + 8px);
   left: 0;
-  right: 0;
+  width: min(920px, calc(100vw - 96px));
+  min-width: 100%;
   z-index: 24;
   display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
   max-height: min(360px, 52vh);
   overflow: auto;
@@ -462,6 +464,11 @@ a {
 
 .brand-picker__menu[hidden] {
   display: none;
+}
+
+.brand-picker__option--placeholder,
+.brand-picker__empty {
+  grid-column: 1 / -1;
 }
 
 .brand-picker__option {
@@ -521,7 +528,21 @@ a {
 }
 
 .brand-picker__selection {
-  margin-top: 12px;
+  display: none;
+}
+
+@media (max-width: 1080px) {
+  .brand-picker__menu {
+    width: min(720px, calc(100vw - 72px));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .brand-picker__menu {
+    width: min(calc(100vw - 40px), 100%);
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 .hero__actions {

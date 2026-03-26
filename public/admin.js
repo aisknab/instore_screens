@@ -508,6 +508,9 @@ const state = {
   goalPlacementSelections: new Map(),
   goalBudgetPlanId: "",
   goalBudgetSpend: null,
+  goalBudgetDraftPlanId: "",
+  goalBudgetDraftSpend: null,
+  goalBudgetCommitTimer: null,
   goalLiveQuery: "",
   goalLiveSelectedScreenId: "",
   sessionPlanIds: new Set(),
@@ -529,6 +532,7 @@ const state = {
 };
 // Keep the real preset path for normal-sized demos; only short-circuit massive rollouts that time out the UI.
 const LARGE_DEMO_PRESET_SCREEN_THRESHOLD = 1000;
+const GOAL_BUDGET_IDLE_COMMIT_MS = 1000;
 
 function qs(selector) {
   return document.querySelector(selector);
@@ -1823,6 +1827,14 @@ function getGoalBrandAccounts() {
   );
 }
 
+function deriveGeneratedBrandLogoPath(advertiserId = "") {
+  const normalizedId = String(advertiserId || "").trim().toLowerCase();
+  if (!/^advertiser-[a-z0-9-]+$/.test(normalizedId)) {
+    return "";
+  }
+  return `/assets/brands/generated/${normalizedId}.png`;
+}
+
 function getBrandInitials(value = "") {
   const tokens = String(value || "")
     .trim()
@@ -1837,8 +1849,10 @@ function getBrandInitials(value = "") {
 
 function buildBrandIdentityMarkup(brandContext = {}, { className = "brand-badge", baseClass = "brand-badge", meta = "" } = {}) {
   const brand = String(brandContext?.brand || "").trim();
-  const logo = readTextValue(brandContext?.logo);
   const advertiserId = String(brandContext?.advertiserId || "").trim();
+  const logo = readTextValue(
+    brandContext?.logo || brandContext?.brandLogo || brandContext?.BrandLogo || deriveGeneratedBrandLogoPath(advertiserId)
+  );
   const title = brand || advertiserId;
   if (!title && !logo) {
     return "";
@@ -1926,10 +1940,10 @@ function focusGoalBrandPickerOption(direction = 1) {
 }
 
 function updateGoalBrandSelectionSlot(account = null) {
-  renderBrandContextSlot(elements.goalBrandSelection, account || {}, {
-    meta: account?.advertiserId ? `Selected for this buying plan | ${account.advertiserId}` : "",
-    className: "brand-badge brand-badge--selection"
-  });
+  if (elements.goalBrandSelection) {
+    elements.goalBrandSelection.innerHTML = "";
+    elements.goalBrandSelection.classList.add("is-hidden");
+  }
 }
 
 function renderGoalBrandPicker(accounts = [], selectedAdvertiserId = "") {
@@ -3465,6 +3479,7 @@ function setGoalPlacementSelection(plan, nextScreenIds) {
   if (!planId) {
     return [];
   }
+  commitGoalBudgetDraft(plan, { render: false, publish: false });
   const poolIds = new Set(getGoalPlacementPool(plan).map((entry) => entry.screenId));
   const selection = sanitizeGoalPlacementIds(nextScreenIds).filter((screenId) => poolIds.has(screenId));
   state.goalPlacementSelections.set(planId, selection);
@@ -5742,7 +5757,22 @@ function normalizeGoalBudgetSpend(plan, value) {
   return Math.max(0, Math.min(maxSpend, Math.round(parsed)));
 }
 
+function clearGoalBudgetDraft() {
+  if (state.goalBudgetCommitTimer !== null) {
+    window.clearTimeout(state.goalBudgetCommitTimer);
+  }
+  state.goalBudgetCommitTimer = null;
+  state.goalBudgetDraftPlanId = "";
+  state.goalBudgetDraftSpend = null;
+}
+
+function hasGoalBudgetDraft(plan = state.activeGoalPlan) {
+  const planId = String(plan?.planId || "").trim();
+  return Boolean(planId && state.goalBudgetDraftPlanId === planId && Number.isFinite(Number(state.goalBudgetDraftSpend)));
+}
+
 function setGoalBudgetStateFromPlan(plan, preferredSpend = null) {
+  clearGoalBudgetDraft();
   if (!plan?.planId) {
     state.goalBudgetPlanId = "";
     state.goalBudgetSpend = null;
@@ -5763,6 +5793,83 @@ function getActiveGoalBudgetSpend(plan = state.activeGoalPlan) {
     return normalizeGoalBudgetSpend(plan, state.goalBudgetSpend);
   }
   return normalizeGoalBudgetSpend(plan, plan?.budget?.selectedSpend ?? getPlanBudgetMaxSpend(plan));
+}
+
+function getGoalBudgetPreviewSpend(plan = state.activeGoalPlan) {
+  if (!plan) {
+    return 0;
+  }
+  if (hasGoalBudgetDraft(plan)) {
+    return normalizeGoalBudgetSpend(plan, state.goalBudgetDraftSpend);
+  }
+  return getActiveGoalBudgetSpend(plan);
+}
+
+function commitGoalBudgetDraft(plan = state.activeGoalPlan, { render = true, publish = true } = {}) {
+  const planId = String(plan?.planId || "").trim();
+  if (!planId) {
+    clearGoalBudgetDraft();
+    return false;
+  }
+  if (!hasGoalBudgetDraft(plan)) {
+    return false;
+  }
+  const nextSpend = normalizeGoalBudgetSpend(plan, state.goalBudgetDraftSpend);
+  clearGoalBudgetDraft();
+  state.goalBudgetPlanId = planId;
+  state.goalBudgetSpend = nextSpend;
+  if (render) {
+    renderGoalPlan();
+  }
+  if (publish) {
+    publishPresenterSnapshot();
+  }
+  return true;
+}
+
+function scheduleGoalBudgetCommit(plan = state.activeGoalPlan) {
+  const planId = String(plan?.planId || "").trim();
+  if (!planId || !hasGoalBudgetDraft(plan)) {
+    return;
+  }
+  if (state.goalBudgetCommitTimer !== null) {
+    window.clearTimeout(state.goalBudgetCommitTimer);
+  }
+  state.goalBudgetCommitTimer = window.setTimeout(() => {
+    state.goalBudgetCommitTimer = null;
+    if (state.activeGoalPlan?.planId !== planId) {
+      clearGoalBudgetDraft();
+      return;
+    }
+    commitGoalBudgetDraft(state.activeGoalPlan);
+  }, GOAL_BUDGET_IDLE_COMMIT_MS);
+}
+
+function updateGoalBudgetPreviewUi(plan = state.activeGoalPlan) {
+  if (!elements.goalPlanBudget || !plan) {
+    return;
+  }
+  const slider = elements.goalPlanBudget.querySelector("#goalBudgetSlider");
+  if (!slider) {
+    return;
+  }
+  const previewSpend = getGoalBudgetPreviewSpend(plan);
+  const maxSpend = Math.max(0, Number(slider.max) || getPlanBudgetMaxSpend(plan));
+  const sliderProgress = maxSpend > 0 ? ((previewSpend / maxSpend) * 100).toFixed(2) : "0";
+  slider.value = String(previewSpend);
+  slider.style.setProperty("--goal-budget-progress", `${sliderProgress}%`);
+  const rangeValue = elements.goalPlanBudget.querySelector("[data-goal-budget-range-value]");
+  if (rangeValue) {
+    rangeValue.textContent = formatMoney(previewSpend);
+  }
+  const selectedValue = elements.goalPlanBudget.querySelector("[data-goal-budget-selected-value]");
+  if (selectedValue) {
+    selectedValue.textContent = formatMoney(previewSpend);
+  }
+  const maxButton = elements.goalPlanBudget.querySelector(".js-goal-budget-max");
+  if (maxButton) {
+    maxButton.disabled = slider.disabled || previewSpend >= maxSpend;
+  }
 }
 
 function buildGoalBudgetScenario(plan = state.activeGoalPlan) {
@@ -5839,22 +5946,39 @@ function renderGoalPlanBudget(plan, budgetScenario) {
 
   const maxSpend = budgetScenario.maxSpend;
   const selectedSpend = budgetScenario.selectedSpend;
+  const previewSpend = getGoalBudgetPreviewSpend(plan);
+  const previewPending = hasGoalBudgetDraft(plan);
   const fundedCount = budgetScenario.fundedPlacements.length;
   const heldBackCount = budgetScenario.heldBackPlacements.length;
   const selectedCount = getGoalPlacementSelectionIds(plan).length;
   const availableCount = getAvailableGoalPlacements(plan).length;
   const flightSummary = formatGoalFlightSummary(plan.goal?.flightStartDate, plan.goal?.flightEndDate);
   const pricingModelLabel = String(plan?.budget?.pricingModelLabel || plan?.goal?.pricingModelLabel || "Retailer-set CPM by screen type").trim();
-  const sliderStep = getGoalBudgetSliderStep(maxSpend, selectedSpend);
+  const sliderStep = getGoalBudgetSliderStep(maxSpend, previewSpend);
   const pendingApplyPlanId = getPendingActionValue("goalPlanApply");
   const applyPending = hasPendingAction("goalPlanApply");
   const applyingThisPlan = pendingApplyPlanId === String(plan.planId || "").trim();
   const sliderDisabled = plan.status === "applied" || selectedCount === 0 || applyPending;
-  const maxShortcutDisabled = sliderDisabled || selectedSpend >= maxSpend;
+  const maxShortcutDisabled = sliderDisabled || previewSpend >= maxSpend;
   const launchDisabled = plan.status === "applied" || fundedCount === 0 || selectedCount === 0 || applyPending;
-  const sliderProgress = maxSpend > 0 ? ((selectedSpend / maxSpend) * 100).toFixed(2) : "0";
+  const sliderProgress = maxSpend > 0 ? ((previewSpend / maxSpend) * 100).toFixed(2) : "0";
   const estimatedImpressions = Math.max(0, Math.round(Number(budgetScenario.maxEstimatedImpressions || 0)));
   const fundedEstimatedImpressions = Math.max(0, Math.round(Number(budgetScenario.fundedEstimatedImpressions || 0)));
+  const budgetNote = previewPending
+    ? `Previewing ${formatMoney(previewSpend)}. Funding split and estimated delivery refresh after you stop dragging for a second.`
+    : selectedCount === 0
+      ? "Add at least one placement from the dropdown before setting a budget."
+      : fundedCount > 0
+        ? `${fundedCount} placement(s) are currently funded. ${
+            heldBackCount > 0
+              ? `${heldBackCount} sit below the budget line.${
+                  selectedSpend < maxSpend ? " Use Max budget to fund the full line-up instantly." : ""
+                }`
+              : "The edited plan is fully funded."
+          } Funded delivery is modeled at ${formatCount(fundedEstimatedImpressions)} impression(s).${
+            availableCount > 0 ? ` ${availableCount} more placement(s) remain available in the dropdown.` : ""
+          }`
+        : "Increase the budget to fund at least one placement.";
 
   elements.goalPlanBudget.classList.remove("empty");
   elements.goalPlanBudget.innerHTML = `
@@ -5888,13 +6012,13 @@ function renderGoalPlanBudget(plan, budgetScenario) {
             min="0"
             max="${escapeHtml(String(maxSpend))}"
             step="${escapeHtml(String(sliderStep))}"
-            value="${escapeHtml(String(selectedSpend))}"
+            value="${escapeHtml(String(previewSpend))}"
             style="--goal-budget-progress: ${escapeHtml(sliderProgress)}%;"
             ${sliderDisabled ? "disabled" : ""}
           >
           <div class="goal-budget__range-meta">
             <span>${escapeHtml(formatMoney(0))}</span>
-            <strong>${escapeHtml(formatMoney(selectedSpend))}</strong>
+            <strong data-goal-budget-range-value>${escapeHtml(formatMoney(previewSpend))}</strong>
             <span>${escapeHtml(formatMoney(maxSpend))}</span>
           </div>
         </div>
@@ -5918,7 +6042,7 @@ function renderGoalPlanBudget(plan, budgetScenario) {
         </div>
         <div class="goal-budget__total">
           <span>Selected budget</span>
-          <strong>${escapeHtml(formatMoney(selectedSpend))}</strong>
+          <strong data-goal-budget-selected-value>${escapeHtml(formatMoney(previewSpend))}</strong>
         </div>
         <div class="goal-budget__total">
           <span>Funded placements</span>
@@ -5930,21 +6054,7 @@ function renderGoalPlanBudget(plan, budgetScenario) {
         </div>
       </div>
       <p class="goal-budget__note">
-        ${escapeHtml(
-          selectedCount === 0
-            ? "Add at least one placement from the dropdown before setting a budget."
-            : fundedCount > 0
-              ? `${fundedCount} placement(s) are currently funded. ${
-                  heldBackCount > 0
-                    ? `${heldBackCount} sit below the budget line.${
-                        selectedSpend < maxSpend ? " Use Max budget to fund the full line-up instantly." : ""
-                      }`
-                    : "The edited plan is fully funded."
-                } Funded delivery is modeled at ${formatCount(fundedEstimatedImpressions)} impression(s).${
-                  availableCount > 0 ? ` ${availableCount} more placement(s) remain available in the dropdown.` : ""
-                }`
-              : "Increase the budget to fund at least one placement."
-        )}
+        ${escapeHtml(budgetNote)}
       </p>
     </section>
   `;
@@ -7547,6 +7657,11 @@ async function applyGoalPlan(planId = "") {
   if (!chosenPlanId) {
     throw new Error("No plan selected.");
   }
+  const targetPlanForDraft =
+    chosenPlanId === state.activeGoalPlan?.planId
+      ? state.activeGoalPlan
+      : state.agentRuns.find((entry) => entry.planId === chosenPlanId) || state.activeGoalPlan;
+  commitGoalBudgetDraft(targetPlanForDraft, { render: false, publish: false });
   return runPendingAction(`goalPlanApply:${chosenPlanId}`, async () => {
     const targetPlan =
       chosenPlanId === state.activeGoalPlan?.planId
@@ -7554,6 +7669,14 @@ async function applyGoalPlan(planId = "") {
         : state.agentRuns.find((entry) => entry.planId === chosenPlanId) || state.activeGoalPlan;
     const budgetSpend = getActiveGoalBudgetSpend(targetPlan);
     const selectedScreenIds = getGoalPlacementSelectionIds(targetPlan);
+    const budgetScenario = buildGoalBudgetScenario(targetPlan);
+
+    if (budgetScenario.fundedPlacements.length === 0 || selectedScreenIds.length === 0) {
+      renderGoalPlan();
+      publishPresenterSnapshot();
+      showToast("Increase the budget to fund at least one placement before launch.", true);
+      return;
+    }
 
     showStatus("Launching the approved buy...");
     const response = await requestJson("/api/agent/goals/apply", {
@@ -7921,6 +8044,7 @@ function wireEvents() {
       if (!state.activeGoalPlan) {
         return;
       }
+      clearGoalBudgetDraft();
       state.goalBudgetPlanId = state.activeGoalPlan.planId || budgetMaxButton.dataset.planId || "";
       state.goalBudgetSpend = getPlanBudgetMaxSpend(state.activeGoalPlan);
       renderGoalPlan();
@@ -8162,10 +8286,10 @@ function wireEvents() {
     if (!slider || !state.activeGoalPlan) {
       return;
     }
-    state.goalBudgetPlanId = state.activeGoalPlan.planId || "";
-    state.goalBudgetSpend = normalizeGoalBudgetSpend(state.activeGoalPlan, slider.value);
-    renderGoalPlan();
-    publishPresenterSnapshot();
+    state.goalBudgetDraftPlanId = state.activeGoalPlan.planId || "";
+    state.goalBudgetDraftSpend = normalizeGoalBudgetSpend(state.activeGoalPlan, slider.value);
+    updateGoalBudgetPreviewUi(state.activeGoalPlan);
+    scheduleGoalBudgetCommit(state.activeGoalPlan);
   });
   elements.screenCancelBtn?.addEventListener("click", () => {
     if (state.editingScreenId === getManualSupplyConfig().screen.screenId) {
