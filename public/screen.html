@@ -876,12 +876,9 @@
                   <p class="fallback__subcopy">${escapeHtml(context.subcopy)}</p>
                   ${priceMarkup}
                   ${proofMarkup}
-                  <div class="fallback__action-row fallback__action-row--carousel">
-                    <div class="fallback__action-copy">
-                      <span class="fallback__cta fallback__cta--signage">${escapeHtml(context.cta)}</span>
-                      ${supportMarkup}
-                    </div>
-                    ${buildInlineQrMarkup(context, "fallback__inline-qr--carousel")}
+                  <div class="fallback__action-row">
+                    <span class="fallback__cta">${escapeHtml(context.cta)}</span>
+                    ${supportMarkup}
                   </div>
                   ${legalMarkup}
                 </section>
@@ -912,10 +909,13 @@
                   <p class="fallback__subcopy">${escapeHtml(context.subcopy)}</p>
                   ${priceMarkup}
                   ${proofMarkup}
-                  <div class="fallback__action-row">
-                    <span class="fallback__cta">${escapeHtml(context.cta)}</span>
-                    ${supportMarkup}
+                  <div class="fallback__action-row fallback__action-row--carousel">
+                    <div class="fallback__action-copy">
+                      <span class="fallback__cta fallback__cta--signage">${escapeHtml(context.cta)}</span>
+                      ${supportMarkup}
+                    </div>
                   </div>
+                  ${buildInlineQrMarkup(context, "fallback__inline-qr--carousel")}
                   ${legalMarkup}
                 </section>
                 <section class="fallback__stage-panel">

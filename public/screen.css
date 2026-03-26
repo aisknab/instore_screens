@@ -1057,8 +1057,8 @@ body.body--showcase .status-badge {
 }
 
 .fallback__action-row--carousel {
-  align-items: flex-end;
-  gap: clamp(16px, 1.8vw, 22px);
+  align-items: flex-start;
+  gap: 8px;
 }
 
 .fallback__cta {
@@ -1587,7 +1587,10 @@ body.body--showcase .status-badge {
 }
 
 .fallback__inline-qr--carousel {
-  margin-left: auto;
+  width: min(280px, 100%);
+  margin-top: 4px;
+  margin-left: 0;
+  align-self: flex-start;
 }
 
 .fallback__inline-qr-art {
