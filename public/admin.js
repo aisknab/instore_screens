@@ -4607,9 +4607,7 @@ function renderBrandContextSlots() {
     meta: "Selected workspace brand",
     className: "brand-badge brand-badge--hero"
   });
-  renderBrandContextSlot(elements.buyingBrandContext, brandContext, {
-    className: "brand-badge brand-badge--compact brand-badge--workspace"
-  });
+  renderBrandContextSlot(elements.buyingBrandContext);
   renderBrandContextSlot(elements.monitoringBrandContext, brandContext, {
     meta: brandContext.objectiveLabel || "",
     className: "brand-badge brand-badge--compact"
