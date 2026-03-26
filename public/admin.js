@@ -3580,10 +3580,10 @@ function buildSharedPreviewUrl(screenRef, { rmjs = "off" } = {}) {
   const params = new URLSearchParams();
   const screenId = typeof screenRef === "string" ? screenRef : readTextValue(screenRef?.screenId);
   const resolverId = getScreenResolverId(screenRef);
-  if (resolverId) {
-    params.set("deviceId", resolverId);
-  } else if (screenId) {
+  if (screenId) {
     params.set("screenId", screenId);
+  } else if (resolverId) {
+    params.set("deviceId", resolverId);
   }
   if (rmjs) {
     params.set("rmjs", rmjs);
