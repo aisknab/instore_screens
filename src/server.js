@@ -220,6 +220,12 @@ const DEMO_STORE_ID = readOptionalString(DEMO_ANCHOR_STORE?.storeId, 80) || DEMO
 const DEMO_STORE_LABEL = readOptionalString(DEMO_ANCHOR_STORE?.storeLabel, 80) || DEMO_STORE_ID;
 const DEMO_STORE_ID_SET = new Set(DEMO_STORE_IDS);
 const LEGACY_DEMO_STORE_ID_SET = new Set(LEGACY_DEMO_STORE_IDS);
+const DEFAULT_REFRESH_INTERVAL = 30000;
+const DEFAULT_TRACKING_BASE_URL = "/collect";
+const SCREEN_SHARE_SLOT_COUNT = 6;
+const DEFAULT_SELLABLE_SHARE_SLOTS = 1;
+const SCREEN_SHARE_SLOT_MAX = 12;
+const GOAL_LINE_ITEM_SOURCE = "goal-share";
 
 function clampNumber(value, min = 0, max = 1) {
   const parsed = Number(value);
@@ -560,7 +566,9 @@ function buildDemoScreenSpec(storeProfile, blueprint, storeIndex) {
   const storeId = readRequiredString(storeProfile?.storeId, "demo storeId", 80);
   const storeLabel = readOptionalString(storeProfile?.storeLabel, 80) || storeId.replace(/_/g, " ");
   const resolverStore = normalizeDemoStoreSlug(storeId) || `store-${storeIndex + 1}`;
-  const screenShareSlots = readScreenShareSlotCount(config.screenShareSlots, SCREEN_SHARE_SLOT_COUNT);
+  const defaultScreenShareSlots = 6;
+  const defaultSellableShareSlots = 1;
+  const screenShareSlots = readScreenShareSlotCount(config.screenShareSlots, defaultScreenShareSlots);
   const lineItemSuffix = String(blueprint.lineItemKey || blueprint.screenIdSuffix || `screen-${storeIndex + 1}`)
     .replace(/[^A-Z0-9-]+/gi, "-")
     .toUpperCase();
@@ -580,7 +588,7 @@ function buildDemoScreenSpec(storeProfile, blueprint, storeIndex) {
     defaultSellableShareSlots: readSellableShareSlots(
       config.defaultSellableShareSlots,
       screenShareSlots,
-      DEFAULT_SELLABLE_SHARE_SLOTS
+      defaultSellableShareSlots
     ),
     lineItemId: `LI-DEMO-${storeId}-${lineItemSuffix}`.slice(0, 120),
     lineItemName: `${storeLabel} ${blueprint.lineItemName}`.slice(0, 120)
@@ -719,12 +727,6 @@ const DEMO_STAGE_TEMPLATES = [
     ]
   }
 ];
-const DEFAULT_REFRESH_INTERVAL = 30000;
-const DEFAULT_TRACKING_BASE_URL = "/collect";
-const SCREEN_SHARE_SLOT_COUNT = 6;
-const DEFAULT_SELLABLE_SHARE_SLOTS = 1;
-const SCREEN_SHARE_SLOT_MAX = 12;
-const GOAL_LINE_ITEM_SOURCE = "goal-share";
 const TELEMETRY_EVENT_TYPES = ["play", "exposure"];
 const TELEMETRY_EVENT_LIMIT = 4000;
 const TELEMETRY_BREAKDOWN_LIMIT = 6;
