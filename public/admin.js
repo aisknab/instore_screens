@@ -1791,9 +1791,36 @@ function buildProductAccountsFromProducts(products = []) {
 }
 
 function getGoalBrandAccounts() {
-  return Array.isArray(state.productAccounts) && state.productAccounts.length > 0
-    ? state.productAccounts
-    : buildProductAccountsFromProducts(state.productFeed || []);
+  const accountsById = new Map();
+
+  for (const account of state.productAccounts || []) {
+    const advertiserId = String(account?.advertiserId || "").trim();
+    if (!advertiserId) {
+      continue;
+    }
+    accountsById.set(advertiserId, {
+      advertiserId,
+      brand: String(account?.brand || "").trim() || "Store Brand",
+      logo: readTextValue(account?.logo || account?.brandLogo || account?.BrandLogo)
+    });
+  }
+
+  for (const account of buildProductAccountsFromProducts(state.productFeed || [])) {
+    const advertiserId = String(account?.advertiserId || "").trim();
+    if (!advertiserId) {
+      continue;
+    }
+    const existing = accountsById.get(advertiserId) || {};
+    accountsById.set(advertiserId, {
+      advertiserId,
+      brand: String(existing.brand || account.brand || "").trim() || "Store Brand",
+      logo: readTextValue(existing.logo || existing.brandLogo || account.logo || account.brandLogo || account.BrandLogo)
+    });
+  }
+
+  return [...accountsById.values()].sort(
+    (left, right) => left.brand.localeCompare(right.brand) || left.advertiserId.localeCompare(right.advertiserId)
+  );
 }
 
 function getBrandInitials(value = "") {
