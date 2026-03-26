@@ -208,6 +208,37 @@ const DEFAULT_DEMO_CONFIG = {
 
 const MARKET_STORY_STEPS = [
   {
+    id: "lightweight-model",
+    accent: "#2f74ff",
+    kicker: "Low-cost operating model",
+    title: "This can run at $0 incremental hosting cost.",
+    body:
+      "The screen layer can reuse the client's current feeds and the current CYield supply model: think 1 display ad equals 1 screen. Because the same advertiser often owns that screen for the full day, delivery churn stays low and the response can be edge cached aggressively. The point is that this does not require a new hosting estate to create the business.",
+    note: "Keep the architecture simple: one shared player, page-like screen mapping, existing feeds, and low-churn delivery.",
+    metrics: [
+      {
+        value: 0,
+        decimals: 0,
+        prefix: "$",
+        suffix: "",
+        label: "Incremental hosting cost",
+        detail: "Reuse the client's current feeds and one shared player URL."
+      },
+      {
+        headline: "1:1",
+        label: "Display ad to screen mapping",
+        detail: "Treat each installed screen like a page-level supply endpoint."
+      },
+      {
+        headline: "Edge",
+        label: "Caching-friendly delivery profile",
+        detail: "The same advertiser creative can typically stay cached for the day."
+      }
+    ],
+    sources: [],
+    nextLabel: "Show market size"
+  },
+  {
     id: "onsite-base",
     accent: "#2f74ff",
     kicker: "Established revenue base",
@@ -324,28 +355,28 @@ const MARKET_STORY_STEPS = [
     nextLabel: "Show strategic fit"
   },
   {
-    id: "right-to-play",
+    id: "standup-effort",
     accent: "#6c8f34",
-    kicker: "Right to win",
-    title: "We already have structural advantages here.",
+    kicker: "Stand-up effort",
+    title: "Most of the work is retailer onboarding, not platform invention.",
     body:
-      "This is not a category bet from scratch. We already have retailer access, advertiser demand, and an onsite operating model with sales, optimization, and measurement proven in market. Extending that model into stores builds on strengths we already have rather than requiring a new commercial system to be invented.",
-    note: "Execution risk stays lower when the commercial model, buyer relationships, and operating stack are already in place.",
+      "CYield already handles supply setup and CMax already handles planning, activation, and measurement logic. The stand-up effort is mainly to harden the shared player, resolver, and reporting path once, then onboard retailers one by one by mapping their feeds, stores, and screen taxonomy into the existing model.",
+    note: "The scalable workstream is onboarding each retailer, not rebuilding the platform for each rollout.",
     metrics: [
       {
-        headline: "Relationships",
-        label: "demand and supply already connected",
-        detail: "Retailers and advertisers are already in the system."
+        headline: "8-12 wks",
+        label: "to harden the first deployable version",
+        detail: "Shared player, resolver, supply mapping, and reporting on top of CYield and CMax."
       },
       {
-        headline: "Playbook",
-        label: "onsite execution already proven",
-        detail: "Sales, optimization, and measurement can be extended into store."
+        headline: "One-time",
+        label: "core productization effort",
+        detail: "Build the reusable in-store layer once, then keep reusing it."
       },
       {
-        headline: "Extension",
-        label: "product path is lightweight",
-        detail: "CYield needs an in-store layer, not a rebuild."
+        headline: "Retailer-led",
+        label: "main scaling effort after launch",
+        detail: "Onboard each retailer's feeds, pages, screens, and commercial rules."
       }
     ],
     sources: [],
@@ -392,55 +423,63 @@ const MARKET_STORY_STEPS = [
   {
     id: "modeled-upside",
     accent: "#f0b54b",
-    kicker: "Adjacency economics",
-    title: "The opportunity is material at both global and APAC scale.",
+    kicker: "Revenue sizing",
+    title: "A conservative Year 1 to Year 3 ramp is already meaningful.",
     body:
-      "The economics should be read in two layers. First, media budgets that can flow through an in-store extension of onsite retail media. Second, platform revenue from operating the screen layer. Under modest penetration assumptions, both the global market and APAC are large enough to support a meaningful new business line.",
-    note: "The core market is large, the regional opportunity is meaningful, and the share assumptions remain conservative.",
+      "A retailer-by-retailer rollout does not need heroic assumptions. Using APAC in-store digital display as the conservative reference market, platform revenue reaches meaningful scale if we capture 0.1% in Year 1, 0.35% in Year 2, and 1.0% in Year 3 while the onboarding motion compounds across retailers.",
+    note: "This keeps the sizing tied to rollout pace and existing market scope rather than assuming immediate broad penetration.",
     metricSections: [
       {
-        kicker: "Media flow",
-        title: "Budgets that could flow through the channel",
-        note: "Modeled at 0.1% of onsite ecommerce media",
+        kicker: "Platform revenue ramp",
+        title: "APAC-only revenue build",
+        note: "Modeled from a $1.312B APAC in-store digital display market",
         metrics: [
           {
-            value: 203.89,
+            value: 1.31,
             decimals: 2,
             prefix: "$",
             suffix: "M",
-            label: "Global media flow potential",
-            detail: "0.1% of worldwide onsite ecommerce media"
+            label: "Year 1 revenue",
+            detail: "0.1% APAC share on a first-wave retailer rollout"
           },
           {
-            value: 90.25,
+            value: 4.59,
             decimals: 2,
             prefix: "$",
             suffix: "M",
-            label: "APAC media flow potential",
-            detail: "0.1% of APAC onsite ecommerce media"
-          }
-        ]
-      },
-      {
-        kicker: "Platform revenue",
-        title: "Revenue pool for operating the in-store layer",
-        note: "Modeled at 1% of the in-store digital display market",
-        metrics: [
-          {
-            value: 45.9,
-            decimals: 1,
-            prefix: "$",
-            suffix: "M",
-            label: "Global platform revenue potential",
-            detail: "1% of the worldwide in-store display market"
+            label: "Year 2 revenue",
+            detail: "0.35% APAC share as retailer onboarding expands"
           },
           {
             value: 13.12,
             decimals: 2,
             prefix: "$",
             suffix: "M",
-            label: "APAC platform revenue potential",
-            detail: "1% of the APAC in-store display market"
+            label: "Year 3 revenue",
+            detail: "1.0% APAC share with a scaled onboarding motion"
+          }
+        ]
+      },
+      {
+        kicker: "Reference market",
+        title: "The market stays much larger than the plan",
+        note: "Included to show how conservative the three-year ramp remains",
+        metrics: [
+          {
+            value: 90.25,
+            decimals: 2,
+            prefix: "$",
+            suffix: "B",
+            label: "APAC onsite ecommerce media",
+            detail: "Statista retail platform advertising, 2025"
+          },
+          {
+            value: 1.312,
+            decimals: 3,
+            prefix: "$",
+            suffix: "B",
+            label: "APAC in-store digital display",
+            detail: "Grand View Research, 2024"
           }
         ]
       }
