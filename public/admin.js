@@ -8,6 +8,8 @@ const DEMO_BUYING_STARTER_SUFFIX = "CMAX_CHECKOUT_KIOSK";
 const LIVE_SCREEN_RESULT_LIMIT = 12;
 let presenterChannel = null;
 let workspaceRecoveryScheduled = false;
+const WORKSPACE_INACTIVITY_TIMEOUT_MS = 30 * 60 * 1000;
+const WORKSPACE_ACTIVITY_HEARTBEAT_INTERVAL_MS = 60 * 1000;
 
 function buildDemoScreenId(storeId, suffix) {
   const normalizedStoreId = String(storeId || "").trim();
@@ -517,6 +519,12 @@ const state = {
   marketStoryStep: 0,
   marketStoryAnimationFrameIds: [],
   workspaceOverlayPollId: null,
+  workspaceInactivityTimeoutId: null,
+  workspaceTrackedWorkspaceId: "",
+  workspaceLastActivityAt: 0,
+  workspaceLastHeartbeatAt: 0,
+  workspaceActivityHeartbeatPending: false,
+  workspaceSwitchMode: false,
   pendingActions: new Set()
 };
 // Keep the real preset path for normal-sized demos; only short-circuit massive rollouts that time out the UI.
@@ -2449,10 +2457,128 @@ function formatLeaseRemaining(remainingMs) {
   return `${hours}h ${minutes}m left`;
 }
 
+function formatLeaseDurationLabel(leaseDurationMs = state.workspaceStatus?.leaseDurationMs || 60 * 60 * 1000) {
+  const totalMinutes = Math.max(1, Math.round(Number(leaseDurationMs || 0) / 60000));
+  if (totalMinutes % 60 === 0) {
+    const hours = totalMinutes / 60;
+    return `${hours} hour${hours === 1 ? "" : "s"} lease`;
+  }
+  return `${totalMinutes} min${totalMinutes === 1 ? "" : "s"} lease`;
+}
+
+function parseWorkspaceTimestamp(value) {
+  const parsed = Date.parse(String(value || "").trim());
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function getWorkspaceInactivityTimeoutMs() {
+  return Math.max(1000, Number(state.workspaceStatus?.inactivityTimeoutMs || WORKSPACE_INACTIVITY_TIMEOUT_MS));
+}
+
+function stopWorkspaceInactivityTimer() {
+  if (state.workspaceInactivityTimeoutId) {
+    window.clearTimeout(state.workspaceInactivityTimeoutId);
+    state.workspaceInactivityTimeoutId = null;
+  }
+}
+
+function getWorkspaceActivityReferenceMs() {
+  const current = getCurrentWorkspace();
+  if (!current) {
+    return 0;
+  }
+  return Math.max(
+    Number(state.workspaceLastActivityAt || 0),
+    parseWorkspaceTimestamp(current.lastActivityAt || current.claimedAt)
+  );
+}
+
+function syncWorkspaceActivityState() {
+  const current = getCurrentWorkspace();
+  const currentWorkspaceId = String(current?.id || "").trim();
+  if (!currentWorkspaceId) {
+    state.workspaceTrackedWorkspaceId = "";
+    state.workspaceLastActivityAt = 0;
+    state.workspaceLastHeartbeatAt = 0;
+    state.workspaceActivityHeartbeatPending = false;
+    stopWorkspaceInactivityTimer();
+    return;
+  }
+
+  const serverLastActivityAt = parseWorkspaceTimestamp(current.lastActivityAt || current.claimedAt);
+  if (state.workspaceTrackedWorkspaceId !== currentWorkspaceId) {
+    state.workspaceTrackedWorkspaceId = currentWorkspaceId;
+    state.workspaceLastActivityAt = serverLastActivityAt || Date.now();
+    state.workspaceLastHeartbeatAt = 0;
+  } else {
+    state.workspaceLastActivityAt = Math.max(Number(state.workspaceLastActivityAt || 0), serverLastActivityAt);
+  }
+}
+
+function scheduleWorkspaceInactivityTimeout() {
+  stopWorkspaceInactivityTimer();
+  if (!getCurrentWorkspace()) {
+    return;
+  }
+  const timeoutMs = getWorkspaceInactivityTimeoutMs();
+  const activityReferenceMs = getWorkspaceActivityReferenceMs() || Date.now();
+  const delayMs = Math.max(0, activityReferenceMs + timeoutMs - Date.now());
+  state.workspaceInactivityTimeoutId = window.setTimeout(() => {
+    expireWorkspaceForInactivity().catch(handleError);
+  }, delayMs);
+}
+
+function buildWorkspaceOverlayMessage(message = "") {
+  const explicitMessage = String(message || "").trim();
+  if (explicitMessage) {
+    return explicitMessage;
+  }
+  if (!state.workspaceSwitchMode) {
+    return "";
+  }
+  const current = getCurrentWorkspace();
+  if (!current) {
+    return "";
+  }
+  return `Choose a different avatar. ${current.label || "Your current avatar"} stays active until you switch. Click outside to keep it.`;
+}
+
 function stopWorkspaceOverlayPolling() {
   if (state.workspaceOverlayPollId) {
     window.clearInterval(state.workspaceOverlayPollId);
     state.workspaceOverlayPollId = null;
+  }
+}
+
+async function sendWorkspaceActivityHeartbeat() {
+  if (state.workspaceActivityHeartbeatPending || !getCurrentWorkspace()) {
+    return;
+  }
+  state.workspaceActivityHeartbeatPending = true;
+  try {
+    const payload = await requestJson("/api/workspaces/activity", { method: "POST" });
+    state.workspaceStatus = payload;
+    syncWorkspaceActivityState();
+    state.workspaceLastHeartbeatAt = Date.now();
+    updateWorkspaceBadge();
+    scheduleWorkspaceInactivityTimeout();
+    if (!elements.workspaceOverlay?.hidden && (!getCurrentWorkspace() || state.workspaceSwitchMode)) {
+      renderWorkspaceSelector(elements.workspaceOverlayMessage?.textContent || "");
+    }
+  } finally {
+    state.workspaceActivityHeartbeatPending = false;
+  }
+}
+
+function registerWorkspaceActivity({ forceHeartbeat = false } = {}) {
+  if (!getCurrentWorkspace()) {
+    return;
+  }
+  const now = Date.now();
+  state.workspaceLastActivityAt = now;
+  scheduleWorkspaceInactivityTimeout();
+  if (forceHeartbeat || now - Number(state.workspaceLastHeartbeatAt || 0) >= WORKSPACE_ACTIVITY_HEARTBEAT_INTERVAL_MS) {
+    sendWorkspaceActivityHeartbeat().catch(handleError);
   }
 }
 
@@ -2506,21 +2632,26 @@ function renderWorkspaceSelector(message = "") {
   const pendingWorkspaceId = getPendingActionValue("workspaceClaim");
   const workspaceClaimPending = hasPendingAction("workspaceClaim");
   const workspaces = Array.isArray(state.workspaceStatus?.workspaces) ? state.workspaceStatus.workspaces : [];
-  elements.workspaceOverlayMessage.textContent = String(message || "").trim();
+  elements.workspaceOverlayMessage.textContent = buildWorkspaceOverlayMessage(message);
   elements.workspaceGrid.innerHTML = workspaces
     .map((workspace) => {
       const inUseByOther = workspace.status === "claimed";
+      const switchingFromCurrentWorkspace = state.workspaceSwitchMode && workspace.status === "claimed-by-you";
       const claimingThisWorkspace = pendingWorkspaceId === String(workspace.id || "").trim();
       const actionLabel = inUseByOther
         ? `In use | ${formatLeaseRemaining(workspace.remainingMs || 0)}`
         : claimingThisWorkspace
           ? "Claiming workspace..."
+        : switchingFromCurrentWorkspace
+          ? "Current avatar"
         : workspace.status === "claimed-by-you"
           ? "Resume workspace"
           : "Open workspace";
       const availabilityLabel =
         workspace.status === "claimed"
           ? "Locked"
+          : switchingFromCurrentWorkspace
+            ? "Current"
           : workspace.status === "claimed-by-you"
             ? "Yours"
             : "Available";
@@ -2531,7 +2662,7 @@ function renderWorkspaceSelector(message = "") {
           data-workspace-id="${escapeHtml(workspace.id)}"
           data-status="${escapeHtml(workspace.status || "available")}"
           style="--workspace-accent: ${escapeHtml(workspace.accent || "#4fa7ff")};"
-          ${inUseByOther || workspaceClaimPending ? "disabled" : ""}
+          ${inUseByOther || workspaceClaimPending || switchingFromCurrentWorkspace ? "disabled" : ""}
         >
           <span class="workspace-card__avatar">${escapeHtml(workspace.initials || "WS")}</span>
           <span class="workspace-card__header">
@@ -2542,7 +2673,7 @@ function renderWorkspaceSelector(message = "") {
           <span class="workspace-card__meta">${escapeHtml(
             workspace.status === "claimed" || workspace.status === "claimed-by-you"
               ? formatLeaseRemaining(workspace.remainingMs || 0)
-              : "2 hour lease"
+              : formatLeaseDurationLabel()
           )}</span>
           <span class="workspace-card__action">${escapeHtml(actionLabel)}</span>
         </button>
@@ -2554,10 +2685,19 @@ function renderWorkspaceSelector(message = "") {
 async function refreshWorkspaceStatus({ silent = false } = {}) {
   const payload = await requestJson("/api/workspaces");
   state.workspaceStatus = payload;
+  syncWorkspaceActivityState();
+  if (!getCurrentWorkspace()) {
+    state.workspaceSwitchMode = false;
+  }
   syncMarketIntroAcknowledged();
   updateWorkspaceBadge();
-  if (!getCurrentWorkspace() && !elements.workspaceOverlay?.hidden) {
-    renderWorkspaceSelector(silent ? elements.workspaceOverlayMessage?.textContent || "" : "");
+  scheduleWorkspaceInactivityTimeout();
+  if (!elements.workspaceOverlay?.hidden) {
+    if (!getCurrentWorkspace() || state.workspaceSwitchMode) {
+      renderWorkspaceSelector(silent ? elements.workspaceOverlayMessage?.textContent || "" : "");
+    } else {
+      setWorkspaceOverlayVisible(false);
+    }
   }
   return payload;
 }
@@ -2581,21 +2721,67 @@ async function claimWorkspace(workspaceId) {
   }, { lockKey: "workspaceClaim" });
 }
 
-async function releaseWorkspace() {
+async function releaseWorkspace({ reload = true, reset = false } = {}) {
   return runPendingAction("workspaceRelease", async () => {
-    await requestJson("/api/workspaces/release", {
+    const requestOptions = {
       method: "POST"
-    });
-    window.location.reload();
+    };
+    if (reset) {
+      requestOptions.body = JSON.stringify({ reset: true });
+    }
+    const payload = await requestJson("/api/workspaces/release", requestOptions);
+    state.workspaceStatus = payload;
+    syncWorkspaceActivityState();
+    state.workspaceSwitchMode = false;
+    scheduleWorkspaceInactivityTimeout();
+    if (reload) {
+      window.location.reload();
+    }
+    return payload;
   });
+}
+
+async function expireWorkspaceForInactivity() {
+  const current = getCurrentWorkspace();
+  if (!current) {
+    return;
+  }
+  await releaseWorkspace({ reload: false, reset: true });
+  renderWorkspaceSelector("This avatar expired after 30 minutes of inactivity. Pick an avatar again.");
+  setWorkspaceOverlayVisible(true);
+  showToast("This avatar expired after 30 minutes of inactivity.", true);
+  showStatus("This avatar expired after 30 minutes of inactivity. Pick an avatar again.", true);
+}
+
+function beginWorkspaceSwitch() {
+  const current = getCurrentWorkspace();
+  if (!current) {
+    return;
+  }
+  state.workspaceSwitchMode = true;
+  renderWorkspaceSelector();
+  setWorkspaceOverlayVisible(true);
+  showStatus(`Choose a different avatar to switch from ${current.label || "the current avatar"}.`);
+}
+
+function cancelWorkspaceSwitch() {
+  if (!state.workspaceSwitchMode || !getCurrentWorkspace()) {
+    return;
+  }
+  state.workspaceSwitchMode = false;
+  setWorkspaceOverlayVisible(false);
+  showStatus(`${getCurrentWorkspace()?.label || "Current avatar"} is still active.`);
 }
 
 async function ensureWorkspaceClaim() {
   await refreshWorkspaceStatus();
   if (getCurrentWorkspace()) {
+    state.workspaceSwitchMode = false;
+    scheduleWorkspaceInactivityTimeout();
     setWorkspaceOverlayVisible(false);
     return;
   }
+  state.workspaceSwitchMode = false;
   renderWorkspaceSelector();
   setWorkspaceOverlayVisible(true);
   showStatus("Select an avatar to open an isolated demo workspace.");
@@ -4209,6 +4395,7 @@ function updateActionButtons() {
   const goalPlanPending = hasPendingAction("goalPlan");
   const runsRefreshPending = hasPendingAction("goalRunsRefresh");
   const telemetryRefreshPending = hasPendingAction("telemetryRefresh");
+  const workspaceClaimPending = hasPendingAction("workspaceClaim");
   const workspaceReleasePending = hasPendingAction("workspaceRelease");
 
   if (elements.createAnchorBtn) {
@@ -4265,8 +4452,12 @@ function updateActionButtons() {
     elements.refreshTelemetryBtn.textContent = telemetryRefreshPending ? "Refreshing..." : "Refresh telemetry";
   }
   if (elements.switchWorkspaceBtn) {
-    elements.switchWorkspaceBtn.disabled = workspaceReleasePending;
-    elements.switchWorkspaceBtn.textContent = workspaceReleasePending ? "Switching avatar..." : "Switch avatar";
+    elements.switchWorkspaceBtn.disabled = workspaceReleasePending || workspaceClaimPending;
+    elements.switchWorkspaceBtn.textContent = workspaceClaimPending
+      ? "Switching avatar..."
+      : workspaceReleasePending
+        ? "Releasing avatar..."
+        : "Switch avatar";
   }
   if (qs("#resetDemoBtn")) {
     const resetButton = qs("#resetDemoBtn");
@@ -7423,7 +7614,15 @@ function continueToBuying() {
 }
 
 function wireEvents() {
+  const handleWorkspaceActivity = () => {
+    registerWorkspaceActivity();
+  };
   document.addEventListener("click", (event) => {
+    if (state.workspaceSwitchMode && event.target.closest("#workspaceOverlay .workspace-overlay__backdrop")) {
+      cancelWorkspaceSwitch();
+      return;
+    }
+
     const workspaceCard = event.target.closest(".workspace-card");
     if (workspaceCard) {
       claimWorkspace(workspaceCard.dataset.workspaceId || "").catch(handleError);
@@ -7431,7 +7630,7 @@ function wireEvents() {
     }
 
     if (event.target.closest("#switchWorkspaceBtn")) {
-      releaseWorkspace().catch(handleError);
+      beginWorkspaceSwitch();
       return;
     }
 
@@ -7817,6 +8016,17 @@ function wireEvents() {
     state.goalLiveSelectedScreenId = "";
     renderLiveScreens();
   });
+  document.addEventListener("pointerdown", handleWorkspaceActivity, { passive: true });
+  document.addEventListener("keydown", handleWorkspaceActivity);
+  window.addEventListener("scroll", handleWorkspaceActivity, { passive: true });
+  window.addEventListener("focus", () => {
+    registerWorkspaceActivity({ forceHeartbeat: true });
+  });
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") {
+      registerWorkspaceActivity({ forceHeartbeat: true });
+    }
+  });
   document.addEventListener("keydown", (event) => {
     if (!isSupplyMarketIntroActive()) {
       return;
@@ -7851,6 +8061,7 @@ function wireEvents() {
   });
   window.addEventListener("beforeunload", () => {
     stopWorkspaceOverlayPolling();
+    stopWorkspaceInactivityTimer();
     cancelMarketStoryAnimations();
     presenterChannel?.close();
     presenterChannel = null;
@@ -7876,6 +8087,7 @@ async function init() {
 
     await refreshTelemetryData();
 
+    registerWorkspaceActivity({ forceHeartbeat: true });
     renderAll();
     setStage("supply", false);
     showStatus(

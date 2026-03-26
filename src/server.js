@@ -6260,7 +6260,8 @@ function normalizeError(error) {
 
 const WORKSPACE_SESSION_COOKIE = "instore_demo_session";
 const WORKSPACE_SESSION_COOKIE_MAX_AGE_SECONDS = 30 * 24 * 60 * 60;
-const WORKSPACE_LEASE_MS = 2 * 60 * 60 * 1000;
+const WORKSPACE_LEASE_MS = 60 * 60 * 1000;
+const WORKSPACE_INACTIVITY_TIMEOUT_MS = 30 * 60 * 1000;
 const DEMO_WORKSPACES = [
   { id: "atlas", label: "Atlas", initials: "AT", accent: "#ef7c63" },
   { id: "nova", label: "Nova", initials: "NV", accent: "#4fa7ff" },
@@ -6383,6 +6384,66 @@ function getWorkspaceState(rootDb, workspaceId, { create = false, seedState = nu
   return seeded;
 }
 
+function resetWorkspaceState(rootDb, workspaceId) {
+  ensureWorkspaceRoot(rootDb);
+  const normalizedWorkspaceId = readOptionalString(workspaceId, 80).toLowerCase();
+  if (!normalizedWorkspaceId || !DEMO_WORKSPACE_MAP.has(normalizedWorkspaceId)) {
+    return;
+  }
+  delete rootDb.workspaces[normalizedWorkspaceId];
+}
+
+function getWorkspaceClaimLastActivityAt(claim) {
+  return readOptionalString(claim?.lastActivityAt, 80) || readOptionalString(claim?.claimedAt, 80);
+}
+
+function formatWorkspaceInactivityRemainingMs(claim, now = Date.now()) {
+  const parsed = Date.parse(getWorkspaceClaimLastActivityAt(claim));
+  if (!Number.isFinite(parsed)) {
+    return 0;
+  }
+  return Math.max(0, parsed + WORKSPACE_INACTIVITY_TIMEOUT_MS - now);
+}
+
+function getWorkspaceClaimExpiration(claim, now = Date.now()) {
+  const leaseExpiryAt = Date.parse(readOptionalString(claim?.expiresAt, 80));
+  const lastActivityAt = Date.parse(getWorkspaceClaimLastActivityAt(claim));
+  const inactivityExpiryAt = Number.isFinite(lastActivityAt) ? lastActivityAt + WORKSPACE_INACTIVITY_TIMEOUT_MS : NaN;
+  const leaseExpired = !Number.isFinite(leaseExpiryAt) || leaseExpiryAt <= now;
+  const inactivityExpired = !Number.isFinite(inactivityExpiryAt) || inactivityExpiryAt <= now;
+
+  if (!leaseExpired && !inactivityExpired) {
+    return null;
+  }
+
+  if (
+    inactivityExpired &&
+    (!leaseExpired || (Number.isFinite(inactivityExpiryAt) && (!Number.isFinite(leaseExpiryAt) || inactivityExpiryAt <= leaseExpiryAt)))
+  ) {
+    return {
+      status: 409,
+      code: "WORKSPACE_INACTIVE",
+      message: "This avatar expired after 30 minutes of inactivity. Pick an avatar again."
+    };
+  }
+
+  return {
+    status: 409,
+    code: "WORKSPACE_EXPIRED",
+    message: "This avatar lease expired after 1 hour. Pick an avatar again."
+  };
+}
+
+function expireWorkspaceClaim(rootDb, claim) {
+  ensureWorkspaceRoot(rootDb);
+  const workspaceId = readOptionalString(claim?.workspaceId, 80).toLowerCase();
+  if (!workspaceId) {
+    return;
+  }
+  delete rootDb.workspaceClaims[workspaceId];
+  resetWorkspaceState(rootDb, workspaceId);
+}
+
 function findWorkspaceClaimBySession(rootDb, sessionId) {
   ensureWorkspaceRoot(rootDb);
   const normalizedSessionId = readOptionalString(sessionId, 120);
@@ -6395,16 +6456,15 @@ function findWorkspaceClaimBySession(rootDb, sessionId) {
 }
 
 function isWorkspaceClaimExpired(claim, now = Date.now()) {
-  const expiresAt = Date.parse(readOptionalString(claim?.expiresAt, 80));
-  return !Number.isFinite(expiresAt) || expiresAt <= now;
+  return Boolean(getWorkspaceClaimExpiration(claim, now));
 }
 
 function pruneExpiredWorkspaceClaims(rootDb, now = Date.now()) {
   ensureWorkspaceRoot(rootDb);
   for (const workspace of DEMO_WORKSPACES) {
     const claim = rootDb.workspaceClaims[workspace.id];
-    if (claim && isWorkspaceClaimExpired(claim, now)) {
-      delete rootDb.workspaceClaims[workspace.id];
+    if (claim && getWorkspaceClaimExpiration(claim, now)) {
+      expireWorkspaceClaim(rootDb, claim);
     }
   }
 }
@@ -6437,6 +6497,7 @@ function buildWorkspaceStatusPayload(rootDb, sessionId) {
       claimed: Boolean(claim),
       claimedByCurrentSession,
       claimedAt: readOptionalString(claim?.claimedAt, 80),
+      lastActivityAt: getWorkspaceClaimLastActivityAt(claim),
       expiresAt: readOptionalString(claim?.expiresAt, 80),
       remainingMs,
       hasSavedJourney: Boolean(storedWorkspace),
@@ -6452,13 +6513,16 @@ function buildWorkspaceStatusPayload(rootDb, sessionId) {
   return {
     sessionId: readOptionalString(sessionId, 120),
     leaseDurationMs: WORKSPACE_LEASE_MS,
+    inactivityTimeoutMs: WORKSPACE_INACTIVITY_TIMEOUT_MS,
     currentWorkspace:
       currentClaim && DEMO_WORKSPACE_MAP.has(readOptionalString(currentClaim.workspaceId, 80))
         ? {
             ...DEMO_WORKSPACE_MAP.get(readOptionalString(currentClaim.workspaceId, 80)),
             claimedAt: readOptionalString(currentClaim.claimedAt, 80),
+            lastActivityAt: getWorkspaceClaimLastActivityAt(currentClaim),
             expiresAt: readOptionalString(currentClaim.expiresAt, 80),
-            remainingMs: formatLeaseRemainingMs(currentClaim.expiresAt, now)
+            remainingMs: formatLeaseRemainingMs(currentClaim.expiresAt, now),
+            inactivityRemainingMs: formatWorkspaceInactivityRemainingMs(currentClaim, now)
           }
         : null,
     workspaces
@@ -6487,8 +6551,16 @@ async function requireWorkspaceClaim(req, res, next) {
       sendWorkspaceError(res, 401, "Select an avatar before opening the demo workspace.");
       return;
     }
-    if (isWorkspaceClaimExpired(claim)) {
-      sendWorkspaceError(res, 409, "This avatar lease expired after 2 hours. Pick an avatar again.", "WORKSPACE_EXPIRED");
+    const expiration = getWorkspaceClaimExpiration(claim);
+    if (expiration) {
+      await mutateDb(async (mutableRootDb) => {
+        const mutableClaim = findWorkspaceClaimBySession(mutableRootDb, sessionId);
+        if (mutableClaim && getWorkspaceClaimExpiration(mutableClaim, Date.now())) {
+          expireWorkspaceClaim(mutableRootDb, mutableClaim);
+        }
+      });
+      clearSessionCookie(res);
+      sendWorkspaceError(res, expiration.status, expiration.message, expiration.code);
       return;
     }
 
@@ -7194,6 +7266,7 @@ app.post("/api/workspaces/claim", async (req, res) => {
         workspaceId: requestedWorkspaceId,
         sessionId,
         claimedAt: claimedAt.toISOString(),
+        lastActivityAt: claimedAt.toISOString(),
         expiresAt: new Date(claimedAt.getTime() + WORKSPACE_LEASE_MS).toISOString()
       };
       getWorkspaceState(rootDb, requestedWorkspaceId, { create: true, seedState: seedDb });
@@ -7207,14 +7280,64 @@ app.post("/api/workspaces/claim", async (req, res) => {
   }
 });
 
+app.post("/api/workspaces/activity", async (req, res) => {
+  try {
+    const sessionId = ensureSessionId(req, res);
+    const now = Date.now();
+    let workspaceError = null;
+    const payload = await mutateDb(async (rootDb) => {
+      pruneExpiredWorkspaceClaims(rootDb, now);
+      const claim = findWorkspaceClaimBySession(rootDb, sessionId);
+      if (!claim) {
+        workspaceError = {
+          status: 401,
+          code: "WORKSPACE_REQUIRED",
+          message: "Select an avatar before opening the demo workspace."
+        };
+        return null;
+      }
+
+      const expiration = getWorkspaceClaimExpiration(claim, now);
+      if (expiration) {
+        expireWorkspaceClaim(rootDb, claim);
+        workspaceError = expiration;
+        return null;
+      }
+
+      claim.lastActivityAt = new Date(now).toISOString();
+      return buildWorkspaceStatusPayload(rootDb, sessionId);
+    });
+
+    if (!payload) {
+      clearSessionCookie(res);
+      sendWorkspaceError(
+        res,
+        workspaceError?.status || 401,
+        workspaceError?.message || "Select an avatar before opening the demo workspace.",
+        workspaceError?.code || "WORKSPACE_REQUIRED"
+      );
+      return;
+    }
+
+    res.json(payload);
+  } catch (error) {
+    const normalized = normalizeError(error);
+    res.status(normalized.status).json({ error: normalized.message });
+  }
+});
+
 app.post("/api/workspaces/release", async (req, res) => {
   try {
     const sessionId = ensureSessionId(req, res);
+    const resetWorkspace = readBoolean(req.body?.reset, false);
     const payload = await mutateDb(async (rootDb) => {
       pruneExpiredWorkspaceClaims(rootDb);
       const currentClaim = findWorkspaceClaimBySession(rootDb, sessionId);
       if (currentClaim) {
         delete rootDb.workspaceClaims[readOptionalString(currentClaim.workspaceId, 80)];
+        if (resetWorkspace) {
+          resetWorkspaceState(rootDb, currentClaim.workspaceId);
+        }
       }
       return buildWorkspaceStatusPayload(rootDb, sessionId);
     });
