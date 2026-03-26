@@ -5999,6 +5999,17 @@ function buildTemplateQrMetadata(templateId, objectiveId = "", location = "") {
   const normalizedObjectiveId = readOptionalString(objectiveId, 80);
   const normalizedLocation = readOptionalString(location, 80).toLowerCase();
 
+  if (normalizedTemplateId === "carousel-banner") {
+    return {
+      qrVariant: "product-card",
+      qrLabel: "Explore the full range",
+      qrCaption: "Scan to browse the full range on your phone.",
+      qrAsset: "/assets/qr/qr-product-card.svg",
+      qrPlacement: "inline-handoff",
+      qrDestinationType: "range-browse"
+    };
+  }
+
   if (normalizedTemplateId === "kiosk-interactive") {
     return {
       qrVariant: "mobile-handoff",

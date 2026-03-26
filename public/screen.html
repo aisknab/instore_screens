@@ -274,6 +274,11 @@
       }
 
       const QR_TEMPLATE_DEFAULTS = {
+        "carousel-banner": {
+          asset: "/assets/qr/qr-product-card.svg",
+          label: "Explore the full range",
+          caption: "Scan to browse the full range on your phone."
+        },
         "kiosk-interactive": {
           asset: "/assets/qr/qr-mobile-handoff.svg",
           label: "Scan to keep this offer",
@@ -377,6 +382,24 @@
           return "Food court";
         }
         return titleCaseWords(normalized) || "Store floor";
+      }
+
+      function buildHeroDirectionLine(location, fallback = "") {
+        const normalized = readText(location).toLowerCase();
+        const candidate = readText(fallback);
+        if (candidate && /\b(aisle|entrance|checkout|counter|bay|near|beside|inside)\b/i.test(candidate)) {
+          return candidate;
+        }
+        if (normalized.includes("checkout")) {
+          return "See the live display beside checkout";
+        }
+        if (normalized.includes("aisle")) {
+          return "See the live display in this aisle";
+        }
+        if (normalized.includes("foodcourt")) {
+          return "See the live display near the counter";
+        }
+        return "See the live display near aisle 7";
       }
 
       function buildCategoryLabel(category, location = "") {
@@ -486,7 +509,7 @@
             return {
               badge: "Feature Wall",
               promotion: `${rangeLabel} spotlight`,
-              cta: "See the hero wall",
+              cta: "See the live display near aisle 7",
               subcopy: savingsLead || "See it on display today",
               supportNote: "Hero-led category messaging"
             };
@@ -494,7 +517,7 @@
             return {
               badge: "Range Rotation",
               promotion: `${context.categoryLabel} assortment live now`,
-              cta: "See the range",
+              cta: "Explore the full range",
               subcopy: "See more in this range",
               supportNote: "Auto-rotating assortment"
             };
@@ -601,7 +624,11 @@
         });
         const badge = selectStoryText(attributes.badge, generatedCopy.badge || templateDefaults.badge);
         const promotion = selectStoryText(attributes.promotion, generatedCopy.promotion || templateDefaults.promotion);
-        const cta = selectStoryText(attributes.cta, generatedCopy.cta || templateDefaults.cta);
+        const selectedCta = selectStoryText(attributes.cta, generatedCopy.cta || templateDefaults.cta);
+        const cta =
+          templateId === "fullscreen-hero"
+            ? buildHeroDirectionLine(settings.location, selectedCta)
+            : selectedCta;
         const subcopyBase = selectStoryText(attributes.subcopy, generatedCopy.subcopy || templateDefaults.subcopy);
         const subcopy = readingDistance === "far" ? toSignageLine(subcopyBase, objectiveId === "awareness" ? 10 : 12) : subcopyBase;
         const legal = selectStoryText(attributes.legal, templateDefaults.legal);
@@ -718,6 +745,20 @@
         `;
       }
 
+      function buildInlineQrMarkup(context, extraClass = "") {
+        if (!context.qr.show) {
+          return "";
+        }
+        return `
+          <div class="fallback__inline-qr${extraClass ? ` ${extraClass}` : ""}">
+            <div class="fallback__inline-qr-art">
+              <img src="${escapeHtml(context.qr.asset)}" alt="" aria-hidden="true">
+            </div>
+            <span class="fallback__inline-qr-caption">${escapeHtml(context.qr.caption)}</span>
+          </div>
+        `;
+      }
+
       function buildBrandMarkMarkup(context, extraClass = "") {
         if (!context.brand && !context.brandLogo) {
           return "";
@@ -818,8 +859,8 @@
           actionNote && (context.templateId === "kiosk-interactive" || Boolean(context.loopLabel))
             ? `<span class="fallback__support">${escapeHtml(actionNote)}</span>`
             : "";
-        const heroMetricValue = context.savings.percentText || context.rating || context.categoryLabel || "In store now";
-        const heroMetricLabel = context.savings.percentText || context.rating ? "Proof" : "Category";
+        const heroMetricValue =
+          context.savings.percentText || (context.rating ? `${context.rating} rating` : context.categoryLabel || "In store now");
         const kioskHeroProof =
           context.savings.percentText || context.rating || context.savings.lineText || "Featured now";
         const kioskPhoneName = compactProductName(context.name, 3);
@@ -829,19 +870,18 @@
             return `
               <div class="fallback__hero-shell">
                 <section class="fallback__copy-panel fallback__copy-panel--hero">
-                  <div class="fallback__meta-row">
-                    <span class="fallback__badge">${escapeHtml(context.badge)}</span>
-                    <span class="fallback__scene">${escapeHtml(context.locationLabel)}</span>
-                  </div>
                   ${buildBrandMarkMarkup(context)}
                   <p class="fallback__eyebrow">${escapeHtml(context.promotion)}</p>
                   <h1 class="fallback__headline">${escapeHtml(context.headlineName)}</h1>
                   <p class="fallback__subcopy">${escapeHtml(context.subcopy)}</p>
                   ${priceMarkup}
                   ${proofMarkup}
-                  <div class="fallback__action-row">
-                    <span class="fallback__cta">${escapeHtml(context.cta)}</span>
-                    ${supportMarkup}
+                  <div class="fallback__action-row fallback__action-row--carousel">
+                    <div class="fallback__action-copy">
+                      <span class="fallback__cta fallback__cta--signage">${escapeHtml(context.cta)}</span>
+                      ${supportMarkup}
+                    </div>
+                    ${buildInlineQrMarkup(context, "fallback__inline-qr--carousel")}
                   </div>
                   ${legalMarkup}
                 </section>
@@ -851,7 +891,6 @@
                   </div>
                   <div class="fallback__metric-stack">
                     <div class="fallback__metric-card">
-                      <span>${escapeHtml(heroMetricLabel)}</span>
                       <strong>${escapeHtml(heroMetricValue)}</strong>
                     </div>
                   </div>
