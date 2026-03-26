@@ -709,8 +709,9 @@
         if (!context.brand && !context.brandLogo) {
           return "";
         }
+        const showWordmark = !context.brandLogo && Boolean(context.brand || context.categoryLabel);
         return `
-          <div class="fallback__brand-lockup${extraClass ? ` ${extraClass}` : ""}">
+          <div class="fallback__brand-lockup${context.brandLogo ? " fallback__brand-lockup--logo-only" : ""}${extraClass ? ` ${extraClass}` : ""}">
             ${
               context.brandLogo
                 ? `<span class="fallback__brand-logo"><img src="${escapeHtml(context.brandLogo)}" alt="${escapeHtml(
@@ -718,7 +719,7 @@
                   )}"></span>`
                 : ""
             }
-            <span class="fallback__brand-wordmark">${escapeHtml(context.brand || context.categoryLabel)}</span>
+            ${showWordmark ? `<span class="fallback__brand-wordmark">${escapeHtml(context.brand || context.categoryLabel)}</span>` : ""}
           </div>
         `;
       }

@@ -609,14 +609,6 @@ const DEMO_STAGE_TEMPLATES = [
     description: "Use the two-action supply flow to create one screen in CYield, then auto build the rest of the store for demo purposes.",
     actionLabel: "Auto build rest of screens",
     starterScreenId: DEMO_SUPPLY_STARTER_SCREEN_ID,
-    speakerSummary:
-      "Keep supply tight: one manual CYield-style screen creation proves the integration point, then the demo auto-build, rate card, and handoff show how the same shared player scales across stores.",
-    presenterNotes: [
-      "Start with one manually created screen so the workflow still looks like a normal CYield page-to-screen setup.",
-      "Call out that every physical screen still uses the same /screen.html player path.",
-      "The extra logic is backend resolution of which installed screen is calling the shared player.",
-      "Use the auto-build summary and handoff state to show rollout scale, not a pile of manual page creation."
-    ],
     proofPoints: [
       "Minimal CYield change",
       "One shared player URL",
@@ -656,14 +648,6 @@ const DEMO_STAGE_TEMPLATES = [
       prompt: `Drive checkout demand for Northfield accessories in ${DEMO_STORE_LABEL}.`,
       targetSkuIds: ["ACC-MOUSE-001"]
     },
-    speakerSummary:
-      "CMax turns configured supply into a planner workflow: goal, brief, scope, editable line-up, and budget all stay in one place before the funded placements go live.",
-    presenterNotes: [
-      "Generate the line-up from a business goal and target SKUs, not from hand-editing creatives.",
-      "Use the AI brief or manual SKU selection to show how the planner explains why those products are in focus.",
-      "If the selected products fit aisle or category screens better than checkout, the planner can widen or pivot the scope automatically.",
-      "Already-compatible screens still count as proof because the value is the recommendation and funding logic, not just creative swaps."
-    ],
     proofPoints: [
       "Goal-led buying brief",
       "Auto-matched screen scope",
@@ -694,14 +678,6 @@ const DEMO_STAGE_TEMPLATES = [
     description: "Use the live brand dashboard, measurement board, preview rail, and campaign history to show operational proof after launch.",
     actionLabel: "Open monitoring",
     starterScreenId: DEMO_BUYING_STARTER_SCREEN_ID,
-    speakerSummary:
-      "Monitoring turns the launch into an operational story: the same shared player now feeds a brand dashboard, measurement board, preview rail, and campaign history.",
-    presenterNotes: [
-      "Show that the campaign moved from plan to live state without changing the shared player path.",
-      "Anchor the story on the brand dashboard first, then use measurement to separate observed delivery from modeled retail outcomes.",
-      "Use the preview rail or live screen snapshot to prove the campaign is in market on the actual resolved screens.",
-      "Finish with telemetry breakdowns and run history so the workflow feels observable, measurable, and reusable."
-    ],
     proofPoints: [
       "Brand dashboard",
       "Measurement board",

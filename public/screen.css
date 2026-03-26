@@ -804,24 +804,30 @@ body.body--showcase .status-badge {
 }
 
 .fallback__brand-lockup {
+  --fallback-brand-logo-size: 60px;
   display: inline-flex;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
   max-width: 100%;
-  padding: 8px 12px;
+  padding: 10px 14px;
   border-radius: 16px;
   border: 1px solid rgba(255, 255, 255, 0.14);
   background: rgba(8, 17, 31, 0.28);
+}
+
+.fallback__brand-lockup--logo-only {
+  gap: 0;
+  padding: 10px;
 }
 
 .fallback__brand-logo {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 44px;
-  height: 44px;
+  width: var(--fallback-brand-logo-size);
+  height: var(--fallback-brand-logo-size);
   flex: 0 0 auto;
-  border-radius: 12px;
+  border-radius: 16px;
   background:
     radial-gradient(circle at 34% 24%, rgba(255, 255, 255, 0.96), rgba(255, 255, 255, 0) 56%),
     rgba(255, 255, 255, 0.1);
@@ -829,8 +835,8 @@ body.body--showcase .status-badge {
 }
 
 .fallback__brand-logo img {
-  width: 82%;
-  height: 82%;
+  width: 88%;
+  height: 88%;
   display: block;
   object-fit: contain;
   filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.2));
@@ -1527,7 +1533,8 @@ body.body--showcase .status-badge {
 }
 
 .fallback[data-reading-distance="far"] .fallback__brand-lockup {
-  padding: 6px 10px;
+  --fallback-brand-logo-size: 68px;
+  padding: 10px 14px;
 }
 
 .fallback[data-reading-distance="far"] .fallback__proof-list {

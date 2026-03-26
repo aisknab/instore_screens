@@ -130,7 +130,7 @@ Get count progress with `GET /api/product-images/progress`.
 
 ## Generated Brand Logos
 
-The repo also includes a resumable brand-logo generation pipeline that creates transparent PNG logos for each advertiser account in the demo feed, writes them to local assets, and stamps the feed so the selected brand can be shown consistently across the dashboard, presenter notes, and live preview surfaces.
+The repo also includes a resumable brand-logo generation pipeline that creates transparent PNG logos for each advertiser account in the demo feed, writes them to local assets, and stamps the feed so the selected brand can be shown consistently across the dashboard and live preview surfaces.
 
 Defaults:
 

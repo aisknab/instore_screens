@@ -1,12 +1,9 @@
 const UI_STAGES = ["supply", "buying", "monitoring"];
 const SHARED_PLAYER_URL = "/screen.html";
-const PRESENTER_CHANNEL_NAME = "instore-demo-presenter";
-const PRESENTER_SNAPSHOT_KEY = "instore-demo-presenter-snapshot";
 const DEFAULT_DEMO_STORE_ID = "DEMO-ANCHOR";
 const DEMO_SUPPLY_STARTER_SUFFIX = "CYIELD_ENTRANCE_HERO";
 const DEMO_BUYING_STARTER_SUFFIX = "CMAX_CHECKOUT_KIOSK";
 const LIVE_SCREEN_RESULT_LIMIT = 12;
-let presenterChannel = null;
 let workspaceRecoveryScheduled = false;
 const WORKSPACE_INACTIVITY_TIMEOUT_MS = 30 * 60 * 1000;
 const WORKSPACE_ACTIVITY_HEARTBEAT_INTERVAL_MS = 60 * 1000;
@@ -620,12 +617,12 @@ const elements = {
   workspaceOverlay: qs("#workspaceOverlay"),
   workspaceOverlayMessage: qs("#workspaceOverlayMessage"),
   workspaceGrid: qs("#workspaceGrid"),
+  busyOverlay: qs("#busyOverlay"),
   workspaceBadge: qs("#workspaceBadge"),
   workspaceBadgeName: qs("#workspaceBadgeName"),
   workspaceBadgeStatus: qs("#workspaceBadgeStatus"),
   switchWorkspaceBtn: qs("#switchWorkspaceBtn"),
   demoScreenLink: qs("#demoScreenLink"),
-  presenterNotesLink: qs("#presenterNotesLink"),
   monitorPreviewLink: qs("#monitorPreviewLink"),
   supplySection: qs("#stage-supply"),
   buyingSection: qs("#stage-buying"),
@@ -732,8 +729,10 @@ const elements = {
   monitoringOverviewAsideCopy: qs("#monitoringOverviewAsideCopy"),
   monitoringMeasurementTitle: qs("#monitoringMeasurementTitle"),
   monitoringMeasurementIntro: qs("#monitoringMeasurementIntro"),
+  monitoringMeasurementMeta: qs("#monitoringMeasurementMeta"),
   measurementBriefTitle: qs("#measurementBriefTitle"),
   measurementBriefCopy: qs("#measurementBriefCopy"),
+  measurementPrimaryGrid: qs("#measurementPrimaryGrid"),
   monitorPreviewRail: qs("#monitorPreviewRail"),
   monitoringNarrative: qs("#monitoringNarrative"),
   monitorKpiPlays: qs("#monitorKpiPlays"),
@@ -746,6 +745,7 @@ const elements = {
   refreshTelemetryBtn: qs("#telemetryRefreshBtn")
 };
 
+const DEFAULT_MEASUREMENT_PRIMARY_GRID_HTML = elements.measurementPrimaryGrid?.innerHTML || "";
 const DEFAULT_MEASUREMENT_BOARD_GRID_HTML = elements.measurementBoardGrid?.innerHTML || "";
 
 function escapeHtml(value) {
@@ -918,6 +918,19 @@ function setMarketStoryOverlayVisible(visible) {
   }
   elements.marketStoryOverlay.hidden = !visible;
   document.body.classList.toggle("has-market-story-overlay", visible);
+}
+
+function setBusyOverlayVisible(visible) {
+  if (!elements.busyOverlay) {
+    return;
+  }
+  elements.busyOverlay.hidden = !visible;
+  document.body.classList.toggle("has-busy-overlay", visible);
+  if (visible) {
+    document.body.setAttribute("aria-busy", "true");
+  } else {
+    document.body.removeAttribute("aria-busy");
+  }
 }
 
 function cancelMarketStoryAnimations() {
@@ -1847,7 +1860,10 @@ function getBrandInitials(value = "") {
   return tokens.map((token) => token.charAt(0).toUpperCase()).join("") || "BR";
 }
 
-function buildBrandIdentityMarkup(brandContext = {}, { className = "brand-badge", baseClass = "brand-badge", meta = "" } = {}) {
+function buildBrandIdentityMarkup(
+  brandContext = {},
+  { className = "brand-badge", baseClass = "brand-badge", meta = "", hideTitleWhenLogo = false } = {}
+) {
   const brand = String(brandContext?.brand || "").trim();
   const advertiserId = String(brandContext?.advertiserId || "").trim();
   const logo = readTextValue(
@@ -1858,8 +1874,16 @@ function buildBrandIdentityMarkup(brandContext = {}, { className = "brand-badge"
     return "";
   }
   const metaText = String(meta || brandContext?.accountLabel || advertiserId || "").trim();
+  const showTitle = !(hideTitleWhenLogo && logo);
+  const copyMarkup = showTitle || metaText
+    ? `<span class="${escapeHtml(`${baseClass}__copy${showTitle ? "" : ` ${baseClass}__copy--meta-only`}`)}">
+      ${showTitle ? `<strong>${escapeHtml(title || "Selected brand")}</strong>` : ""}
+      ${metaText ? `<span>${escapeHtml(metaText)}</span>` : ""}
+    </span>`
+    : "";
+  const mediaOnlyClass = copyMarkup ? "" : ` ${baseClass}--media-only`;
 
-  return `<div class="${escapeHtml(className)}">
+  return `<div class="${escapeHtml(`${className}${mediaOnlyClass}`)}">
     <span class="${escapeHtml(`${baseClass}__media`)}">
       ${
         logo
@@ -1867,18 +1891,19 @@ function buildBrandIdentityMarkup(brandContext = {}, { className = "brand-badge"
           : `<span class="${escapeHtml(`${baseClass}__fallback`)}" aria-hidden="true">${escapeHtml(getBrandInitials(title))}</span>`
       }
     </span>
-    <span class="${escapeHtml(`${baseClass}__copy`)}">
-      <strong>${escapeHtml(title || "Selected brand")}</strong>
-      ${metaText ? `<span>${escapeHtml(metaText)}</span>` : ""}
-    </span>
+    ${copyMarkup}
   </div>`;
 }
 
-function renderBrandContextSlot(container, brandContext = {}, { meta = "", className = "brand-badge brand-badge--compact" } = {}) {
+function renderBrandContextSlot(
+  container,
+  brandContext = {},
+  { meta = "", className = "brand-badge brand-badge--compact", hideTitleWhenLogo = true } = {}
+) {
   if (!container) {
     return;
   }
-  const markup = buildBrandIdentityMarkup(brandContext, { className, meta });
+  const markup = buildBrandIdentityMarkup(brandContext, { className, meta, hideTitleWhenLogo });
   container.innerHTML = markup;
   container.classList.toggle("is-hidden", !markup);
 }
@@ -2365,7 +2390,8 @@ function buildPreviewRailFrameMarkup(bodyMarkup) {
   const brandContext = getGoalPlanBrandContext();
   const brandMarkup = buildBrandIdentityMarkup(brandContext, {
     className: "brand-badge brand-badge--preview",
-    meta: brandContext.accountLabel || brandContext.objectiveLabel || ""
+    meta: brandContext.objectiveLabel || "",
+    hideTitleWhenLogo: true
   });
   return `
     ${brandMarkup}
@@ -2423,7 +2449,8 @@ function buildMonitoringPreviewCardMarkup(snapshot) {
         },
         {
           className: "brand-badge brand-badge--mini",
-          meta: ""
+          meta: "",
+          hideTitleWhenLogo: true
         }
       )
     : "";
@@ -3542,517 +3569,6 @@ function formatPlacementList(screenIds) {
   return (screenIds || []).map((screenId) => getScreenDisplayLabel(screenId)).filter(Boolean).join(", ");
 }
 
-function getStagePillText(stageId = state.stage) {
-  if (stageId === "buying") {
-    return String(elements.buyingStagePill?.textContent || "").trim();
-  }
-  if (stageId === "monitoring") {
-    return String(elements.monitoringStagePill?.textContent || "").trim();
-  }
-  return String(elements.supplyStagePill?.textContent || "").trim();
-}
-
-function getPresenterChannel() {
-  if (!("BroadcastChannel" in window)) {
-    return null;
-  }
-  if (!presenterChannel) {
-    presenterChannel = new BroadcastChannel(PRESENTER_CHANNEL_NAME);
-  }
-  return presenterChannel;
-}
-
-function buildPresenterCards() {
-  const plan = state.activeGoalPlan;
-  const draftGoal = getGoalDraftForDisplay();
-  const telemetryTotals = state.telemetrySummary?.totals || {};
-  if (state.stage === "buying") {
-    const budgetScenario = buildGoalBudgetScenario(plan);
-    return [
-      { label: "Scope", value: getGoalScopeLabel(plan?.goal || draftGoal) },
-      { label: "SKUs", value: String((plan?.goal?.targetSkuIds || [...state.selectedGoalSkuIds]).length || 0) },
-      {
-        label: plan ? "Budget" : "Compatible screens",
-        value: plan ? formatMoney(budgetScenario.selectedSpend || budgetScenario.maxSpend || 0) : String(countPlannedScreens(plan) || 0)
-      }
-    ];
-  }
-  if (state.stage === "monitoring") {
-    return [
-      { label: "Live screens", value: String(plan?.liveCount || plan?.liveScreens?.length || 0) },
-      { label: "Plays", value: formatCount(telemetryTotals.playCount || 0) },
-      { label: "Exposure", value: formatDuration(telemetryTotals.exposureMs || 0) }
-    ];
-  }
-  return [
-    { label: "First screen", value: isManualSupplyConfirmed() ? "Ready" : "Pending" },
-    { label: "Auto build", value: `${getDemoStoreCount()} stores` },
-    { label: "Shared URL", value: SHARED_PLAYER_URL }
-  ];
-}
-
-function readPresenterStringList(values = [], fallback = []) {
-  const source = Array.isArray(values) && values.length > 0 ? values : fallback;
-  return source.map((value) => readTextValue(value)).filter(Boolean);
-}
-
-function buildPresenterDetailRow(label, value) {
-  const normalizedLabel = readTextValue(label);
-  const normalizedValue = readTextValue(value);
-  if (!normalizedLabel || !normalizedValue) {
-    return null;
-  }
-  return { label: normalizedLabel, value: normalizedValue };
-}
-
-function formatPresenterPlacementSummary(entries = [], limit = 2) {
-  const labels = entries
-    .map((entry) => getScreenDisplayLabel(entry?.screenId || ""))
-    .filter(Boolean);
-  if (labels.length === 0) {
-    return "";
-  }
-  if (labels.length > limit) {
-    return `${formatSentenceList(labels.slice(0, limit), limit)} +${labels.length - limit} more`;
-  }
-  return formatSentenceList(labels, labels.length);
-}
-
-function formatPresenterTelemetryLeader(entries = [], type) {
-  const entry = Array.isArray(entries) && entries.length > 0 ? entries[0] : null;
-  if (!entry) {
-    return "";
-  }
-
-  if (type === "screen") {
-    const locationMeta = [entry.storeId, entry.pageId].filter(Boolean).join(" | ");
-    return `Top screen ${entry.screenId}${locationMeta ? ` (${locationMeta})` : ""}`;
-  }
-  if (type === "template") {
-    return `Top template ${entry.templateName || entry.templateId || "Template"} (${formatCount(entry.playCount || 0)} plays)`;
-  }
-  return `Top SKU ${entry.productName || entry.sku || "Tracked item"} (${formatCount(entry.playCount || 0)} plays)`;
-}
-
-function buildSupplyMarketIntroPresenterPayload() {
-  return {
-    stageDescription: "The opening case moves from proven onsite economics to regional scale, funding logic, structural right to win, measurable activation, and adjacency economics before the CYield flow begins.",
-    speakerSummary:
-      "The opening argument is straightforward: there is already a proven onsite revenue engine, APAC adds meaningful regional scale, the funding model can grow wallet rather than just cannibalize onsite, and the scale story works under conservative share assumptions.",
-    presenterNotes: [
-      "The benchmark is onsite ecommerce media rather than total retail media because the proposition extends a monetization model already in place instead of entering every channel at once.",
-      "Statista's retail platform advertising category provides the cleanest published onsite benchmark, with WARC, EMARKETER, and RetailX corroborating that onsite remains the dominant share of retail media spend.",
-      "APAC is included to show regional scale, not to argue for a market-by-market rollout. The point is that the opportunity is meaningful there as well as globally.",
-      "The funding logic does not depend on taking dollars out of onsite. The stronger case is wallet expansion through shopper, trade, and in-store activation budgets becoming measurable retail media.",
-      "Where reallocation does happen, the portfolio logic is still favorable: the next dollar can move to the highest marginal ROI across site and store while we capture a larger share of the retailer media stack.",
-      "Our right to win rests on assets already in hand: retailer relationships, advertiser demand, a proven onsite operating model, and a lightweight extension into CYield supply.",
-      "The activation evidence matters because it positions in-store screens as a measurable retail media channel rather than a store-tech deployment.",
-      "The economics are presented in two layers: media flow through the channel and platform revenue from operating the in-store layer.",
-      "Global numbers establish that the adjacency can matter; APAC numbers show that the regional opportunity is material too."
-    ],
-    proofPoints: [
-      "$203.89B global onsite ecommerce media market",
-      "$90.25B APAC onsite ecommerce media market",
-      "$4.59B global / $1.31B APAC in-store digital display markets",
-      "Budget expansion, portfolio optimization, and share-of-wallet capture",
-      "$203.89M global / $90.25M APAC media-flow scenario at 0.1% share",
-      "$45.9M global / $13.12M APAC platform scenario at 1% share",
-      "+14% to +28.3% reported sales lift"
-    ],
-    supportingModules: [
-      "Onsite-only market framing",
-      "Global market proof",
-      "APAC regional scale",
-      "Funding logic",
-      "Right to win",
-      "Activation proof",
-      "Adjacency economics"
-    ],
-    demoActions: [
-      "Proven onsite economics establish the revenue pool.",
-      "APAC demonstrates that the regional opportunity is meaningful in its own right.",
-      "The model expands wallet first and optimizes mix second.",
-      "Our right to win is grounded in relationships, operating maturity, and lightweight implementation.",
-      "Activation evidence proves the channel can be sold on outcomes.",
-      "The closing economics show material upside globally and in APAC."
-    ],
-    qaPrompts: [
-      "Why onsite rather than total retail media: the proposition extends the monetization model we already run instead of broadening into channels the platform does not yet serve.",
-      "Why this does not require onsite cannibalization: the primary thesis is wallet expansion from shopper, trade, and in-store budgets becoming measurable retail media.",
-      "Why some reallocation is still acceptable: we are better off owning a larger share of measurable commerce media spend across site and store than protecting onsite share in isolation.",
-      "Why we can win: retailer relationships, advertiser demand, onsite execution, and limited CYield modification are already in place.",
-      "Why the revenue math is credible: it is scenario modeling from published market sizes rather than a forecast."
-    ],
-    liveNarrative:
-      "The business case is straightforward: there is already a proven onsite revenue engine, APAC adds meaningful regional scale, the funding logic grows wallet, there is a credible right to win, and the upside is material even on modest penetration assumptions.",
-    detailRows: [
-      buildPresenterDetailRow(
-        "Onsite base",
-        "$203.89B global retail platform advertising market in 2025, with external corroboration that onsite remains the dominant share of retail media spend."
-      ),
-      buildPresenterDetailRow("Adjacent market", "$4.59B global in-store digital advertising display market in 2024, with APAC at $1.312B."),
-      buildPresenterDetailRow("APAC scale", "$90.25B APAC retail platform advertising market in 2025 alongside the $1.312B APAC in-store digital advertising display market."),
-      buildPresenterDetailRow(
-        "Funding logic",
-        "The primary value creation path is wallet expansion from shopper, trade, and in-store budgets becoming measurable retail media; any mix shift from onsite is secondary and still strategically favorable if we capture more share of wallet."
-      ),
-      buildPresenterDetailRow(
-        "Right to win",
-        "We already bring retailer relationships, advertiser demand, a proven onsite operating model, and a lightweight CYield extension path into stores."
-      ),
-      buildPresenterDetailRow(
-        "Activation proof",
-        "Albertsons reported +14% in-store sales lift in a 116-store case study; SMG / Kantar reported +28.3% average product sales lift across 12,558 campaigns."
-      ),
-      buildPresenterDetailRow(
-        "Adjacency economics",
-        "0.1% of onsite ecommerce media implies about $203.89M globally and $90.25M in APAC in media flow. Separately, 1% of the in-store display market implies about $45.9M globally and $13.12M in APAC in platform revenue."
-      )
-    ]
-  };
-}
-
-function buildSupplyPresenterPayload(stageConfig) {
-  if (isSupplyMarketIntroActive()) {
-    return buildSupplyMarketIntroPresenterPayload();
-  }
-
-  const { configured, total, remaining } = getSupplyProgress();
-  const demoStoreCount = getDemoStoreCount();
-  const manual = getManualSupplyConfig();
-  const anchorShareLabel = getAnchorShareDisplayLabel();
-  const actionMessage = readTextValue(state.lastDemoAction?.message);
-  const presetMaterialized = isDemoPresetMaterialized();
-  const summaryMessage = !isManualSupplyConfirmed()
-    ? "Create the first screen, then auto build the rest of the screens to finish the supply setup."
-    : presetMaterialized
-      ? state.supplyHandoffAcknowledged
-        ? "Setup complete: minimal CYield change, shared backend-resolved player URL, and the handoff into CMax is open."
-        : "Setup complete. Review the rollout handoff below, then continue into CMax when you're ready."
-      : `First screen saved. Auto build the remaining ${remaining} supply-stage screen(s) across ${demoStoreCount} stores.`;
-  const mappedPlacements = total || configured;
-  const handoffMessage = isSupplyPresetReady()
-    ? `The shared player is mapped across ${mappedPlacements} supply placement${
-        mappedPlacements === 1 ? "" : "s"
-      } spanning ${demoStoreCount} store${demoStoreCount === 1 ? "" : "s"} and multiple inventory zones.`
-    : "";
-  const advancedConfigSummary = [
-    `${manual.page.pageId} (${manual.page.pageType}, ${manual.page.environment})`,
-    `${manual.screen.screenId} (${manual.screen.screenType}, ${manual.screen.screenSize}, ${anchorShareLabel})`
-  ].join(" -> ");
-
-  return {
-    supportingModules: readPresenterStringList(stageConfig.supportingModules, [
-      "2-action supply flow",
-      "Supply handoff",
-      "Retailer CPM card",
-      "Advanced config"
-    ]),
-    demoActions: readPresenterStringList(stageConfig.demoActions, [
-      "Create the first screen.",
-      "Auto build the rest of the screens.",
-      "Use the handoff card if someone wants rollout scale."
-    ]),
-    qaPrompts: readPresenterStringList(stageConfig.qaPrompts, [
-      "Open Advanced config if someone asks how the page, screen, or sellable share are mapped."
-    ]),
-    liveNarrative: summaryMessage,
-    detailRows: [
-      buildPresenterDetailRow(
-        "Rollout status",
-        `${configured} of ${mappedPlacements || configured || 0} supply placement(s) are configured across ${demoStoreCount} store(s).`
-      ),
-      buildPresenterDetailRow("Shared player", `${SHARED_PLAYER_URL} is reused across the whole supply footprint.`),
-      buildPresenterDetailRow("Retailer CPM card", summarizeGoalRateCard()),
-      buildPresenterDetailRow(
-        "Sellable share",
-        `${anchorShareLabel} on the first screen. Auto-built screens stay at 1/6 unless changed in Advanced config.`
-      ),
-      buildPresenterDetailRow(
-        "Handoff",
-        handoffMessage ||
-          actionMessage ||
-          (isManualSupplyConfirmed()
-            ? `The first screen is live. ${remaining} supply-stage screen(s) remain before the demo auto-build is complete.`
-            : "The first screen still needs to be created.")
-      ),
-      buildPresenterDetailRow("Advanced config", advancedConfigSummary)
-    ].filter(Boolean)
-  };
-}
-
-function buildBuyingPresenterPayload(stageConfig) {
-  const plan = state.activeGoalPlan;
-  const draftGoal = getGoalDraftForDisplay();
-  const goal = plan?.goal || draftGoal;
-  const targetProducts = plan ? getGoalPlanTargetProducts(plan) : getSelectedGoalProducts();
-  const compatibleScreens = countPlannedScreens(plan);
-  const placementEntries = getSelectedGoalPlacements(plan);
-  const availablePlacements = getAvailableGoalPlacements(plan);
-  const budgetScenario = buildGoalBudgetScenario(plan);
-  const objectiveLabel = objectiveLabelById(goal.objective || "");
-  const scopeLabel = getGoalScopeLabel(goal);
-  const storeLabel = goal.objective === "clearance" ? "Store focus" : "Store";
-  const storeValue = readTextValue(goal.storeFocusLabel || goal.effectiveStoreId || goal.storeId || "All stores") || "All stores";
-  const focusLabel =
-    targetProducts.length === 1
-      ? targetProducts[0].name
-      : targetProducts.length > 1
-        ? formatSentenceList(
-            targetProducts.map((product) => product.name),
-            Math.min(targetProducts.length, 2)
-          )
-        : goalTargetSourceLabel(goal.targetSource || state.goalPromptInferenceTargetSource);
-  const placementSummary = formatPresenterPlacementSummary(placementEntries, 2);
-  const promptTerms =
-    Array.isArray(goal.inferredTerms) && goal.inferredTerms.length > 0 ? goal.inferredTerms.join(", ") : "";
-  const promptSignal = [
-    readTextValue(goal.prompt) ? `Brief: ${readTextValue(goal.prompt)}` : "",
-    promptTerms ? `Terms: ${promptTerms}` : ""
-  ]
-    .filter(Boolean)
-    .join(" | ");
-  const reasoning = readTextValue(goal.inferenceReasoning || state.goalPromptInferenceReasoning);
-  const strategyHeadline = readTextValue(plan?.strategy?.headline);
-  const strategyNotes = Array.isArray(plan?.strategy?.summaryBullets)
-    ? plan.strategy.summaryBullets.map((bullet) => readTextValue(bullet)).filter(Boolean).join(" | ")
-    : "";
-  const lineUpSummary = plan
-    ? `${placementSummary || `${compatibleScreens} placement(s)`}${
-        availablePlacements.length > 0 ? `. ${availablePlacements.length} more placement(s) remain available to add back.` : "."
-      }`
-    : "Generate a plan to show the editable placement line-up and budget cut line.";
-  const liveNarrative = !plan
-    ? "Choose the account, objective, and assortment focus to build the in-store buy."
-    : compatibleScreens === 0
-      ? "No strong in-scope line-up is ready yet. Adjust the brief or widen the placement focus."
-      : plan.status === "applied"
-        ? `The funded line-up is live with ${formatMoney(budgetScenario.fundedSpend)} approved.`
-        : `The editable line-up currently includes ${placementSummary || `${compatibleScreens} placement(s)`}.`;
-
-  return {
-    supportingModules: readPresenterStringList(stageConfig.supportingModules, [
-      "Planner steps",
-      "AI brief reasoning",
-      "Decision logic",
-      "Budget control"
-    ]),
-    demoActions: readPresenterStringList(stageConfig.demoActions, [
-      "Set the brief, build the line-up, then approve the funded plan."
-    ]),
-    qaPrompts: readPresenterStringList(stageConfig.qaPrompts, [
-      "Use store logic and scope logic if someone asks why a placement is included or excluded."
-    ]),
-    liveNarrative,
-    detailRows: [
-      buildPresenterDetailRow(
-        "Planner brief",
-        [objectiveLabel, scopeLabel, `${storeLabel}: ${storeValue}`].filter(Boolean).join(" | ")
-      ),
-      buildPresenterDetailRow(
-        "Account focus",
-        getGoalPlanAccountLabel(goal, targetProducts) === "Account required"
-          ? "Select an account to scope the planner."
-          : getGoalPlanAccountLabel(goal, targetProducts)
-      ),
-      buildPresenterDetailRow("Priority focus", focusLabel),
-      buildPresenterDetailRow(
-        "AI / prompt",
-        reasoning || promptSignal || goalTargetSourceLabel(goal.targetSource || state.goalPromptInferenceTargetSource)
-      ),
-      buildPresenterDetailRow(
-        "Decision logic",
-        strategyHeadline || readTextValue(goal.storeSelectionReason) || readTextValue(goal.scopeSelectionReason) || readTextValue(goal.scopeMessage)
-      ),
-      buildPresenterDetailRow("Strategy notes", strategyNotes),
-      buildPresenterDetailRow(
-        "Budget state",
-        plan
-          ? `${formatMoney(budgetScenario.selectedSpend)} of ${formatMoney(budgetScenario.maxSpend)} currently funds ${
-              budgetScenario.fundedPlacements.length
-            } of ${Math.max(budgetScenario.selectedPlacementCount, placementEntries.length)} selected placement(s).`
-          : "Build a plan to expose selected spend, max spend, and funded impressions."
-      ),
-      buildPresenterDetailRow("Line-up", lineUpSummary),
-      buildPresenterDetailRow("Flight", formatGoalFlightSummary(goal.flightStartDate, goal.flightEndDate))
-    ].filter(Boolean)
-  };
-}
-
-function buildMonitoringPresenterPayload(stageConfig) {
-  const plan = state.activeGoalPlan;
-  const telemetry = state.telemetrySummary;
-  const totals = telemetry?.totals || {};
-  const measurementBoard = telemetry?.measurementBoard;
-  const narrative = measurementBoard?.narrative || {};
-  const metrics = Array.isArray(measurementBoard?.metrics) ? measurementBoard.metrics : [];
-  const brandContext = getGoalPlanBrandContext(plan);
-  const liveScreens = Array.isArray(plan?.liveScreens) ? plan.liveScreens : [];
-  const campaignRuns = (state.agentRuns || []).filter((run) => {
-    if (brandContext.advertiserId || brandContext.brand) {
-      return runMatchesBrandWorkspace(run, brandContext);
-    }
-    return true;
-  });
-  const latestRun = campaignRuns[0] || plan || null;
-  const dashboardSummary = [
-    brandContext.accountLabel || brandContext.brand || "Selected brand",
-    brandContext.objectiveLabel || "Campaign results",
-    `${formatCount(plan?.liveCount || liveScreens.length || 0)} live screen${Number(plan?.liveCount || liveScreens.length || 0) === 1 ? "" : "s"}`,
-    `${formatCount(campaignRuns.length || (state.agentRuns || []).length)} campaign${(campaignRuns.length || (state.agentRuns || []).length) === 1 ? "" : "s"}`
-  ].join(" | ");
-  const measurementSummary = metrics
-    .slice(0, 3)
-    .map((metric) => `${readTextValue(metric?.label || "Metric")}: ${readTextValue(metric?.valueText || formatCount(metric?.value || 0))}`)
-    .filter(Boolean)
-    .join(" | ");
-  const telemetryLeaderSummary = [
-    formatPresenterTelemetryLeader(telemetry?.byScreen || [], "screen"),
-    formatPresenterTelemetryLeader(telemetry?.byTemplate || [], "template"),
-    formatPresenterTelemetryLeader(telemetry?.bySku || [], "sku")
-  ]
-    .filter(Boolean)
-    .join(" | ");
-  const previewNarrative = plan?.status === "applied"
-    ? `${brandContext.brand || "The active campaign"} is live across ${
-        plan?.liveCount || liveScreens.length || 0
-      } in-store screen(s). The immersive preview rail is scoped to the active campaign only.`
-    : brandContext.brand
-      ? `${brandContext.brand} immersive previews will appear here once the selected campaign is live.`
-      : "Live campaign previews will appear here once the selected brand has active screens.";
-  const timelineSummary = latestRun
-    ? [
-        latestRun.planId ? `Campaign ${latestRun.planId}` : "",
-        latestRun.status === "applied" ? "Live" : "Planned",
-        latestRun.createdAt ? `Created ${formatTimestamp(latestRun.createdAt)}` : "",
-        latestRun.appliedAt ? `Live ${formatTimestamp(latestRun.appliedAt)}` : ""
-      ]
-        .filter(Boolean)
-        .join(" | ")
-    : "";
-  const liveNarrative =
-    readTextValue(narrative.summary) ||
-    (brandContext.brand
-      ? `Live delivery anchors ${brandContext.brand}'s view, with estimated shopper response, sales lift, new-to-brand value, and return on spend layered on top.`
-      : "Launch a campaign to populate live delivery, shopper response, and sales outcomes.");
-
-  return {
-    supportingModules: readPresenterStringList(stageConfig.supportingModules, [
-      "Brand dashboard",
-      "Measurement board",
-      "Telemetry breakdowns",
-      "Preview rail"
-    ]),
-    demoActions: readPresenterStringList(stageConfig.demoActions, [
-      "Use the brand dashboard, then show the preview rail and measurement board."
-    ]),
-    qaPrompts: readPresenterStringList(stageConfig.qaPrompts, [
-      "Separate observed telemetry from modeled retail outcomes if someone asks how the measurement board works."
-    ]),
-    liveNarrative,
-    detailRows: [
-      buildPresenterDetailRow("Brand workspace", dashboardSummary),
-      buildPresenterDetailRow(
-        "Measurement story",
-        [
-          readTextValue(narrative.headline),
-          readTextValue(narrative.trend),
-          readTextValue(narrative.comparisonStory)
-        ]
-          .filter(Boolean)
-          .join(" | ")
-      ),
-      buildPresenterDetailRow("Metric families", measurementSummary),
-      buildPresenterDetailRow(
-        "Delivery summary",
-        `Events ${formatCount(totals.total || 0)} | Plays ${formatCount(totals.playCount || 0)} | Exposure ${formatDuration(
-          totals.exposureMs || 0
-        )}`
-      ),
-      buildPresenterDetailRow("Telemetry leaders", telemetryLeaderSummary),
-      buildPresenterDetailRow("Live preview", previewNarrative),
-      buildPresenterDetailRow("Campaign timeline", timelineSummary)
-    ].filter(Boolean)
-  };
-}
-
-function buildPresenterStagePayload(stageConfig) {
-  if (state.stage === "buying") {
-    return buildBuyingPresenterPayload(stageConfig);
-  }
-  if (state.stage === "monitoring") {
-    return buildMonitoringPresenterPayload(stageConfig);
-  }
-  return buildSupplyPresenterPayload(stageConfig);
-}
-
-function buildPresenterSnapshot() {
-  const stageConfig = getStageConfig(state.stage);
-  const plan = state.activeGoalPlan;
-  const draftGoal = getGoalDraftForDisplay();
-  const brandContext = getGoalPlanBrandContext(plan);
-  const plannedScreens = countPlannedScreens(plan);
-  const telemetryTotals = state.telemetrySummary?.totals || {};
-  const primaryScreenId = getPrimaryScreenId();
-  const stagePayload = buildPresenterStagePayload(stageConfig);
-  const presenterNotes =
-    Array.isArray(stagePayload.presenterNotes) && stagePayload.presenterNotes.length > 0
-      ? stagePayload.presenterNotes
-      : Array.isArray(stageConfig.presenterNotes)
-        ? stageConfig.presenterNotes
-        : [];
-  const proofPoints =
-    Array.isArray(stagePayload.proofPoints) && stagePayload.proofPoints.length > 0
-      ? stagePayload.proofPoints
-      : Array.isArray(stageConfig.proofPoints)
-        ? stageConfig.proofPoints
-        : [];
-  return {
-    updatedAt: new Date().toISOString(),
-    updatedAtText: formatTimestamp(new Date()),
-    stage: state.stage,
-    stageLabel: stageConfig.label || titleCase(state.stage),
-    stageDescription: readTextValue(stagePayload.stageDescription) || stageConfig.description || "",
-    stagePill: getStagePillText(state.stage),
-    speakerSummary: readTextValue(stagePayload.speakerSummary) || String(stageConfig.speakerSummary || "").trim(),
-    presenterNotes,
-    proofPoints,
-    supportingModules: Array.isArray(stagePayload.supportingModules) ? stagePayload.supportingModules : [],
-    demoActions: Array.isArray(stagePayload.demoActions) ? stagePayload.demoActions : [],
-    qaPrompts: Array.isArray(stagePayload.qaPrompts) ? stagePayload.qaPrompts : [],
-    cards: buildPresenterCards(),
-    liveNarrative: readTextValue(stagePayload.liveNarrative),
-    detailRows: Array.isArray(stagePayload.detailRows) ? stagePayload.detailRows : [],
-    planSummary: String(plan?.summary || "").trim(),
-    planScope: getGoalScopeLabel(plan?.goal || draftGoal),
-    planScopeMessage: String(plan?.goal?.scopeMessage || "").trim(),
-    plannedScreens,
-    liveScreens: Number(plan?.liveCount || plan?.liveScreens?.length || 0),
-    selectedSkuCount: Number(plan?.goal?.targetSkuIds?.length || state.selectedGoalSkuIds.size || 0),
-    brandContext,
-    previewUrl: primaryScreenId ? buildSharedPreviewUrl(primaryScreenId) : buildSharedPreviewUrl(""),
-    previewLabel: primaryScreenId || "",
-    statusText: String(elements.statusText?.textContent || "").trim(),
-    telemetryText: `Plays ${formatCount(telemetryTotals.playCount || 0)} | Exposure ${formatDuration(
-      telemetryTotals.exposureMs || 0
-    )}`
-  };
-}
-
-function publishPresenterSnapshot() {
-  const snapshot = buildPresenterSnapshot();
-  try {
-    window.localStorage.setItem(PRESENTER_SNAPSHOT_KEY, JSON.stringify(snapshot));
-  } catch {
-    // Ignore storage failures in private/incognito contexts.
-  }
-  try {
-    getPresenterChannel()?.postMessage(snapshot);
-  } catch {
-    // Ignore channel failures and keep the shared demo page functional.
-  }
-}
-
 function resolveGoalScopeSuggestion(payload, selectedProducts) {
   const products = Array.isArray(selectedProducts) ? selectedProducts : [];
   if (!payload.pageId || products.length === 0) {
@@ -4415,8 +3931,7 @@ function syncBuyingFormDefaults(force = false) {
     resetGoalPromptInferenceState();
     state.goalRetailerRateCard = null;
     state.goalPlacementSelections.clear();
-    state.goalBudgetPlanId = "";
-    state.goalBudgetSpend = null;
+    setGoalBudgetStateFromPlan(null);
     setSelectedGoalSkus([]);
   }
 
@@ -4524,7 +4039,6 @@ function setStage(stage, shouldScroll = false) {
 
   updateActionButtons();
   updateStagePills();
-  publishPresenterSnapshot();
 
   if (shouldScroll && panels[state.stage]) {
     panels[state.stage].scrollIntoView({ behavior: "smooth", block: "start" });
@@ -4941,15 +4455,15 @@ function renderGoalScopeSelects() {
 function renderBrandContextSlots() {
   const brandContext = getGoalPlanBrandContext();
   renderBrandContextSlot(elements.heroBrandContext, brandContext, {
-    meta: brandContext.accountLabel || "Selected workspace brand",
+    meta: "Selected workspace brand",
     className: "brand-badge brand-badge--hero"
   });
   renderBrandContextSlot(elements.buyingBrandContext, brandContext, {
-    meta: brandContext.objectiveLabel || brandContext.accountLabel || "",
+    meta: brandContext.objectiveLabel || "",
     className: "brand-badge brand-badge--compact"
   });
   renderBrandContextSlot(elements.monitoringBrandContext, brandContext, {
-    meta: brandContext.accountLabel || brandContext.objectiveLabel || "",
+    meta: brandContext.objectiveLabel || "",
     className: "brand-badge brand-badge--compact"
   });
 }
@@ -5440,7 +4954,6 @@ function selectFilteredGoalSkus() {
   const category = String(elements.goalProductCategory?.value || "").trim();
   const scopeLabel = category ? `${titleCase(category)} category` : "visible assortment";
   showStatus(added > 0 ? `Added ${added} SKU(s) from the ${scopeLabel}.` : `All SKUs in the ${scopeLabel} are already selected.`);
-  publishPresenterSnapshot();
 }
 
 function clearGoalSkuSelection() {
@@ -5451,7 +4964,6 @@ function clearGoalSkuSelection() {
   state.selectedGoalSkuIds.clear();
   renderGoalProducts();
   showStatus("Cleared the priority SKU selection.");
-  publishPresenterSnapshot();
 }
 
 function getGoalPlanTargetProducts(plan) {
@@ -5805,7 +5317,7 @@ function getGoalBudgetPreviewSpend(plan = state.activeGoalPlan) {
   return getActiveGoalBudgetSpend(plan);
 }
 
-function commitGoalBudgetDraft(plan = state.activeGoalPlan, { render = true, publish = true } = {}) {
+function commitGoalBudgetDraft(plan = state.activeGoalPlan, { render = true } = {}) {
   const planId = String(plan?.planId || "").trim();
   if (!planId) {
     clearGoalBudgetDraft();
@@ -5820,9 +5332,6 @@ function commitGoalBudgetDraft(plan = state.activeGoalPlan, { render = true, pub
   state.goalBudgetSpend = nextSpend;
   if (render) {
     renderGoalPlan();
-  }
-  if (publish) {
-    publishPresenterSnapshot();
   }
   return true;
 }
@@ -6264,7 +5773,8 @@ function renderGoalPlan() {
         ${
           buildBrandIdentityMarkup(brandContext, {
             className: "brand-badge brand-badge--summary",
-            meta: brandContext.accountLabel || ""
+            meta: brandContext.objectiveLabel || "",
+            hideTitleWhenLogo: true
           }) || ""
         }
       </div>
@@ -6306,165 +5816,187 @@ function renderGoalPlan() {
       .replace(/^No compatible target products were found for this screen\.?/i, "it does not fit the current SKU brief.");
   };
 
-  const renderPlacementCard = (entry, index, { funded = true, available = false } = {}) => {
-      const screenId = String(entry?.screenId || "").trim();
-      const screen = { ...(getGoalPlanScreen(screenId) || {}), ...(entry || {}), screenId };
-      const recommendedSkus = Array.isArray(entry?.recommendedTargetSkus)
-        ? entry.recommendedTargetSkus
-        : Array.isArray(
-              (plan.proposedChanges || []).find((change) => String(change.screenId || "") === screenId)?.recommendedTargetSkus
-            )
-          ? (plan.proposedChanges || []).find((change) => String(change.screenId || "") === screenId)?.recommendedTargetSkus
-          : [];
-      const recommendedSkuLabels = recommendedSkus.map((sku) => getProductLabelBySku(sku)).filter(Boolean);
-      const priorityProducts = getProductsForSkuList(recommendedSkus, targetProducts);
-      const visiblePriorityProducts = priorityProducts.length > 0 ? priorityProducts : uniqueGoalProductsBySku(targetProducts);
-      const placementLabel = available
-        ? "Available"
-        : plan.status === "applied"
-          ? funded
-            ? "Live"
-            : "Budget hold"
-          : funded
-            ? "Funded"
-            : "Held by budget";
-      const placementReason = available
-        ? describeAvailablePlacementReason(entry, getGoalPlacementReason(entry || {}, screen, plan, targetProducts))
-        : getGoalPlacementReason(entry || {}, screen, plan, targetProducts);
-      const scoreLine = getGoalPlacementScoreLine(entry || {});
-      const templateRationale = String(entry?.templateRationale || "").trim();
-      const shareRationale = String(entry?.shareRationale || "").trim();
-      const shareLabel = String(entry?.shareLabel || "").trim();
-      const placementRole = String(entry?.placementRole || "").trim();
-      const expectedOutcome = String(entry?.expectedOutcome || "").trim();
-      const placementCost = Math.max(0, Math.round(Number(entry?.placementCost || 0)));
-      const cpm = Math.max(0, Math.round(Number(entry?.cpm || 0)));
-      const estimatedImpressions = Math.max(0, Math.round(Number(entry?.estimatedImpressions || 0)));
-      const estimatedDailyImpressions = Math.max(0, Math.round(Number(entry?.estimatedDailyImpressions || 0)));
-      const dailyRate = Math.max(0, Math.round(Number(entry?.dailyRate || 0)));
-      const screenType = String(entry?.screenType || screen?.screenType || "").trim();
-      const normalizedExpectedOutcome = expectedOutcome.replace(/^Expected outcome:\s*/i, "");
-      const pricingMetaCopy =
-        cpm > 0 && estimatedImpressions > 0
-          ? `${shareLabel ? `${shareLabel} | ` : ""}${formatCount(estimatedImpressions)} est. imps${
-              estimatedDailyImpressions > 0 ? ` | ${formatCount(estimatedDailyImpressions)}/day` : ""
-            } | ${formatMoney(cpm)} CPM${
-              screenType ? ` | ${screenType}` : ""
-            }`
-          : `${shareLabel ? `${shareLabel} | ` : ""}${formatMoney(dailyRate)} / day${screenType ? ` | ${screenType}` : ""}`;
-      const actionButton =
-        plan.status === "applied"
-          ? ""
-          : available
-            ? `<button type="button" class="btn btn--tiny js-goal-placement-add" data-plan-id="${escapeHtml(plan.planId || "")}" data-screen-id="${escapeHtml(screenId)}">Add placement</button>`
-            : `<button type="button" class="btn btn--tiny js-goal-placement-remove" data-plan-id="${escapeHtml(plan.planId || "")}" data-screen-id="${escapeHtml(screenId)}">Remove</button>`;
-      const placementMetaRows = [
-        placementRole
-          ? `<div class="goal-placement-card__meta-block">
-              <span class="goal-placement-card__meta-label">Role</span>
-              <strong>${escapeHtml(placementRole)}</strong>
-              ${
-                normalizedExpectedOutcome
-                  ? `<span class="goal-placement-card__meta-copy">Expected outcome: ${escapeHtml(normalizedExpectedOutcome)}</span>`
-                  : ""
-              }
-            </div>`
+  const renderPlacementFact = (label, value, copy = "", className = "") => {
+    const primary = String(value || "").trim();
+    const secondary = String(copy || "").trim();
+    if (!primary && !secondary) {
+      return "";
+    }
+    return `<div class="goal-placement-row__fact${className ? ` ${className}` : ""}">
+      <span class="goal-placement-row__fact-label">${escapeHtml(label)}</span>
+      ${primary ? `<strong>${escapeHtml(primary)}</strong>` : ""}
+      ${secondary ? `<span class="goal-placement-row__fact-copy">${escapeHtml(secondary)}</span>` : ""}
+    </div>`;
+  };
+
+  const renderPlacementMetric = (value) => {
+    const text = String(value || "").trim();
+    if (!text) {
+      return "";
+    }
+    return `<span class="goal-placement-row__metric">${escapeHtml(text)}</span>`;
+  };
+
+  const renderPlacementRow = (entry, index, { funded = true, available = false } = {}) => {
+    const screenId = String(entry?.screenId || "").trim();
+    const screen = { ...(getGoalPlanScreen(screenId) || {}), ...(entry || {}), screenId };
+    const recommendedSkus = Array.isArray(entry?.recommendedTargetSkus)
+      ? entry.recommendedTargetSkus
+      : Array.isArray(
+            (plan.proposedChanges || []).find((change) => String(change.screenId || "") === screenId)?.recommendedTargetSkus
+          )
+        ? (plan.proposedChanges || []).find((change) => String(change.screenId || "") === screenId)?.recommendedTargetSkus
+        : [];
+    const recommendedSkuLabels = recommendedSkus.map((sku) => getProductLabelBySku(sku)).filter(Boolean);
+    const priorityProducts = getProductsForSkuList(recommendedSkus, targetProducts);
+    const visiblePriorityProducts = priorityProducts.length > 0 ? priorityProducts : uniqueGoalProductsBySku(targetProducts);
+    const placementLabel = available
+      ? "Available"
+      : plan.status === "applied"
+        ? funded
+          ? "Live"
+          : "Budget hold"
+        : funded
+          ? "Funded"
+          : "Held by budget";
+    const placementReason = available
+      ? describeAvailablePlacementReason(entry, getGoalPlacementReason(entry || {}, screen, plan, targetProducts))
+      : getGoalPlacementReason(entry || {}, screen, plan, targetProducts);
+    const scoreLine = getGoalPlacementScoreLine(entry || {});
+    const templateRationale = String(entry?.templateRationale || "").trim();
+    const shareRationale = String(entry?.shareRationale || "").trim();
+    const shareLabel = String(entry?.shareLabel || "").trim();
+    const placementRole = String(entry?.placementRole || "").trim();
+    const expectedOutcome = String(entry?.expectedOutcome || "").trim();
+    const placementCost = Math.max(0, Math.round(Number(entry?.placementCost || 0)));
+    const cpm = Math.max(0, Math.round(Number(entry?.cpm || 0)));
+    const estimatedImpressions = Math.max(0, Math.round(Number(entry?.estimatedImpressions || 0)));
+    const estimatedDailyImpressions = Math.max(0, Math.round(Number(entry?.estimatedDailyImpressions || 0)));
+    const dailyRate = Math.max(0, Math.round(Number(entry?.dailyRate || 0)));
+    const screenType = String(entry?.screenType || screen?.screenType || "").trim();
+    const normalizedExpectedOutcome = expectedOutcome.replace(/^Expected outcome:\s*/i, "");
+    const pricingMetaCopy =
+      cpm > 0 && estimatedImpressions > 0
+        ? `${shareLabel ? `${shareLabel} | ` : ""}${formatCount(estimatedImpressions)} est. imps${
+            estimatedDailyImpressions > 0 ? ` | ${formatCount(estimatedDailyImpressions)}/day` : ""
+          } | ${formatMoney(cpm)} CPM${
+            screenType ? ` | ${screenType}` : ""
+          }`
+        : `${shareLabel ? `${shareLabel} | ` : ""}${formatMoney(dailyRate)} / day${screenType ? ` | ${screenType}` : ""}`;
+    const actionButton =
+      plan.status === "applied"
+        ? ""
+        : available
+          ? `<button type="button" class="btn btn--tiny js-goal-placement-add" data-plan-id="${escapeHtml(plan.planId || "")}" data-screen-id="${escapeHtml(screenId)}">Add placement</button>`
+          : `<button type="button" class="btn btn--tiny js-goal-placement-remove" data-plan-id="${escapeHtml(plan.planId || "")}" data-screen-id="${escapeHtml(screenId)}">Remove</button>`;
+    const screenContext = [screen.storeId, screen.pageId]
+      .map((value) => String(value || "").trim())
+      .filter(Boolean)
+      .join(" | ");
+    const priorityLabel = recommendedSkuLabels.length > 0
+      ? formatSentenceList(recommendedSkuLabels, Math.min(recommendedSkuLabels.length, 3))
+      : focusLabel === "the selected brief"
+        ? goalTargetSourceLabel(plan.goal?.targetSource)
+        : focusLabel;
+    const detailFacts = [
+      placementRole
+        ? renderPlacementFact(
+            "Role",
+            placementRole,
+            normalizedExpectedOutcome ? `Expected outcome: ${normalizedExpectedOutcome}` : ""
+          )
+        : "",
+      placementCost > 0 ? renderPlacementFact("Cost", formatMoney(placementCost), pricingMetaCopy) : "",
+      scoreLine ? renderPlacementFact("Score", scoreLine) : "",
+      shareLabel ? renderPlacementFact("Screen share", shareLabel, shareRationale) : "",
+      templateRationale ? renderPlacementFact("Creative logic", templateRationale) : "",
+      available && String(entry?.reasonCode || "").trim()
+        ? renderPlacementFact("Status", String(entry.reasonCode).trim(), "This placement is currently outside the active plan.")
+        : "",
+      renderPlacementFact("Priority SKU focus", priorityLabel)
+    ]
+      .filter(Boolean)
+      .join("");
+    const placementNumber = Number(entry?.budgetRank || entry?.selectionRank || index + 1);
+    const eyebrow = available && Number(entry?.budgetRank || 0) <= 0
+      ? "Available placement"
+      : `Placement ${String(placementNumber).padStart(2, "0")}`;
+    const summaryMetrics = [
+      placementCost > 0 ? formatMoney(placementCost) : "",
+      estimatedImpressions > 0
+        ? `${formatCount(estimatedImpressions)} imps`
+        : estimatedDailyImpressions > 0
+          ? `${formatCount(estimatedDailyImpressions)}/day`
           : "",
-        scoreLine
-          ? `<div class="goal-placement-card__meta-block">
-              <span class="goal-placement-card__meta-label">Score</span>
-              <strong>${escapeHtml(scoreLine)}</strong>
-            </div>`
-          : "",
-        placementCost > 0
-          ? `<div class="goal-placement-card__meta-block">
-              <span class="goal-placement-card__meta-label">Cost</span>
-              <strong>${escapeHtml(formatMoney(placementCost))}</strong>
-              <span class="goal-placement-card__meta-copy">${escapeHtml(pricingMetaCopy)}</span>
-            </div>`
-          : "",
-        shareLabel
-          ? `<div class="goal-placement-card__meta-block">
-              <span class="goal-placement-card__meta-label">Screen share</span>
-              <strong>${escapeHtml(shareLabel)}</strong>
-              ${
-                shareRationale
-                  ? `<span class="goal-placement-card__meta-copy">${escapeHtml(shareRationale)}</span>`
-                  : ""
-              }
-            </div>`
-          : "",
-        templateRationale
-          ? `<div class="goal-placement-card__meta-block">
-              <span class="goal-placement-card__meta-label">Creative logic</span>
-              <strong>${escapeHtml(templateRationale)}</strong>
-            </div>`
-          : "",
-        available && String(entry?.reasonCode || "").trim()
-          ? `<div class="goal-placement-card__meta-block goal-placement-card__meta-block--muted">
-              <span class="goal-placement-card__meta-label">Status</span>
-              <strong>${escapeHtml(String(entry.reasonCode).trim())}</strong>
-              <span class="goal-placement-card__meta-copy">This placement is currently outside the active plan.</span>
-            </div>`
-          : "",
-        `<div class="goal-placement-card__meta-block">
-            <span class="goal-placement-card__meta-label">Priority SKU focus</span>
-            <strong>${escapeHtml(
-              recommendedSkuLabels.length > 0
-                ? formatSentenceList(recommendedSkuLabels, recommendedSkuLabels.length)
-                : focusLabel === "the selected brief"
-                  ? goalTargetSourceLabel(plan.goal?.targetSource)
-                  : focusLabel
-            )}</strong>
-            ${buildProductThumbStripMarkup(visiblePriorityProducts, {
-              className: "product-thumb product-thumb--xs",
-              maxItems: 3
-            })}
-            ${
-              available
-                ? '<span class="goal-placement-card__meta-copy">Add this placement to include it before budgeting.</span>'
-                : funded
-                  ? ""
-                  : '<span class="goal-placement-card__meta-copy">This placement drops below the current budget cut line.</span>'
-            }
-          </div>`
-      ]
-        .filter(Boolean)
-        .join("");
-      const placementNumber = Number(entry?.budgetRank || entry?.selectionRank || index + 1);
-      const eyebrow = available && Number(entry?.budgetRank || 0) <= 0
-        ? "Available placement"
-        : `Placement ${String(placementNumber).padStart(2, "0")}`;
-      return `<article class="record goal-placement-card${funded && !available ? "" : " record--muted"}${available ? " goal-placement-card--available" : ""}">
-        <div class="record__top goal-placement-card__top">
-          <div class="goal-placement-card__headline">
-            <p class="goal-placement-card__eyebrow">${escapeHtml(eyebrow)}</p>
+      shareLabel || "",
+      screenType || ""
+    ]
+      .filter(Boolean)
+      .slice(0, 3)
+      .map((value) => renderPlacementMetric(value))
+      .join("");
+    const detailNote = available
+      ? "Add this placement to include it before budgeting."
+      : funded
+        ? plan.status === "applied"
+          ? "This placement is live in the approved line-up."
+          : "This placement is above the current budget line."
+        : "This placement is selected but drops below the current budget cut line.";
+    const groupCount = available
+      ? availablePlacements.length
+      : funded
+        ? budgetScenario.fundedPlacements.length
+        : budgetScenario.heldBackPlacements.length;
+    const defaultOpen = index === 0 && groupCount > 0 && groupCount <= 4;
+    return `<details class="goal-placement-row${funded || available ? "" : " goal-placement-row--held"}${available ? " goal-placement-row--available" : ""}"${defaultOpen ? " open" : ""}>
+      <summary class="goal-placement-row__summary">
+        <div class="goal-placement-row__summary-main">
+          <span class="goal-placement-row__index">${escapeHtml(String(placementNumber).padStart(2, "0"))}</span>
+          <div class="goal-placement-row__summary-copy">
+            <p class="goal-placement-row__eyebrow">${escapeHtml(eyebrow)}</p>
             <strong>${escapeHtml(getScreenDisplayLabel(screenId) || screenId || "")}</strong>
-          </div>
-          <div class="goal-placement-card__actions">
-            <span class="goal-placement__status pill ${available ? "" : plan.status === "applied" ? "pill--applied" : "pill--planned"}">${escapeHtml(placementLabel)}</span>
-            ${actionButton}
+            ${
+              screenContext
+                ? `<p class="goal-placement-row__context">${escapeHtml(screenContext)}</p>`
+                : ""
+            }
+            <p class="goal-placement-row__reason">${escapeHtml(placementReason)}</p>
           </div>
         </div>
-        <p class="goal-placement-card__reason">${escapeHtml(placementReason)}</p>
-        <div class="goal-placement-card__meta-grid">
-          ${placementMetaRows}
+        <div class="goal-placement-row__summary-side">
+          <span class="goal-placement__status pill ${available ? "" : plan.status === "applied" ? "pill--applied" : "pill--planned"}">${escapeHtml(placementLabel)}</span>
+          ${summaryMetrics ? `<div class="goal-placement-row__metrics">${summaryMetrics}</div>` : ""}
+          <span class="goal-placement-row__chevron" aria-hidden="true"></span>
         </div>
-      </article>`;
-    };
+      </summary>
+      <div class="goal-placement-row__detail">
+        <div class="goal-placement-row__fact-grid">
+          ${detailFacts}
+        </div>
+        ${buildProductThumbStripMarkup(visiblePriorityProducts, {
+          className: "product-thumb product-thumb--xs",
+          maxItems: 4
+        })}
+        <div class="goal-placement-row__footer">
+          <p class="goal-placement-row__detail-note">${escapeHtml(detailNote)}</p>
+          ${actionButton ? `<div class="goal-placement-row__detail-actions">${actionButton}</div>` : ""}
+        </div>
+      </div>
+    </details>`;
+  };
 
   const fundedPlacementMarkup = planPlacements
     .filter((entry) => budgetScenario.fundedIds.has(String(entry?.screenId || "").trim()))
-    .map((entry, index) => renderPlacementCard(entry, index, { funded: true }))
+    .map((entry, index) => renderPlacementRow(entry, index, { funded: true }))
     .join("");
 
   const heldPlacementMarkup = planPlacements
     .filter((entry) => budgetScenario.heldBackIds.has(String(entry?.screenId || "").trim()))
-    .map((entry, index) => renderPlacementCard(entry, index, { funded: false }))
+    .map((entry, index) => renderPlacementRow(entry, index, { funded: false }))
     .join("");
 
   const availablePlacementMarkup = availablePlacements
-    .map((entry, index) => renderPlacementCard(entry, index, { available: true }))
+    .map((entry, index) => renderPlacementRow(entry, index, { available: true }))
     .join("");
 
   elements.goalPlanChanges.innerHTML =
@@ -6474,8 +6006,9 @@ function renderGoalPlan() {
             <div class="goal-placement-group__header">
               <p class="section-kicker">${escapeHtml(plan.status === "applied" ? "Approved line-up" : "Funded line-up")}</p>
               <h3>${escapeHtml(plan.status === "applied" ? "Live placements" : "Placements within budget")}</h3>
+              <p class="goal-placement-group__meta">Compact review rail. Expand a row for creative logic, SKU focus, and placement controls.</p>
             </div>
-            <div class="stack-list">
+            <div class="goal-placement-list goal-placement-list--rail">
               ${fundedPlacementMarkup}
             </div>
           </section>`
@@ -6485,8 +6018,9 @@ function renderGoalPlan() {
             <div class="goal-placement-group__header">
               <p class="section-kicker">Budget hold</p>
               <h3>Selected placements below the cut line</h3>
+              <p class="goal-placement-group__meta">These stay selected, but they will not launch until the budget line moves down.</p>
             </div>
-            <div class="stack-list">
+            <div class="goal-placement-list goal-placement-list--rail">
               ${heldPlacementMarkup}
             </div>
           </section>`
@@ -6501,7 +6035,7 @@ function renderGoalPlan() {
               </div>
               <span class="card__badge">${escapeHtml(`${availablePlacements.length} available`)}</span>
             </summary>
-            <div class="stack-list">
+            <div class="goal-placement-list goal-placement-list--rail">
               ${availablePlacementMarkup}
             </div>
           </details>`
@@ -6555,12 +6089,12 @@ function renderMonitoringOverview() {
       : "Scoped to the active brand, with live screens, recent campaigns, and measured results.";
   }
   if (elements.monitoringMeasurementTitle) {
-    elements.monitoringMeasurementTitle.textContent = brandContext.brand ? `${brandName} performance` : "Campaign performance";
+    elements.monitoringMeasurementTitle.textContent = brandContext.brand ? `${brandName} snapshot` : "Campaign snapshot";
   }
   if (elements.monitoringMeasurementIntro) {
     elements.monitoringMeasurementIntro.textContent = brandContext.brand
-      ? `Live delivery first, then estimated shopper and retail outcomes for ${brandName}.`
-      : "Live delivery first, then estimated shopper and retail outcomes for the active brand.";
+      ? `Three answers first for ${brandName}: delivery, sales lift, and return on spend.`
+      : "Three answers first: delivery, sales lift, and return on spend.";
   }
   if (elements.measurementBriefTitle) {
     elements.measurementBriefTitle.textContent = brandContext.brand ? `${brandName} in-store readout` : "In-store readout";
@@ -6793,14 +6327,87 @@ function buildMeasurementSummaryFacts(items = []) {
     .join("")}</div>`;
 }
 
+function buildMeasurementSummaryMeta(items = []) {
+  const metaItems = items.filter(Boolean);
+  if (metaItems.length === 0) {
+    return "";
+  }
+  return `<p class="measurement-summary__meta">${metaItems
+    .map((item) => `<span class="measurement-summary__meta-item">${escapeHtml(item)}</span>`)
+    .join("")}</p>`;
+}
+
+function getMeasurementMetric(board, key) {
+  if (!key || !Array.isArray(board?.metrics)) {
+    return null;
+  }
+  return board.metrics.find((metric) => metric?.key === key) || null;
+}
+
+function getMeasurementMetricValueText(metric, fallback = "0") {
+  const valueText = String(metric?.valueText || "").trim();
+  if (valueText) {
+    return valueText;
+  }
+  return String(fallback || "0").trim() || "0";
+}
+
+function buildMeasurementFocusCardMarkup({ label = "", value = "", detail = "", comparison = "", accent = false } = {}) {
+  return `<article class="measurement-focus-card${accent ? " measurement-focus-card--accent" : ""}">
+    <p class="measurement-focus-card__label">${escapeHtml(label)}</p>
+    <strong>${escapeHtml(value)}</strong>
+    ${detail ? `<p class="measurement-focus-card__detail">${escapeHtml(detail)}</p>` : ""}
+    ${comparison ? `<p class="measurement-focus-card__comparison">${escapeHtml(comparison)}</p>` : ""}
+  </article>`;
+}
+
+function renderMeasurementPrimaryCards(board, totals = {}) {
+  if (!elements.measurementPrimaryGrid) {
+    return;
+  }
+
+  if (!board) {
+    elements.measurementPrimaryGrid.innerHTML = DEFAULT_MEASUREMENT_PRIMARY_GRID_HTML;
+    return;
+  }
+
+  const incrementalMetric = getMeasurementMetric(board, "incrementality");
+  const roasMetric = getMeasurementMetric(board, "inStoreROAS");
+  const playCount = Number(totals?.playCount || board?.current?.playCount || 0);
+  const exposureMs = Number(totals?.exposureMs || board?.current?.exposureMs || 0);
+
+  const cards = [
+    buildMeasurementFocusCardMarkup({
+      label: "Live delivery",
+      value: playCount > 0 ? `${formatCount(playCount)} plays` : "Waiting for delivery",
+      detail: playCount > 0 ? `Observed exposure: ${formatDuration(exposureMs)}` : "Ad plays and exposure appear here first."
+    }),
+    buildMeasurementFocusCardMarkup({
+      label: incrementalMetric?.label || "Incremental sales",
+      value: getMeasurementMetricValueText(incrementalMetric, formatMoney(board?.current?.incrementalSales || 0)),
+      detail: buildMeasurementMetricNote(incrementalMetric) || "Estimated sales lift appears after delivery starts.",
+      comparison: getMeasurementComparisonText(incrementalMetric)
+    }),
+    buildMeasurementFocusCardMarkup({
+      label: roasMetric?.label || "Return on spend",
+      value: getMeasurementMetricValueText(roasMetric, String(board?.current?.inStoreROAS || 0)),
+      detail: buildMeasurementMetricNote(roasMetric) || "Estimated efficiency appears once spend and sales are in scope.",
+      comparison: getMeasurementComparisonText(roasMetric),
+      accent: true
+    })
+  ];
+
+  elements.measurementPrimaryGrid.innerHTML = cards.join("");
+}
+
 function renderMeasurementBoard(board) {
   if (!elements.measurementBoardGrid) {
     return;
   }
 
-  const metrics = Array.isArray(board?.metrics)
-    ? board.metrics.filter((metric) => !["totalExposureTime", "totalAdPlays"].includes(metric?.key))
-    : [];
+  const metrics = ["interactionRate", "qrScans", "newBuyerAcquisition"]
+    .map((key) => getMeasurementMetric(board, key))
+    .filter(Boolean);
   if (metrics.length === 0) {
     elements.measurementBoardGrid.innerHTML = DEFAULT_MEASUREMENT_BOARD_GRID_HTML;
     return;
@@ -6810,11 +6417,7 @@ function renderMeasurementBoard(board) {
     .map((metric) => {
       const comparisonText = getMeasurementComparisonText(metric);
       const detailText = buildMeasurementMetricNote(metric);
-      const badge = getMeasurementCardBadge(metric);
-      const accentClass = metric?.key === "inStoreROAS" ? " measurement-card--accent" : "";
-
-      return `<article class="measurement-card${accentClass}">
-        <span class="measurement-card__badge ${escapeHtml(badge.className)}">${escapeHtml(badge.label)}</span>
+      return `<article class="measurement-card">
         <p class="measurement-card__label">${escapeHtml(metric?.label || "Metric")}</p>
         <strong>${escapeHtml(metric?.valueText || formatCount(metric?.value || 0))}</strong>
         ${comparisonText ? `<p class="measurement-card__comparison">${escapeHtml(comparisonText)}</p>` : ""}
@@ -6832,13 +6435,27 @@ function renderTelemetry() {
   const telemetry = state.telemetrySummary;
   const totals = telemetry?.totals || {};
   const totalEvents = Number(totals.total || 0);
+  const updatedText = totals.lastSeenAt ? `Updated ${formatTimestamp(totals.lastSeenAt)}` : "No telemetry yet.";
+
+  if (elements.monitoringMeasurementMeta) {
+    elements.monitoringMeasurementMeta.textContent = updatedText;
+  }
 
   if (!telemetry || totalEvents === 0) {
     const brandContext = getGoalPlanBrandContext();
     elements.telemetrySummary.classList.add("empty");
-    elements.telemetrySummary.textContent = brandContext.brand
-      ? `Launch ${brandContext.brand}'s campaign to populate live delivery first. Estimated shopper and sales outcomes appear once telemetry is flowing.`
-      : "Launch a campaign to populate live delivery first. Estimated shopper and sales outcomes appear once telemetry is flowing.";
+    elements.telemetrySummary.innerHTML = `
+      <p class="measurement-summary__eyebrow">Start here</p>
+      <strong class="measurement-summary__headline">${escapeHtml(
+        brandContext.brand ? `${brandContext.brand} is not live yet` : "Campaign is not live yet"
+      )}</strong>
+      <p class="measurement-summary__body">${escapeHtml(
+        brandContext.brand
+          ? `Launch ${brandContext.brand}'s campaign to populate observed delivery first. Sales and efficiency estimates appear once telemetry is flowing.`
+          : "Launch a campaign to populate observed delivery first. Sales and efficiency estimates appear once telemetry is flowing."
+      )}</p>
+    `;
+    renderMeasurementPrimaryCards(null, totals);
     renderMeasurementBoard(null);
     renderTelemetryList(elements.telemetryByScreen, [], "screen");
     renderTelemetryList(elements.telemetryByTemplate, [], "template");
@@ -6849,78 +6466,48 @@ function renderTelemetry() {
   const measurementBoard = telemetry.measurementBoard;
   const comparison = telemetry.planComparison;
   elements.telemetrySummary.classList.remove("empty");
-  if (measurementBoard?.narrative) {
-    const brandContext = getGoalPlanBrandContext();
-    const scope = measurementBoard.scope || {};
-    const summaryFacts = [
-      scope.scopeLabel ? { label: "Scope", value: scope.scopeLabel } : null,
-      Number(scope.storeCount || 0) > 0 || Number(scope.screenCount || 0) > 0
-        ? {
-            label: "Coverage",
-            value: [
-              Number(scope.storeCount || 0) > 0 ? `${formatCount(scope.storeCount || 0)} store${Number(scope.storeCount || 0) === 1 ? "" : "s"}` : "",
-              Number(scope.screenCount || 0) > 0 ? `${formatCount(scope.screenCount || 0)} screen${Number(scope.screenCount || 0) === 1 ? "" : "s"}` : ""
-            ]
-              .filter(Boolean)
-              .join(" / ")
-          }
-        : null,
-      Number(scope.selectedSpend || 0) > 0 ? { label: "Budget", value: formatMoney(scope.selectedSpend || 0) } : null,
-      totals.lastSeenAt ? { label: "Updated", value: formatTimestamp(totals.lastSeenAt) } : null
-    ].filter(Boolean);
-    const summaryHeadline = brandContext.brand
-      ? `${brandContext.brand} measurement readout`
-      : measurementBoard.narrative.headline || "Measurement readout";
-    const trendText = `Live delivery: ${formatCount(totals.playCount || 0)} plays | ${formatDuration(totals.exposureMs || 0)} exposure`;
-    const modeledOutcomeText = `Estimated outcome: ${formatMoney(measurementBoard?.current?.modeledInStoreSales || 0)} in-store sales | ${formatMoney(
-      measurementBoard?.current?.incrementalSales || 0
-    )} incremental sales`;
-    const comparisonText =
-      comparison?.afterApply && comparison?.beforeApply
-        ? `Compared with the prior window: ${formatCount(comparison.afterApply.playCount || 0)} plays after apply vs ${formatCount(
-            comparison.beforeApply.playCount || 0
-          )} before apply`
-        : comparison?.planId
-          ? `Plan ${comparison.planId} is loaded. Before and after comparison will fill in as more live delivery arrives.`
-          : "";
+  const brandContext = getGoalPlanBrandContext();
+  const scope = measurementBoard?.scope || {};
+  const roasMetric = getMeasurementMetric(measurementBoard, "inStoreROAS");
+  const roasText = getMeasurementMetricValueText(roasMetric, String(measurementBoard?.current?.inStoreROAS || 0));
+  const summaryHeadline = brandContext.brand ? `${brandContext.brand} performance snapshot` : "Performance snapshot";
+  const summaryBody = brandContext.brand
+    ? `Delivery is live for ${brandContext.brand}. Estimated incremental sales are ${formatMoney(
+        measurementBoard?.current?.incrementalSales || 0
+      )} and return on spend is ${roasText}.`
+    : `Delivery is live. Estimated incremental sales are ${formatMoney(
+        measurementBoard?.current?.incrementalSales || 0
+      )} and return on spend is ${roasText}.`;
+  const coverageText =
+    Number(scope.storeCount || 0) > 0 || Number(scope.screenCount || 0) > 0
+      ? [
+          Number(scope.storeCount || 0) > 0 ? `${formatCount(scope.storeCount || 0)} store${Number(scope.storeCount || 0) === 1 ? "" : "s"}` : "",
+          Number(scope.screenCount || 0) > 0 ? `${formatCount(scope.screenCount || 0)} screen${Number(scope.screenCount || 0) === 1 ? "" : "s"}` : ""
+        ]
+          .filter(Boolean)
+          .join(" / ")
+      : "";
+  const summaryNote =
+    comparison?.afterApply && comparison?.beforeApply
+      ? `Prior window: ${formatCount(comparison.afterApply.playCount || 0)} plays after apply vs ${formatCount(
+          comparison.beforeApply.playCount || 0
+        )} before apply.`
+      : "";
 
-    elements.telemetrySummary.innerHTML = `
-      <p class="measurement-summary__eyebrow">Measurement snapshot</p>
-      <strong class="measurement-summary__headline">${escapeHtml(summaryHeadline)}</strong>
-      ${buildMeasurementSummaryFacts(summaryFacts)}
-      <p class="measurement-summary__trend">${escapeHtml(trendText)}</p>
-      <p class="measurement-summary__comparison">${escapeHtml(modeledOutcomeText)}</p>
-      ${comparisonText ? `<p class="measurement-summary__comparison">${escapeHtml(comparisonText)}</p>` : ""}
-    `;
-  } else {
-    const comparisonMarkup =
-      comparison?.afterApply && comparison?.beforeApply
-        ? `<p class="goal-change__metrics">
-            Plan ${escapeHtml(comparison.planId || "")} | Before apply: ${escapeHtml(
-              formatCount(comparison.beforeApply.playCount)
-            )} plays / ${escapeHtml(formatDuration(comparison.beforeApply.exposureMs))} |
-            After apply: ${escapeHtml(formatCount(comparison.afterApply.playCount))} plays /
-            ${escapeHtml(formatDuration(comparison.afterApply.exposureMs))}
-          </p>`
-        : comparison?.planId
-          ? `<p class="goal-change__metrics">Plan ${escapeHtml(comparison.planId)} is loaded. Before/after telemetry appears after apply.</p>`
-          : "";
+  elements.telemetrySummary.innerHTML = `
+    <p class="measurement-summary__eyebrow">Start here</p>
+    <strong class="measurement-summary__headline">${escapeHtml(summaryHeadline)}</strong>
+    <p class="measurement-summary__body">${escapeHtml(summaryBody)}</p>
+    ${buildMeasurementSummaryMeta(
+      [
+        coverageText ? `Coverage ${coverageText}` : "",
+        Number(scope.selectedSpend || 0) > 0 ? `Budget ${formatMoney(scope.selectedSpend || 0)}` : ""
+      ].filter(Boolean)
+    )}
+    ${summaryNote ? `<p class="measurement-summary__note">${escapeHtml(summaryNote)}</p>` : ""}
+  `;
 
-    elements.telemetrySummary.innerHTML = `
-      <strong>Campaign dashboard</strong>
-      <p class="goal-change__metrics">
-        ${escapeHtml(formatCount(totals.playCount || 0))} plays | ${escapeHtml(formatDuration(totals.exposureMs || 0))} exposure |
-        ${escapeHtml(formatCount(totals.screenCount || 0))} screens
-      </p>
-      <p class="goal-change__metrics">
-        ${escapeHtml(formatCount(totals.templateCount || 0))} creative${Number(totals.templateCount || 0) === 1 ? "" : "s"} |
-        ${escapeHtml(formatCount(totals.skuCount || 0))} SKU${Number(totals.skuCount || 0) === 1 ? "" : "s"}
-        ${totals.lastSeenAt ? ` | Last seen: ${escapeHtml(formatTimestamp(totals.lastSeenAt))}` : ""}
-      </p>
-      ${comparisonMarkup}
-    `;
-  }
-
+  renderMeasurementPrimaryCards(measurementBoard, totals);
   renderMeasurementBoard(measurementBoard);
   renderTelemetryList(elements.telemetryByScreen, telemetry.byScreen || [], "screen");
   renderTelemetryList(elements.telemetryByTemplate, telemetry.byTemplate || [], "template");
@@ -7046,7 +6633,8 @@ function renderLiveScreenDetail(screen) {
     },
     {
       className: "brand-badge brand-badge--mini",
-      meta: ""
+      meta: "",
+      hideTitleWhenLogo: true
     }
   );
   const productMarkup =
@@ -7104,7 +6692,8 @@ function renderLiveScreens() {
       ${
         buildBrandIdentityMarkup(brandContext, {
           className: "brand-badge brand-badge--summary",
-          meta: brandContext.accountLabel || ""
+          meta: brandContext.objectiveLabel || "",
+          hideTitleWhenLogo: true
         }) || ""
       }
       <p>${escapeHtml(
@@ -7138,7 +6727,8 @@ function renderLiveScreens() {
     ${
       buildBrandIdentityMarkup(brandContext, {
         className: "brand-badge brand-badge--summary",
-        meta: brandContext.accountLabel || ""
+        meta: brandContext.objectiveLabel || "",
+        hideTitleWhenLogo: true
       }) || ""
     }
     <strong>${escapeHtml(brandContext.brand ? `${brandContext.brand} live network` : "Live network")}</strong>
@@ -7233,6 +6823,7 @@ function updateMonitoringNarrative() {
 }
 
 function renderAll() {
+  setBusyOverlayVisible(state.pendingActions.size > 0);
   renderMarketStoryOverlay();
   refreshPageCounter();
   renderBrandContextSlots();
@@ -7255,7 +6846,6 @@ function renderAll() {
   updateActionButtons();
   updateStagePills();
   renderStageButtons();
-  publishPresenterSnapshot();
 }
 
 async function refreshDemoConfig() {
@@ -7445,7 +7035,6 @@ function updateGoalPlacementSelection(screenId, include) {
 
   setGoalPlacementSelection(plan, nextSelection);
   renderGoalPlan();
-  publishPresenterSnapshot();
   showStatus(
     include
       ? `${getScreenDisplayLabel(normalizedScreenId) || normalizedScreenId} added to the editable plan.`
@@ -7607,8 +7196,7 @@ async function deleteScreen(screenId) {
       state.supplyHandoffAcknowledged = false;
       state.activeGoalPlan = null;
       state.goalPlacementSelections.clear();
-      state.goalBudgetPlanId = "";
-      state.goalBudgetSpend = null;
+      setGoalBudgetStateFromPlan(null);
       state.agentRuns = [];
       state.telemetrySummary = null;
       state.sessionPlanIds.clear();
@@ -7673,7 +7261,6 @@ async function applyGoalPlan(planId = "") {
 
     if (budgetScenario.fundedPlacements.length === 0 || selectedScreenIds.length === 0) {
       renderGoalPlan();
-      publishPresenterSnapshot();
       showToast("Increase the budget to fund at least one placement before launch.", true);
       return;
     }
@@ -7843,8 +7430,7 @@ async function loadPreset() {
     state.supplyHandoffAcknowledged = false;
     state.activeGoalPlan = null;
     state.goalPlacementSelections.clear();
-    state.goalBudgetPlanId = "";
-    state.goalBudgetSpend = null;
+    setGoalBudgetStateFromPlan(null);
     state.agentRuns = [];
     state.telemetrySummary = null;
     state.sessionPlanIds.clear();
@@ -7879,8 +7465,7 @@ async function resetDemo() {
     state.supplyHandoffAcknowledged = false;
     state.activeGoalPlan = null;
     state.goalPlacementSelections.clear();
-    state.goalBudgetPlanId = "";
-    state.goalBudgetSpend = null;
+    setGoalBudgetStateFromPlan(null);
     state.agentRuns = [];
     state.telemetrySummary = null;
     state.selectedGoalSkuIds.clear();
@@ -8017,7 +7602,6 @@ function wireEvents() {
     const openPlannerStep = event.target.closest(".js-open-planner-step");
     if (openPlannerStep) {
       setGoalPlanningStep(openPlannerStep.dataset.plannerStepTarget || "1");
-      publishPresenterSnapshot();
       return;
     }
 
@@ -8048,7 +7632,6 @@ function wireEvents() {
       state.goalBudgetPlanId = state.activeGoalPlan.planId || budgetMaxButton.dataset.planId || "";
       state.goalBudgetSpend = getPlanBudgetMaxSpend(state.activeGoalPlan);
       renderGoalPlan();
-      publishPresenterSnapshot();
       return;
     }
 
@@ -8093,7 +7676,6 @@ function wireEvents() {
     state.goalPlanningStep = 2;
     renderGoalPlanningFlow();
     showStatus("Step 2 unlocked. Set the flight and scope before moving to SKU selection in Step 3.");
-    publishPresenterSnapshot();
   });
   elements.goalStep2NextBtn?.addEventListener("click", () => {
     if (!ensureGoalBriefStepComplete()) {
@@ -8109,7 +7691,6 @@ function wireEvents() {
     state.goalPlanningStep = 3;
     renderGoalPlanningFlow();
     showStatus("Step 3 unlocked. Let AI recommend the shortlist, or open manual selection if you need to override it.");
-    publishPresenterSnapshot();
   });
   elements.goalBrandAccount?.addEventListener("change", () => {
     const removedCount = reconcileSelectedGoalSkusToBrand();
@@ -8178,7 +7759,6 @@ function wireEvents() {
     } else {
       renderGoalPlanningFlow();
     }
-    publishPresenterSnapshot();
   });
   elements.goalAggressiveness?.addEventListener("change", () => {
     if (getGoalPromptText()) {
@@ -8186,7 +7766,6 @@ function wireEvents() {
     } else {
       renderGoalPlanningFlow();
     }
-    publishPresenterSnapshot();
   });
   elements.goalStoreScope?.addEventListener("change", () => {
     if (getGoalPromptText()) {
@@ -8194,7 +7773,6 @@ function wireEvents() {
     } else {
       renderGoalPlanningFlow();
     }
-    publishPresenterSnapshot();
   });
   elements.goalPageScope?.addEventListener("change", () => {
     if (getGoalPromptText()) {
@@ -8202,19 +7780,15 @@ function wireEvents() {
     } else {
       renderGoalPlanningFlow();
     }
-    publishPresenterSnapshot();
   });
   elements.goalFlightStart?.addEventListener("change", () => {
     renderGoalPlanningFlow();
-    publishPresenterSnapshot();
   });
   elements.goalFlightEnd?.addEventListener("change", () => {
     renderGoalPlanningFlow();
-    publishPresenterSnapshot();
   });
   elements.goalPrompt?.addEventListener("input", () => {
     markGoalPromptSelectionDirty();
-    publishPresenterSnapshot();
   });
   elements.goalPromptRunBtn?.addEventListener("click", () => {
     applyGoalPromptSelection().catch(handleError);
@@ -8223,7 +7797,6 @@ function wireEvents() {
     if (!event.target.closest(".js-retailer-rate-input")) {
       return;
     }
-    publishPresenterSnapshot();
   });
   elements.saveRetailerRatesBtn?.addEventListener("click", () => {
     saveRetailerRateCard().catch(handleError);
@@ -8234,11 +7807,9 @@ function wireEvents() {
     } else {
       renderGoalProducts();
     }
-    publishPresenterSnapshot();
   });
   elements.goalProductSearch?.addEventListener("input", () => {
     renderGoalProducts();
-    publishPresenterSnapshot();
   });
   elements.goalSelectCategoryBtn?.addEventListener("click", () => {
     selectFilteredGoalSkus();
@@ -8260,7 +7831,6 @@ function wireEvents() {
     renderGoalProducts();
     applyGoalScopeSuggestionFromSelection();
     showStatus(`Removed ${getProductLabelBySku(sku) || sku} from the priority list.`);
-    publishPresenterSnapshot();
   });
   elements.goalProductList?.addEventListener("change", (event) => {
     const checkbox = event.target.closest(".js-goal-product-sku");
@@ -8279,7 +7849,6 @@ function wireEvents() {
     }
     renderGoalProducts();
     applyGoalScopeSuggestionFromSelection();
-    publishPresenterSnapshot();
   });
   elements.goalPlanBudget?.addEventListener("input", (event) => {
     const slider = event.target.closest("#goalBudgetSlider");
@@ -8308,7 +7877,6 @@ function wireEvents() {
       }
     }
     renderPresetSummary();
-    publishPresenterSnapshot();
     showStatus(`First-screen sellable share set to ${preset.label}. Auto-built screens stay at 1/6 unless changed in Advanced config.`);
   });
   elements.screenSharePreset?.addEventListener("change", () => {
@@ -8320,7 +7888,6 @@ function wireEvents() {
       }
       renderPresetSummary();
     }
-    publishPresenterSnapshot();
   });
   elements.templateId?.addEventListener("change", () => {
     applyTemplatePreset(elements.templateId.value, true);
@@ -8421,8 +7988,6 @@ function wireEvents() {
     stopWorkspaceOverlayPolling();
     stopWorkspaceInactivityTimer();
     cancelMarketStoryAnimations();
-    presenterChannel?.close();
-    presenterChannel = null;
   });
 }
 
