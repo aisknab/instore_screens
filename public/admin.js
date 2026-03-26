@@ -208,37 +208,6 @@ const DEFAULT_DEMO_CONFIG = {
 
 const MARKET_STORY_STEPS = [
   {
-    id: "lightweight-model",
-    accent: "#2f74ff",
-    kicker: "Low-cost operating model",
-    title: "This can run at $0 incremental hosting cost.",
-    body:
-      "The screen layer can reuse the client's current feeds and the current CYield supply model: think 1 display ad equals 1 screen. Because the same advertiser often owns that screen for the full day, delivery churn stays low and the response can be edge cached aggressively. The point is that this does not require a new hosting estate to create the business.",
-    note: "Keep the architecture simple: one shared player, page-like screen mapping, existing feeds, and low-churn delivery.",
-    metrics: [
-      {
-        value: 0,
-        decimals: 0,
-        prefix: "$",
-        suffix: "",
-        label: "Incremental hosting cost",
-        detail: "Reuse the client's current feeds and one shared player URL."
-      },
-      {
-        headline: "1:1",
-        label: "Display ad to screen mapping",
-        detail: "Treat each installed screen like a page-level supply endpoint."
-      },
-      {
-        headline: "Edge",
-        label: "Caching-friendly delivery profile",
-        detail: "The same advertiser creative can typically stay cached for the day."
-      }
-    ],
-    sources: [],
-    nextLabel: "Show market size"
-  },
-  {
     id: "onsite-base",
     accent: "#2f74ff",
     kicker: "Established revenue base",
@@ -418,6 +387,37 @@ const MARKET_STORY_STEPS = [
         href: "https://smg.team/wp-content/uploads/2025/10/The-Advertising-Effectiveness-of-In-Store-Retail-Media-SMG-Report.pdf"
       }
     ],
+    nextLabel: "Show operating model"
+  },
+  {
+    id: "lightweight-model",
+    accent: "#2f74ff",
+    kicker: "Low-cost operating model",
+    title: "This can run at $0 incremental hosting cost.",
+    body:
+      "The screen layer can reuse the client's current feeds and the current CYield supply model: think 1 display ad equals 1 screen. Because the same advertiser often owns that screen for the full day, delivery churn stays low and the response can be edge cached aggressively. The point is that this does not require a new hosting estate to create the business.",
+    note: "Keep the architecture simple: one shared player, page-like screen mapping, existing feeds, and low-churn delivery.",
+    metrics: [
+      {
+        value: 0,
+        decimals: 0,
+        prefix: "$",
+        suffix: "",
+        label: "Incremental hosting cost",
+        detail: "Reuse the client's current feeds and one shared player URL."
+      },
+      {
+        headline: "1:1",
+        label: "Display ad to screen mapping",
+        detail: "Treat each installed screen like a page-level supply endpoint."
+      },
+      {
+        headline: "Edge",
+        label: "Caching-friendly delivery profile",
+        detail: "The same advertiser creative can typically stay cached for the day."
+      }
+    ],
+    sources: [],
     nextLabel: "Show upside"
   },
   {
