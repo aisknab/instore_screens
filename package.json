@@ -8,7 +8,8 @@
     "start": "node src/server.js",
     "dev": "node --watch src/server.js",
     "smoke": "node scripts/smoke.mjs",
-    "generate:product-images": "node scripts/generate-product-images.mjs"
+    "generate:product-images": "node scripts/generate-product-images.mjs",
+    "generate:brand-logos": "node scripts/generate-brand-logos.mjs"
   },
   "engines": {
     "node": ">=18"

@@ -560,6 +560,7 @@ function buildDemoScreenSpec(storeProfile, blueprint, storeIndex) {
   const storeId = readRequiredString(storeProfile?.storeId, "demo storeId", 80);
   const storeLabel = readOptionalString(storeProfile?.storeLabel, 80) || storeId.replace(/_/g, " ");
   const resolverStore = normalizeDemoStoreSlug(storeId) || `store-${storeIndex + 1}`;
+  const screenShareSlots = readScreenShareSlotCount(config.screenShareSlots, SCREEN_SHARE_SLOT_COUNT);
   const lineItemSuffix = String(blueprint.lineItemKey || blueprint.screenIdSuffix || `screen-${storeIndex + 1}`)
     .replace(/[^A-Z0-9-]+/gi, "-")
     .toUpperCase();
@@ -575,6 +576,12 @@ function buildDemoScreenSpec(storeProfile, blueprint, storeIndex) {
     screenSize: readOptionalString(config.screenSize, 40) || blueprint.screenSize,
     templateId: readOptionalString(config.templateId, 80) || blueprint.templateId,
     refreshInterval: Number(config.refreshInterval || blueprint.refreshInterval),
+    screenShareSlots,
+    defaultSellableShareSlots: readSellableShareSlots(
+      config.defaultSellableShareSlots,
+      screenShareSlots,
+      DEFAULT_SELLABLE_SHARE_SLOTS
+    ),
     lineItemId: `LI-DEMO-${storeId}-${lineItemSuffix}`.slice(0, 120),
     lineItemName: `${storeLabel} ${blueprint.lineItemName}`.slice(0, 120)
   };
@@ -611,7 +618,7 @@ const DEMO_STAGE_TEMPLATES = [
       "2-action supply flow",
       "Preset summary plus retailer CPM card",
       "Supply handoff across stores and placements",
-      "Backup page and screen mapping details"
+      "Advanced page and screen mapping details"
     ],
     demoActions: [
       "Click Add one anchor placement to show the only manual CYield step.",
@@ -620,7 +627,7 @@ const DEMO_STAGE_TEMPLATES = [
       "Use the handoff card only if needed to quantify mapped placements, stores, and the shared player path."
     ],
     qaPrompts: [
-      "If someone asks about implementation, open Backup config and show the page and screen fields behind the anchor placement.",
+      "If someone asks about implementation, open Advanced config and show the page, screen, and share fields behind the anchor placement.",
       "If someone asks about retailer control, point to the CPM card and explain that pricing still lives on the supply side.",
       "If someone asks about scale, use the handoff stats instead of walking screen by screen."
     ]
@@ -714,6 +721,10 @@ const DEMO_STAGE_TEMPLATES = [
 ];
 const DEFAULT_REFRESH_INTERVAL = 30000;
 const DEFAULT_TRACKING_BASE_URL = "/collect";
+const SCREEN_SHARE_SLOT_COUNT = 6;
+const DEFAULT_SELLABLE_SHARE_SLOTS = 1;
+const SCREEN_SHARE_SLOT_MAX = 12;
+const GOAL_LINE_ITEM_SOURCE = "goal-share";
 const TELEMETRY_EVENT_TYPES = ["play", "exposure"];
 const TELEMETRY_EVENT_LIMIT = 4000;
 const TELEMETRY_BREAKDOWN_LIMIT = 6;
@@ -750,16 +761,23 @@ const GOAL_PLANNING_THEME_KEYWORDS = {
 const DEFAULT_PRODUCT_FEED_FILE = path.resolve(process.cwd(), "data", "productFeed.json");
 const DEFAULT_PRODUCT_IMAGE_MANIFEST_FILE = path.resolve(process.cwd(), "data", "productImageManifest.json");
 const DEFAULT_PRODUCT_IMAGE_OUTPUT_DIR = path.resolve(process.cwd(), "public", "assets", "products", "generated");
+const DEFAULT_BRAND_LOGO_MANIFEST_FILE = path.resolve(process.cwd(), "data", "brandLogoManifest.json");
+const DEFAULT_BRAND_LOGO_OUTPUT_DIR = path.resolve(process.cwd(), "public", "assets", "brands", "generated");
 const PRODUCT_GENERATED_IMAGE_BASE_PATH =
   toTrimmedString(process.env.PRODUCT_IMAGE_BASE_PATH) || "/assets/products/generated";
+const BRAND_LOGO_BASE_PATH = toTrimmedString(process.env.BRAND_LOGO_BASE_PATH) || "/assets/brands/generated";
 const PRODUCT_FEED_FILE = resolvePathFromEnv("PRODUCT_FEED_FILE", DEFAULT_PRODUCT_FEED_FILE);
 const PRODUCT_IMAGE_MANIFEST_FILE = resolvePathFromEnv(
   "PRODUCT_IMAGE_MANIFEST_FILE",
   DEFAULT_PRODUCT_IMAGE_MANIFEST_FILE
 );
 const PRODUCT_IMAGE_OUTPUT_DIR = resolvePathFromEnv("PRODUCT_IMAGE_OUTPUT_DIR", DEFAULT_PRODUCT_IMAGE_OUTPUT_DIR);
+const BRAND_LOGO_MANIFEST_FILE = resolvePathFromEnv("BRAND_LOGO_MANIFEST_FILE", DEFAULT_BRAND_LOGO_MANIFEST_FILE);
+const BRAND_LOGO_OUTPUT_DIR = resolvePathFromEnv("BRAND_LOGO_OUTPUT_DIR", DEFAULT_BRAND_LOGO_OUTPUT_DIR);
 const PRODUCT_IMAGE_GENERATOR_SCRIPT = path.resolve(process.cwd(), "scripts", "generate-product-images.mjs");
+const BRAND_LOGO_GENERATOR_SCRIPT = path.resolve(process.cwd(), "scripts", "generate-brand-logos.mjs");
 const PRODUCT_IMAGE_JOB_LOG_LIMIT = 200;
+const BRAND_LOGO_JOB_LOG_LIMIT = 200;
 const DEMO_STOCK_BY_SKU = Object.freeze({});
 const PRODUCT_FEED_DEFAULT = [];
 const PRODUCT_IMAGE_BASE_PATH = "/assets/products";
@@ -774,7 +792,9 @@ const DEMO_CATEGORY_IMAGE_FALLBACKS = new Set([
 const REMOTE_URL_PATTERN = /^https?:\/\//i;
 const rotationState = new Map();
 let productImageGenerationJob = null;
+let brandLogoGenerationJob = null;
 let cachedProductFeed = null;
+let cachedProductFeedMtimeMs = null;
 const TOUCH_FORWARD_CTA_PATTERN =
   /\b(tap|click|touch|swipe|press|shop now|learn more|buy now|start now|order now)\b/i;
 const TOUCH_FORWARD_COPY_PATTERN = /\b(tap|click|touch|swipe|press)\b/i;
@@ -1012,12 +1032,25 @@ function getProductStockForStore(product = {}, storeId = "") {
   return estimateGeneratedStoreStockUnits(product, storeProfile);
 }
 
+function normalizeBrandLogoPath(value) {
+  const explicit = readOptionalString(value, 500);
+  if (!explicit) {
+    return "";
+  }
+  const generatedBasePath = BRAND_LOGO_BASE_PATH.replace(/\/+$/, "");
+  if (explicit === generatedBasePath || explicit.startsWith(`${generatedBasePath}/`)) {
+    return explicit;
+  }
+  return explicit.startsWith("/assets/") ? explicit : "";
+}
+
 function buildProductFeedResponseItem(product = {}, { includeStockByStore = false } = {}) {
   const responseItem = {
     sku: product.sku,
     name: product.name,
     category: product.category,
     brand: product.brand,
+    logo: normalizeBrandLogoPath(product.logo || product.brandLogo),
     productPage: product.productPage,
     image: product.image,
     price: product.price,
@@ -1374,6 +1407,196 @@ function startProductImageGenerationJob(options = {}) {
   return buildProductImageJobSnapshot(job);
 }
 
+function readBrandLogoGenerationOptions(body = {}) {
+  const quality = readOptionalString(body?.quality, 20).toLowerCase() || "";
+  const size = readOptionalString(body?.size, 20);
+  const allowedQuality = new Set(["low", "medium", "high"]);
+  const allowedSize = new Set(["1024x1024", "1536x1024", "1024x1536"]);
+
+  if (quality && !allowedQuality.has(quality)) {
+    throw new HttpError(400, "quality must be one of: low, medium, high.");
+  }
+  if (size && !allowedSize.has(size)) {
+    throw new HttpError(400, "size must be one of: 1024x1024, 1536x1024, 1024x1536.");
+  }
+
+  return {
+    brandFilter: readStringArray(body?.brands ?? body?.brandFilter ?? body?.brand, 2000, 120).filter(Boolean),
+    advertiserFilter: readStringArray(body?.advertiserIds ?? body?.advertiserFilter ?? body?.advertiserId, 2000, 120).filter(Boolean),
+    limit: readOptionalInteger(body?.limit, null, { min: 1, max: 5000 }),
+    force: readBoolean(body?.force, false),
+    dryRun: readBoolean(body?.dryRun, false),
+    concurrency: readOptionalInteger(body?.concurrency, 1, { min: 1, max: 8 }),
+    quality: quality || "",
+    size: size || "",
+    timeoutMs: readOptionalInteger(body?.timeoutMs, null, { min: 1000, max: 900000 })
+  };
+}
+
+function buildBrandLogoGenerationArgs(options = {}) {
+  const args = [];
+  const brandFilter = Array.isArray(options.brandFilter) ? options.brandFilter : [];
+  const advertiserFilter = Array.isArray(options.advertiserFilter) ? options.advertiserFilter : [];
+  if (brandFilter.length > 0) {
+    args.push("--brand", brandFilter.join(","));
+  }
+  if (advertiserFilter.length > 0) {
+    args.push("--advertiser", advertiserFilter.join(","));
+  }
+  if (Number.isInteger(options.limit)) {
+    args.push("--limit", String(options.limit));
+  }
+  if (readBoolean(options.force, false)) {
+    args.push("--force");
+  }
+  if (readBoolean(options.dryRun, false)) {
+    args.push("--dry-run");
+  }
+  if (Number.isInteger(options.concurrency) && options.concurrency > 1) {
+    args.push("--concurrency", String(options.concurrency));
+  }
+  if (readOptionalString(options.quality, 20)) {
+    args.push("--quality", options.quality);
+  }
+  if (readOptionalString(options.size, 20)) {
+    args.push("--size", options.size);
+  }
+  if (Number.isInteger(options.timeoutMs)) {
+    args.push("--timeout-ms", String(options.timeoutMs));
+  }
+  return args;
+}
+
+function appendBrandLogoJobLogs(job, source, chunk) {
+  if (!job || !chunk) {
+    return;
+  }
+  const lines = String(chunk)
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+  if (lines.length === 0) {
+    return;
+  }
+  const logs = Array.isArray(job.logs) ? job.logs : [];
+  for (const line of lines) {
+    logs.push({
+      at: new Date().toISOString(),
+      source,
+      message: line.slice(0, 1000)
+    });
+  }
+  if (logs.length > BRAND_LOGO_JOB_LOG_LIMIT) {
+    logs.splice(0, logs.length - BRAND_LOGO_JOB_LOG_LIMIT);
+  }
+  job.logs = logs;
+  job.updatedAt = new Date().toISOString();
+}
+
+function buildBrandLogoJobSnapshot(job = brandLogoGenerationJob) {
+  if (!job) {
+    return {
+      status: "idle",
+      running: false,
+      jobId: "",
+      pid: null,
+      startedAt: "",
+      completedAt: "",
+      exitCode: null,
+      error: "",
+      options: {},
+      args: [],
+      logs: []
+    };
+  }
+  return {
+    status: readOptionalString(job.status, 40) || "idle",
+    running: readBoolean(job.running, false),
+    jobId: readOptionalString(job.jobId, 120),
+    pid: Number.isInteger(job.pid) ? job.pid : null,
+    startedAt: readOptionalString(job.startedAt, 80),
+    completedAt: readOptionalString(job.completedAt, 80),
+    updatedAt: readOptionalString(job.updatedAt, 80),
+    exitCode: Number.isInteger(job.exitCode) ? job.exitCode : null,
+    signal: readOptionalString(job.signal, 40),
+    error: readOptionalString(job.error, 500),
+    options: job.options && typeof job.options === "object" ? { ...job.options } : {},
+    args: Array.isArray(job.args) ? [...job.args] : [],
+    logs: Array.isArray(job.logs) ? [...job.logs] : []
+  };
+}
+
+function startBrandLogoGenerationJob(options = {}) {
+  if (brandLogoGenerationJob?.running) {
+    throw new HttpError(409, "A brand logo generation job is already running.");
+  }
+
+  const args = buildBrandLogoGenerationArgs(options);
+  const now = new Date().toISOString();
+  const child = spawn(process.execPath, [BRAND_LOGO_GENERATOR_SCRIPT, ...args], {
+    cwd: process.cwd(),
+    env: process.env,
+    stdio: ["ignore", "pipe", "pipe"]
+  });
+  const job = {
+    jobId: `brand-logos-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
+    running: true,
+    status: "running",
+    pid: child.pid,
+    startedAt: now,
+    completedAt: "",
+    updatedAt: now,
+    exitCode: null,
+    signal: "",
+    error: "",
+    options: {
+      ...options,
+      brandFilter: Array.isArray(options.brandFilter) ? [...options.brandFilter] : [],
+      advertiserFilter: Array.isArray(options.advertiserFilter) ? [...options.advertiserFilter] : []
+    },
+    args,
+    logs: []
+  };
+  brandLogoGenerationJob = job;
+  appendBrandLogoJobLogs(job, "system", `Started brand logo generation with PID ${child.pid || "pending"}.`);
+
+  child.stdout?.on("data", (chunk) => {
+    appendBrandLogoJobLogs(job, "stdout", chunk);
+  });
+  child.stderr?.on("data", (chunk) => {
+    appendBrandLogoJobLogs(job, "stderr", chunk);
+  });
+  child.on("error", (error) => {
+    job.running = false;
+    job.status = "failed";
+    job.error = readOptionalString(error?.message, 500) || "The generator process failed to start.";
+    job.completedAt = new Date().toISOString();
+    job.updatedAt = job.completedAt;
+  });
+  child.on("exit", (code, signal) => {
+    job.running = false;
+    job.exitCode = Number.isInteger(code) ? code : null;
+    job.signal = readOptionalString(signal, 40);
+    job.completedAt = new Date().toISOString();
+    job.updatedAt = job.completedAt;
+    job.status = code === 0 ? "completed" : "failed";
+    if (code !== 0 && !job.error) {
+      job.error = signal
+        ? `Brand logo generation exited with signal ${signal}.`
+        : `Brand logo generation exited with code ${code}.`;
+    }
+    appendBrandLogoJobLogs(
+      job,
+      "system",
+      code === 0
+        ? "Brand logo generation completed successfully."
+        : job.error || "Brand logo generation exited unsuccessfully."
+    );
+  });
+
+  return buildBrandLogoJobSnapshot(job);
+}
+
 function readRequiredDateInput(value, fieldName) {
   const parsed = readRequiredString(value, fieldName, 10);
   if (!/^\d{4}-\d{2}-\d{2}$/.test(parsed)) {
@@ -1426,9 +1649,15 @@ function getGoalScreenTypeCpm(rateCard, screenType) {
   return Number(defaults[normalizedType] || 10);
 }
 
-function estimateGoalDailyImpressions(screen, placementRole, storeSignals = {}, refreshInterval = DEFAULT_REFRESH_INTERVAL) {
+function estimateGoalDailyImpressions(screen, placementRole, storeSignals = {}, options = {}) {
   const normalizedType = readOptionalString(screen?.screenType, 80) || "Horizontal Screen";
   const normalizedRole = readOptionalString(placementRole, 40) || getGoalScreenRole(screen);
+  const refreshInterval =
+    options && typeof options === "object"
+      ? readRefreshInterval(options.refreshInterval)
+      : readRefreshInterval(options);
+  const shareOfScreen =
+    options && typeof options === "object" ? clampNumber(Number(options.shareOfScreen ?? 1), 0.01, 1) : 1;
   const baseFootTraffic = Math.max(6000, Math.round(Number(storeSignals?.inferredFootTraffic || 26000)));
   const estimatedTransactions = Math.max(1, Math.round(Number(storeSignals?.estimatedTransactions || 20000)));
   const screenFactor = Number(SCREEN_TYPE_IMPRESSION_FACTORS[normalizedType] || 0.24);
@@ -1443,13 +1672,153 @@ function estimateGoalDailyImpressions(screen, placementRole, storeSignals = {}, 
       : normalizedRole === "entrance"
         ? clampNumber(0.94 + footTrafficIndex * 0.26, 0.94, 1.2)
         : clampNumber(0.92 + footTrafficIndex * 0.22, 0.92, 1.16);
-  const transactionFloor = normalizedRole === "checkout" ? estimatedTransactions * 0.18 : 0;
-  const estimated = Math.round(baseFootTraffic * screenFactor * roleFactor * cadenceFactor * demandFactor);
-  return Math.max(800, Math.min(22000, Math.max(transactionFloor, estimated)));
+  const transactionFloor = normalizedRole === "checkout" ? estimatedTransactions * 0.18 * shareOfScreen : 0;
+  const fullScreenEstimate = Math.round(baseFootTraffic * screenFactor * roleFactor * cadenceFactor * demandFactor);
+  const estimated = Math.round(fullScreenEstimate * shareOfScreen);
+  const minimumEstimate = Math.max(80, Math.round(800 * shareOfScreen));
+  const maximumEstimate = Math.max(minimumEstimate, Math.round(22000 * shareOfScreen));
+  return Math.max(minimumEstimate, Math.min(maximumEstimate, Math.max(transactionFloor, estimated)));
 }
 
 function computeGoalPlacementCost(cpm, estimatedImpressions) {
   return Math.max(0, Math.round((Number(cpm || 0) * Math.max(0, Number(estimatedImpressions || 0))) / 1000));
+}
+
+function readLineItemShareSlots(value, fallback = null, maxSlots = SCREEN_SHARE_SLOT_MAX) {
+  return readOptionalInteger(value, fallback, { min: 1, max: Math.max(1, Number(maxSlots || SCREEN_SHARE_SLOT_MAX)) });
+}
+
+function readScreenShareSlotCount(value, fallback = SCREEN_SHARE_SLOT_COUNT) {
+  return readOptionalInteger(value, fallback, { min: 1, max: SCREEN_SHARE_SLOT_MAX });
+}
+
+function readSellableShareSlots(value, totalSlots, fallback = DEFAULT_SELLABLE_SHARE_SLOTS) {
+  const resolvedTotalSlots = readScreenShareSlotCount(totalSlots, SCREEN_SHARE_SLOT_COUNT);
+  return readOptionalInteger(value, fallback, { min: 1, max: resolvedTotalSlots });
+}
+
+function resolveScreenShareConfig(screen = {}) {
+  const totalSlots = readScreenShareSlotCount(screen?.screenShareSlots, SCREEN_SHARE_SLOT_COUNT);
+  const sellableShareSlots = readSellableShareSlots(
+    screen?.defaultSellableShareSlots,
+    totalSlots,
+    Math.min(DEFAULT_SELLABLE_SHARE_SLOTS, totalSlots)
+  );
+
+  return {
+    totalSlots,
+    sellableShareSlots,
+    shareRatio: sellableShareSlots / totalSlots,
+    shareLabel: formatLineItemShareLabel(sellableShareSlots / totalSlots, totalSlots)
+  };
+}
+
+function formatLineItemShareLabel(shareRatio, totalSlots = SCREEN_SHARE_SLOT_COUNT) {
+  const normalizedRatio = clampNumber(Number(shareRatio || 0), 0, 1);
+  if (normalizedRatio <= 0) {
+    return "";
+  }
+  const scaledSlots = normalizedRatio * Math.max(1, totalSlots);
+  const roundedSlots = Math.round(scaledSlots);
+  if (Math.abs(scaledSlots - roundedSlots) <= 0.001 && roundedSlots >= 1 && roundedSlots <= totalSlots) {
+    return `${roundedSlots}/${totalSlots} share`;
+  }
+  return `${Math.max(1, Math.round(normalizedRatio * 100))}% share`;
+}
+
+function resolveLineItemDeliveryShares(lineItems = [], totalSlots = SCREEN_SHARE_SLOT_COUNT) {
+  const source = Array.isArray(lineItems) ? lineItems.filter(Boolean) : [];
+  if (source.length === 0) {
+    return [];
+  }
+
+  const explicitEntries = source
+    .map((lineItem) => ({
+      lineItem,
+      explicitSlots: readLineItemShareSlots(lineItem?.deliveryShareSlots, null, totalSlots)
+    }))
+    .filter((entry) => Number.isFinite(entry.explicitSlots) && entry.explicitSlots > 0);
+
+  if (explicitEntries.length === 0) {
+    const equalShare = 1 / source.length;
+    return source.map((lineItem) => ({
+      lineItem,
+      weight: 1,
+      shareRatio: equalShare,
+      shareLabel: formatLineItemShareLabel(equalShare, source.length)
+    }));
+  }
+
+  const explicitTotal = explicitEntries.reduce((sum, entry) => sum + Number(entry.explicitSlots || 0), 0);
+  const implicitEntries = source.filter(
+    (lineItem) => !explicitEntries.some((entry) => entry.lineItem === lineItem)
+  );
+  const remainingWeight = Math.max(0, totalSlots - explicitTotal);
+  const implicitWeight = implicitEntries.length > 0 ? remainingWeight / implicitEntries.length : 0;
+  const totalWeight = explicitTotal + implicitEntries.length * implicitWeight;
+
+  if (totalWeight <= 0) {
+    const equalShare = 1 / source.length;
+    return source.map((lineItem) => ({
+      lineItem,
+      weight: 1,
+      shareRatio: equalShare,
+      shareLabel: formatLineItemShareLabel(equalShare, source.length)
+    }));
+  }
+
+  return source.map((lineItem) => {
+    const explicitSlots = readLineItemShareSlots(lineItem?.deliveryShareSlots, null, totalSlots);
+    const weight = explicitSlots ?? implicitWeight;
+    const shareRatio = weight > 0 ? weight / totalWeight : 0;
+    return {
+      lineItem,
+      weight,
+      shareRatio,
+      shareLabel: formatLineItemShareLabel(shareRatio, totalSlots)
+    };
+  });
+}
+
+function lineItemOverlapsWindow(lineItem, window = {}) {
+  const windowStartMs = Date.parse(readIsoDateOr(window?.activeFrom, "1970-01-01T00:00:00.000Z"));
+  const windowEndMs = Date.parse(readIsoDateOr(window?.activeTo, "9999-12-31T23:59:59.999Z"));
+  const lineItemStartMs = Date.parse(readIsoDateOr(lineItem?.activeFrom, "1970-01-01T00:00:00.000Z"));
+  const lineItemEndMs = Date.parse(readIsoDateOr(lineItem?.activeTo, "9999-12-31T23:59:59.999Z"));
+  return lineItemStartMs <= windowEndMs && lineItemEndMs >= windowStartMs;
+}
+
+function resolveScreenShareAvailability(screen, { goal = null, planId = "" } = {}) {
+  const source = Array.isArray(screen?.lineItems) ? screen.lineItems.filter(Boolean) : [];
+  const goalWindow = resolveGoalFlightWindow(goal || null);
+  const shareConfig = resolveScreenShareConfig(screen);
+  const overlappingLineItems = source.filter((lineItem) => lineItemOverlapsWindow(lineItem, goalWindow));
+  const reservedSlots = overlappingLineItems.reduce((sum, lineItem) => {
+    if (isManagedGoalLineItemForGoal(lineItem, goal || {}, planId)) {
+      return sum;
+    }
+    return sum + Number(readLineItemShareSlots(lineItem?.deliveryShareSlots, 0, shareConfig.totalSlots) || 0);
+  }, 0);
+  const reclaimableSlots = overlappingLineItems.reduce((sum, lineItem) => {
+    if (!isManagedGoalLineItemForGoal(lineItem, goal || {}, planId)) {
+      return sum;
+    }
+    return sum + Number(readLineItemShareSlots(lineItem?.deliveryShareSlots, 0, shareConfig.totalSlots) || 0);
+  }, 0);
+  const availableSlots = Math.max(0, shareConfig.totalSlots - reservedSlots);
+
+  return {
+    goalWindow,
+    overlappingLineItems,
+    screenShareSlots: shareConfig.totalSlots,
+    sellableShareSlots: shareConfig.sellableShareSlots,
+    shareRatio: shareConfig.shareRatio,
+    shareLabel: shareConfig.shareLabel,
+    reservedSlots,
+    reclaimableSlots,
+    availableSlots,
+    hasCapacity: availableSlots >= shareConfig.sellableShareSlots
+  };
 }
 
 function rankGoalPlacementsForBudget(placements = []) {
@@ -1849,6 +2218,7 @@ function normalizeProductFeedItem(rawProduct, index, { includeStockByStore = fal
   const name = readOptionalString(product.name || product.ProductName, 180) || `Feed Product ${index + 1}`;
   const category = readOptionalString(product.category, 80).toLowerCase() || "general";
   const brand = readOptionalString(product.brand, 80) || "Store Brand";
+  const logo = normalizeBrandLogoPath(product.logo || product.brandLogo);
   const productPage =
     readOptionalString(product.productPage || product.ProductPage, 500) ||
     `https://store.example.com/products/${slugify(sku) || `sku-${index + 1}`}`;
@@ -1871,6 +2241,7 @@ function normalizeProductFeedItem(rawProduct, index, { includeStockByStore = fal
     name,
     category,
     brand,
+    logo,
     productPage,
     image,
     price,
@@ -1888,10 +2259,36 @@ function normalizeProductFeedItem(rawProduct, index, { includeStockByStore = fal
   return normalized;
 }
 
+function cloneProductFeedItem(product = {}, { includeStockByStore = false } = {}) {
+  const cloned = {
+    ...product,
+    tags: [...(product.tags || [])],
+    stockSummary: { ...(product.stockSummary || {}) }
+  };
+  if (includeStockByStore && product.stockByStore && typeof product.stockByStore === "object") {
+    cloned.stockByStore = { ...product.stockByStore };
+  }
+  return cloned;
+}
+
 async function readProductFeed(options = {}) {
   const includeStockByStore = readBoolean(options?.includeStockByStore, false);
-  if (!includeStockByStore && Array.isArray(cachedProductFeed)) {
-    return cachedProductFeed.map((product) => ({ ...product, tags: [...(product.tags || [])], stockSummary: { ...(product.stockSummary || {}) } }));
+  let currentMtimeMs = null;
+  try {
+    const stats = await fs.stat(PRODUCT_FEED_FILE);
+    currentMtimeMs = Number.isFinite(stats?.mtimeMs) ? stats.mtimeMs : null;
+  } catch {
+    currentMtimeMs = null;
+  }
+
+  if (
+    !includeStockByStore &&
+    Array.isArray(cachedProductFeed) &&
+    cachedProductFeedMtimeMs !== null &&
+    currentMtimeMs !== null &&
+    cachedProductFeedMtimeMs === currentMtimeMs
+  ) {
+    return cachedProductFeed.map((product) => cloneProductFeedItem(product));
   }
 
   try {
@@ -1901,20 +2298,49 @@ async function readProductFeed(options = {}) {
     const normalized = source.map((product, index) => normalizeProductFeedItem(product, index, { includeStockByStore }));
     if (!includeStockByStore) {
       cachedProductFeed = normalized;
+      cachedProductFeedMtimeMs = currentMtimeMs;
     }
     return normalized;
   } catch {
     const normalized = PRODUCT_FEED_DEFAULT.map((product, index) => normalizeProductFeedItem(product, index, { includeStockByStore }));
     if (!includeStockByStore) {
       cachedProductFeed = normalized;
+      cachedProductFeedMtimeMs = currentMtimeMs;
     }
     return normalized;
   }
 }
 
+function buildProductAccounts(feed = []) {
+  return [
+    ...new Map(
+      (Array.isArray(feed) ? feed : [])
+        .filter((product) => product.advertiserId)
+        .map((product) => [
+          product.advertiserId,
+          {
+            advertiserId: product.advertiserId,
+            brand: product.brand,
+            logo: normalizeBrandLogoPath(product.logo || product.brandLogo)
+          }
+        ])
+    ).values()
+  ].sort((left, right) => left.brand.localeCompare(right.brand) || left.advertiserId.localeCompare(right.advertiserId));
+}
+
 async function readProductImageManifest() {
   try {
     const raw = await fs.readFile(PRODUCT_IMAGE_MANIFEST_FILE, "utf8");
+    const parsed = JSON.parse(raw.replace(/^\uFEFF/, ""));
+    return parsed && typeof parsed === "object" ? parsed : { items: {} };
+  } catch {
+    return { items: {} };
+  }
+}
+
+async function readBrandLogoManifest() {
+  try {
+    const raw = await fs.readFile(BRAND_LOGO_MANIFEST_FILE, "utf8");
     const parsed = JSON.parse(raw.replace(/^\uFEFF/, ""));
     return parsed && typeof parsed === "object" ? parsed : { items: {} };
   } catch {
@@ -1960,6 +2386,45 @@ async function buildProductImageProgressSnapshot() {
   };
 }
 
+async function buildBrandLogoProgressSnapshot() {
+  const [feed, manifest] = await Promise.all([readProductFeed(), readBrandLogoManifest()]);
+  const accounts = buildProductAccounts(feed);
+  const items = manifest?.items && typeof manifest.items === "object" ? Object.values(manifest.items) : [];
+  const total = accounts.length;
+  const generatedBasePath = BRAND_LOGO_BASE_PATH.replace(/\/+$/, "");
+  const generatedAccountIds = new Set(
+    accounts
+      .filter((account) => {
+        const logo = readOptionalString(account?.logo, 500);
+        return logo === generatedBasePath || logo.startsWith(`${generatedBasePath}/`);
+      })
+      .map((account) => readOptionalString(account?.advertiserId, 120))
+      .filter(Boolean)
+  );
+  const generated = generatedAccountIds.size;
+  const failed = items.filter((entry) => {
+    const advertiserId = readOptionalString(entry?.advertiserId, 120);
+    return readOptionalString(entry?.status, 40) === "failed" && (!advertiserId || !generatedAccountIds.has(advertiserId));
+  }).length;
+  const remaining = Math.max(0, total - generated);
+  const untouched = Math.max(0, remaining - failed);
+  const processed = generated;
+  const percentage = total > 0 ? Math.round((generated / total) * 1000) / 10 : 0;
+
+  return {
+    total,
+    generated,
+    failed,
+    processed,
+    remaining,
+    untouched,
+    percentage,
+    running: Boolean(brandLogoGenerationJob?.running),
+    jobId: readOptionalString(brandLogoGenerationJob?.jobId, 120),
+    updatedAt: readOptionalString(manifest?.updatedAt, 80)
+  };
+}
+
 function buildProductFeedLookup(feed = []) {
   return new Map(
     (Array.isArray(feed) ? feed : [])
@@ -1979,13 +2444,22 @@ function preferFeedImageForProduct(product, feedLookup) {
   }
   const feedProduct = feedLookup.get(sku);
   const feedImage = readOptionalString(feedProduct?.image, 500);
+  const feedLogo = normalizeBrandLogoPath(feedProduct?.logo || feedProduct?.brandLogo);
   if (!feedImage) {
-    return product;
+    return feedLogo
+      ? {
+          ...product,
+          BrandLogo: feedLogo,
+          brandLogo: feedLogo
+        }
+      : product;
   }
   return {
     ...product,
     Image: feedImage,
-    image: feedImage
+    image: feedImage,
+    BrandLogo: feedLogo || readOptionalString(product?.BrandLogo || product?.brandLogo, 500),
+    brandLogo: feedLogo || readOptionalString(product?.BrandLogo || product?.brandLogo, 500)
   };
 }
 
@@ -2907,18 +3381,10 @@ function buildGoalTemplateRationale(screen, templateId, goal, planningSignals = 
   return `Uses ${template.name} because it best matches the ${goal?.objective || "goal"} brief for this screen.`;
 }
 
-function buildGoalRefreshRationale(refreshInterval, goal, planningSignals = {}, goalProductsForScreen = []) {
+function buildGoalShareRationale(shareRatio, refreshInterval, totalSlots = SCREEN_SHARE_SLOT_COUNT) {
   const seconds = Math.round(Number(refreshInterval || 0) / 1000);
-  if (goal?.aggressiveness === "Aggressive" || planningSignals.wantsFastCadence) {
-    return `Refreshes every ${seconds}s to keep the message moving at a higher-velocity planning pace.`;
-  }
-  if (goal?.aggressiveness === "Conservative") {
-    return `Refreshes every ${seconds}s to preserve stability and minimize unnecessary change.`;
-  }
-  if (goalProductsForScreen.length > 1) {
-    return `Refreshes every ${seconds}s to balance rotation across the selected assortment.`;
-  }
-  return `Refreshes every ${seconds}s for balanced in-store pacing.`;
+  const shareLabel = formatLineItemShareLabel(shareRatio, totalSlots) || "screen share";
+  return `Buys ${shareLabel} of the screen rotation while keeping the installed ${seconds}s screen cadence unchanged.`;
 }
 
 function buildGoalExpectedOutcome(screen, goal) {
@@ -3566,10 +4032,14 @@ function buildStorageProductFromFeed(feedProduct, screen, templateId, objectiveI
       ProductName: goalProduct.name,
       ProductPage: goalProduct.productPage,
       Image: goalProduct.image,
+      BrandLogo: goalProduct.logo,
       Price: goalProduct.price,
       ComparePrice: goalProduct.comparePrice,
       Rating: goalProduct.rating,
-      ClientAdvertiserId: goalProduct.advertiserId
+      ClientAdvertiserId: goalProduct.advertiserId,
+      advertiserId: goalProduct.advertiserId,
+      brand: goalProduct.brand,
+      category: goalProduct.category
     },
     screen.screenId,
     screen.location,
@@ -3582,6 +4052,7 @@ function buildStorageProductFromFeed(feedProduct, screen, templateId, objectiveI
     targetSku: goalProduct.sku,
     targetCategory: goalProduct.category,
     targetBrand: goalProduct.brand,
+    brandLogo: normalizeBrandLogoPath(goalProduct.logo),
     promotion: objective.creativeDefaults.promotion
   });
 
@@ -3624,6 +4095,9 @@ function resolveGoalFlightWindow(goal = null) {
 function buildGoalLineItemForScreen(screen, templateId, objectiveId, goalProductsForScreen, fallbackFeedProduct = null, goal = null) {
   const nextTemplate = getTemplatePreset(templateId);
   const { activeFrom, activeTo } = resolveGoalFlightWindow(goal);
+  const goalAdvertiserId = readOptionalString(goal?.advertiserId, 120);
+  const goalBrand = readOptionalString(goal?.brand, 120);
+  const shareConfig = resolveScreenShareConfig(screen);
   let products = [];
   if (Array.isArray(goalProductsForScreen) && goalProductsForScreen.length > 0) {
     products = goalProductsForScreen.map((product) =>
@@ -3646,12 +4120,96 @@ function buildGoalLineItemForScreen(screen, templateId, objectiveId, goalProduct
   const suffix = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
   return {
     lineItemId: `${screen.screenId}-LI-GOAL-${suffix}`.slice(0, 120),
-    name: `${titleCase(screen.location)} Goal Agent Creative`,
+    name: `${goalBrand || titleCase(screen.location)} Sponsored Share`,
     activeFrom,
     activeTo,
     templateId: nextTemplate.id,
+    deliverySource: GOAL_LINE_ITEM_SOURCE,
+    deliveryShareSlots: shareConfig.sellableShareSlots,
+    goalPlanId: readOptionalString(goal?.planId, 120),
+    goalAdvertiserId,
+    goalObjective: readOptionalString(objectiveId, 40),
     products
   };
+}
+
+function pickFallbackFeedProductForScreen(screen, feed = []) {
+  const source = Array.isArray(feed) ? feed : [];
+  if (source.length === 0) {
+    return null;
+  }
+  const pageToken = normalizeMatchToken(screen?.pageId);
+  const locationToken = normalizeMatchToken(screen?.location);
+  return (
+    source.find((product) => {
+      const categoryToken = normalizeMatchToken(product?.category);
+      return categoryToken && (categoryToken === pageToken || categoryToken === locationToken);
+    }) ||
+    source[0] ||
+    null
+  );
+}
+
+function buildBaselineRotationLineItemForScreen(screen, feed = [], nowIso = new Date().toISOString()) {
+  const templateId = readOptionalString(screen?.templateId, 80) || "fullscreen-banner";
+  const fallbackFeedProduct = pickFallbackFeedProductForScreen(screen, feed);
+  const fallbackProduct = fallbackFeedProduct
+    ? buildStorageProductFromFeed(fallbackFeedProduct, screen, templateId, "awareness")
+    : buildStorageProduct({}, screen.screenId, screen.location, templateId);
+  const activeFrom = new Date(Date.parse(nowIso) - 5 * 60 * 1000).toISOString();
+  const activeTo = new Date(Date.parse(nowIso) + 365 * 24 * 60 * 60 * 1000).toISOString();
+
+  return normalizeLineItemForStorage(
+    {
+      name: `${titleCase(screen.location || screen.pageId || "store")} Existing Rotation`,
+      activeFrom,
+      activeTo,
+      templateId,
+      products: [fallbackProduct]
+    },
+    {
+      screenId: screen.screenId,
+      templateId,
+      location: screen.location,
+      fallbackProduct
+    },
+    0
+  );
+}
+
+function isManagedGoalLineItem(lineItem) {
+  return readOptionalString(lineItem?.deliverySource, 40) === GOAL_LINE_ITEM_SOURCE;
+}
+
+function isManagedGoalLineItemForGoal(lineItem, goal = {}, planId = "") {
+  if (!isManagedGoalLineItem(lineItem)) {
+    return false;
+  }
+  const normalizedPlanId = readOptionalString(planId || goal?.planId, 120);
+  const normalizedAdvertiserId = readOptionalString(goal?.advertiserId, 120);
+  const lineItemPlanId = readOptionalString(lineItem?.goalPlanId, 120);
+  const lineItemAdvertiserId = readOptionalString(lineItem?.goalAdvertiserId, 120);
+  return (
+    (normalizedPlanId && lineItemPlanId === normalizedPlanId) ||
+    (normalizedAdvertiserId && lineItemAdvertiserId === normalizedAdvertiserId)
+  );
+}
+
+function findPreferredLineItem(lineItems = [], { lineItemId = "", goalPlanId = "", advertiserId = "" } = {}) {
+  const source = Array.isArray(lineItems) ? lineItems.filter(Boolean) : [];
+  const normalizedLineItemId = readOptionalString(lineItemId, 120);
+  if (normalizedLineItemId) {
+    return source.find((entry) => readOptionalString(entry?.lineItemId, 120) === normalizedLineItemId) || null;
+  }
+  const normalizedGoalPlanId = readOptionalString(goalPlanId, 120);
+  if (normalizedGoalPlanId) {
+    return source.find((entry) => readOptionalString(entry?.goalPlanId, 120) === normalizedGoalPlanId) || null;
+  }
+  const normalizedAdvertiserId = readOptionalString(advertiserId, 120);
+  if (normalizedAdvertiserId) {
+    return source.find((entry) => readOptionalString(entry?.goalAdvertiserId, 120) === normalizedAdvertiserId) || null;
+  }
+  return null;
 }
 
 function summarizeLiveProduct(product, templateId, location = "") {
@@ -3688,11 +4246,21 @@ function summarizeLiveProduct(product, templateId, location = "") {
   };
 }
 
-function buildLiveScreenSnapshot(screen) {
+function buildLiveScreenSnapshot(screen, options = {}) {
   const now = new Date();
   const lineItems = Array.isArray(screen.lineItems) ? screen.lineItems : [];
   const activeLineItems = lineItems.filter((lineItem) => isLineItemActive(lineItem, now));
-  const selectedLineItem = activeLineItems[0] || lineItems[0] || null;
+  const candidateLineItems = activeLineItems.length > 0 ? activeLineItems : lineItems;
+  const shareConfig = resolveScreenShareConfig(screen);
+  const deliveryShares = resolveLineItemDeliveryShares(candidateLineItems, shareConfig.totalSlots);
+  const shareByLineItemId = new Map(
+    deliveryShares.map((entry) => [readOptionalString(entry.lineItem?.lineItemId, 120), entry])
+  );
+  const selectedLineItem =
+    findPreferredLineItem(candidateLineItems, options) ||
+    candidateLineItems[0] ||
+    null;
+  const selectedShare = shareByLineItemId.get(readOptionalString(selectedLineItem?.lineItemId, 120)) || null;
   const templateId =
     readOptionalString(selectedLineItem?.templateId, 120) ||
     readOptionalString(screen.templateId, 120) ||
@@ -3715,11 +4283,16 @@ function buildLiveScreenSnapshot(screen) {
     screenSize: screen.screenSize,
     templateId: template.id,
     templateName: template.name,
-    format: readOptionalString(screen.format, 120) || buildDefaultFormat(template.id, screen.screenSize),
+    format: buildDefaultFormat(template.id, screen.screenSize),
     refreshInterval: readRefreshInterval(screen.refreshInterval),
     lineItemCount: lineItems.length,
     activeLineItemId: selectedLineItem?.lineItemId || "",
     activeLineItemName: selectedLineItem?.name || "",
+    activeLineItemShareRatio: Number(selectedShare?.shareRatio || 0),
+    activeLineItemShareLabel: readOptionalString(selectedShare?.shareLabel, 40),
+    screenShareSlots: shareConfig.totalSlots,
+    defaultSellableShareSlots: shareConfig.sellableShareSlots,
+    defaultSellableShareLabel: shareConfig.shareLabel,
     productCount: sourceProducts.length,
     products,
     sharedPlayerUrl: SHARED_PLAYER_URL,
@@ -3730,13 +4303,13 @@ function buildLiveScreenSnapshot(screen) {
   };
 }
 
-function buildLiveScreensSnapshot(db, screenIds) {
+function buildLiveScreensSnapshot(db, screenIds, options = {}) {
   const uniqueIds = [...new Set((screenIds || []).map((entry) => readOptionalString(entry, 80)).filter(Boolean))];
   const screens = uniqueIds
     .map((screenId) => (db.screens || []).find((entry) => entry.screenId === screenId))
     .filter(Boolean)
     .sort((left, right) => left.screenId.localeCompare(right.screenId));
-  return screens.map((screen) => buildLiveScreenSnapshot(screen));
+  return screens.map((screen) => buildLiveScreenSnapshot(screen, options));
 }
 
 function ensureAgentRunsArray(db) {
@@ -4804,44 +5377,6 @@ function computeGoalTemplateId(screen, objectiveId, context = {}) {
   }
 }
 
-function computeGoalRefreshInterval(templateId, aggressiveness, context = {}) {
-  const template = getTemplatePreset(templateId);
-  const base = readRefreshInterval(template.defaultRefreshInterval);
-  const planningSignals = context?.planningSignals && typeof context.planningSignals === "object" ? context.planningSignals : {};
-  const objectiveId = readOptionalString(context?.objectiveId, 40);
-  const goalProductsForScreen = Array.isArray(context?.goalProductsForScreen) ? context.goalProductsForScreen : [];
-  let multiplier = 1;
-
-  switch (aggressiveness) {
-    case "Conservative":
-      multiplier = 1.2;
-      break;
-    case "Aggressive":
-      multiplier = 0.78;
-      break;
-    case "Balanced":
-    default:
-      multiplier = 1;
-      break;
-  }
-
-  if (planningSignals.wantsFastCadence) {
-    multiplier *= 0.88;
-  }
-  if (planningSignals.wantsAssortmentRotation || goalProductsForScreen.length > 1) {
-    multiplier *= 0.92;
-  }
-  if (objectiveId === "premium" && !planningSignals.wantsFastCadence) {
-    multiplier *= 1.08;
-  }
-  if (objectiveId === "clearance") {
-    multiplier *= 0.92;
-  }
-
-  const adjusted = Math.round((base * multiplier) / 1000) * 1000;
-  return readRefreshInterval(adjusted);
-}
-
 function computeGoalConfidence(screen, objectiveId, productRelevance = 0.58, planningScore = 0.58, scoreBreakdown = {}) {
   const screenType = toTrimmedString(screen.screenType).toLowerCase();
   const pageId = toTrimmedString(screen.pageId).toLowerCase();
@@ -4888,7 +5423,7 @@ function buildGoalReason(screen, objective, targetProducts = [], productRelevanc
         skuFocus ? ` SKU focus: ${skuFocus}.` : ""
       }`;
     case "clearance":
-      return `${screenType} at ${location}: increase rotation pressure to move excess stock (${relevanceLabel}).${
+      return `${screenType} at ${location}: increase on-screen presence to move excess stock (${relevanceLabel}).${
         skuFocus ? ` SKU focus: ${skuFocus}.` : ""
       }`;
     case "premium":
@@ -4925,6 +5460,39 @@ function buildGoalPlan(goal, screens) {
     const currentRefreshInterval = readRefreshInterval(screen.refreshInterval);
     const placementRole = getGoalScreenRole(screen);
     const screenType = readOptionalString(screen.screenType, 80) || "Horizontal Screen";
+    const shareAvailability = resolveScreenShareAvailability(screen, { goal });
+    const plannedShareRatio = Number(shareAvailability.shareRatio || 0);
+    const plannedShareLabel = readOptionalString(shareAvailability.shareLabel, 40) || "configured screen share";
+    const screenShareSlots = Number(shareAvailability.screenShareSlots || SCREEN_SHARE_SLOT_COUNT);
+    const sellableShareSlots = Number(shareAvailability.sellableShareSlots || DEFAULT_SELLABLE_SHARE_SLOTS);
+    const reservedShareSlots = Number(shareAvailability.reservedSlots || 0);
+    const availableShareSlots = Number(shareAvailability.availableSlots || 0);
+    const shareRationale = buildGoalShareRationale(plannedShareRatio, currentRefreshInterval, screenShareSlots);
+    if (!shareAvailability.hasCapacity) {
+      excludedScreens.push({
+        screenId: screen.screenId,
+        storeId: screen.storeId,
+        pageId: screen.pageId,
+        location: screen.location,
+        screenType,
+        placementRole,
+        objective: goal.objective,
+        currentTemplateId,
+        recommendedTemplateId: currentTemplateId,
+        screenRefreshInterval: currentRefreshInterval,
+        shareOfScreen: Number(plannedShareRatio.toFixed(4)),
+        shareLabel: plannedShareLabel,
+        screenShareSlots,
+        sellableShareSlots,
+        reservedShareSlots,
+        availableShareSlots,
+        reasonCode: "share-capacity",
+        reasonShort: `Held out because this screen's ${plannedShareLabel} inventory is already fully allocated for the selected flight window.`,
+        reason: `Skipped by supply guardrail. ${screen.screenId} already has ${reservedShareSlots}/${screenShareSlots} sold share slot(s), so there is no open ${plannedShareLabel} to buy in the selected flight window.`,
+        shareRationale
+      });
+      continue;
+    }
     const storeId = readOptionalString(screen.storeId, 80);
     const backendStoreSignals = DEMO_STORE_SALES_SIGNAL_MAP.get(storeId) || {};
     const storeSignals = storeRankingMap.get(storeId) || {
@@ -4943,11 +5511,6 @@ function buildGoalPlan(goal, screens) {
       targetProducts.length > 0
         ? pickGoalProductsForScreenWithObjective(screen, targetProducts, recommendedTemplateId, goal.objective)
         : [];
-    const recommendedRefreshInterval = computeGoalRefreshInterval(recommendedTemplateId, goal.aggressiveness, {
-      planningSignals,
-      objectiveId: goal.objective,
-      goalProductsForScreen
-    });
     const billingSignals = {
       inferredFootTraffic: Number(backendStoreSignals.inferredFootTraffic || 26000),
       estimatedTransactions: Number(backendStoreSignals.estimatedTransactions || 20000),
@@ -4959,7 +5522,10 @@ function buildGoalPlan(goal, screens) {
       screen,
       placementRole,
       billingSignals,
-      recommendedRefreshInterval
+      {
+        refreshInterval: currentRefreshInterval,
+        shareOfScreen: plannedShareRatio
+      }
     );
     const estimatedImpressions = Math.max(0, Math.round(estimatedDailyImpressions * Math.max(1, Number(goal.flightDays || 1))));
     const placementCost = computeGoalPlacementCost(cpm, estimatedImpressions);
@@ -5001,13 +5567,11 @@ function buildGoalPlan(goal, screens) {
       ).toFixed(2)
     );
     const templateChanged = currentTemplateId !== recommendedTemplateId;
-    const refreshChanged = currentRefreshInterval !== recommendedRefreshInterval;
     const targetingChanged =
       targetSkuIds.length > 0 && !screenContainsAnyTargetSku(screen, targetSkuIds);
     const reasonShort = buildGoalReasonShort(screen, goal, { trafficFit });
     const expectedOutcome = buildGoalExpectedOutcome(screen, goal);
     const templateRationale = buildGoalTemplateRationale(screen, recommendedTemplateId, goal, planningSignals, goalProductsForScreen);
-    const refreshRationale = buildGoalRefreshRationale(recommendedRefreshInterval, goal, planningSignals, goalProductsForScreen);
     const confidence = computeGoalConfidence(screen, goal.objective, productRelevance, score, scoreBreakdown);
     const reason = buildGoalReason(screen, goal.objective, targetProducts, productRelevance, { reasonShort });
     const recommendedTargetSkus = goalProductsForScreen.map((product) => normalizeSku(product.sku));
@@ -5034,18 +5598,22 @@ function buildGoalPlan(goal, screens) {
       continuityFit: scoreBreakdown.continuityFit,
       targetingChanged,
       templateChanged,
-      refreshChanged,
       recommendedTargetSkus,
       currentTemplateId,
       recommendedTemplateId,
-      currentRefreshInterval,
-      recommendedRefreshInterval,
+      screenRefreshInterval: currentRefreshInterval,
+      shareOfScreen: Number(plannedShareRatio.toFixed(4)),
+      shareLabel: plannedShareLabel,
+      screenShareSlots,
+      sellableShareSlots,
+      reservedShareSlots,
+      availableShareSlots,
       cpm,
       estimatedDailyImpressions,
       estimatedImpressions,
       placementCost,
       templateRationale,
-      refreshRationale
+      shareRationale
     };
 
     if (targetProducts.length > 0 && goalProductsForScreen.length === 0 && assortmentFit < planningProfile.minAssortmentFit && !isObjectivePreferredScreen(screen, goal.objective)) {
@@ -5112,9 +5680,6 @@ function buildGoalPlan(goal, screens) {
   }
 
   for (const candidate of rankedRecommendedPlacements) {
-    if (!candidate.templateChanged && !candidate.refreshChanged && !candidate.targetingChanged) {
-      continue;
-    }
     proposedChanges.push({
       screenId: candidate.screenId,
       storeId: candidate.storeId,
@@ -5141,33 +5706,51 @@ function buildGoalPlan(goal, screens) {
       recommendedTargetSkus: candidate.recommendedTargetSkus,
       currentTemplateId: candidate.currentTemplateId,
       recommendedTemplateId: candidate.recommendedTemplateId,
-      currentRefreshInterval: candidate.currentRefreshInterval,
-      recommendedRefreshInterval: candidate.recommendedRefreshInterval,
+      screenRefreshInterval: candidate.screenRefreshInterval,
+      shareOfScreen: candidate.shareOfScreen,
+      shareLabel: candidate.shareLabel,
       cpm: candidate.cpm,
       estimatedDailyImpressions: candidate.estimatedDailyImpressions,
       estimatedImpressions: candidate.estimatedImpressions,
       placementCost: candidate.placementCost,
       templateRationale: candidate.templateRationale,
-      refreshRationale: candidate.refreshRationale
+      shareRationale: candidate.shareRationale
     });
   }
 
   const templateSwitches = proposedChanges.filter(
     (change) => change.currentTemplateId !== change.recommendedTemplateId
   ).length;
-  const refreshUpdates = proposedChanges.filter(
-    (change) => change.currentRefreshInterval !== change.recommendedRefreshInterval
-  ).length;
   const skuTargetUpdates = proposedChanges.filter((change) => Boolean(change.targetingChanged)).length;
   const averageScore = averageOf(rankedRecommendedPlacements.map((entry) => Number(entry.score || 0)), 0);
   const averageConfidence = averageOf(rankedRecommendedPlacements.map((entry) => Number(entry.confidence || 0)), 0);
   const budget = buildGoalBudget(goal, rankedRecommendedPlacements);
+  const shareCapacityExclusions = excludedScreens.filter((entry) => entry.reasonCode === "share-capacity").length;
+  const shareLabelsUsed = [
+    ...new Set(
+      [...rankedRecommendedPlacements, ...excludedScreens]
+        .map((entry) => readOptionalString(entry?.shareLabel, 40))
+        .filter(Boolean)
+    )
+  ];
+  const shareSummaryLabel = shareLabelsUsed.length === 1 ? shareLabelsUsed[0] : "configured screen share";
+  const soldOutSharePhrase = shareLabelsUsed.length === 1 ? shareLabelsUsed[0] : "their configured screen share";
+  const deliverySummaryLine =
+    shareLabelsUsed.length === 1
+      ? `Delivery: fixed ${shareSummaryLabel} with installed screen cadence left unchanged.`
+      : "Delivery: screen-specific share settings with installed screen cadence left unchanged.";
+  const supplyGuardrailLine =
+    shareLabelsUsed.length === 1
+      ? `Supply guardrail: only screens with an open ${shareSummaryLabel} in the selected flight window were eligible.`
+      : "Supply guardrail: only screens with an open configured share in the selected flight window were eligible.";
+  const spendSummarySharePhrase =
+    shareLabelsUsed.length === 1 ? `${shareSummaryLabel} of screen rotation` : "the configured share setting on each screen";
 
   const summary =
-    proposedChanges.length > 0
-      ? `CMax recommends ${proposedChanges.length} activation adjustment(s) across ${rankedRecommendedPlacements.length} placement(s) for ${objectiveDetails.label}.`
-      : rankedRecommendedPlacements.length > 0
-        ? `CMax recommends ${rankedRecommendedPlacements.length} placement(s) for ${objectiveDetails.label}. The current line-up is already aligned for launch.`
+    rankedRecommendedPlacements.length > 0
+      ? `CMax recommends ${rankedRecommendedPlacements.length} sponsored ${shareSummaryLabel} placement(s) for ${objectiveDetails.label}.`
+      : shareCapacityExclusions > 0 && shareCapacityExclusions === excludedScreens.length
+        ? `CMax could not identify an in-scope placement line-up for ${objectiveDetails.label} because the best-fit screens are already fully allocated at ${soldOutSharePhrase}.`
         : `CMax could not identify an in-scope placement line-up for ${objectiveDetails.label}.`;
 
   const targetSourceLabel =
@@ -5193,16 +5776,22 @@ function buildGoalPlan(goal, screens) {
       ? `Prompt terms: ${goal.inferredTerms.slice(0, 6).join(", ")}.`
       : "";
   const exclusionSummary =
-    excludedScreens.length > 0
-      ? `${excludedScreens.length} placement(s) were left out because they did not fit the brief.`
-      : targetProducts.length > 0
-        ? "All in-scope placements fit the brief."
-        : "";
+    shareCapacityExclusions > 0 && excludedScreens.length > shareCapacityExclusions
+      ? `${shareCapacityExclusions} placement(s) were held out because ${soldOutSharePhrase} was already sold for the selected flight window. ${
+          excludedScreens.length - shareCapacityExclusions
+        } more were left out because they did not fit the brief.`
+      : shareCapacityExclusions > 0
+        ? `${shareCapacityExclusions} placement(s) were held out because ${soldOutSharePhrase} was already sold for the selected flight window.`
+        : excludedScreens.length > 0
+          ? `${excludedScreens.length} placement(s) were left out because they did not fit the brief.`
+          : targetProducts.length > 0
+            ? "All in-scope placements fit the brief."
+            : "";
   const spendSummary =
     budget.maxSpend > 0
       ? `Estimated max spend ${GOAL_PRICING_MODEL.currencySymbol}${budget.maxSpend.toLocaleString()} over ${goal.flightDays} day(s) from ${formatCount(
           budget.maxEstimatedImpressions
-        )} modeled impressions.`
+        )} modeled impressions at ${spendSummarySharePhrase}.`
       : "";
   let strategyHeadline = "The planner selected the strongest placements for the brief.";
   switch (goal.objective) {
@@ -5225,6 +5814,8 @@ function buildGoalPlan(goal, screens) {
     readOptionalString(goal.storeSelectionReason, 280),
     planningSignals.assortmentCategory ? `Assortment category anchor: ${titleCase(planningSignals.assortmentCategory)}.` : "",
     "Pricing: retailer-set CPM by screen type against modeled impression delivery.",
+    deliverySummaryLine,
+    supplyGuardrailLine,
     Array.isArray(planningSignals.briefThemes) && planningSignals.briefThemes.length > 0
       ? `Brief themes: ${planningSignals.briefThemes.slice(0, 4).join(", ")}.`
       : ""
@@ -5249,7 +5840,7 @@ function buildGoalPlan(goal, screens) {
       targetSkus: targetProducts.length,
       proposedChanges: proposedChanges.length,
       templateSwitches,
-      refreshUpdates,
+      refreshUpdates: 0,
       skuTargetUpdates,
       flightDays: goal.flightDays,
       maxSpend: budget.maxSpend,
@@ -5410,6 +6001,9 @@ function buildStorageProduct(rawProduct, screenId, location, templateId) {
   const product = rawProduct && typeof rawProduct === "object" ? rawProduct : {};
   const template = getTemplatePreset(templateId);
   const renderingAttributes = parseJsonObject(product.RenderingAttributes ?? product.renderingAttributes);
+  const brandLogo = normalizeBrandLogoPath(
+    product.BrandLogo || product.brandLogo || renderingAttributes.brandLogo || renderingAttributes.logo
+  );
   const qrMetadata = buildTemplateQrMetadata(
     template.id,
     readOptionalString(renderingAttributes.goalObjective, 80),
@@ -5440,6 +6034,9 @@ function buildStorageProduct(rawProduct, screenId, location, templateId) {
     ProductName: productName,
     ProductPage: productPage,
     Image: image,
+    BrandLogo: brandLogo,
+    brand: readOptionalString(product.brand, 80) || readOptionalString(renderingAttributes.targetBrand, 80),
+    category: readOptionalString(product.category, 80) || readOptionalString(renderingAttributes.targetCategory, 80),
     Price: readOptionalString(product.Price, 30) || readOptionalString(product.price, 30) || "29.99",
     ComparePrice:
       readOptionalString(product.ComparePrice, 30) || readOptionalString(product.comparePrice, 30) || "39.99",
@@ -5457,6 +6054,7 @@ function buildStorageProduct(rawProduct, screenId, location, templateId) {
       cta: readOptionalString(renderingAttributes.cta, 80) || readOptionalString(qrMetadata.qrLabel, 80) || template.defaultCta,
       subcopy: readOptionalString(renderingAttributes.subcopy, 240) || template.defaultSubcopy,
       legal: readOptionalString(renderingAttributes.legal, 280) || template.defaultLegal,
+      brandLogo,
       templateId: readOptionalString(renderingAttributes.templateId, 80) || template.id
     }),
     OnLoadBeacon: readOptionalString(product.OnLoadBeacon, 500),
@@ -5483,6 +6081,11 @@ function normalizeLineItemForStorage(rawLineItem, { screenId, templateId, locati
     activeFrom: readIsoDateOr(lineItem.activeFrom, startFallback),
     activeTo: readIsoDateOr(lineItem.activeTo, endFallback),
     templateId: readOptionalString(lineItem.templateId, 120) || templateId,
+    deliverySource: readOptionalString(lineItem.deliverySource, 40),
+    deliveryShareSlots: readLineItemShareSlots(lineItem.deliveryShareSlots, null),
+    goalPlanId: readOptionalString(lineItem.goalPlanId, 120),
+    goalAdvertiserId: readOptionalString(lineItem.goalAdvertiserId, 120),
+    goalObjective: readOptionalString(lineItem.goalObjective, 40),
     products: products.map((product) => buildStorageProduct(product, screenId, location, templateId))
   };
 }
@@ -5540,6 +6143,9 @@ function normalizeProductForDelivery(rawProduct, { screenId, lineItemId, index, 
     readOptionalString(product.productId, 80) ||
     `${screenId}-SKU-${index + 1}`;
   const renderingAttributes = parseJsonObject(product.RenderingAttributes ?? product.renderingAttributes);
+  const brandLogo = normalizeBrandLogoPath(
+    product.BrandLogo || product.brandLogo || renderingAttributes.brandLogo || renderingAttributes.logo
+  );
   const image = resolveProductImagePath(readOptionalString(product.Image, 500) || readOptionalString(product.image, 500), {
     sku: productId,
     category: readOptionalString(product.category, 80) || readOptionalString(renderingAttributes.targetCategory, 80),
@@ -5558,6 +6164,9 @@ function normalizeProductForDelivery(rawProduct, { screenId, lineItemId, index, 
       readOptionalString(product.productPage, 500) ||
       "https://store.example.com/products/featured",
     Image: image,
+    BrandLogo: brandLogo,
+    brand: readOptionalString(product.brand, 80) || readOptionalString(renderingAttributes.targetBrand, 80),
+    category: readOptionalString(product.category, 80) || readOptionalString(renderingAttributes.targetCategory, 80),
     Price: readOptionalString(product.Price, 30) || readOptionalString(product.price, 30) || "0.00",
     ComparePrice: readOptionalString(product.ComparePrice, 30) || readOptionalString(product.comparePrice, 30),
     Rating: readOptionalString(product.Rating, 10) || readOptionalString(product.rating, 10),
@@ -5566,8 +6175,16 @@ function normalizeProductForDelivery(rawProduct, { screenId, lineItemId, index, 
       readOptionalString(product.ClientAdvertiserId, 120) ||
       readOptionalString(product.clientAdvertiserId, 120) ||
       "demo-advertiser",
+    advertiserId:
+      readOptionalString(product.advertiserId, 120) ||
+      readOptionalString(product.ClientAdvertiserId, 120) ||
+      readOptionalString(product.clientAdvertiserId, 120) ||
+      "demo-advertiser",
     RenderingAttributes: sanitizeInStoreMessagingAttributes(
-      product.RenderingAttributes ?? product.renderingAttributes ?? { inStore: true },
+      {
+        ...parseJsonObject(product.RenderingAttributes ?? product.renderingAttributes ?? { inStore: true }),
+        brandLogo
+      },
       templateId
     ),
     OnLoadBeacon: buildBeaconUrl("play", screenId, adid, trackingBaseUrl),
@@ -5590,14 +6207,46 @@ function isLineItemActive(lineItem, currentDate) {
   return fromDate <= currentDate && currentDate <= toDate;
 }
 
-function pickLineItem(screenId, lineItems) {
-  if (!lineItems.length) {
+function pickLineItem(screenId, lineItems, totalSlots = SCREEN_SHARE_SLOT_COUNT) {
+  const deliveryShares = resolveLineItemDeliveryShares(lineItems, totalSlots).filter((entry) => Number(entry?.weight || 0) > 0);
+  if (deliveryShares.length === 0) {
     return null;
   }
-  const currentIndex = rotationState.get(screenId) ?? 0;
-  const selected = lineItems[currentIndex % lineItems.length];
-  rotationState.set(screenId, currentIndex + 1);
-  return selected;
+  const signature = deliveryShares
+    .map((entry, index) => `${readOptionalString(entry.lineItem?.lineItemId, 120) || `${screenId}-li-${index}`}:${Number(entry.weight || 0).toFixed(4)}`)
+    .join("|");
+  let state = rotationState.get(screenId);
+  if (!state || typeof state !== "object" || state.signature !== signature) {
+    state = {
+      signature,
+      currents: Object.create(null)
+    };
+  }
+
+  const totalWeight = deliveryShares.reduce((sum, entry) => sum + Number(entry.weight || 0), 0);
+  let selectedEntry = null;
+  let selectedId = "";
+  let highestCurrent = Number.NEGATIVE_INFINITY;
+
+  for (let index = 0; index < deliveryShares.length; index += 1) {
+    const entry = deliveryShares[index];
+    const entryId = readOptionalString(entry.lineItem?.lineItemId, 120) || `${screenId}-li-${index}`;
+    const nextCurrent = Number(state.currents[entryId] || 0) + Number(entry.weight || 0);
+    state.currents[entryId] = nextCurrent;
+    if (!selectedEntry || nextCurrent > highestCurrent) {
+      selectedEntry = entry;
+      selectedId = entryId;
+      highestCurrent = nextCurrent;
+    }
+  }
+
+  if (!selectedEntry) {
+    return null;
+  }
+
+  state.currents[selectedId] = Number(state.currents[selectedId] || 0) - totalWeight;
+  rotationState.set(screenId, state);
+  return selectedEntry.lineItem;
 }
 
 function normalizeError(error) {
@@ -5972,7 +6621,8 @@ function buildDemoProductInput(feedProduct, screenSpec, index) {
     demoScreenId: screenSpec.screenId,
     demoScreenLabel: screenSpec.label,
     demoProductIndex: index + 1,
-    templateId: screenSpec.templateId
+    templateId: screenSpec.templateId,
+    brandLogo: normalizeBrandLogoPath(feedProduct.logo || feedProduct.brandLogo)
   };
 
   return {
@@ -5980,6 +6630,7 @@ function buildDemoProductInput(feedProduct, screenSpec, index) {
     ProductName: feedProduct.name,
     ProductPage: feedProduct.productPage,
     Image: feedProduct.image,
+    BrandLogo: normalizeBrandLogoPath(feedProduct.logo || feedProduct.brandLogo),
     Price: feedProduct.price,
     ComparePrice: feedProduct.comparePrice,
     Rating: feedProduct.rating,
@@ -6026,6 +6677,12 @@ function buildDemoScreenRecord(screenSpec, feed, nowIso) {
     format: buildDefaultFormat(screenSpec.templateId, screenSpec.screenSize),
     templateId: screenSpec.templateId,
     refreshInterval: readRefreshInterval(screenSpec.refreshInterval),
+    screenShareSlots: readScreenShareSlotCount(screenSpec.screenShareSlots, SCREEN_SHARE_SLOT_COUNT),
+    defaultSellableShareSlots: readSellableShareSlots(
+      screenSpec.defaultSellableShareSlots,
+      screenSpec.screenShareSlots,
+      DEFAULT_SELLABLE_SHARE_SLOTS
+    ),
     deviceHints: buildScreenDeviceHints({
       screenId: screenSpec.screenId,
       storeId: screenSpec.storeId,
@@ -6093,6 +6750,12 @@ function buildDemoPlanningScreenRecord(screenSpec, current = null) {
     format: buildDefaultFormat(screenSpec.templateId, screenSpec.screenSize),
     templateId: screenSpec.templateId,
     refreshInterval: readRefreshInterval(screenSpec.refreshInterval),
+    screenShareSlots: readScreenShareSlotCount(screenSpec.screenShareSlots, SCREEN_SHARE_SLOT_COUNT),
+    defaultSellableShareSlots: readSellableShareSlots(
+      screenSpec.defaultSellableShareSlots,
+      screenSpec.screenShareSlots,
+      DEFAULT_SELLABLE_SHARE_SLOTS
+    ),
     deviceHints: buildScreenDeviceHints({
       screenId: screenSpec.screenId,
       storeId: screenSpec.storeId,
@@ -6214,12 +6877,18 @@ function buildDemoConfigSnapshot(db) {
       stageId: screenSpec.stageId,
       stageLabel: screenSpec.stageLabel,
       label: screenSpec.label,
-      pageId: screenSpec.pageId,
-      location: screenSpec.location,
-      screenType: screenSpec.screenType,
-      screenSize: screenSpec.screenSize,
-      templateId: screenSpec.templateId,
-      refreshInterval: screenSpec.refreshInterval,
+      pageId: current?.pageId || screenSpec.pageId,
+      location: current?.location || screenSpec.location,
+      screenType: current?.screenType || screenSpec.screenType,
+      screenSize: current?.screenSize || screenSpec.screenSize,
+      templateId: current?.templateId || screenSpec.templateId,
+      refreshInterval: readRefreshInterval(current?.refreshInterval ?? screenSpec.refreshInterval),
+      screenShareSlots: readScreenShareSlotCount(current?.screenShareSlots ?? screenSpec.screenShareSlots, SCREEN_SHARE_SLOT_COUNT),
+      defaultSellableShareSlots: readSellableShareSlots(
+        current?.defaultSellableShareSlots ?? screenSpec.defaultSellableShareSlots,
+        current?.screenShareSlots ?? screenSpec.screenShareSlots,
+        DEFAULT_SELLABLE_SHARE_SLOTS
+      ),
       sharedPlayerUrl: SHARED_PLAYER_URL,
       screenUrl: buildSharedPlayerUrl(deviceHints.resolverId),
       resolverId: deviceHints.resolverId,
@@ -6416,6 +7085,7 @@ const __dirname = path.dirname(__filename);
 
 app.use(express.json({ limit: "1mb" }));
 app.use(PRODUCT_GENERATED_IMAGE_BASE_PATH, express.static(PRODUCT_IMAGE_OUTPUT_DIR));
+app.use(BRAND_LOGO_BASE_PATH, express.static(BRAND_LOGO_OUTPUT_DIR));
 app.use(express.static(path.resolve(__dirname, "../public")));
 
 app.get("/api/health", (_req, res) => {
@@ -6426,11 +7096,27 @@ app.get("/api/product-images/status", (_req, res) => {
   res.json({ job: buildProductImageJobSnapshot() });
 });
 
+app.get("/api/brand-logos/status", (_req, res) => {
+  res.json({ job: buildBrandLogoJobSnapshot() });
+});
+
 app.get("/api/product-images/progress", async (_req, res) => {
   try {
     res.json({
       progress: await buildProductImageProgressSnapshot(),
       job: buildProductImageJobSnapshot()
+    });
+  } catch (error) {
+    const normalized = normalizeError(error);
+    res.status(normalized.status).json({ error: normalized.message });
+  }
+});
+
+app.get("/api/brand-logos/progress", async (_req, res) => {
+  try {
+    res.json({
+      progress: await buildBrandLogoProgressSnapshot(),
+      job: buildBrandLogoJobSnapshot()
     });
   } catch (error) {
     const normalized = normalizeError(error);
@@ -6447,6 +7133,19 @@ app.post("/api/product-images/generate", async (req, res) => {
     res.status(normalized.status).json({
       error: normalized.message,
       job: buildProductImageJobSnapshot()
+    });
+  }
+});
+
+app.post("/api/brand-logos/generate", async (req, res) => {
+  try {
+    const job = startBrandLogoGenerationJob(readBrandLogoGenerationOptions(req.body));
+    res.status(202).json({ job });
+  } catch (error) {
+    const normalized = normalizeError(error);
+    res.status(normalized.status).json({
+      error: normalized.message,
+      job: buildBrandLogoJobSnapshot()
     });
   }
 });
@@ -6683,13 +7382,7 @@ app.get("/api/products", async (req, res) => {
 
     products.sort((left, right) => left.name.localeCompare(right.name));
     const categories = [...new Set(feed.map((product) => product.category))].sort((a, b) => a.localeCompare(b));
-    const accounts = [
-      ...new Map(
-        feed
-          .filter((product) => product.advertiserId)
-          .map((product) => [product.advertiserId, { advertiserId: product.advertiserId, brand: product.brand }])
-      ).values()
-    ].sort((left, right) => left.brand.localeCompare(right.brand) || left.advertiserId.localeCompare(right.advertiserId));
+    const accounts = buildProductAccounts(feed);
     res.json({
       products: products.slice(0, limit).map((product) => buildProductFeedResponseItem(product, { includeStockByStore })),
       total: products.length,
@@ -6826,6 +7519,12 @@ app.get("/api/screens", async (req, res) => {
           format: screen.format,
           templateId: screen.templateId,
           refreshInterval: screen.refreshInterval,
+          screenShareSlots: readScreenShareSlotCount(screen.screenShareSlots, SCREEN_SHARE_SLOT_COUNT),
+          defaultSellableShareSlots: readSellableShareSlots(
+            screen.defaultSellableShareSlots,
+            screen.screenShareSlots,
+            DEFAULT_SELLABLE_SHARE_SLOTS
+          ),
           resolverId: getScreenDeviceHints(screen).resolverId,
           createdAt: screen.createdAt,
           updatedAt: screen.updatedAt
@@ -6853,6 +7552,12 @@ app.post("/api/screens", async (req, res) => {
       req.body.refreshInterval === undefined
         ? readRefreshInterval(template.defaultRefreshInterval)
         : readRefreshInterval(req.body.refreshInterval);
+    const screenShareSlots = readScreenShareSlotCount(req.body.screenShareSlots, SCREEN_SHARE_SLOT_COUNT);
+    const defaultSellableShareSlots = readSellableShareSlots(
+      req.body.defaultSellableShareSlots,
+      screenShareSlots,
+      DEFAULT_SELLABLE_SHARE_SLOTS
+    );
     const fallbackProduct = buildStorageProduct(req.body.product, screenId, location, template.id);
     const rawLineItems = Array.isArray(req.body.lineItems) ? req.body.lineItems : [];
 
@@ -6898,6 +7603,8 @@ app.post("/api/screens", async (req, res) => {
         format,
         templateId,
         refreshInterval,
+        screenShareSlots,
+        defaultSellableShareSlots,
         deviceHints: buildScreenDeviceHints({
           screenId,
           storeId,
@@ -6966,6 +7673,22 @@ app.put("/api/screens/:screenId", async (req, res) => {
             ? readRefreshInterval(template.defaultRefreshInterval)
             : readRefreshInterval(record.refreshInterval)
           : readRefreshInterval(req.body.refreshInterval);
+      const nextScreenShareSlots =
+        req.body.screenShareSlots === undefined
+          ? readScreenShareSlotCount(record.screenShareSlots, SCREEN_SHARE_SLOT_COUNT)
+          : readScreenShareSlotCount(req.body.screenShareSlots, SCREEN_SHARE_SLOT_COUNT);
+      const nextDefaultSellableShareSlots =
+        req.body.defaultSellableShareSlots === undefined
+          ? readSellableShareSlots(
+              record.defaultSellableShareSlots,
+              nextScreenShareSlots,
+              DEFAULT_SELLABLE_SHARE_SLOTS
+            )
+          : readSellableShareSlots(
+              req.body.defaultSellableShareSlots,
+              nextScreenShareSlots,
+              DEFAULT_SELLABLE_SHARE_SLOTS
+            );
 
       const shouldReplacePrimaryProduct = req.body.product !== undefined;
       const fallbackProduct = buildStorageProduct(req.body.product, screenId, nextLocation, template.id);
@@ -7011,6 +7734,8 @@ app.put("/api/screens/:screenId", async (req, res) => {
       record.templateId = template.id;
       record.format = nextFormat;
       record.refreshInterval = nextRefreshInterval;
+      record.screenShareSlots = nextScreenShareSlots;
+      record.defaultSellableShareSlots = nextDefaultSellableShareSlots;
       record.deviceHints = buildScreenDeviceHints({
         screenId,
         storeId: nextStoreId,
@@ -7105,7 +7830,10 @@ app.get("/api/agent/goals/live", async (req, res) => {
     }
 
     const screenIds = resolveGoalRunScreenIds(run);
-    const liveScreens = buildLiveScreensSnapshot(db, screenIds);
+    const liveScreens = buildLiveScreensSnapshot(db, screenIds, {
+      goalPlanId: run.planId,
+      advertiserId: readOptionalString(run?.goal?.advertiserId, 120)
+    });
 
     res.json({
       planId,
@@ -7228,7 +7956,10 @@ app.post("/api/agent/goals/apply", async (req, res) => {
       }
       if (run.status === "applied") {
         const screenIds = resolveGoalRunScreenIds(run);
-        const liveScreens = buildLiveScreensSnapshot(db, screenIds);
+        const liveScreens = buildLiveScreensSnapshot(db, screenIds, {
+          goalPlanId: run.planId,
+          advertiserId: readOptionalString(run?.goal?.advertiserId, 120)
+        });
         run.appliedScreenIds = screenIds;
         run.liveScreens = liveScreens;
         run.liveCount = liveScreens.length;
@@ -7299,7 +8030,6 @@ app.post("/api/agent/goals/apply", async (req, res) => {
       const plannedScreenIds = budgetSelection.fundedScreenIds;
       const now = new Date().toISOString();
       const objectiveId = readOptionalString(run.goal?.objective, 40) || "awareness";
-      const flightWindow = resolveGoalFlightWindow(run.goal || {});
       const runTargetSkuIds = readStringArray(run.goal?.targetSkuIds, GOAL_TARGET_SKU_LIMIT, 80).map((sku) =>
         normalizeSku(sku)
       );
@@ -7313,6 +8043,7 @@ app.post("/api/agent/goals/apply", async (req, res) => {
       const hasGoalTargeting = runTargetProducts.length > 0;
       let appliedCount = 0;
       let skippedCount = 0;
+      let capacitySkippedCount = 0;
       let creativeGeneratedCount = 0;
       const appliedScreenIds = [];
 
@@ -7336,122 +8067,93 @@ app.post("/api/agent/goals/apply", async (req, res) => {
         const change = changeMap.get(screenId) || null;
         const nextTemplateId = readOptionalString(change?.recommendedTemplateId, 80) || screen.templateId;
         const nextTemplate = getTemplatePreset(nextTemplateId);
-        const nextRefreshInterval = change
-          ? readRefreshInterval(change.recommendedRefreshInterval)
-          : readRefreshInterval(screen.refreshInterval);
         const goalProductsForScreen = pickGoalProductsForScreenWithObjective(screen, runTargetProducts, nextTemplate.id, objectiveId);
         if (hasGoalTargeting && goalProductsForScreen.length === 0 && !manualSelectionScreenIdSet.has(screenId)) {
           skippedCount += 1;
           continue;
         }
 
-        screen.templateId = nextTemplate.id;
-        screen.refreshInterval = nextRefreshInterval;
-        screen.format = buildDefaultFormat(nextTemplate.id, screen.screenSize);
-        const existingLineItems = Array.isArray(screen.lineItems) ? screen.lineItems : [];
-        if (existingLineItems.length === 0) {
-          const fallbackFeedProduct = runTargetProducts[0] || null;
-          screen.lineItems = [
-            buildGoalLineItemForScreen(
-              screen,
-              nextTemplate.id,
-              objectiveId,
-              goalProductsForScreen,
-              fallbackFeedProduct,
-              run.goal
-            )
-          ];
-          creativeGeneratedCount += 1;
-        } else {
-          screen.lineItems = existingLineItems.map((lineItem) => {
-            const nextLineItemBase = {
-              ...lineItem,
-              activeFrom: flightWindow.activeFrom,
-              activeTo: flightWindow.activeTo,
-              templateId: nextTemplate.id
-            };
-            const products = Array.isArray(lineItem.products) ? lineItem.products : [];
-            const mappedGoalProducts =
-              goalProductsForScreen.length > 0
-                ? goalProductsForScreen.map((product) =>
-                    buildStorageProductFromFeed(product, screen, nextTemplate.id, objectiveId)
-                  )
-                : [];
-            if (mappedGoalProducts.length > 0) {
-              return {
-                ...nextLineItemBase,
-                products: mappedGoalProducts
-              };
-            }
-            if (products.length > 0) {
-              return {
-                ...nextLineItemBase,
-                products: products.map((product) => {
-                  const normalizedProduct = buildStorageProduct(
-                    product,
-                    screen.screenId,
-                    screen.location,
-                    nextTemplate.id
-                  );
-                  normalizedProduct.RenderingAttributes = applyGoalCreativeAttributes(
-                    normalizedProduct,
-                    objectiveId
-                  );
-                  return normalizedProduct;
-                })
-              };
-            }
+        const shareAvailability = resolveScreenShareAvailability(screen, {
+          goal: {
+            ...(run.goal || {}),
+            planId: run.planId
+          },
+          planId: run.planId
+        });
+        if (!shareAvailability.hasCapacity) {
+          capacitySkippedCount += 1;
+          continue;
+        }
 
-            const fallbackFeedProduct = runTargetProducts[0] || null;
-            const generated = buildGoalLineItemForScreen(
-              screen,
-              nextTemplate.id,
-              objectiveId,
-              goalProductsForScreen,
-              fallbackFeedProduct,
-              run.goal
-            );
-            creativeGeneratedCount += 1;
-            return {
-              ...nextLineItemBase,
-              products: generated.products
-            };
-          });
+        const existingLineItems = Array.isArray(screen.lineItems) ? screen.lineItems : [];
+        const hadManagedGoalLineItem = existingLineItems.some((lineItem) =>
+          isManagedGoalLineItemForGoal(lineItem, run.goal || {}, run.planId)
+        );
+        const preservedLineItems = existingLineItems.filter(
+          (lineItem) => !isManagedGoalLineItemForGoal(lineItem, run.goal || {}, run.planId)
+        );
+        if (preservedLineItems.length === 0) {
+          preservedLineItems.push(buildBaselineRotationLineItemForScreen(screen, feed, now));
+        }
+        const fallbackFeedProduct = runTargetProducts[0] || null;
+        const goalLineItem = buildGoalLineItemForScreen(
+          screen,
+          nextTemplate.id,
+          objectiveId,
+          goalProductsForScreen,
+          fallbackFeedProduct,
+          {
+            ...(run.goal || {}),
+            planId: run.planId
+          }
+        );
+        screen.lineItems = [...preservedLineItems, goalLineItem];
+        if (!hadManagedGoalLineItem) {
+          creativeGeneratedCount += 1;
         }
         screen.updatedAt = now;
         appliedScreenIds.push(screen.screenId);
         appliedCount += 1;
       }
 
-      if (plannedScreenIds.length > 0) {
-        for (const screenId of plannedScreenIds) {
-          if ((db.screens || []).some((entry) => entry.screenId === screenId)) {
-            appliedScreenIds.push(screenId);
-          }
+      if (appliedCount === 0) {
+        if (capacitySkippedCount > 0) {
+          throw new HttpError(
+            409,
+            "No funded screens had an open configured screen share available for the selected flight window. Refresh the plan and choose different screens."
+          );
         }
+        throw new HttpError(409, "No funded screens could be applied.");
       }
 
       const uniqueAppliedScreenIds = [...new Set(appliedScreenIds)];
-      const liveScreens = buildLiveScreensSnapshot(db, uniqueAppliedScreenIds);
+      const liveScreens = buildLiveScreensSnapshot(db, uniqueAppliedScreenIds, {
+        goalPlanId: run.planId,
+        advertiserId: readOptionalString(run?.goal?.advertiserId, 120)
+      });
       run.status = "applied";
       run.appliedAt = now;
       run.updatedAt = now;
       run.appliedCount = appliedCount;
       run.skippedCount = skippedCount;
+      run.capacitySkippedCount = capacitySkippedCount;
       run.creativeGeneratedCount = creativeGeneratedCount;
       run.selectedPlacementScreenIds = selectedPlacementScreenIds;
       run.budget = budgetSelection;
       run.appliedScreenIds = uniqueAppliedScreenIds;
       run.liveScreens = liveScreens;
       run.liveCount = liveScreens.length;
-      run.summary = `${run.summary} Approved ${GOAL_PRICING_MODEL.currencySymbol}${budgetSelection.selectedSpend.toLocaleString()} across ${budgetSelection.fundedPlacementCount} placement(s). Applied ${appliedCount} screen update(s).${
+      run.summary = `${run.summary} Approved ${GOAL_PRICING_MODEL.currencySymbol}${budgetSelection.selectedSpend.toLocaleString()} across ${budgetSelection.fundedPlacementCount} placement(s). Applied ${appliedCount} sponsored share update(s).${
         skippedCount > 0 ? ` Skipped ${skippedCount} screen(s) due to context guardrails.` : ""
-      }${creativeGeneratedCount > 0 ? ` Auto-created creative on ${creativeGeneratedCount} screen(s).` : ""}`;
+      }${capacitySkippedCount > 0 ? ` Skipped ${capacitySkippedCount} screen(s) because no open configured screen share remained at launch.` : ""}${
+        creativeGeneratedCount > 0 ? ` Auto-created creative on ${creativeGeneratedCount} screen(s).` : ""
+      }`;
 
       return {
         run,
         appliedCount,
         skippedCount,
+        capacitySkippedCount,
         creativeGeneratedCount,
         liveCount: liveScreens.length,
         liveScreens
@@ -7478,10 +8180,22 @@ app.get("/api/screen-ad", async (req, res) => {
     const now = new Date();
     const activeLineItems = (screen.lineItems || []).filter((lineItem) => isLineItemActive(lineItem, now));
     const candidateLineItems = activeLineItems.length > 0 ? activeLineItems : screen.lineItems || [];
-    const selectedLineItem = pickLineItem(screenId, candidateLineItems);
+    const shareConfig = resolveScreenShareConfig(screen);
+    const deliveryShares = resolveLineItemDeliveryShares(candidateLineItems, shareConfig.totalSlots);
+    const shareByLineItemId = new Map(
+      deliveryShares.map((entry) => [readOptionalString(entry.lineItem?.lineItemId, 120), entry])
+    );
+    const selectedLineItem =
+      findPreferredLineItem(candidateLineItems, {
+        lineItemId: req.query.lineItemId,
+        goalPlanId: req.query.goalPlanId,
+        advertiserId: req.query.advertiserId
+      }) ||
+      pickLineItem(screenId, candidateLineItems, shareConfig.totalSlots);
     if (!selectedLineItem) {
       throw new HttpError(404, `Screen ${screenId} has no line items configured.`);
     }
+    const selectedShare = shareByLineItemId.get(readOptionalString(selectedLineItem?.lineItemId, 120)) || null;
 
     const selectedTemplateId =
       readOptionalString(selectedLineItem.templateId, 120) || screen.templateId || "fullscreen-banner";
@@ -7531,9 +8245,7 @@ app.get("/api/screen-ad", async (req, res) => {
     );
 
     res.json({
-      format:
-        readOptionalString(screen.format, 120) ||
-        buildDefaultFormat(screen.templateId || selectedTemplate.id, screen.screenSize),
+      format: buildDefaultFormat(selectedTemplate.id, screen.screenSize),
       products,
       settings: {
         templateId: selectedTemplate.id,
@@ -7547,6 +8259,13 @@ app.get("/api/screen-ad", async (req, res) => {
         pageId: screen.pageId,
         location: screen.location,
         lineItemId: selectedLineItem.lineItemId,
+        deliveryShareRatio: Number(selectedShare?.shareRatio || 0),
+        deliveryShareLabel: readOptionalString(selectedShare?.shareLabel, 40),
+        screenShareSlots: shareConfig.totalSlots,
+        defaultSellableShareSlots: shareConfig.sellableShareSlots,
+        defaultSellableShareLabel: shareConfig.shareLabel,
+        lineItemCount: Array.isArray(screen.lineItems) ? screen.lineItems.length : 0,
+        activeLineItemCount: candidateLineItems.length,
         sharedPlayerUrl: SHARED_PLAYER_URL,
         resolverId: getScreenDeviceHints(screen).resolverId,
         resolvedBy: resolved.resolvedBy,

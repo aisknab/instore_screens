@@ -64,6 +64,7 @@ npm install
 npm run dev
 npm run smoke
 npm run generate:product-images -- --limit 25
+npm run generate:brand-logos -- --dry-run
 ```
 
 The tracked seed data lives in `data/db.json`. The writable DB file now defaults to ignored `temp/db.json`, bootstrapped from that seed on first run. In production, set `DB_FILE` to a path outside the git checkout so runtime changes persist outside deploys.
@@ -126,6 +127,55 @@ curl -X POST http://localhost:3000/api/product-images/generate \
 
 Check progress with `GET /api/product-images/status`.
 Get count progress with `GET /api/product-images/progress`.
+
+## Generated Brand Logos
+
+The repo also includes a resumable brand-logo generation pipeline that creates transparent PNG logos for each advertiser account in the demo feed, writes them to local assets, and stamps the feed so the selected brand can be shown consistently across the dashboard, presenter notes, and live preview surfaces.
+
+Defaults:
+
+- Feed file: `data/productFeed.json`
+- Manifest file: `data/brandLogoManifest.json`
+- Generated PNGs: `public/assets/brands/generated`
+
+For production, move those out of the repo checkout with environment overrides:
+
+```ini
+Environment=PRODUCT_FEED_FILE=/var/lib/criteoscreens/productFeed.json
+Environment=BRAND_LOGO_MANIFEST_FILE=/var/lib/criteoscreens/brandLogoManifest.json
+Environment=BRAND_LOGO_OUTPUT_DIR=/var/lib/criteoscreens/brand-logos
+Environment=BRAND_LOGO_BASE_PATH=/assets/brands/generated
+```
+
+The server will still serve those external PNGs at `/assets/brands/generated/...`.
+
+Typical run:
+
+```bash
+OPENAI_API_KEY=your_api_key_here npm run generate:brand-logos
+```
+
+Useful flags:
+
+- `--limit 5` to test a smaller batch first
+- `--brand Orbit,Aurora` to target specific brand names
+- `--advertiser advertiser-orbit,advertiser-aurora` to target specific advertiser accounts
+- `--force` to regenerate existing local PNGs
+- `--dry-run` to inspect the plan without calling OpenAI
+- `--concurrency 2` to run a small number of requests in parallel
+
+The script writes `data/brandLogoManifest.json` with per-brand generation status, prompt metadata, and failures so you can resume large runs safely. Product feed items and `/api/products` account payloads then expose the generated `logo` path automatically.
+
+If your OpenAI credentials are only available inside the running service environment, trigger the same batch from the app itself:
+
+```bash
+curl -X POST http://localhost:3000/api/brand-logos/generate \
+  -H "Content-Type: application/json" \
+  -d '{"limit":11,"concurrency":2}'
+```
+
+Check progress with `GET /api/brand-logos/status`.
+Get count progress with `GET /api/brand-logos/progress`.
 
 ## Template Showcase URLs
 
@@ -209,6 +259,39 @@ Returns the current or most recent background image-generation job, including re
 ### `GET /api/product-images/progress`
 
 Returns count-based progress for the feed image batch:
+
+- `total`
+- `generated`
+- `failed`
+- `processed`
+- `remaining`
+- `percentage`
+
+The response also includes the current job snapshot.
+
+### `POST /api/brand-logos/generate`
+
+Starts a background brand-logo generation batch from the running server process.
+
+Optional JSON body:
+
+- `brands` array or comma-separated string
+- `advertiserIds` array or comma-separated string
+- `limit`
+- `force`
+- `dryRun`
+- `concurrency`
+- `quality`
+- `size`
+- `timeoutMs`
+
+### `GET /api/brand-logos/status`
+
+Returns the current or most recent background brand-logo generation job, including recent stdout and stderr log lines.
+
+### `GET /api/brand-logos/progress`
+
+Returns count-based progress for the brand-logo batch:
 
 - `total`
 - `generated`
@@ -436,8 +519,12 @@ Response shape:
 - Optionally set `OPENAI_MODEL` to override the default model alias (`gpt-5-mini`).
 - Set `OPENAI_PRODUCT_IMAGE_MODEL` to override the product image generator model alias. It defaults to `gpt-5.4`.
 - Set `OPENAI_PRODUCT_IMAGE_QUALITY` and `OPENAI_PRODUCT_IMAGE_SIZE` when you want to tune batch image output.
+- Set `OPENAI_BRAND_LOGO_MODEL` to override the brand logo generator model alias. It defaults to `gpt-5.4`.
+- Set `OPENAI_BRAND_LOGO_QUALITY` and `OPENAI_BRAND_LOGO_SIZE` when you want to tune batch logo output.
 - Set `PRODUCT_FEED_FILE`, `PRODUCT_IMAGE_MANIFEST_FILE`, and `PRODUCT_IMAGE_OUTPUT_DIR` to move generated image state out of the git checkout.
+- Set `BRAND_LOGO_MANIFEST_FILE` and `BRAND_LOGO_OUTPUT_DIR` to move generated brand-logo state out of the git checkout.
 - Keep `PRODUCT_IMAGE_BASE_PATH` as `/assets/products/generated` unless you intentionally want a different public URL.
+- Keep `BRAND_LOGO_BASE_PATH` as `/assets/brands/generated` unless you intentionally want a different public URL.
 
 Example `systemd` environment:
 
@@ -449,6 +536,9 @@ Environment=PRODUCT_FEED_FILE=/var/lib/criteoscreens/productFeed.json
 Environment=PRODUCT_IMAGE_MANIFEST_FILE=/var/lib/criteoscreens/productImageManifest.json
 Environment=PRODUCT_IMAGE_OUTPUT_DIR=/var/lib/criteoscreens/product-images
 Environment=PRODUCT_IMAGE_BASE_PATH=/assets/products/generated
+Environment=BRAND_LOGO_MANIFEST_FILE=/var/lib/criteoscreens/brandLogoManifest.json
+Environment=BRAND_LOGO_OUTPUT_DIR=/var/lib/criteoscreens/brand-logos
+Environment=BRAND_LOGO_BASE_PATH=/assets/brands/generated
 Environment=OPENAI_API_KEY=your_api_key_here
 Environment=OPENAI_MODEL=gpt-5-mini
 ```

@@ -4,6 +4,7 @@ const PRESENTER_SNAPSHOT_KEY = "instore-demo-presenter-snapshot";
 const elements = {
   stagePill: document.querySelector("#notesStagePill"),
   stageLabel: document.querySelector("#notesStageLabel"),
+  brandContext: document.querySelector("#notesBrandContext"),
   speakerSummary: document.querySelector("#notesSpeakerSummary"),
   statusText: document.querySelector("#notesStatusText"),
   updatedAt: document.querySelector("#notesUpdatedAt"),
@@ -27,6 +28,42 @@ function escapeHtml(value) {
     .replaceAll("<", "&lt;")
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;");
+}
+
+function getBrandInitials(value = "") {
+  const tokens = String(value || "")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2);
+  if (tokens.length === 0) {
+    return "BR";
+  }
+  return tokens.map((token) => token.charAt(0).toUpperCase()).join("") || "BR";
+}
+
+function buildBrandContextMarkup(brandContext = {}) {
+  const brand = String(brandContext?.brand || "").trim();
+  const advertiserId = String(brandContext?.advertiserId || "").trim();
+  const logo = String(brandContext?.logo || "").trim();
+  const title = brand || advertiserId;
+  const meta = String(brandContext?.accountLabel || advertiserId || "").trim();
+  if (!title && !logo) {
+    return "";
+  }
+  return `<div class="notes-brand-badge">
+    <span class="notes-brand-badge__media">
+      ${
+        logo
+          ? `<img src="${escapeHtml(logo)}" alt="${escapeHtml(title || "Brand logo")}" loading="lazy">`
+          : `<span class="notes-brand-badge__fallback" aria-hidden="true">${escapeHtml(getBrandInitials(title))}</span>`
+      }
+    </span>
+    <span class="notes-brand-badge__copy">
+      <strong>${escapeHtml(title || "Selected brand")}</strong>
+      ${meta ? `<span>${escapeHtml(meta)}</span>` : ""}
+    </span>
+  </div>`;
 }
 
 function readStoredSnapshot() {
@@ -57,6 +94,10 @@ function renderSnapshot(snapshot) {
   document.title = data.stageLabel ? `${data.stageLabel} | Presenter Notes` : "Presenter Notes";
   elements.stagePill.textContent = String(data.stagePill || "Waiting");
   elements.stageLabel.textContent = String(data.stageLabel || "Presenter Notes");
+  if (elements.brandContext) {
+    elements.brandContext.innerHTML = buildBrandContextMarkup(data.brandContext || {});
+    elements.brandContext.classList.toggle("is-hidden", !elements.brandContext.innerHTML);
+  }
   elements.speakerSummary.textContent = String(
     data.speakerSummary || "Open the demo page and this tab will follow the active stage automatically."
   );

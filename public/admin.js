@@ -40,7 +40,9 @@ const MANUAL_SUPPLY = {
     screenType: "Horizontal Screen",
     screenSize: "1920x1080",
     templateId: "fullscreen-banner",
-    refreshInterval: 30000
+    refreshInterval: 30000,
+    screenShareSlots: 6,
+    defaultSellableShareSlots: 1
   }
 };
 
@@ -65,6 +67,21 @@ const DEFAULT_SCREEN_TYPE_CPMS = {
 const DEFAULT_GOAL_FLIGHT_DAYS = 7;
 const GOAL_INFERRED_PRODUCT_LIMIT = 8;
 const GOAL_PROMPT_MIN_SCORE = 0.75;
+const GOAL_AGGRESSIVENESS_EXPLANATIONS = Object.freeze({
+  default: "Controls how hard the planner pushes for scale, scope expansion, and placement pressure. Screen cadence stays fixed.",
+  Conservative: "Conservative keeps the buy tighter, stays closer to your chosen scope, and widens only when the upside is clear. Screen cadence stays fixed.",
+  Balanced: "Balanced is the default. It opens up when there is clear upside, without pushing the broadest possible plan. Screen cadence stays fixed.",
+  Aggressive: "Aggressive pushes harder for scale, widens scope faster, and leans into broader coverage when the model sees upside. Screen cadence stays fixed."
+});
+const SCREEN_SHARE_PRESETS = Object.freeze([
+  { value: "1/6", label: "1/6 share", screenShareSlots: 6, defaultSellableShareSlots: 1 },
+  { value: "1/4", label: "1/4 share", screenShareSlots: 4, defaultSellableShareSlots: 1 },
+  { value: "1/3", label: "1/3 share", screenShareSlots: 3, defaultSellableShareSlots: 1 },
+  { value: "1/2", label: "1/2 share", screenShareSlots: 2, defaultSellableShareSlots: 1 },
+  { value: "1/1", label: "Full screen", screenShareSlots: 1, defaultSellableShareSlots: 1 }
+]);
+const DEFAULT_SCREEN_SHARE_PRESET = "1/6";
+const SCREEN_SHARE_PRESET_MAP = new Map(SCREEN_SHARE_PRESETS.map((preset) => [preset.value, preset]));
 const GOAL_PROMPT_STOPWORDS = new Set([
   "about",
   "across",
@@ -469,6 +486,7 @@ const state = {
   telemetrySummary: null,
   lastDemoAction: null,
   editingScreenId: "",
+  pendingAnchorSharePreset: "",
   manualSupplyConfirmed: false,
   presetLoadedInSession: false,
   supplyHandoffAcknowledged: false,
@@ -584,6 +602,9 @@ async function runPendingAction(actionKey, task, { lockKey = actionKey } = {}) {
 const elements = {
   statusText: qs("#statusText"),
   toast: qs("#toast"),
+  heroBrandContext: qs("#heroBrandContext"),
+  buyingBrandContext: qs("#buyingBrandContext"),
+  monitoringBrandContext: qs("#monitoringBrandContext"),
   workspaceOverlay: qs("#workspaceOverlay"),
   workspaceOverlayMessage: qs("#workspaceOverlayMessage"),
   workspaceGrid: qs("#workspaceGrid"),
@@ -613,6 +634,7 @@ const elements = {
   pageSubmitBtn: qs("#page-form button[type='submit']"),
   pageId: qs("#pageId"),
   pageIdCount: qs("#pageIdCount"),
+  anchorSharePreset: qs("#anchorSharePreset"),
   pageTypeGrid: qs("#pageTypeGrid"),
   environmentGrid: qs("#environmentGrid"),
   firePageBeacons: qs("#firePageBeacons"),
@@ -628,6 +650,7 @@ const elements = {
   screenSize: qs("#screenSize"),
   templateId: qs("#templateId"),
   refreshInterval: qs("#refreshInterval"),
+  screenSharePreset: qs("#screenSharePreset"),
   templatePreview: qs("#templatePreview"),
   retailerRateCard: qs("#retailerRateCard"),
   saveRetailerRatesBtn: qs("#saveRetailerRatesBtn"),
@@ -636,6 +659,7 @@ const elements = {
   goalAgentForm: qs("#goalAgentForm"),
   goalObjective: qs("#goalObjective"),
   goalAggressiveness: qs("#goalAggressiveness"),
+  goalAggressivenessHelp: qs("#goalAggressivenessHelp"),
   goalRateCard: qs("#goalRateCard"),
   goalStoreScope: qs("#goalStoreScope"),
   goalPageScope: qs("#goalPageScope"),
@@ -1553,7 +1577,7 @@ async function applyGoalPromptSelection() {
       setSelectedGoalSkus([]);
     }
     if (state.selectedGoalSkuIds.size > 0) {
-      showStatus(`AI chose ${state.selectedGoalSkuIds.size} priority SKU(s) from the brief.`);
+      showStatus(`AI recommended ${state.selectedGoalSkuIds.size} priority SKU(s) from the brief.`);
     } else {
       showStatus("AI reviewed the brief but did not find a strong SKU shortlist yet.");
     }
@@ -1583,10 +1607,10 @@ function getGoalPromptSelectionNote() {
     return "";
   }
   if (state.goalPromptInferencePending) {
-    return "AI is choosing the shortlist...";
+    return "AI is recommending the shortlist...";
   }
   if (state.goalPromptAwaitingRun) {
-    return "Brief ready. Click Let AI choose SKU's to refresh the shortlist.";
+    return "Brief ready. Click Let AI choose SKU's to build the recommended shortlist.";
   }
   if (isGoalPromptSelectionActive()) {
     if (state.selectedGoalSkuIds.size > 0) {
@@ -1595,19 +1619,19 @@ function getGoalPromptSelectionNote() {
       }
       return matchedTerms.length > 0
         ? `AI brief matched ${matchedTerms.join(", ")}.`
-        : `AI brief selected ${state.selectedGoalSkuIds.size} SKU(s).`;
+        : `AI recommended ${state.selectedGoalSkuIds.size} SKU(s).`;
     }
     if (reasoning) {
       return reasoning;
     }
-    return "AI brief is active, but no matching SKUs were found yet.";
+    return "AI reviewed the brief but did not find a confident shortlist yet.";
   }
   if (state.selectedGoalSkuIds.size > 0) {
     return prompt
-      ? "Manual SKU picks are active. Click Let AI choose SKU's if you want to refresh them from the brief."
+      ? "Manual SKU picks are active. Click Let AI choose SKU's if you want to refresh the recommendation from the brief."
       : "Manual SKU picks are active.";
   }
-  return "Pick SKUs below, or use the AI brief button to shortlist them.";
+  return "Use AI to recommend the shortlist, or open manual selection below if you need to override it.";
 }
 
 function renderGoalPromptAssistant() {
@@ -1618,7 +1642,7 @@ function renderGoalPromptAssistant() {
   const runDisabled = !prompt || !hasAccount || loading || hasPendingAction("goalPlan") || hasPendingAction("goalPlanApply");
   if (elements.goalPromptRunBtn) {
     elements.goalPromptRunBtn.disabled = runDisabled;
-    elements.goalPromptRunBtn.textContent = loading ? "AI choosing SKU's..." : "Let AI choose SKU's";
+    elements.goalPromptRunBtn.textContent = loading ? "AI recommending SKU's..." : "Let AI choose SKU's";
   }
   if (!elements.goalPromptAiStatus) {
     return;
@@ -1631,10 +1655,10 @@ function renderGoalPromptAssistant() {
 
   if (!prompt) {
     renderStatus({
-      kicker: "AI Shortlist",
-      title: "Optional shortlist help",
-      body: "Write a brief, then click Let AI choose SKU's to build a priority product shortlist.",
-      detail: "AI reads your brief, account, assortment filters, and placement scope.",
+      kicker: "Recommended Path",
+      title: "Let AI recommend the shortlist",
+      body: "Write a brief, then click Let AI choose SKU's to generate a recommended product shortlist.",
+      detail: "AI reads your brief, account, assortment filters, and placement scope. Manual selection stays available below.",
       variant: "ready",
       compact: true
     });
@@ -1656,7 +1680,7 @@ function renderGoalPromptAssistant() {
   if (loading) {
     renderStatus({
       kicker: "AI Working",
-      title: "Choosing the best SKU shortlist",
+      title: "Recommending the best SKU shortlist",
       body: "Scanning the brief, assortment signals, and placement scope for the strongest in-store fit.",
       detail: "This updates the shortlist without changing your manual filters.",
       variant: "loading",
@@ -1669,7 +1693,7 @@ function renderGoalPromptAssistant() {
     renderStatus({
       kicker: "Brief Ready",
       title: "AI is standing by",
-      body: "Click Let AI choose SKU's when you want this brief to replace or refresh the current shortlist.",
+      body: "Click Let AI choose SKU's when you want this brief to generate or refresh the recommended shortlist.",
       detail: hasSelection ? "Your current SKU picks stay in place until you ask AI to update them." : "No AI shortlist has been generated for this brief yet.",
       variant: "ready",
       compact: true
@@ -1680,7 +1704,7 @@ function renderGoalPromptAssistant() {
   if (isGoalPromptSelectionActive()) {
     renderStatus({
       kicker: "AI Shortlist Ready",
-      title: hasSelection ? `AI picked ${state.selectedGoalSkuIds.size} SKU(s)` : "AI reviewed the brief",
+      title: hasSelection ? `AI recommended ${state.selectedGoalSkuIds.size} SKU(s)` : "AI reviewed the brief",
       body:
         readTextValue(state.goalPromptInferenceReasoning) ||
         (hasSelection
@@ -1697,8 +1721,8 @@ function renderGoalPromptAssistant() {
     kicker: "AI Shortlist",
     title: hasSelection ? "Current picks are manual" : "Brief ready for AI",
     body: hasSelection
-      ? "The current shortlist is manual. Click Let AI choose SKU's if you want the brief to replace it."
-      : "Click Let AI choose SKU's to build a shortlist from this brief.",
+      ? "The current shortlist is manual. Click Let AI choose SKU's if you want the brief to replace it with a recommendation."
+      : "Click Let AI choose SKU's to build a recommended shortlist from this brief.",
     detail: getGoalPromptSelectionNote(),
     variant: "ready",
     compact: true
@@ -1707,6 +1731,15 @@ function renderGoalPromptAssistant() {
 
 function getSelectedGoalProducts() {
   return (state.productFeed || []).filter((product) => state.selectedGoalSkuIds.has(normalizeSku(product.sku)));
+}
+
+function renderGoalAggressivenessHelp() {
+  if (!elements.goalAggressivenessHelp) {
+    return;
+  }
+  const selected = String(elements.goalAggressiveness?.value || "").trim();
+  elements.goalAggressivenessHelp.textContent =
+    GOAL_AGGRESSIVENESS_EXPLANATIONS[selected] || GOAL_AGGRESSIVENESS_EXPLANATIONS.default;
 }
 
 function buildProductAccountsFromProducts(products = []) {
@@ -1719,13 +1752,60 @@ function buildProductAccountsFromProducts(products = []) {
     if (!accounts.has(advertiserId)) {
       accounts.set(advertiserId, {
         advertiserId,
-        brand: String(product?.brand || "").trim() || "Store Brand"
+        brand: String(product?.brand || "").trim() || "Store Brand",
+        logo: readTextValue(product?.logo || product?.brandLogo || product?.BrandLogo)
       });
     }
   }
   return [...accounts.values()].sort(
     (left, right) => left.brand.localeCompare(right.brand) || left.advertiserId.localeCompare(right.advertiserId)
   );
+}
+
+function getBrandInitials(value = "") {
+  const tokens = String(value || "")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2);
+  if (tokens.length === 0) {
+    return "BR";
+  }
+  return tokens.map((token) => token.charAt(0).toUpperCase()).join("") || "BR";
+}
+
+function buildBrandIdentityMarkup(brandContext = {}, { className = "brand-badge", baseClass = "brand-badge", meta = "" } = {}) {
+  const brand = String(brandContext?.brand || "").trim();
+  const logo = readTextValue(brandContext?.logo);
+  const advertiserId = String(brandContext?.advertiserId || "").trim();
+  const title = brand || advertiserId;
+  if (!title && !logo) {
+    return "";
+  }
+  const metaText = String(meta || brandContext?.accountLabel || advertiserId || "").trim();
+
+  return `<div class="${escapeHtml(className)}">
+    <span class="${escapeHtml(`${baseClass}__media`)}">
+      ${
+        logo
+          ? `<img src="${escapeHtml(logo)}" alt="${escapeHtml(title || "Brand logo")}" loading="lazy">`
+          : `<span class="${escapeHtml(`${baseClass}__fallback`)}" aria-hidden="true">${escapeHtml(getBrandInitials(title))}</span>`
+      }
+    </span>
+    <span class="${escapeHtml(`${baseClass}__copy`)}">
+      <strong>${escapeHtml(title || "Selected brand")}</strong>
+      ${metaText ? `<span>${escapeHtml(metaText)}</span>` : ""}
+    </span>
+  </div>`;
+}
+
+function renderBrandContextSlot(container, brandContext = {}, { meta = "", className = "brand-badge brand-badge--compact" } = {}) {
+  if (!container) {
+    return;
+  }
+  const markup = buildBrandIdentityMarkup(brandContext, { className, meta });
+  container.innerHTML = markup;
+  container.classList.toggle("is-hidden", !markup);
 }
 
 function getProductAccountLabel(account) {
@@ -1792,6 +1872,10 @@ function getProductDisplayName(product = {}) {
 
 function getProductDisplayBrand(product = {}) {
   return readTextValue(product?.brand);
+}
+
+function getProductDisplayLogo(product = {}) {
+  return readTextValue(product?.logo || product?.brandLogo || product?.BrandLogo);
 }
 
 function getProductDisplayCategory(product = {}) {
@@ -2083,7 +2167,12 @@ function resolvePreviewSceneForSnapshot(snapshot = {}) {
 
 function buildPreviewRailFrameMarkup(bodyMarkup) {
   const brandContext = getGoalPlanBrandContext();
+  const brandMarkup = buildBrandIdentityMarkup(brandContext, {
+    className: "brand-badge brand-badge--preview",
+    meta: brandContext.accountLabel || brandContext.objectiveLabel || ""
+  });
   return `
+    ${brandMarkup}
     <p class="preview-pane__eyebrow">${escapeHtml(brandContext.brand ? `${brandContext.brand} live preview` : "Live campaign preview")}</p>
     <h4>${escapeHtml(brandContext.brand ? `${brandContext.brand} creative in market` : "Creative in market")}</h4>
     <p id="monitoringNarrative">${escapeHtml(
@@ -2098,7 +2187,12 @@ function buildPreviewRailFrameMarkup(bodyMarkup) {
 function buildMonitoringPreviewCardMarkup(snapshot) {
   const sharedPreviewUrl = buildSharedPreviewUrl(snapshot.screenId);
   const debugPreviewUrl = buildDebugScreenUrl(snapshot.screenId);
-  const metaParts = [snapshot.templateName, snapshot.location && titleCase(snapshot.location), snapshot.screenType].filter(Boolean);
+  const metaParts = [
+    snapshot.templateName,
+    snapshot.deliveryShareLabel,
+    snapshot.location && titleCase(snapshot.location),
+    snapshot.screenType
+  ].filter(Boolean);
   const size = parsePreviewScreenSize(snapshot.screenSize, snapshot.screenType);
   const scene = resolvePreviewSceneForSnapshot(snapshot);
   const stateClassNames = [snapshot.loading ? "is-loading" : "", snapshot.error ? "is-error" : ""].filter(Boolean).join(" ");
@@ -2124,6 +2218,19 @@ function buildMonitoringPreviewCardMarkup(snapshot) {
     : snapshot.error
       ? snapshot.error
       : snapshot.summary || snapshot.promotion || "Live creative snapshot";
+  const brandMarkup = snapshot.brand || snapshot.brandLogo
+    ? buildBrandIdentityMarkup(
+        {
+          brand: snapshot.brand,
+          logo: snapshot.brandLogo,
+          advertiserId: snapshot.advertiserId
+        },
+        {
+          className: "brand-badge brand-badge--mini",
+          meta: ""
+        }
+      )
+    : "";
   const contextLabel = [scene.placementLabel, size.label].filter(Boolean).join(" | ");
   const actionsMarkup = snapshot.loading
     ? ""
@@ -2158,6 +2265,7 @@ function buildMonitoringPreviewCardMarkup(snapshot) {
       </div>
       <div class="monitoring-preview-card__body">
         <p class="monitoring-preview-card__screen">${escapeHtml(snapshot.screenId)}</p>
+        ${brandMarkup}
         <h5>${escapeHtml(title)}</h5>
         <p class="monitoring-preview-card__context">${escapeHtml(contextLabel)}</p>
         ${metaParts.length > 0 ? `<p class="monitoring-preview-card__meta">${escapeHtml(metaParts.join(" | "))}</p>` : ""}
@@ -2186,7 +2294,11 @@ async function loadPreviewRailSnapshots(screenIds, previewKey, requestId) {
   const snapshots = await Promise.all(
     screenIds.map(async (screenId) => {
       try {
-        const payload = await requestJson(`/api/screen-ad?screenId=${encodeURIComponent(screenId)}`);
+        const params = new URLSearchParams({ screenId: String(screenId || "") });
+        if (state.stage === "monitoring" && state.activeGoalPlan?.planId) {
+          params.set("goalPlanId", String(state.activeGoalPlan.planId || ""));
+        }
+        const payload = await requestJson(`/api/screen-ad?${params.toString()}`);
         const settings = payload?.settings && typeof payload.settings === "object" ? payload.settings : {};
         const product = Array.isArray(payload?.products) ? payload.products[0] || {} : {};
         const attributes = parseJsonObjectValue(product.RenderingAttributes);
@@ -2200,8 +2312,12 @@ async function loadPreviewRailSnapshots(screenIds, previewKey, requestId) {
           location: readTextValue(settings.location),
           screenType: readTextValue(settings.screenType),
           screenSize: readTextValue(settings.screenSize),
+          deliveryShareLabel: readTextValue(settings.deliveryShareLabel),
           productName: readTextValue(product.ProductName) || templateName,
           image: readTextValue(product.Image),
+          brand: readTextValue(product.brand || attributes.targetBrand),
+          brandLogo: readTextValue(product.BrandLogo || product.brandLogo || attributes.brandLogo),
+          advertiserId: readTextValue(product.ClientAdvertiserId),
           badge: readTextValue(attributes.badge),
           promotion: readTextValue(attributes.promotion),
           price: formatPreviewPrice(product.Price),
@@ -2602,6 +2718,53 @@ function getGoalDraftForDisplay() {
   };
 }
 
+function getScreenSharePresetConfig(value = "") {
+  return SCREEN_SHARE_PRESET_MAP.get(String(value || "").trim()) || SCREEN_SHARE_PRESET_MAP.get(DEFAULT_SCREEN_SHARE_PRESET);
+}
+
+function buildScreenShareLabel(screenShareSlots = 6, defaultSellableShareSlots = 1) {
+  const totalSlots = Math.max(1, Number(screenShareSlots || 0) || 6);
+  const sellableSlots = Math.max(1, Math.min(totalSlots, Number(defaultSellableShareSlots || 0) || 1));
+  return `${sellableSlots}/${totalSlots} share`;
+}
+
+function getScreenSharePresetValue(screen = {}) {
+  const totalSlots = Math.max(1, Number(screen?.screenShareSlots || MANUAL_SUPPLY.screen.screenShareSlots || 6));
+  const sellableSlots = Math.max(
+    1,
+    Math.min(totalSlots, Number(screen?.defaultSellableShareSlots || MANUAL_SUPPLY.screen.defaultSellableShareSlots || 1))
+  );
+  const matched = SCREEN_SHARE_PRESETS.find(
+    (preset) => preset.screenShareSlots === totalSlots && preset.defaultSellableShareSlots === sellableSlots
+  );
+  return matched?.value || DEFAULT_SCREEN_SHARE_PRESET;
+}
+
+function getScreenShareDisplayLabel(screen = {}) {
+  const presetValue = getScreenSharePresetValue(screen);
+  const preset = SCREEN_SHARE_PRESET_MAP.get(presetValue);
+  if (preset) {
+    return preset.label;
+  }
+  return buildScreenShareLabel(screen?.screenShareSlots, screen?.defaultSellableShareSlots);
+}
+
+function getAnchorScreenRecord() {
+  return findScreenRecord(getManualSupplyConfig().screen.screenId) || null;
+}
+
+function getAnchorSharePresetValue() {
+  const pendingPreset = String(state.pendingAnchorSharePreset || "").trim();
+  if (pendingPreset && SCREEN_SHARE_PRESET_MAP.has(pendingPreset)) {
+    return pendingPreset;
+  }
+  return getScreenSharePresetValue(getAnchorScreenRecord() || getManualSupplyConfig().screen);
+}
+
+function getAnchorShareDisplayLabel() {
+  return getScreenSharePresetConfig(getAnchorSharePresetValue()).label;
+}
+
 function getManualSupplyConfig() {
   const leadStoreId = state.demo.storeId || DEFAULT_DEMO_CONFIG.storeId;
   return {
@@ -2673,6 +2836,8 @@ function getRelevantScreenSummaries() {
       screenSize: manual.screenSize,
       templateId: manual.templateId,
       refreshInterval: manual.refreshInterval,
+      screenShareSlots: manual.screenShareSlots,
+      defaultSellableShareSlots: manual.defaultSellableShareSlots,
       resolverId: getScreenResolverId(manual.screenId),
       screenUrl: buildSharedPreviewUrl(manual.screenId),
       configured: screenMap.has(manual.screenId),
@@ -3183,6 +3348,7 @@ function buildSupplyPresenterPayload(stageConfig) {
   const { configured, total, remaining } = getSupplyProgress();
   const demoStoreCount = getDemoStoreCount();
   const manual = getManualSupplyConfig();
+  const anchorShareLabel = getAnchorShareDisplayLabel();
   const actionMessage = readTextValue(state.lastDemoAction?.message);
   const presetMaterialized = isDemoPresetMaterialized();
   const summaryMessage = !isManualSupplyConfirmed()
@@ -3198,9 +3364,9 @@ function buildSupplyPresenterPayload(stageConfig) {
         mappedPlacements === 1 ? "" : "s"
       } spanning ${demoStoreCount} store${demoStoreCount === 1 ? "" : "s"} and multiple inventory zones.`
     : "";
-  const backupConfigSummary = [
+  const advancedConfigSummary = [
     `${manual.page.pageId} (${manual.page.pageType}, ${manual.page.environment})`,
-    `${manual.screen.screenId} (${manual.screen.screenType}, ${manual.screen.screenSize})`
+    `${manual.screen.screenId} (${manual.screen.screenType}, ${manual.screen.screenSize}, ${anchorShareLabel})`
   ].join(" -> ");
 
   return {
@@ -3208,7 +3374,7 @@ function buildSupplyPresenterPayload(stageConfig) {
       "2-action supply flow",
       "Supply handoff",
       "Retailer CPM card",
-      "Backup config"
+      "Advanced config"
     ]),
     demoActions: readPresenterStringList(stageConfig.demoActions, [
       "Create the anchor placement.",
@@ -3216,7 +3382,7 @@ function buildSupplyPresenterPayload(stageConfig) {
       "Use the handoff card if someone wants rollout scale."
     ]),
     qaPrompts: readPresenterStringList(stageConfig.qaPrompts, [
-      "Open Backup config if someone asks how the page and screen are mapped."
+      "Open Advanced config if someone asks how the page, screen, or sellable share are mapped."
     ]),
     liveNarrative: summaryMessage,
     detailRows: [
@@ -3227,6 +3393,10 @@ function buildSupplyPresenterPayload(stageConfig) {
       buildPresenterDetailRow("Shared player", `${SHARED_PLAYER_URL} is reused across the whole supply footprint.`),
       buildPresenterDetailRow("Retailer CPM card", summarizeGoalRateCard()),
       buildPresenterDetailRow(
+        "Sellable share",
+        `${anchorShareLabel} on the anchor screen. Preset screens stay at 1/6 unless changed in Advanced config.`
+      ),
+      buildPresenterDetailRow(
         "Handoff",
         handoffMessage ||
           actionMessage ||
@@ -3234,7 +3404,7 @@ function buildSupplyPresenterPayload(stageConfig) {
             ? `Anchor is live. ${remaining} supply-stage screen(s) remain before full preset rollout.`
             : "Anchor placement still needs to be created.")
       ),
-      buildPresenterDetailRow("Backup config", backupConfigSummary)
+      buildPresenterDetailRow("Advanced config", advancedConfigSummary)
     ].filter(Boolean)
   };
 }
@@ -3448,6 +3618,7 @@ function buildPresenterSnapshot() {
   const stageConfig = getStageConfig(state.stage);
   const plan = state.activeGoalPlan;
   const draftGoal = getGoalDraftForDisplay();
+  const brandContext = getGoalPlanBrandContext(plan);
   const plannedScreens = countPlannedScreens(plan);
   const telemetryTotals = state.telemetrySummary?.totals || {};
   const primaryScreenId = getPrimaryScreenId();
@@ -3486,6 +3657,7 @@ function buildPresenterSnapshot() {
     plannedScreens,
     liveScreens: Number(plan?.liveCount || plan?.liveScreens?.length || 0),
     selectedSkuCount: Number(plan?.goal?.targetSkuIds?.length || state.selectedGoalSkuIds.size || 0),
+    brandContext,
     previewUrl: primaryScreenId ? buildSharedPreviewUrl(primaryScreenId) : buildSharedPreviewUrl(""),
     previewLabel: primaryScreenId || "",
     statusText: String(elements.statusText?.textContent || "").trim(),
@@ -3735,6 +3907,20 @@ function renderOptions() {
     Object.fromEntries((state.options?.templates || []).map((template) => [template.id, template.name]))
   );
 
+  const screenShareLabelMap = Object.fromEntries(SCREEN_SHARE_PRESETS.map((preset) => [preset.value, preset.label]));
+  renderSelectOptions(
+    elements.anchorSharePreset,
+    SCREEN_SHARE_PRESETS.map((preset) => preset.value),
+    getAnchorSharePresetValue(),
+    screenShareLabelMap
+  );
+  renderSelectOptions(
+    elements.screenSharePreset,
+    SCREEN_SHARE_PRESETS.map((preset) => preset.value),
+    getAnchorSharePresetValue(),
+    screenShareLabelMap
+  );
+
   renderSelectOptions(
     elements.goalObjective,
     (state.options?.goalObjectives || []).map((objective) => objective.id),
@@ -3748,7 +3934,7 @@ function renderOptions() {
     state.options?.goalAggressivenessOptions || ["Balanced"],
     String(elements.goalAggressiveness?.value || "").trim(),
     {},
-    "Select a style"
+    "Select a buying style"
   );
 
   renderRetailerRateCard(state.options?.screenTypePricingDefaults || null);
@@ -3757,6 +3943,7 @@ function renderOptions() {
 
 function syncSupplyFormDefaults() {
   const manual = getManualSupplyConfig();
+  const anchorSharePreset = getAnchorSharePresetValue();
   state.editingScreenId = "";
   if (elements.editScreenId) {
     elements.editScreenId.value = "";
@@ -3798,6 +3985,12 @@ function syncSupplyFormDefaults() {
   }
   if (elements.refreshInterval) {
     elements.refreshInterval.value = String(manual.screen.refreshInterval);
+  }
+  if (elements.anchorSharePreset) {
+    elements.anchorSharePreset.value = anchorSharePreset;
+  }
+  if (elements.screenSharePreset) {
+    elements.screenSharePreset.value = anchorSharePreset;
   }
   if (elements.screenSubmitBtn) {
     elements.screenSubmitBtn.textContent = "Create screen";
@@ -3875,6 +4068,7 @@ function beginScreenEdit(screenId) {
   if (!screen) {
     return;
   }
+  const anchorSharePreset = getAnchorSharePresetValue();
   state.editingScreenId = screen.screenId;
   if (elements.editScreenId) {
     elements.editScreenId.value = screen.screenId;
@@ -3904,6 +4098,12 @@ function beginScreenEdit(screenId) {
   }
   if (elements.refreshInterval) {
     elements.refreshInterval.value = String(screen.refreshInterval || 30000);
+  }
+  if (elements.anchorSharePreset) {
+    elements.anchorSharePreset.value = anchorSharePreset;
+  }
+  if (elements.screenSharePreset) {
+    elements.screenSharePreset.value = getScreenSharePresetValue(screen);
   }
   if (elements.screenSubmitBtn) {
     elements.screenSubmitBtn.textContent = "Save changes";
@@ -4155,6 +4355,7 @@ function renderPresetSummary() {
   const demoStoreCount = getDemoStoreCount();
   const actionMessage = state.lastDemoAction?.message || "";
   const presetMaterialized = isDemoPresetMaterialized();
+  const anchorShareLabel = getAnchorShareDisplayLabel();
   const summaryMessage = !isManualSupplyConfirmed()
     ? "Add one anchor placement, then apply the shared preset to finish the supply setup."
     : presetMaterialized
@@ -4167,6 +4368,7 @@ function renderPresetSummary() {
   elements.presetSummary.innerHTML = `
     <strong>Shared player URL: ${escapeHtml(SHARED_PLAYER_URL)}</strong>
     <p>${escapeHtml(summaryMessage)}</p>
+    <p class="goal-change__metrics">Sellable share: ${escapeHtml(anchorShareLabel)} on the anchor screen | preset screens default to 1/6.</p>
     <p class="goal-change__metrics">Retailer CPM card: ${escapeHtml(summarizeGoalRateCard())}</p>
     <p class="goal-change__metrics">
       ${escapeHtml(
@@ -4355,6 +4557,22 @@ function renderGoalScopeSelects() {
   renderSelectOptions(elements.goalPageScope, pages, pages.includes(currentPage) ? currentPage : "", {}, "All mapped placements");
 }
 
+function renderBrandContextSlots() {
+  const brandContext = getGoalPlanBrandContext();
+  renderBrandContextSlot(elements.heroBrandContext, brandContext, {
+    meta: brandContext.accountLabel || "Selected workspace brand",
+    className: "brand-badge brand-badge--hero"
+  });
+  renderBrandContextSlot(elements.buyingBrandContext, brandContext, {
+    meta: brandContext.objectiveLabel || brandContext.accountLabel || "",
+    className: "brand-badge brand-badge--compact"
+  });
+  renderBrandContextSlot(elements.monitoringBrandContext, brandContext, {
+    meta: brandContext.accountLabel || brandContext.objectiveLabel || "",
+    className: "brand-badge brand-badge--compact"
+  });
+}
+
 function renderGoalBrandOptions() {
   const current = getSelectedGoalAdvertiserId();
   const accounts = Array.isArray(state.productAccounts) && state.productAccounts.length > 0
@@ -4398,7 +4616,7 @@ function getMissingGoalBriefFields() {
     missing.push("a goal");
   }
   if (!String(elements.goalAggressiveness?.value || "").trim()) {
-    missing.push("a planning style");
+    missing.push("a buying style");
   }
   return missing;
 }
@@ -4436,9 +4654,9 @@ function getGoalPlanningStepSummary(stepNumber) {
       parts.push(objectiveLabelById(objectiveId));
     }
     if (aggressiveness) {
-      parts.push(`${aggressiveness} planning`);
+      parts.push(`${aggressiveness} buying style`);
     }
-    return parts.join(" | ") || "Pick the account, goal, and planning style before you shape the buy.";
+    return parts.join(" | ") || "Pick the account, goal, and buying style before you shape the buy.";
   }
 
   if (stepNumber === 2) {
@@ -4455,26 +4673,26 @@ function getGoalPlanningStepSummary(stepNumber) {
     return "Choose an account first to browse its assortment.";
   }
   if (state.goalPromptInferencePending && prompt) {
-    return "AI is choosing SKU's for the current brief.";
+    return "AI is recommending SKU's for the current brief.";
   }
   if (state.goalPromptAwaitingRun && prompt) {
-    return "Brief ready. Click Let AI choose SKU's to build the shortlist.";
+    return "Brief ready. Click Let AI choose SKU's to build the recommended shortlist.";
   }
   if (isGoalPromptSelectionActive() && selectedCount > 0) {
-    return `AI brief selected ${selectedCount} priority SKU(s)${category ? ` in ${titleCase(category)}` : ""}.`;
+    return `AI recommended ${selectedCount} priority SKU(s)${category ? ` in ${titleCase(category)}` : ""}.`;
   }
   if (selectedCount > 0) {
     return `${selectedCount} priority SKU(s) selected${category ? ` in ${titleCase(category)}` : ""}.`;
   }
   if (prompt) {
     return isGoalPromptSelectionActive()
-      ? "AI brief is active, but no matching SKUs were found yet."
-      : "No priority SKUs selected. Click Let AI choose SKU's, or pick SKUs manually.";
+      ? "AI reviewed the brief but did not find a confident shortlist yet."
+      : "No priority SKUs selected. Click Let AI choose SKU's, or open manual selection.";
   }
   if (category) {
     return `Browsing ${titleCase(category)} with no SKU shortlist yet.`;
   }
-  return "Choose SKUs yourself, or brief AI and click the button to shortlist them.";
+  return "Let AI recommend the shortlist, or open manual selection if you need to override it.";
 }
 
 function getGoalPlanningStepStatus(stepNumber) {
@@ -4549,6 +4767,7 @@ function renderGoalPlanningFlow() {
       !briefComplete || !state.goalScopeStepAcknowledged || !hasValidGoalFlightDates() || plannerBusy;
     elements.goalPlanBtn.textContent = plannerBusy ? "AI building buy..." : "Auto-build in-store buy";
   }
+  renderGoalAggressivenessHelp();
   updateGoalPlannerFieldStates();
 }
 
@@ -4660,8 +4879,7 @@ function renderGoalSkuCount() {
     scopeParts.push(titleCase(category));
   }
   const scopeSuffix = scopeParts.length > 0 ? ` for ${scopeParts.join(" | ")}` : "";
-  const promptNote = getGoalPromptSelectionNote();
-  elements.goalSkuCount.textContent = `Showing ${products.length} SKU(s)${scopeSuffix}.${promptNote ? ` ${promptNote}` : ""}`;
+  elements.goalSkuCount.textContent = `Browse ${products.length} SKU(s)${scopeSuffix} for manual review.`;
 }
 
 function renderGoalSelectedSkus() {
@@ -4672,23 +4890,23 @@ function renderGoalSelectedSkus() {
   const reasoning = readTextValue(state.goalPromptInferenceReasoning);
   elements.goalSelectedSkuHeadline.textContent =
     state.goalPromptInferencePending && getGoalPromptText()
-      ? "AI choosing"
+      ? "AI recommending"
       : isGoalPromptSelectionActive()
-        ? `${selectedProducts.length} AI-selected`
+        ? `${selectedProducts.length} AI-recommended`
         : `${selectedProducts.length} selected`;
 
   if (selectedProducts.length === 0) {
     elements.goalSelectedSkus.classList.add("empty");
     if (state.goalPromptInferencePending && getGoalPromptText()) {
-      elements.goalSelectedSkus.textContent = "AI is choosing SKU's for the current brief.";
+      elements.goalSelectedSkus.textContent = "AI is recommending SKU's for the current brief.";
     } else if (isGoalPromptSelectionActive()) {
-      elements.goalSelectedSkus.textContent = reasoning || "AI brief is active, but no matching SKUs were found yet.";
+      elements.goalSelectedSkus.textContent = reasoning || "AI reviewed the brief but did not find a confident shortlist yet.";
     } else if (getGoalPromptText()) {
       elements.goalSelectedSkus.textContent = state.goalPromptAwaitingRun
-        ? "Brief ready. Click Let AI choose SKU's to build the shortlist, or pick SKUs below."
-        : "No priority SKUs selected. Click Let AI choose SKU's, or pick SKUs below.";
+        ? "Brief ready. Click Let AI choose SKU's to build the recommended shortlist, or open manual selection below."
+        : "No priority SKUs selected. Click Let AI choose SKU's for a recommended shortlist, or open manual selection below.";
     } else {
-      elements.goalSelectedSkus.textContent = "No priority SKUs selected yet. Pick SKUs below or add an AI brief.";
+      elements.goalSelectedSkus.textContent = "No priority SKUs selected yet. Add an AI brief above, or open manual selection below.";
     }
   } else {
     elements.goalSelectedSkus.classList.remove("empty");
@@ -4897,10 +5115,17 @@ function getGoalPlanBrandContext(plan = state.activeGoalPlan) {
   const advertiserId = String(goal.advertiserId || getSelectedGoalAdvertiserId() || "").trim();
   const account = getGoalAccountByAdvertiserId(advertiserId);
   const brand = String(account?.brand || goal.brand || "").trim();
+  const targetProducts = getGoalPlanTargetProducts(plan);
+  const fallbackLogo =
+    readTextValue(goal.logo) ||
+    readTextValue(account?.logo) ||
+    readTextValue(targetProducts.find((product) => getProductDisplayLogo(product))?.logo) ||
+    readTextValue(targetProducts.find((product) => getProductDisplayLogo(product))?.brandLogo);
   const accountLabel = brand && advertiserId ? `${brand} | ${advertiserId}` : brand || advertiserId || "";
   return {
     advertiserId,
     brand,
+    logo: fallbackLogo,
     accountLabel,
     objectiveLabel: objectiveLabelById(goal.objective || "")
   };
@@ -5395,6 +5620,7 @@ function renderGoalPlan() {
   const availablePlacements = getAvailableGoalPlacements(plan);
   const budgetScenario = buildGoalBudgetScenario(plan);
   const targetProducts = getGoalPlanTargetProducts(plan);
+  const brandContext = getGoalPlanBrandContext(plan);
   const accountLabel = getGoalPlanAccountLabel(plan.goal || {}, targetProducts);
   const focusLabel = describeGoalPlanFocus(plan, targetProducts);
   const selectionEdited = isGoalPlacementSelectionEdited(plan);
@@ -5420,6 +5646,10 @@ function renderGoalPlan() {
   const scopeLabel = getGoalScopeLabel(plan.goal || {});
   const storeLabel = plan.goal?.objective === "clearance" ? "Store focus" : "Store";
   const storeValue = String(plan.goal?.storeFocusLabel || plan.goal?.effectiveStoreId || plan.goal?.storeId || "All stores").trim() || "All stores";
+  const excludedScreens = Array.isArray(plan.excludedScreens) ? plan.excludedScreens : [];
+  const shareCapacityExcludedCount = excludedScreens.filter(
+    (entry) => String(entry?.reasonCode || "").trim() === "share-capacity"
+  ).length;
   const primaryPillLabel =
     plan.status === "applied" ? "In market" : selectionEdited ? "Plan edited" : compatibleScreens > 0 ? "Brief ready" : "Needs revision";
   const planPlacements = placementEntries;
@@ -5453,7 +5683,9 @@ function renderGoalPlan() {
   };
   const introText =
     compatibleScreens === 0
-      ? "We could not find a strong in-store line-up for this brief. Try widening the placement focus or selecting a different account/category."
+      ? shareCapacityExcludedCount > 0 && shareCapacityExcludedCount === excludedScreens.length
+        ? "The best-fit screens are already fully sold at the current 1/6 share. Try a different store scope, page scope, or flight window."
+        : "We could not find a strong in-store line-up for this brief. Try widening the placement focus or selecting a different account/category."
       : selectionEdited
         ? `The editable line-up currently includes ${placementSummary || `${compatibleScreens} placement(s)`}.`
         : `We recommend ${placementSummary || `${compatibleScreens} placement(s)`}${
@@ -5547,6 +5779,12 @@ function renderGoalPlan() {
           ${plannerInputsTooltip}
         </div>
         <p class="goal-summary__lede">${escapeHtml(introText)}</p>
+        ${
+          buildBrandIdentityMarkup(brandContext, {
+            className: "brand-badge brand-badge--summary",
+            meta: brandContext.accountLabel || ""
+          }) || ""
+        }
       </div>
       <div class="goal-summary__hero-status">
         <span class="pill ${plan.status === "applied" ? "pill--applied" : "pill--planned"}">${escapeHtml(primaryPillLabel)}</span>
@@ -5613,7 +5851,8 @@ function renderGoalPlan() {
         : getGoalPlacementReason(entry || {}, screen, plan, targetProducts);
       const scoreLine = getGoalPlacementScoreLine(entry || {});
       const templateRationale = String(entry?.templateRationale || "").trim();
-      const refreshRationale = String(entry?.refreshRationale || "").trim();
+      const shareRationale = String(entry?.shareRationale || "").trim();
+      const shareLabel = String(entry?.shareLabel || "").trim();
       const placementRole = String(entry?.placementRole || "").trim();
       const expectedOutcome = String(entry?.expectedOutcome || "").trim();
       const placementCost = Math.max(0, Math.round(Number(entry?.placementCost || 0)));
@@ -5625,10 +5864,12 @@ function renderGoalPlan() {
       const normalizedExpectedOutcome = expectedOutcome.replace(/^Expected outcome:\s*/i, "");
       const pricingMetaCopy =
         cpm > 0 && estimatedImpressions > 0
-          ? `${formatCount(estimatedImpressions)} est. imps${estimatedDailyImpressions > 0 ? ` | ${formatCount(estimatedDailyImpressions)}/day` : ""} | ${formatMoney(cpm)} CPM${
+          ? `${shareLabel ? `${shareLabel} | ` : ""}${formatCount(estimatedImpressions)} est. imps${
+              estimatedDailyImpressions > 0 ? ` | ${formatCount(estimatedDailyImpressions)}/day` : ""
+            } | ${formatMoney(cpm)} CPM${
               screenType ? ` | ${screenType}` : ""
             }`
-          : `${formatMoney(dailyRate)} / day${screenType ? ` | ${screenType}` : ""}`;
+          : `${shareLabel ? `${shareLabel} | ` : ""}${formatMoney(dailyRate)} / day${screenType ? ` | ${screenType}` : ""}`;
       const actionButton =
         plan.status === "applied"
           ? ""
@@ -5660,14 +5901,21 @@ function renderGoalPlan() {
               <span class="goal-placement-card__meta-copy">${escapeHtml(pricingMetaCopy)}</span>
             </div>`
           : "",
-        templateRationale || refreshRationale
+        shareLabel
+          ? `<div class="goal-placement-card__meta-block">
+              <span class="goal-placement-card__meta-label">Screen share</span>
+              <strong>${escapeHtml(shareLabel)}</strong>
+              ${
+                shareRationale
+                  ? `<span class="goal-placement-card__meta-copy">${escapeHtml(shareRationale)}</span>`
+                  : ""
+              }
+            </div>`
+          : "",
+        templateRationale
           ? `<div class="goal-placement-card__meta-block">
               <span class="goal-placement-card__meta-label">Creative logic</span>
-              <strong>${escapeHtml(
-                [templateRationale && `Template: ${templateRationale}`, refreshRationale && `Refresh: ${refreshRationale}`]
-                  .filter(Boolean)
-                  .join(" | ")
-              )}</strong>
+              <strong>${escapeHtml(templateRationale)}</strong>
             </div>`
           : "",
         available && String(entry?.reasonCode || "").trim()
@@ -6289,7 +6537,7 @@ function formatLiveRefreshInterval(value) {
     return "";
   }
   const seconds = Math.max(1, Math.round(refreshMs / 1000));
-  return `${seconds}s refresh`;
+  return `${seconds}s screen cadence`;
 }
 
 function getLivePreviewScreenIds(liveScreens, selectedScreenId) {
@@ -6307,6 +6555,18 @@ function renderLiveScreenDetail(screen) {
   }
 
   const products = Array.isArray(screen.products) ? screen.products : [];
+  const leadProduct = products[0] || {};
+  const screenBrandMarkup = buildBrandIdentityMarkup(
+    {
+      brand: getProductDisplayBrand(leadProduct),
+      logo: getProductDisplayLogo(leadProduct),
+      advertiserId: readTextValue(leadProduct?.advertiserId || leadProduct?.ClientAdvertiserId)
+    },
+    {
+      className: "brand-badge brand-badge--mini",
+      meta: ""
+    }
+  );
   const productMarkup =
     products.length > 0
       ? `<div class="goal-live-products">${products.map((product) => buildGoalLiveProductMarkup(product)).join("")}</div>`
@@ -6315,6 +6575,7 @@ function renderLiveScreenDetail(screen) {
     screen.storeId || "",
     screen.pageId || "",
     screen.location || "",
+    screen.activeLineItemShareLabel || "",
     screen.screenType || "",
     screen.screenSize || "",
     formatLiveRefreshInterval(screen.refreshInterval)
@@ -6328,6 +6589,7 @@ function renderLiveScreenDetail(screen) {
         <p class="goal-live-inspector__copy">${escapeHtml(
           [screen.storeId, screen.pageId, screen.location].filter(Boolean).join(" | ") || "Active live screen"
         )}</p>
+        ${screenBrandMarkup}
       </div>
       <span class="pill">${escapeHtml(screen.templateName || screen.templateId || "Creative")}</span>
     </div>
@@ -6356,9 +6618,19 @@ function renderLiveScreens() {
 
   if (!plan || plan.status !== "applied") {
     elements.goalLiveSummary.classList.add("empty");
-    elements.goalLiveSummary.textContent = brandContext.brand
-      ? `Launch ${brandContext.brand}'s campaign to view live placements and creatives.`
-      : "Launch the selected campaign to view live placements and creatives.";
+    elements.goalLiveSummary.innerHTML = `
+      ${
+        buildBrandIdentityMarkup(brandContext, {
+          className: "brand-badge brand-badge--summary",
+          meta: brandContext.accountLabel || ""
+        }) || ""
+      }
+      <p>${escapeHtml(
+        brandContext.brand
+          ? `Launch ${brandContext.brand}'s campaign to view live placements and creatives.`
+          : "Launch the selected campaign to view live placements and creatives."
+      )}</p>
+    `;
     if (elements.goalLiveSearch) {
       elements.goalLiveSearch.disabled = true;
     }
@@ -6375,11 +6647,18 @@ function renderLiveScreens() {
   }
 
   const liveScreens = Array.isArray(plan.liveScreens) ? plan.liveScreens : [];
+  const liveShareLabel = String(liveScreens[0]?.activeLineItemShareLabel || "").trim();
   if (elements.goalLiveSearch) {
     elements.goalLiveSearch.disabled = liveScreens.length === 0;
   }
   elements.goalLiveSummary.classList.remove("empty");
   elements.goalLiveSummary.innerHTML = `
+    ${
+      buildBrandIdentityMarkup(brandContext, {
+        className: "brand-badge brand-badge--summary",
+        meta: brandContext.accountLabel || ""
+      }) || ""
+    }
     <strong>${escapeHtml(brandContext.brand ? `${brandContext.brand} live network` : "Live network")}</strong>
     <p class="goal-change__metrics">
       ${escapeHtml(formatCount(plan.liveCount || liveScreens.length || 0))} screens | ${escapeHtml(
@@ -6389,7 +6668,7 @@ function renderLiveScreens() {
     <p class="goal-change__metrics">
       ${brandContext.accountLabel ? `Account ${escapeHtml(brandContext.accountLabel)} | ` : ""}Campaign ${escapeHtml(plan.planId || "")} | Budget ${escapeHtml(
         formatMoney(plan?.budget?.selectedSpend || 0)
-      )}
+      )}${liveShareLabel ? ` | Share ${escapeHtml(liveShareLabel)}` : ""}
     </p>
   `;
 
@@ -6421,7 +6700,12 @@ function renderLiveScreens() {
           .map((screen) => {
             const isActive = screen.screenId === selectedScreenId;
             const metaLine = [screen.storeId, screen.pageId, screen.location].filter(Boolean).join(" | ");
-            const detailLine = [screen.screenType, screen.screenSize, formatLiveRefreshInterval(screen.refreshInterval)]
+            const detailLine = [
+              screen.activeLineItemShareLabel,
+              screen.screenType,
+              screen.screenSize,
+              formatLiveRefreshInterval(screen.refreshInterval)
+            ]
               .filter(Boolean)
               .join(" | ");
             return `<button type="button" class="goal-live-result${isActive ? " is-active" : ""} js-select-live-screen" data-screen-id="${escapeHtml(
@@ -6469,6 +6753,7 @@ function updateMonitoringNarrative() {
 function renderAll() {
   renderMarketStoryOverlay();
   refreshPageCounter();
+  renderBrandContextSlots();
   renderSupplySummary();
   renderPresetSummary();
   renderSupplyHandoff();
@@ -6594,6 +6879,7 @@ function readPagePayload() {
 
 function readScreenPayload() {
   const formData = new FormData(elements.screenForm);
+  const sharePreset = getScreenSharePresetConfig(String(formData.get("screenSharePreset") || "").trim());
   return {
     screenId: String(formData.get("screenId") || "").trim(),
     storeId: String(formData.get("storeId") || "").trim(),
@@ -6602,7 +6888,9 @@ function readScreenPayload() {
     screenType: String(formData.get("screenType") || "").trim(),
     screenSize: String(formData.get("screenSize") || "").trim(),
     templateId: String(formData.get("templateId") || "").trim(),
-    refreshInterval: Number(formData.get("refreshInterval"))
+    refreshInterval: Number(formData.get("refreshInterval")),
+    screenShareSlots: sharePreset.screenShareSlots,
+    defaultSellableShareSlots: sharePreset.defaultSellableShareSlots
   };
 }
 
@@ -6708,7 +6996,11 @@ async function createAnchorPlacement() {
   return runPendingAction("inventory:anchor", async () => {
     const pagePayload = readPagePayload();
     const screenPayload = readScreenPayload();
+    const anchorSharePreset = getScreenSharePresetConfig(String(elements.anchorSharePreset?.value || "").trim());
+    state.pendingAnchorSharePreset = anchorSharePreset.value;
     screenPayload.pageId = screenPayload.pageId || pagePayload.pageId;
+    screenPayload.screenShareSlots = anchorSharePreset.screenShareSlots;
+    screenPayload.defaultSellableShareSlots = anchorSharePreset.defaultSellableShareSlots;
 
     if (!pagePayload.pageId) {
       throw new Error("Anchor page configuration is missing.");
@@ -6741,11 +7033,12 @@ async function createAnchorPlacement() {
     }
 
     await Promise.all([refreshDemoConfig(), refreshInventory()]);
+    state.pendingAnchorSharePreset = "";
     state.manualSupplyConfirmed = state.screens.some((screen) => screen.screenId === getManualSupplyConfig().screen.screenId);
     state.supplyHandoffAcknowledged = false;
     state.lastDemoAction = {
       kind: "anchor",
-      message: `Anchor ready. ${screenPayload.screenId} is mapped to ${pagePayload.pageId}.`
+      message: `Anchor ready. ${screenPayload.screenId} is mapped to ${pagePayload.pageId} at ${getScreenShareDisplayLabel(screenPayload)}.`
     };
 
     syncSupplyFormDefaults();
@@ -6788,6 +7081,7 @@ async function handleScreenSubmit(event) {
       effectiveScreenId === getManualSupplyConfig().screen.screenId &&
       state.screens.some((screen) => screen.screenId === effectiveScreenId)
     ) {
+      state.pendingAnchorSharePreset = "";
       state.manualSupplyConfirmed = true;
       state.supplyHandoffAcknowledged = false;
     }
@@ -6824,6 +7118,7 @@ async function deleteScreen(screenId) {
 
     await Promise.all([refreshDemoConfig(), refreshInventory()]);
     if (screenId === getManualSupplyConfig().screen.screenId) {
+      state.pendingAnchorSharePreset = "";
       state.manualSupplyConfirmed = false;
       state.presetLoadedInSession = false;
       state.presetSimulatedInSession = false;
@@ -6983,6 +7278,8 @@ async function loadPresetFallback() {
       screenSize: screen.screenSize,
       templateId: screen.templateId,
       refreshInterval: screen.refreshInterval,
+      screenShareSlots: Number(screen.screenShareSlots || 6),
+      defaultSellableShareSlots: Number(screen.defaultSellableShareSlots || 1),
       deviceHints: screen.resolverId ? { resolverId: screen.resolverId } : undefined
     };
     const existingScreen = findScreenRecord(screen.screenId);
@@ -7074,6 +7371,7 @@ async function resetDemo() {
     const response = await requestJson("/api/demo/reset", { method: "POST" });
 
     state.demo = response.demo ? normalizeDemoConfig(response.demo) : state.demo;
+    state.pendingAnchorSharePreset = "";
     state.lastDemoAction = {
       kind: "reset",
       result: response.result || {},
@@ -7291,7 +7589,7 @@ function wireEvents() {
     state.goalScopeStepAcknowledged = true;
     state.goalPlanningStep = 3;
     renderGoalPlanningFlow();
-    showStatus("Step 3 unlocked. Choose SKUs manually or use the AI brief to build the shortlist.");
+    showStatus("Step 3 unlocked. Let AI recommend the shortlist, or open manual selection if you need to override it.");
     publishPresenterSnapshot();
   });
   elements.goalBrandAccount?.addEventListener("change", () => {
@@ -7309,7 +7607,7 @@ function wireEvents() {
     } else if (account?.brand) {
       showStatus(
         getGoalPromptText()
-          ? `Assortment filtered to ${getProductAccountLabel(account)}. Click Let AI choose SKU's to refresh the shortlist.`
+          ? `Assortment filtered to ${getProductAccountLabel(account)}. Click Let AI choose SKU's to refresh the recommended shortlist.`
           : `Assortment filtered to ${getProductAccountLabel(account)}.`
       );
     } else {
@@ -7437,9 +7735,35 @@ function wireEvents() {
     publishPresenterSnapshot();
   });
   elements.screenCancelBtn?.addEventListener("click", () => {
+    if (state.editingScreenId === getManualSupplyConfig().screen.screenId) {
+      state.pendingAnchorSharePreset = "";
+    }
     syncSupplyFormDefaults();
     renderAll();
     showStatus("Edit mode cancelled.");
+  });
+  elements.anchorSharePreset?.addEventListener("change", () => {
+    const preset = getScreenSharePresetConfig(elements.anchorSharePreset.value);
+    state.pendingAnchorSharePreset = preset.value;
+    if (!state.editingScreenId || state.editingScreenId === getManualSupplyConfig().screen.screenId) {
+      if (elements.screenSharePreset) {
+        elements.screenSharePreset.value = preset.value;
+      }
+    }
+    renderPresetSummary();
+    publishPresenterSnapshot();
+    showStatus(`Anchor sellable share set to ${preset.label}. Preset screens stay at 1/6 unless changed in Advanced config.`);
+  });
+  elements.screenSharePreset?.addEventListener("change", () => {
+    const preset = getScreenSharePresetConfig(elements.screenSharePreset.value);
+    if (!state.editingScreenId || state.editingScreenId === getManualSupplyConfig().screen.screenId) {
+      state.pendingAnchorSharePreset = preset.value;
+      if (elements.anchorSharePreset) {
+        elements.anchorSharePreset.value = preset.value;
+      }
+      renderPresetSummary();
+    }
+    publishPresenterSnapshot();
   });
   elements.templateId?.addEventListener("change", () => {
     applyTemplatePreset(elements.templateId.value, true);

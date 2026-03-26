@@ -24,6 +24,7 @@
           <p class="hero__lede">
             Digital Screens can be configured in the current platform with minimal modification. Paving the way for a new monetisation channel, attribution layer and retail media for criteo and surfaces for AI powered innovation
           </p>
+          <div id="heroBrandContext" class="brand-context-slot brand-context-slot--hero" aria-live="polite"></div>
         </div>
 
         <div class="hero__actions">
@@ -131,6 +132,13 @@
                       <span class="supply-chip">Screen: Entrance Hero</span>
                       <span class="supply-chip">URL: /screen.html</span>
                     </div>
+                    <div class="supply-step__control">
+                      <label for="anchorSharePreset">Sellable Share</label>
+                      <select id="anchorSharePreset" aria-describedby="anchorSharePresetHint"></select>
+                      <p id="anchorSharePresetHint" class="form-section__hint">
+                        Applies to the anchor screen. The shared preset keeps the rest of the screens at 1/6 unless you change screens in Advanced config.
+                      </p>
+                    </div>
                   </div>
                   <div class="supply-step__actions">
                     <button id="createAnchorBtn" type="button" class="btn btn--primary btn--large">Add one anchor placement</button>
@@ -183,18 +191,18 @@
             <details class="advanced-panel">
               <summary>
                 <span class="advanced-panel__summary-copy">
-                  <span class="advanced-panel__eyebrow">Advanced reference</span>
-                  <span class="advanced-panel__summary-title">Backup config</span>
+                  <span class="advanced-panel__eyebrow">Optional detail</span>
+                  <span class="advanced-panel__summary-title">Advanced config</span>
                   <span class="advanced-panel__summary-note">Manual page and screen mapping details</span>
                 </span>
               </summary>
-              <p class="advanced-panel__hint">Open this only if someone asks how the anchor page and screen are mapped.</p>
+              <p class="advanced-panel__hint">Open this only if someone asks how the anchor page, screen, or retailer-owned share are mapped.</p>
 
               <div class="advanced-grid">
                 <section class="advanced-grid__panel">
                   <div class="card__header">
                     <div>
-                      <p class="section-kicker">Backup detail</p>
+                      <p class="section-kicker">Advanced config</p>
                       <h3>Page settings</h3>
                     </div>
                     <span class="card__badge">CYield</span>
@@ -287,7 +295,7 @@
                 <section class="advanced-grid__panel">
                   <div class="card__header">
                     <div>
-                      <p class="section-kicker">Backup detail</p>
+                      <p class="section-kicker">Advanced config</p>
                       <h3>Screen settings</h3>
                     </div>
                     <span class="card__badge">Inventory</span>
@@ -379,6 +387,13 @@
                             <input id="refreshInterval" name="refreshInterval" type="number" min="5000" step="1000" value="30000">
                           </div>
                         </div>
+                        <div class="field">
+                          <label for="screenSharePreset">Sellable Share</label>
+                          <p class="form-section__hint">
+                            Retailer-owned. This is the share a buyer purchases on this screen.
+                          </p>
+                          <select id="screenSharePreset" name="screenSharePreset"></select>
+                        </div>
 
                         <div id="templatePreview" class="template-preview" aria-live="polite" aria-atomic="true">
                           Select a template to see the recommended setup.
@@ -430,6 +445,7 @@
             <p class="stage-panel__lede">
               Choose the account, set the campaign inputs, and let CMax explain the recommended in-store line-up in planner language.
             </p>
+            <div id="buyingBrandContext" class="brand-context-slot" aria-live="polite"></div>
           </div>
           <div class="stage-panel__actions">
             <span id="buyingStagePill" class="stage-pill">Buying ready</span>
@@ -457,7 +473,7 @@
                       <p class="planner-step__eyebrow">Step 1</p>
                       <h4>Choose the brief basics</h4>
                       <p class="planner-step__summary" data-planner-step-summary>
-                        Pick the account, goal, and planning style before you shape the buy.
+                        Pick the account, goal, and buying style before you shape the buy.
                       </p>
                     </div>
                     <div class="planner-step__meta">
@@ -483,13 +499,16 @@
                         </select>
                       </div>
                       <div class="field">
-                        <label for="goalAggressiveness">Optimization Style*</label>
-                        <select id="goalAggressiveness" name="aggressiveness" required>
-                          <option value="">Select a style</option>
+                        <label for="goalAggressiveness">Buying Style*</label>
+                        <select id="goalAggressiveness" name="aggressiveness" required aria-describedby="goalAggressivenessHelp">
+                          <option value="">Select a buying style</option>
                           <option value="Conservative">Conservative</option>
                           <option value="Balanced">Balanced</option>
                           <option value="Aggressive">Aggressive</option>
                         </select>
+                        <p id="goalAggressivenessHelp" class="form-section__hint">
+                          Controls how hard the planner pushes for scale, scope expansion, and placement pressure. Screen cadence stays fixed.
+                        </p>
                       </div>
                     </div>
 
@@ -553,7 +572,7 @@
                       <p class="planner-step__eyebrow">Step 3</p>
                       <h4>Choose the assortment focus</h4>
                       <p class="planner-step__summary" data-planner-step-summary>
-                        Choose SKUs yourself, or ask AI to choose relevant SKUs from the brief.
+                        Let AI recommend the shortlist first, then optionally refine it manually.
                       </p>
                     </div>
                     <div class="planner-step__meta">
@@ -564,9 +583,9 @@
 
                   <div class="planner-step__body">
                     <div class="field">
-                      <label for="goalPrompt">AI SKU Brief (Optional)</label>
+                      <label for="goalPrompt">AI SKU Brief (Recommended)</label>
                       <p id="goalPromptHint" class="form-section__hint">
-                        Editing this brief replaces the shortlist. Click the button when you want AI to run, or pick SKUs below to switch back to manual selection.
+                        AI is the recommended path for the shortlist. Add a brief, then run it to generate the recommendation. Manual SKU selection stays available below if you need to override it.
                       </p>
                       <textarea
                         id="goalPrompt"
@@ -594,47 +613,58 @@
                           </span>
                           <span class="ai-ass__copy">
                             <span class="ai-ass__kicker">AI brief</span>
-                            <span class="ai-ass__detail">Ready. Click the button to run the brief and refresh the shortlist.</span>
+                            <span class="ai-ass__detail">Ready. Click the button to generate or refresh the recommended shortlist.</span>
                           </span>
                         </div>
                       </div>
                     </div>
 
-                    <div class="field-row">
-                      <div class="field">
-                        <label for="goalProductCategory">Assortment Category</label>
-                        <select id="goalProductCategory">
-                          <option value="">All categories</option>
-                        </select>
-                      </div>
-                      <div class="field">
-                        <label for="goalProductSearch">Search Assortment</label>
-                        <input
-                          id="goalProductSearch"
-                          type="search"
-                          placeholder="Search by SKU, product, brand, or tag"
-                          autocomplete="off"
-                        >
-                      </div>
+                    <div class="field">
+                      <label for="goalProductCategory">Assortment Category (Optional)</label>
+                      <p class="form-section__hint">
+                        Use a category filter if you want AI recommendations and manual browsing to stay within one part of the assortment.
+                      </p>
+                      <select id="goalProductCategory">
+                        <option value="">All categories</option>
+                      </select>
                     </div>
 
                     <div class="field">
-                      <label>Priority SKUs</label>
+                      <label>Current Priority SKU Shortlist</label>
                       <p class="panel__hint goal-products__hint">
-                        Pick SKUs manually, or use the AI brief above and button to ask AI for a shortlist. The selected line-up stays visible while you filter the assortment.
+                        AI-recommended SKUs stay visible here at all times. Open manual selection only if you need to refine or override the shortlist.
                       </p>
                       <div class="goal-selected">
                         <div class="goal-selected__header">
                           <strong id="goalSelectedSkuHeadline">0 selected</strong>
-                          <div class="goal-selected__actions">
-                            <button id="goalSelectCategoryBtn" type="button" class="btn btn--tiny">Select category</button>
-                            <button id="goalClearSkusBtn" type="button" class="btn btn--tiny">Clear all</button>
-                          </div>
                         </div>
                         <div id="goalSelectedSkus" class="goal-selected__chips empty">No priority SKUs selected yet.</div>
                       </div>
-                      <div id="goalProductList" class="goal-products"></div>
-                      <p id="goalSkuCount" class="field__meta">Choose an account in Step 1 to browse SKUs.</p>
+                      <details class="goal-manual-panel">
+                        <summary>
+                          <span class="goal-manual-panel__summary-copy">
+                            <span class="goal-manual-panel__summary-title">Manual SKU selection (Optional)</span>
+                            <span class="goal-manual-panel__summary-note">Browse the assortment, search products, and override the shortlist if needed.</span>
+                          </span>
+                        </summary>
+                        <div class="goal-manual-panel__body">
+                          <div class="field">
+                            <label for="goalProductSearch">Search Assortment</label>
+                            <input
+                              id="goalProductSearch"
+                              type="search"
+                              placeholder="Search by SKU, product, brand, or tag"
+                              autocomplete="off"
+                            >
+                          </div>
+                          <div class="goal-manual-panel__actions">
+                            <button id="goalSelectCategoryBtn" type="button" class="btn btn--tiny">Select category</button>
+                            <button id="goalClearSkusBtn" type="button" class="btn btn--tiny">Clear all</button>
+                          </div>
+                          <div id="goalProductList" class="goal-products"></div>
+                          <p id="goalSkuCount" class="field__meta">Choose an account in Step 1 to browse SKUs.</p>
+                        </div>
+                      </details>
                     </div>
 
                     <div class="form-actions form-actions--left">
@@ -670,6 +700,7 @@
             <p class="stage-panel__lede">
               A client-facing brand dashboard for what is live, how it is performing, and where it is running.
             </p>
+            <div id="monitoringBrandContext" class="brand-context-slot" aria-live="polite"></div>
           </div>
           <div class="stage-panel__actions">
             <span id="monitoringStagePill" class="stage-pill">Monitoring ready</span>

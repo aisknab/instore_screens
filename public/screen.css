@@ -791,6 +791,47 @@ body.body--showcase .status-badge {
   text-transform: uppercase;
 }
 
+.fallback__brand-lockup {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  max-width: 100%;
+  padding: 8px 12px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(8, 17, 31, 0.28);
+}
+
+.fallback__brand-logo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  flex: 0 0 auto;
+  border-radius: 12px;
+  background:
+    radial-gradient(circle at 34% 24%, rgba(255, 255, 255, 0.96), rgba(255, 255, 255, 0) 56%),
+    rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.fallback__brand-logo img {
+  width: 82%;
+  height: 82%;
+  display: block;
+  object-fit: contain;
+  filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.2));
+}
+
+.fallback__brand-wordmark {
+  color: #f8fbff;
+  font-size: clamp(14px, 1.34vw, 18px);
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
 .fallback__headline {
   margin: 0;
   font-size: clamp(44px, 6vw, 96px);

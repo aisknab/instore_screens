@@ -382,6 +382,14 @@
         return advertiserId ? titleCaseWords(advertiserId) : "";
       }
 
+      function inferBrandLogo(entry, attributes) {
+        const fromAttributes = readText(attributes.brandLogo || attributes.logo);
+        if (fromAttributes) {
+          return fromAttributes;
+        }
+        return readText(entry.BrandLogo || entry.brandLogo);
+      }
+
       function buildSavingsDetail(priceValue, compareValue) {
         const priceNumber = toNumber(priceValue);
         const compareNumber = toNumber(compareValue);
@@ -540,6 +548,7 @@
         const categoryLabel = buildCategoryLabel(attributes.targetCategory, settings.location);
         const locationLabel = buildLocationLabel(settings.location);
         const brand = inferBrand(entry, attributes);
+        const brandLogo = inferBrandLogo(entry, attributes);
         const priceDisplay = formatMoney(entry.Price) || "$0.00";
         const compareDisplay = formatMoney(entry.ComparePrice);
         const rating = formatRating(entry.Rating);
@@ -583,6 +592,7 @@
           subcopy,
           legal,
           brand,
+          brandLogo,
           categoryLabel,
           locationLabel,
           objectiveId,
@@ -656,6 +666,24 @@
               <span class="fallback__qr-label">${escapeHtml(context.qr.label)}</span>
               <p class="fallback__qr-caption">${escapeHtml(context.qr.caption)}</p>
             </div>
+          </div>
+        `;
+      }
+
+      function buildBrandMarkMarkup(context, extraClass = "") {
+        if (!context.brand && !context.brandLogo) {
+          return "";
+        }
+        return `
+          <div class="fallback__brand-lockup${extraClass ? ` ${extraClass}` : ""}">
+            ${
+              context.brandLogo
+                ? `<span class="fallback__brand-logo"><img src="${escapeHtml(context.brandLogo)}" alt="${escapeHtml(
+                    context.brand || "Brand logo"
+                  )}"></span>`
+                : ""
+            }
+            <span class="fallback__brand-wordmark">${escapeHtml(context.brand || context.categoryLabel)}</span>
           </div>
         `;
       }
@@ -744,6 +772,7 @@
                     <span class="fallback__badge">${escapeHtml(context.badge)}</span>
                     <span class="fallback__scene">${escapeHtml(context.locationLabel)}</span>
                   </div>
+                  ${buildBrandMarkMarkup(context)}
                   <p class="fallback__eyebrow">${escapeHtml(context.promotion)}</p>
                   <h1 class="fallback__headline">${escapeHtml(context.name)}</h1>
                   <p class="fallback__subcopy">${escapeHtml(context.subcopy)}</p>
@@ -785,6 +814,7 @@
                     <span class="fallback__badge">${escapeHtml(context.badge)}</span>
                     <span class="fallback__scene">${escapeHtml(context.locationLabel)}</span>
                   </div>
+                  ${buildBrandMarkMarkup(context)}
                   <p class="fallback__eyebrow">${escapeHtml(context.promotion)}</p>
                   <h1 class="fallback__headline">${escapeHtml(context.name)}</h1>
                   <p class="fallback__subcopy">${escapeHtml(context.subcopy)}</p>
@@ -815,6 +845,7 @@
                     <span class="fallback__badge">${escapeHtml(context.badge)}</span>
                     <span class="fallback__scene">${escapeHtml(context.locationLabel)}</span>
                   </div>
+                  ${buildBrandMarkMarkup(context)}
                   <p class="fallback__eyebrow">${escapeHtml(context.brand || context.categoryLabel)}</p>
                   <h1 class="fallback__headline fallback__headline--kiosk">${escapeHtml(context.promotion)}</h1>
                   <div class="fallback__action-row fallback__action-row--kiosk">
@@ -875,6 +906,7 @@
                     <span class="fallback__badge">${escapeHtml(context.badge)}</span>
                     <span class="fallback__scene">${escapeHtml(context.locationLabel)}</span>
                   </div>
+                  ${buildBrandMarkMarkup(context)}
                   <p class="fallback__eyebrow">${escapeHtml(context.promotion)}</p>
                   <h1 class="fallback__headline">${escapeHtml(context.name)}</h1>
                   <p class="fallback__subcopy">${escapeHtml(context.subcopy)}</p>
@@ -894,6 +926,7 @@
                     <span class="fallback__badge">${escapeHtml(context.badge)}</span>
                     <span class="fallback__scene">${escapeHtml(context.locationLabel)}</span>
                   </div>
+                  ${buildBrandMarkMarkup(context)}
                   <p class="fallback__eyebrow">${escapeHtml(context.promotion)}</p>
                   <h1 class="fallback__headline">${escapeHtml(context.name)}</h1>
                   <p class="fallback__subcopy">${escapeHtml(context.subcopy)}</p>
@@ -919,6 +952,7 @@
                     <span class="fallback__badge">${escapeHtml(context.badge)}</span>
                     <span class="fallback__scene">${escapeHtml(context.locationLabel)}</span>
                   </div>
+                  ${buildBrandMarkMarkup(context)}
                   <p class="fallback__eyebrow">${escapeHtml(context.promotion)}</p>
                   <h1 class="fallback__headline">${escapeHtml(context.name)}</h1>
                   <p class="fallback__subcopy">${escapeHtml(context.subcopy)}</p>
