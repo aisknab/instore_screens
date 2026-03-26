@@ -550,6 +550,7 @@ const state = {
   goalBudgetCommitTimer: null,
   goalLiveQuery: "",
   goalLiveSelectedScreenId: "",
+  shareRotationScreenId: "",
   sessionPlanIds: new Set(),
   toastTimeoutId: null,
   previewRailKey: "",
@@ -772,6 +773,12 @@ const elements = {
   marketStoryBackBtn: qs("#marketStoryBackBtn"),
   marketStoryNextBtn: qs("#marketStoryNextBtn"),
   marketStorySkipBtn: qs("#marketStorySkipBtn"),
+  shareRotationOverlay: qs("#shareRotationOverlay"),
+  shareRotationTitle: qs("#shareRotationTitle"),
+  shareRotationBody: qs("#shareRotationBody"),
+  shareRotationSlots: qs("#shareRotationSlots"),
+  shareRotationEntries: qs("#shareRotationEntries"),
+  shareRotationCloseBtn: qs("#shareRotationCloseBtn"),
   monitoringOverviewSignals: qs("#monitoringOverviewSignals"),
   monitoringOverviewAsideEyebrow: qs("#monitoringOverviewAsideEyebrow"),
   monitoringOverviewAsideTitle: qs("#monitoringOverviewAsideTitle"),
@@ -967,6 +974,14 @@ function setMarketStoryOverlayVisible(visible) {
   }
   elements.marketStoryOverlay.hidden = !visible;
   document.body.classList.toggle("has-market-story-overlay", visible);
+}
+
+function setShareRotationOverlayVisible(visible) {
+  if (!elements.shareRotationOverlay) {
+    return;
+  }
+  elements.shareRotationOverlay.hidden = !visible;
+  document.body.classList.toggle("has-share-rotation-overlay", visible);
 }
 
 function setBusyOverlayVisible(visible) {
@@ -7438,6 +7453,199 @@ function formatLiveRefreshInterval(value) {
   return `${seconds}s screen cadence`;
 }
 
+function resolveShareTurnCount(shareRatio, totalSlots = 6) {
+  const normalizedRatio = Math.max(0, Math.min(1, Number(shareRatio || 0)));
+  const normalizedSlots = Math.max(1, Math.round(Number(totalSlots || 0)) || 6);
+  const scaledSlots = normalizedRatio * normalizedSlots;
+  const roundedSlots = Math.round(scaledSlots);
+  if (Math.abs(scaledSlots - roundedSlots) <= 0.001 && roundedSlots >= 0 && roundedSlots <= normalizedSlots) {
+    return roundedSlots;
+  }
+  return 0;
+}
+
+function formatShareOfVoiceLabel(shareRatio) {
+  const normalizedRatio = Math.max(0, Math.min(1, Number(shareRatio || 0)));
+  if (!normalizedRatio) {
+    return "";
+  }
+  return `${Math.round(normalizedRatio * 100)}% SOV`;
+}
+
+function formatShareTurnLabel(shareRatio, totalSlots = 6) {
+  const normalizedSlots = Math.max(1, Math.round(Number(totalSlots || 0)) || 6);
+  const turnCount = resolveShareTurnCount(shareRatio, normalizedSlots);
+  if (turnCount > 0) {
+    return `${turnCount} of ${normalizedSlots} screen turns`;
+  }
+  const sovLabel = formatShareOfVoiceLabel(shareRatio);
+  return sovLabel ? `${sovLabel} of screen rotation` : "";
+}
+
+function buildLiveInspectorStatMarkup(label) {
+  const normalizedLabel = readTextValue(label);
+  if (!normalizedLabel) {
+    return "";
+  }
+  return `<span class="goal-live-inspector__stat">${escapeHtml(normalizedLabel)}</span>`;
+}
+
+function buildShareRotationButtonMarkup(screen = {}) {
+  const sovLabel = formatShareOfVoiceLabel(screen.activeLineItemShareRatio);
+  if (!sovLabel) {
+    return "";
+  }
+  return `<button type="button" class="goal-live-inspector__stat goal-live-inspector__stat--interactive js-open-share-rotation" data-screen-id="${escapeHtml(
+    screen.screenId || ""
+  )}" aria-label="${escapeHtml(`${sovLabel}. Show share breakdown.`)}">${escapeHtml(sovLabel)}</button>`;
+}
+
+function getLiveScreenRotationBreakdown(screen = {}) {
+  const totalSlots = Math.max(1, Math.round(Number(screen?.screenShareSlots || 0)) || 6);
+  const providedEntries = Array.isArray(screen?.rotationBreakdown) ? screen.rotationBreakdown : [];
+  const normalizedProvidedEntries = providedEntries
+    .map((entry) => ({
+      lineItemId: readTextValue(entry?.lineItemId),
+      name: readTextValue(entry?.name) || "Screen rotation",
+      role: readTextValue(entry?.role) || "rotation",
+      roleLabel: readTextValue(entry?.roleLabel) || "Screen rotation",
+      shareRatio: Number(entry?.shareRatio || 0),
+      shareTurnCount:
+        Number(entry?.shareTurnCount || 0) || resolveShareTurnCount(entry?.shareRatio, totalSlots),
+      products: Array.isArray(entry?.products) ? entry.products : []
+    }))
+    .filter((entry) => entry.shareRatio > 0 || entry.shareTurnCount > 0);
+
+  if (normalizedProvidedEntries.length > 0) {
+    return normalizedProvidedEntries;
+  }
+
+  const fallbackEntries = [];
+  const activeShareRatio = Math.max(0, Math.min(1, Number(screen?.activeLineItemShareRatio || 0)));
+  if (activeShareRatio > 0) {
+    fallbackEntries.push({
+      lineItemId: readTextValue(screen?.activeLineItemId),
+      name: readTextValue(screen?.activeLineItemName) || "Live campaign share",
+      role: "selected",
+      roleLabel: "Live campaign share",
+      shareRatio: activeShareRatio,
+      shareTurnCount: resolveShareTurnCount(activeShareRatio, totalSlots),
+      products: Array.isArray(screen?.products) ? screen.products : []
+    });
+  }
+
+  const remainingShareRatio = Math.max(0, 1 - activeShareRatio);
+  if (remainingShareRatio > 0) {
+    fallbackEntries.push({
+      lineItemId: "",
+      name: "Unallocated screen time",
+      role: "unallocated",
+      roleLabel: "Unallocated share",
+      shareRatio: remainingShareRatio,
+      shareTurnCount: resolveShareTurnCount(remainingShareRatio, totalSlots),
+      products: []
+    });
+  }
+
+  return fallbackEntries;
+}
+
+function getShareRotationTone(entry = {}) {
+  if (entry.role === "selected") {
+    return "selected";
+  }
+  if (entry.role === "unallocated") {
+    return "unallocated";
+  }
+  return "other";
+}
+
+function buildShareRotationSlotsMarkup(entries = [], totalSlots = 6) {
+  const normalizedSlots = Math.max(1, Math.round(Number(totalSlots || 0)) || 6);
+  const slotEntries = [];
+
+  entries.forEach((entry) => {
+    const turnCount = Math.max(0, Number(entry?.shareTurnCount || resolveShareTurnCount(entry?.shareRatio, normalizedSlots) || 0));
+    for (let index = 0; index < turnCount; index += 1) {
+      slotEntries.push(entry);
+    }
+  });
+
+  return slotEntries
+    .slice(0, normalizedSlots)
+    .map((entry, index) => {
+      const tone = getShareRotationTone(entry);
+      const shortLabel =
+        tone === "selected" ? "Campaign" : tone === "unallocated" ? "Open" : "Other";
+      return `<div class="share-rotation-overlay__slot share-rotation-overlay__slot--${tone}">
+        <strong>Turn ${escapeHtml(String(index + 1))}</strong>
+        <span>${escapeHtml(shortLabel)}</span>
+      </div>`;
+    })
+    .join("");
+}
+
+function buildShareRotationEntryMarkup(entry = {}, totalSlots = 6) {
+  const tone = getShareRotationTone(entry);
+  const sovLabel = formatShareOfVoiceLabel(entry.shareRatio) || readTextValue(entry.shareLabel) || "Screen share";
+  const turnLabel = formatShareTurnLabel(entry.shareRatio, totalSlots);
+  const products = Array.isArray(entry.products) ? entry.products : [];
+
+  return `<article class="share-rotation-entry${tone === "selected" ? " share-rotation-entry--selected" : ""}">
+    <div class="share-rotation-entry__top">
+      <div>
+        <p class="share-rotation-entry__eyebrow">${escapeHtml(entry.roleLabel || "Screen rotation")}</p>
+        <strong class="share-rotation-entry__name">${escapeHtml(entry.name || "Rotation")}</strong>
+      </div>
+      <div class="share-rotation-entry__share">
+        <strong>${escapeHtml(sovLabel)}</strong>
+        ${turnLabel ? `<span>${escapeHtml(turnLabel)}</span>` : ""}
+      </div>
+    </div>
+    ${
+      products.length > 0
+        ? `<div class="goal-live-products">${products.map((product) => buildGoalLiveProductMarkup(product)).join("")}</div>`
+        : '<p class="share-rotation-entry__empty">No products are currently attached to this share.</p>'
+    }
+  </article>`;
+}
+
+function renderShareRotationOverlay() {
+  if (!elements.shareRotationOverlay || !elements.shareRotationTitle || !elements.shareRotationBody || !elements.shareRotationSlots || !elements.shareRotationEntries) {
+    return;
+  }
+
+  const screen = (state.activeGoalPlan?.liveScreens || []).find((entry) => entry.screenId === state.shareRotationScreenId) || null;
+  if (!screen) {
+    setShareRotationOverlayVisible(false);
+    return;
+  }
+
+  const totalSlots = Math.max(1, Math.round(Number(screen.screenShareSlots || 0)) || 6);
+  const rotationEntries = getLiveScreenRotationBreakdown(screen).sort((left, right) => {
+    const rank = { selected: 0, rotation: 1, campaign: 2, unallocated: 3 };
+    return (rank[left.role] ?? 9) - (rank[right.role] ?? 9);
+  });
+  const selectedEntry = rotationEntries.find((entry) => entry.role === "selected") || rotationEntries[0] || null;
+  const otherEntries = rotationEntries.filter((entry) => entry !== selectedEntry);
+  const otherShareRatio = otherEntries.reduce((sum, entry) => sum + Number(entry?.shareRatio || 0), 0);
+  const otherSummary =
+    otherEntries.length === 0
+      ? "No other screen time is currently allocated."
+      : otherEntries.some((entry) => entry.role === "unallocated")
+        ? `${formatShareOfVoiceLabel(otherShareRatio) || "The remaining share"} is currently unallocated.`
+        : `${formatShareOfVoiceLabel(otherShareRatio) || "The remaining share"} is taken by ${otherEntries.length === 1 ? "1 other rotation" : `${otherEntries.length} other rotations`}.`;
+
+  elements.shareRotationTitle.textContent = `${formatShareOfVoiceLabel(selectedEntry?.shareRatio) || "Screen"} on ${screen.screenId || "selected screen"}`;
+  elements.shareRotationBody.textContent =
+    selectedEntry && formatShareTurnLabel(selectedEntry.shareRatio, totalSlots)
+      ? `This campaign holds ${formatShareTurnLabel(selectedEntry.shareRatio, totalSlots)} on this screen. ${otherSummary}`
+      : otherSummary;
+  elements.shareRotationSlots.innerHTML = buildShareRotationSlotsMarkup(rotationEntries, totalSlots);
+  elements.shareRotationEntries.innerHTML = rotationEntries.map((entry) => buildShareRotationEntryMarkup(entry, totalSlots)).join("");
+  setShareRotationOverlayVisible(true);
+}
+
 function getLivePreviewScreenIds(liveScreens, selectedScreenId) {
   return [...new Set([selectedScreenId, ...liveScreens.map((screen) => screen.screenId)].filter(Boolean))].slice(0, 2);
 }
@@ -7470,15 +7678,17 @@ function renderLiveScreenDetail(screen) {
     products.length > 0
       ? `<div class="goal-live-products">${products.map((product) => buildGoalLiveProductMarkup(product)).join("")}</div>`
       : '<div class="empty">No product payload attached to this screen.</div>';
-  const stats = [
-    screen.storeId || "",
-    screen.pageId || "",
-    screen.location || "",
-    screen.activeLineItemShareLabel || "",
-    screen.screenType || "",
-    screen.screenSize || "",
-    formatLiveRefreshInterval(screen.refreshInterval)
-  ].filter(Boolean);
+  const statsMarkup = [
+    buildLiveInspectorStatMarkup(screen.storeId || ""),
+    buildLiveInspectorStatMarkup(screen.pageId || ""),
+    buildLiveInspectorStatMarkup(screen.location || ""),
+    buildShareRotationButtonMarkup(screen),
+    buildLiveInspectorStatMarkup(screen.screenType || ""),
+    buildLiveInspectorStatMarkup(screen.screenSize || ""),
+    buildLiveInspectorStatMarkup(formatLiveRefreshInterval(screen.refreshInterval))
+  ]
+    .filter(Boolean)
+    .join("");
 
   elements.goalLiveDetail.innerHTML = `<article class="goal-live-inspector">
     <div class="goal-live-inspector__top">
@@ -7492,7 +7702,7 @@ function renderLiveScreenDetail(screen) {
       </div>
       <span class="pill">${escapeHtml(screen.templateName || screen.templateId || "Creative")}</span>
     </div>
-    ${stats.length > 0 ? `<div class="goal-live-inspector__stats">${stats.map((item) => `<span>${escapeHtml(item)}</span>`).join("")}</div>` : ""}
+    ${statsMarkup ? `<div class="goal-live-inspector__stats">${statsMarkup}</div>` : ""}
     <div class="goal-live-inspector__section">
       <p class="goal-live-inspector__label">Products</p>
       ${productMarkup}
@@ -7547,7 +7757,7 @@ function renderLiveScreens() {
   }
 
   const liveScreens = Array.isArray(plan.liveScreens) ? plan.liveScreens : [];
-  const liveShareLabel = String(liveScreens[0]?.activeLineItemShareLabel || "").trim();
+  const liveShareLabel = formatShareOfVoiceLabel(liveScreens[0]?.activeLineItemShareRatio);
   if (elements.goalLiveSearch) {
     elements.goalLiveSearch.disabled = liveScreens.length === 0;
   }
@@ -7569,7 +7779,7 @@ function renderLiveScreens() {
     <p class="goal-change__metrics">
       ${brandContext.accountLabel ? `Account ${escapeHtml(brandContext.accountLabel)} | ` : ""}Campaign ${escapeHtml(plan.planId || "")} | Budget ${escapeHtml(
         formatMoney(plan?.budget?.selectedSpend || 0)
-      )}${liveShareLabel ? ` | Share ${escapeHtml(liveShareLabel)}` : ""}
+      )}${liveShareLabel ? ` | ${escapeHtml(liveShareLabel)}` : ""}
     </p>
   `;
 
@@ -7602,7 +7812,7 @@ function renderLiveScreens() {
             const isActive = screen.screenId === selectedScreenId;
             const metaLine = [screen.storeId, screen.pageId, screen.location].filter(Boolean).join(" | ");
             const detailLine = [
-              screen.activeLineItemShareLabel,
+              formatShareOfVoiceLabel(screen.activeLineItemShareRatio),
               screen.screenType,
               screen.screenSize,
               formatLiveRefreshInterval(screen.refreshInterval)
@@ -7671,6 +7881,7 @@ function renderAll() {
   renderMonitoringKpis();
   renderTelemetry();
   renderLiveScreens();
+  renderShareRotationOverlay();
   updateMonitoringNarrative();
   updateActionButtons();
   updateStagePills();
@@ -8336,6 +8547,12 @@ function wireEvents() {
     registerWorkspaceActivity();
   };
   document.addEventListener("click", (event) => {
+    if (event.target.closest("#shareRotationOverlay .share-rotation-overlay__backdrop, #shareRotationCloseBtn")) {
+      state.shareRotationScreenId = "";
+      renderShareRotationOverlay();
+      return;
+    }
+
     if (state.workspaceSwitchMode && event.target.closest("#workspaceOverlay .workspace-overlay__backdrop")) {
       cancelWorkspaceSwitch();
       return;
@@ -8428,6 +8645,13 @@ function wireEvents() {
       return;
     }
 
+    const shareRotationButton = event.target.closest(".js-open-share-rotation");
+    if (shareRotationButton) {
+      state.shareRotationScreenId = shareRotationButton.dataset.screenId || "";
+      renderShareRotationOverlay();
+      return;
+    }
+
     const openPlannerStep = event.target.closest(".js-open-planner-step");
     if (openPlannerStep) {
       setGoalPlanningStep(openPlannerStep.dataset.plannerStepTarget || "1");
@@ -8485,6 +8709,12 @@ function wireEvents() {
     const deleteScreenButton = event.target.closest(".js-delete-screen");
     if (deleteScreenButton) {
       deleteScreen(deleteScreenButton.dataset.screenId || "").catch(handleError);
+    }
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && state.shareRotationScreenId) {
+      state.shareRotationScreenId = "";
+      renderShareRotationOverlay();
     }
   });
 

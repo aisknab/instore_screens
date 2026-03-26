@@ -672,7 +672,31 @@ body.body--showcase .status-badge {
 }
 
 .fallback--kiosk-interactive {
-  background: linear-gradient(145deg, #091425 0%, #0f3358 52%, #1f72a7 100%);
+  background:
+    radial-gradient(110% 90% at 70% 16%, rgba(89, 223, 255, 0.22), transparent 44%),
+    radial-gradient(82% 70% at 18% 100%, rgba(23, 222, 193, 0.18), transparent 48%),
+    linear-gradient(150deg, #050c16 0%, #0a1f37 40%, #0d3d61 72%, #1672a0 100%);
+}
+
+.fallback--kiosk-interactive::before {
+  background:
+    radial-gradient(120% 120% at 0% 0%, rgba(255, 255, 255, 0.14), transparent 42%),
+    linear-gradient(125deg, rgba(255, 255, 255, 0.1) 0%, transparent 32%),
+    repeating-linear-gradient(
+      145deg,
+      rgba(255, 255, 255, 0.03) 0,
+      rgba(255, 255, 255, 0.03) 24px,
+      transparent 24px,
+      transparent 56px
+    );
+}
+
+.fallback--kiosk-interactive::after {
+  inset: 16% -12% -18% 24%;
+  height: auto;
+  background: radial-gradient(circle, rgba(133, 240, 255, 0.26), transparent 66%);
+  filter: blur(78px);
+  opacity: 0.82;
 }
 
 .fallback--shelf-spotlight {
@@ -706,7 +730,8 @@ body.body--showcase .status-badge {
 }
 
 .fallback__kiosk-shell {
-  grid-template-columns: minmax(0, 0.72fr) minmax(0, 1.28fr);
+  grid-template-columns: minmax(0, 1.24fr) minmax(280px, 0.76fr);
+  grid-template-areas: "stage copy";
 }
 
 .fallback__menu-shell {
@@ -753,8 +778,18 @@ body.body--showcase .status-badge {
 }
 
 .fallback__copy-panel--kiosk {
-  justify-content: flex-start;
-  gap: 14px;
+  grid-area: copy;
+  justify-content: center;
+  gap: clamp(14px, 1.7vw, 22px);
+  padding: clamp(22px, 2.2vw, 30px);
+  border-radius: 30px;
+  border: 1px solid rgba(169, 225, 255, 0.18);
+  background:
+    linear-gradient(180deg, rgba(6, 14, 28, 0.74), rgba(6, 16, 29, 0.56)),
+    radial-gradient(140% 120% at 0% 0%, rgba(105, 189, 255, 0.18), transparent 48%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    0 24px 44px rgba(2, 8, 18, 0.28);
 }
 
 .fallback[data-reading-distance="far"] .fallback__copy-panel {
@@ -859,19 +894,10 @@ body.body--showcase .status-badge {
 }
 
 .fallback__headline--kiosk {
-  max-width: 9ch;
-  font-size: clamp(46px, 5vw, 82px);
-  line-height: 0.86;
-}
-
-.fallback__kiosk-product {
-  margin: 0;
-  color: rgba(240, 247, 255, 0.86);
-  font-size: clamp(18px, 1.64vw, 24px);
-  font-weight: 700;
-  line-height: 1.1;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
+  max-width: 8.5ch;
+  font-size: clamp(54px, 5.9vw, 92px);
+  line-height: 0.8;
+  letter-spacing: -0.065em;
 }
 
 .fallback__subcopy {
@@ -883,9 +909,10 @@ body.body--showcase .status-badge {
 }
 
 .fallback__subcopy--kiosk {
-  max-width: 26ch;
-  font-size: clamp(17px, 1.42vw, 22px);
-  line-height: 1.3;
+  max-width: 19ch;
+  font-size: clamp(18px, 1.52vw, 23px);
+  line-height: 1.26;
+  color: rgba(230, 242, 255, 0.88);
 }
 
 .fallback[data-reading-distance="far"] .fallback__subcopy {
@@ -924,6 +951,22 @@ body.body--showcase .status-badge {
   text-transform: uppercase;
 }
 
+.fallback__copy-panel--kiosk .fallback__price-lockup {
+  gap: 6px;
+}
+
+.fallback__copy-panel--kiosk .fallback__price-main strong {
+  font-size: clamp(44px, 4.4vw, 74px);
+}
+
+.fallback__copy-panel--kiosk .fallback__price-compare {
+  font-size: clamp(18px, 1.7vw, 25px);
+}
+
+.fallback__copy-panel--kiosk .fallback__price-save {
+  color: #ffd78a;
+}
+
 .fallback__proof-list {
   display: flex;
   flex-wrap: wrap;
@@ -958,7 +1001,7 @@ body.body--showcase .status-badge {
   align-items: flex-start;
   flex-direction: column;
   gap: 12px;
-  margin-top: 0;
+  margin-top: 2px;
 }
 
 .fallback__cta {
@@ -1141,38 +1184,148 @@ body.body--showcase .status-badge {
 }
 
 .fallback__kiosk-stage {
+  grid-area: stage;
   display: grid;
-  grid-template-columns: minmax(0, 1.08fr) minmax(0, 0.92fr);
+  grid-template-columns: minmax(0, 1.36fr) minmax(250px, 0.84fr);
   grid-template-areas:
-    "primary phone"
-    "benefits phone";
-  gap: 16px;
-  padding: clamp(16px, 1.8vw, 24px);
+    "hero handoff"
+    "benefits handoff";
+  gap: clamp(14px, 1.8vw, 20px);
+  padding: clamp(18px, 2vw, 26px);
 }
 
-.fallback__kiosk-primary {
-  grid-area: primary;
+.fallback__kiosk-hero {
+  grid-area: hero;
+  position: relative;
   display: grid;
-  align-content: start;
-  gap: 14px;
-}
-
-.fallback__kiosk-product-card {
-  display: grid;
-  gap: 12px;
-  padding: 18px;
-  border-radius: 24px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  align-content: space-between;
+  gap: 18px;
+  min-height: 0;
+  padding: clamp(22px, 2.3vw, 30px);
+  border-radius: 32px;
+  overflow: hidden;
+  border: 1px solid rgba(170, 226, 255, 0.18);
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.04)),
-    rgba(7, 13, 25, 0.44);
+    radial-gradient(circle at 50% 38%, rgba(136, 245, 255, 0.18), transparent 34%),
+    radial-gradient(circle at 50% 58%, rgba(255, 212, 118, 0.14), transparent 28%),
+    linear-gradient(180deg, rgba(19, 41, 68, 0.9), rgba(7, 17, 32, 0.94));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.16),
+    0 30px 56px rgba(3, 9, 18, 0.34);
+}
+
+.fallback__kiosk-hero::before {
+  content: "";
+  position: absolute;
+  inset: 12% 14% 18%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(136, 244, 255, 0.3), transparent 64%);
+  filter: blur(8px);
+  pointer-events: none;
+}
+
+.fallback__kiosk-hero::after {
+  content: "";
+  position: absolute;
+  inset: auto -8% -18% 42%;
+  height: 42%;
+  background: radial-gradient(circle, rgba(255, 189, 96, 0.2), transparent 70%);
+  filter: blur(30px);
+  pointer-events: none;
+}
+
+.fallback__kiosk-hero-topline {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.fallback__kiosk-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: rgba(5, 14, 27, 0.42);
+  border: 1px solid rgba(160, 223, 255, 0.16);
+  color: rgba(235, 244, 255, 0.82);
+  font-size: clamp(12px, 1vw, 14px);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.fallback__kiosk-hero-pill {
+  position: absolute;
+  top: clamp(22px, 2.2vw, 30px);
+  right: clamp(22px, 2.2vw, 30px);
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  max-width: min(220px, 42%);
+  padding: 12px 16px;
+  border-radius: 18px;
+  background:
+    linear-gradient(180deg, rgba(255, 223, 138, 0.96), rgba(255, 182, 79, 0.92));
+  color: #2b1804;
+  box-shadow: 0 18px 30px rgba(5, 11, 24, 0.24);
+  font-size: clamp(15px, 1.3vw, 18px);
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 .fallback__product-image--kiosk {
-  position: static;
-  width: 100%;
-  height: clamp(240px, 22vw, 340px);
-  object-position: center bottom;
+  position: relative;
+  z-index: 1;
+  align-self: center;
+  justify-self: center;
+  width: min(100%, 92%);
+  height: clamp(340px, 44vh, 620px);
+  object-position: center center;
+  transform: translateY(10px) scale(1.08);
+  filter: drop-shadow(0 40px 55px rgba(0, 0, 0, 0.38));
+}
+
+.fallback__kiosk-hero-footer {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.fallback__kiosk-hero-summary {
+  display: grid;
+  gap: 6px;
+  max-width: 22ch;
+}
+
+.fallback__kiosk-hero-summary span {
+  color: rgba(183, 231, 255, 0.8);
+  font-size: clamp(12px, 1.02vw, 14px);
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.fallback__kiosk-hero-summary strong {
+  font-size: clamp(24px, 2vw, 34px);
+  line-height: 1.02;
+  letter-spacing: -0.04em;
+}
+
+.fallback__kiosk-handoff {
+  grid-area: handoff;
+  display: grid;
+  align-content: stretch;
+  gap: clamp(14px, 1.6vw, 18px);
 }
 
 .fallback__qr-card {
@@ -1185,39 +1338,40 @@ body.body--showcase .status-badge {
 }
 
 .fallback__qr-card--primary {
-  align-self: start;
+  align-self: stretch;
 }
 
 .fallback__qr-card--kiosk {
-  grid-template-columns: 1fr;
   gap: 18px;
-  padding: 24px;
+  padding: clamp(20px, 2vw, 24px);
   border-radius: 24px;
   background:
-    linear-gradient(180deg, rgba(96, 214, 255, 0.2), rgba(18, 45, 73, 0.18)),
-    rgba(7, 16, 31, 0.82);
+    linear-gradient(180deg, rgba(86, 203, 255, 0.28), rgba(14, 39, 64, 0.16)),
+    rgba(6, 17, 31, 0.88);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.16),
+    0 20px 38px rgba(2, 8, 16, 0.28);
 }
 
 .fallback__qr-card--kiosk .fallback__qr-art {
-  width: clamp(172px, 15vw, 228px);
-  margin: 0 auto;
+  width: clamp(162px, 14vw, 212px);
   padding: 14px;
   border-radius: 22px;
   box-shadow: 0 18px 34px rgba(4, 12, 24, 0.22);
 }
 
 .fallback__qr-card--kiosk .fallback__qr-copy {
-  justify-items: center;
-  text-align: center;
+  align-content: start;
+  gap: 8px;
 }
 
 .fallback__qr-card--kiosk .fallback__qr-label {
-  font-size: clamp(24px, 2.5vw, 34px);
+  font-size: clamp(26px, 2.35vw, 34px);
   letter-spacing: -0.03em;
 }
 
 .fallback__qr-card--kiosk .fallback__qr-caption {
-  max-width: 24ch;
+  max-width: 20ch;
   font-size: clamp(14px, 1.18vw, 17px);
 }
 
@@ -1295,8 +1449,10 @@ body.body--showcase .status-badge {
   align-content: start;
   padding: 16px 18px;
   border-radius: 20px;
-  background: rgba(7, 14, 28, 0.5);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02)),
+    rgba(6, 14, 27, 0.52);
+  border: 1px solid rgba(165, 226, 255, 0.12);
 }
 
 .fallback__benefit-card span {
@@ -1320,24 +1476,31 @@ body.body--showcase .status-badge {
 }
 
 .fallback__phone-panel {
-  grid-area: phone;
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
-  align-items: center;
+  align-items: stretch;
   gap: 14px;
-  padding: clamp(14px, 1.6vw, 22px);
+  padding: clamp(16px, 1.7vw, 22px);
   border-radius: 28px;
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.04)),
-    rgba(7, 13, 25, 0.36);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+    linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.04)),
+    rgba(7, 13, 25, 0.46);
+  border: 1px solid rgba(165, 226, 255, 0.12);
+}
+
+.fallback__phone-panel--kiosk {
+  justify-content: space-between;
 }
 
 .fallback__phone-shell {
-  width: min(280px, 100%);
+  width: min(100%, 280px);
   display: grid;
   gap: 12px;
+}
+
+.fallback__phone-shell--kiosk {
+  width: 100%;
 }
 
 .fallback__phone-status {
@@ -1362,6 +1525,67 @@ body.body--showcase .status-badge {
     linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(18, 27, 38, 0.08)),
     rgba(10, 17, 30, 0.62);
   overflow: hidden;
+}
+
+.fallback__phone-screen--kiosk {
+  display: grid;
+  align-content: space-between;
+  gap: 16px;
+  padding: 18px 16px 16px;
+}
+
+.fallback__phone-ticket {
+  display: grid;
+  gap: 6px;
+  padding: 16px 14px;
+  border-radius: 20px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.05)),
+    rgba(3, 10, 20, 0.52);
+  border: 1px solid rgba(172, 227, 255, 0.12);
+}
+
+.fallback__phone-ticket-label {
+  color: rgba(175, 229, 255, 0.76);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.fallback__phone-ticket strong {
+  font-size: clamp(18px, 1.52vw, 22px);
+  line-height: 1.08;
+}
+
+.fallback__phone-ticket span:last-child {
+  color: #8ff0ca;
+  font-size: clamp(18px, 1.44vw, 20px);
+  font-weight: 800;
+}
+
+.fallback__phone-progress {
+  display: grid;
+  gap: 8px;
+}
+
+.fallback__phone-progress span {
+  display: block;
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.fallback__phone-progress span:first-child {
+  width: 84%;
+}
+
+.fallback__phone-progress span:nth-child(2) {
+  width: 62%;
+}
+
+.fallback__phone-progress span:last-child {
+  width: 48%;
 }
 
 .fallback__product-image--phone {
@@ -1394,10 +1618,11 @@ body.body--showcase .status-badge {
 }
 
 .fallback__phone-note {
-  color: rgba(235, 243, 252, 0.78);
-  font-size: clamp(12px, 1.06vw, 14px);
+  color: rgba(226, 238, 252, 0.82);
+  font-size: clamp(12px, 1vw, 14px);
   font-weight: 700;
   letter-spacing: 0.06em;
+  line-height: 1.35;
   text-transform: uppercase;
 }
 
@@ -1564,6 +1789,12 @@ body.body--showcase .status-badge {
   grid-template-columns: 1fr;
 }
 
+.fallback.is-portrait-canvas .fallback__kiosk-shell {
+  grid-template-areas:
+    "stage"
+    "copy";
+}
+
 .fallback--fullscreen-banner.is-portrait-canvas .fallback__stage-panel,
 .fallback--carousel-banner.is-portrait-canvas .fallback__stage-panel,
 .fallback--fullscreen-hero.is-portrait-canvas .fallback__hero-stage {
@@ -1658,8 +1889,8 @@ body.body--showcase .status-badge {
 .fallback--kiosk-interactive.is-compact-canvas .fallback__kiosk-stage {
   grid-template-columns: 1fr;
   grid-template-areas:
-    "primary"
-    "phone"
+    "hero"
+    "handoff"
     "benefits";
 }
 
@@ -1678,9 +1909,14 @@ body.body--showcase .status-badge {
   width: clamp(150px, 20vw, 210px);
 }
 
+.fallback--kiosk-interactive.is-portrait-canvas .fallback__kiosk-handoff,
+.fallback--kiosk-interactive.is-compact-canvas .fallback__kiosk-handoff {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 .fallback--kiosk-interactive.is-portrait-canvas .fallback__phone-shell,
 .fallback--kiosk-interactive.is-compact-canvas .fallback__phone-shell {
-  width: min(300px, 100%);
+  width: min(320px, 100%);
 }
 
 .fallback--shelf-spotlight.is-compact-canvas.is-landscape-canvas .fallback__shelf-shell {
@@ -1774,9 +2010,9 @@ body.body--showcase .status-badge {
 }
 
 .fallback--kiosk-interactive .fallback__cta {
-  background: #78ebff;
-  border-color: rgba(171, 241, 255, 0.28);
-  color: #052339;
+  background: linear-gradient(180deg, #ffe28d, #ffbe5c);
+  border-color: rgba(255, 219, 130, 0.32);
+  color: #2b1704;
   box-shadow: 0 20px 30px rgba(4, 18, 32, 0.26);
 }
 
@@ -1852,6 +2088,12 @@ body.body--showcase .status-badge {
 
   .fallback__menu-shell {
     grid-template-columns: 1fr;
+  }
+
+  .fallback__kiosk-shell {
+    grid-template-areas:
+      "stage"
+      "copy";
   }
 
   .fallback__stage-panel,
@@ -1968,9 +2210,18 @@ body.body--showcase .status-badge {
   .fallback__kiosk-stage {
     grid-template-columns: 1fr;
     grid-template-areas:
-      "primary"
-      "phone"
+      "hero"
+      "handoff"
       "benefits";
+  }
+
+  .fallback__kiosk-handoff {
+    grid-template-columns: 1fr;
+  }
+
+  .fallback__product-image--kiosk {
+    height: clamp(280px, 42vh, 420px);
+    transform: translateY(0) scale(1.02);
   }
 
   .fallback__shelf-shell {
@@ -1994,6 +2245,10 @@ body.body--showcase .status-badge {
 
   .fallback__copy-panel {
     padding: 0;
+  }
+
+  .fallback__copy-panel--kiosk {
+    padding: clamp(18px, 4vw, 24px);
   }
 
   .fallback__stage-panel,

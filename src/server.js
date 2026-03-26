@@ -1711,6 +1711,17 @@ function formatLineItemShareLabel(shareRatio, totalSlots = SCREEN_SHARE_SLOT_COU
   return `${Math.max(1, Math.round(normalizedRatio * 100))}% share`;
 }
 
+function resolveShareTurnCount(shareRatio, totalSlots = SCREEN_SHARE_SLOT_COUNT) {
+  const normalizedRatio = clampNumber(Number(shareRatio || 0), 0, 1);
+  const normalizedSlots = Math.max(1, readScreenShareSlotCount(totalSlots, SCREEN_SHARE_SLOT_COUNT));
+  const scaledSlots = normalizedRatio * normalizedSlots;
+  const roundedSlots = Math.round(scaledSlots);
+  if (Math.abs(scaledSlots - roundedSlots) <= 0.001 && roundedSlots >= 0 && roundedSlots <= normalizedSlots) {
+    return roundedSlots;
+  }
+  return 0;
+}
+
 function resolveLineItemDeliveryShares(lineItems = [], totalSlots = SCREEN_SHARE_SLOT_COUNT) {
   const source = Array.isArray(lineItems) ? lineItems.filter(Boolean) : [];
   if (source.length === 0) {
@@ -1740,9 +1751,10 @@ function resolveLineItemDeliveryShares(lineItems = [], totalSlots = SCREEN_SHARE
   );
   const remainingWeight = Math.max(0, totalSlots - explicitTotal);
   const implicitWeight = implicitEntries.length > 0 ? remainingWeight / implicitEntries.length : 0;
-  const totalWeight = explicitTotal + implicitEntries.length * implicitWeight;
+  const allocatedWeight = explicitTotal + implicitEntries.length * implicitWeight;
+  const totalWeight = Math.max(totalSlots, allocatedWeight);
 
-  if (totalWeight <= 0) {
+  if (allocatedWeight <= 0) {
     const equalShare = 1 / source.length;
     return source.map((lineItem) => ({
       lineItem,
@@ -4231,6 +4243,37 @@ function summarizeLiveProduct(product, templateId, location = "") {
   };
 }
 
+function buildLiveRotationEntry(screen, shareEntry, selectedLineItem, totalSlots) {
+  const lineItem = shareEntry?.lineItem;
+  const templateId =
+    readOptionalString(lineItem?.templateId, 120) ||
+    readOptionalString(screen?.templateId, 120) ||
+    "fullscreen-banner";
+  const template = getTemplatePreset(templateId);
+  const sourceProducts = Array.isArray(lineItem?.products) ? lineItem.products : [];
+  const deliverySource = readOptionalString(lineItem?.deliverySource, 40);
+  const isSelected = Boolean(selectedLineItem && lineItem === selectedLineItem);
+  const lineItemName = readOptionalString(lineItem?.name, 180) || template.name;
+  const isAutoDefaultRotation =
+    !isSelected &&
+    deliverySource !== GOAL_LINE_ITEM_SOURCE &&
+    /default rotation/i.test(lineItemName);
+
+  return {
+    lineItemId: readOptionalString(lineItem?.lineItemId, 120),
+    name: isAutoDefaultRotation ? "Unallocated screen time" : lineItemName,
+    templateId: template.id,
+    templateName: template.name,
+    shareRatio: Number(shareEntry?.shareRatio || 0),
+    shareLabel: readOptionalString(shareEntry?.shareLabel, 40),
+    shareTurnCount: resolveShareTurnCount(shareEntry?.shareRatio, totalSlots),
+    role: isSelected ? "selected" : isAutoDefaultRotation ? "unallocated" : deliverySource === GOAL_LINE_ITEM_SOURCE ? "campaign" : "rotation",
+    roleLabel: isSelected ? "Live campaign share" : isAutoDefaultRotation ? "Unallocated share" : deliverySource === GOAL_LINE_ITEM_SOURCE ? "Other campaign share" : "Other screen rotation",
+    productCount: isAutoDefaultRotation ? 0 : sourceProducts.length,
+    products: isAutoDefaultRotation ? [] : sourceProducts.slice(0, 3).map((product) => summarizeLiveProduct(product, template.id, screen.location))
+  };
+}
+
 function buildLiveScreenSnapshot(screen, options = {}) {
   const now = new Date();
   const lineItems = Array.isArray(screen.lineItems) ? screen.lineItems : [];
@@ -4255,6 +4298,27 @@ function buildLiveScreenSnapshot(screen, options = {}) {
   const products = sourceProducts
     .slice(0, 3)
     .map((product) => summarizeLiveProduct(product, template.id, screen.location));
+  const rotationBreakdown = deliveryShares.map((entry) =>
+    buildLiveRotationEntry(screen, entry, selectedLineItem, shareConfig.totalSlots)
+  );
+  const allocatedTurns = rotationBreakdown.reduce((sum, entry) => sum + Number(entry?.shareTurnCount || 0), 0);
+  const remainingTurns = Math.max(0, shareConfig.totalSlots - allocatedTurns);
+  if (remainingTurns > 0) {
+    const remainingShareRatio = remainingTurns / Math.max(1, shareConfig.totalSlots);
+    rotationBreakdown.push({
+      lineItemId: "",
+      name: "Unallocated screen time",
+      templateId: "",
+      templateName: "",
+      shareRatio: Number(remainingShareRatio.toFixed(4)),
+      shareLabel: formatLineItemShareLabel(remainingShareRatio, shareConfig.totalSlots),
+      shareTurnCount: remainingTurns,
+      role: "unallocated",
+      roleLabel: "Unallocated share",
+      productCount: 0,
+      products: []
+    });
+  }
   const deviceHints = getScreenDeviceHints(screen);
   const debugScreenUrl = `/screen.html?screenId=${encodeURIComponent(screen.screenId)}`;
   const screenUrl = buildSharedPlayerUrl(deviceHints.resolverId);
@@ -4280,6 +4344,7 @@ function buildLiveScreenSnapshot(screen, options = {}) {
     defaultSellableShareLabel: shareConfig.shareLabel,
     productCount: sourceProducts.length,
     products,
+    rotationBreakdown,
     sharedPlayerUrl: SHARED_PLAYER_URL,
     debugScreenUrl,
     resolverId: deviceHints.resolverId,
@@ -7778,7 +7843,6 @@ app.post("/api/screens", async (req, res) => {
       screenShareSlots,
       DEFAULT_SELLABLE_SHARE_SLOTS
     );
-    const fallbackProduct = buildStorageProduct(req.body.product, screenId, location, template.id);
     const rawLineItems = Array.isArray(req.body.lineItems) ? req.body.lineItems : [];
 
     const screen = await mutateDb(async (rootDb) => {
@@ -7792,25 +7856,18 @@ app.post("/api/screens", async (req, res) => {
         throw new HttpError(409, `Screen ${screenId} already exists.`);
       }
 
-      const lineItems =
-        rawLineItems.length > 0
-          ? rawLineItems.map((lineItem, index) =>
-              normalizeLineItemForStorage(
-                lineItem,
-                { screenId, templateId, location, fallbackProduct },
-                index
-              )
-            )
-          : [
-              normalizeLineItemForStorage(
-                {
-                  name: `${titleCase(location)} Default Rotation`,
-                  products: [fallbackProduct]
-                },
-                { screenId, templateId, location, fallbackProduct },
-                0
-              )
-            ];
+      const lineItems = rawLineItems.map((lineItem, index) =>
+        normalizeLineItemForStorage(
+          lineItem,
+          {
+            screenId,
+            templateId,
+            location,
+            fallbackProduct: buildStorageProduct(req.body.product, screenId, location, template.id)
+          },
+          index
+        )
+      );
 
       const now = new Date().toISOString();
       const record = {
@@ -7911,7 +7968,6 @@ app.put("/api/screens/:screenId", async (req, res) => {
             );
 
       const shouldReplacePrimaryProduct = req.body.product !== undefined;
-      const fallbackProduct = buildStorageProduct(req.body.product, screenId, nextLocation, template.id);
       const currentLineItems = Array.isArray(record.lineItems) ? record.lineItems : [];
       const updatedLineItems =
         currentLineItems.length > 0
@@ -7919,10 +7975,10 @@ app.put("/api/screens/:screenId", async (req, res) => {
               const sourceProducts = Array.isArray(lineItem.products) ? lineItem.products : [];
               const nextProducts =
                 shouldReplacePrimaryProduct && index === 0
-                  ? [fallbackProduct]
+                  ? [buildStorageProduct(req.body.product, screenId, nextLocation, template.id)]
                   : sourceProducts.length > 0
                     ? sourceProducts.map((product) => buildStorageProduct(product, screenId, nextLocation, template.id))
-                    : [fallbackProduct];
+                    : [];
 
               return {
                 ...lineItem,
@@ -7930,21 +7986,7 @@ app.put("/api/screens/:screenId", async (req, res) => {
                 products: nextProducts
               };
             })
-          : [
-              normalizeLineItemForStorage(
-                {
-                  name: `${titleCase(nextLocation)} Default Rotation`,
-                  products: [fallbackProduct]
-                },
-                {
-                  screenId,
-                  templateId: template.id,
-                  location: nextLocation,
-                  fallbackProduct
-                },
-                0
-              )
-            ];
+          : [];
 
       record.storeId = nextStoreId;
       record.location = nextLocation;
@@ -8310,9 +8352,6 @@ app.post("/api/agent/goals/apply", async (req, res) => {
         const preservedLineItems = existingLineItems.filter(
           (lineItem) => !isManagedGoalLineItemForGoal(lineItem, run.goal || {}, run.planId)
         );
-        if (preservedLineItems.length === 0) {
-          preservedLineItems.push(buildBaselineRotationLineItemForScreen(screen, feed, now));
-        }
         const fallbackFeedProduct = runTargetProducts[0] || null;
         const goalLineItem = buildGoalLineItemForScreen(
           screen,
@@ -8418,39 +8457,7 @@ app.get("/api/screen-ad", async (req, res) => {
     const selectedTemplateId =
       readOptionalString(selectedLineItem.templateId, 120) || screen.templateId || "fullscreen-banner";
     const selectedTemplate = getTemplatePreset(selectedTemplateId);
-    const minProductCount = getTemplateProductLimit(selectedTemplate.id);
     const sourceProducts = Array.isArray(selectedLineItem.products) ? [...selectedLineItem.products] : [];
-    if (sourceProducts.length < minProductCount) {
-      const existingSkus = new Set(
-        sourceProducts
-          .map((product) =>
-            normalizeSku(
-              readOptionalString(product?.ProductId, 80) ||
-                readOptionalString(product?.productId, 80) ||
-                readOptionalString(product?.sku, 80)
-            )
-          )
-          .filter(Boolean)
-      );
-      const screenCategory = normalizeMatchToken(screen.location) || normalizeMatchToken(screen.pageId);
-      const categoryFeed =
-        screenCategory.length > 0
-          ? feed.filter((product) => normalizeMatchToken(product.category) === screenCategory)
-          : [];
-      const preferredFeed = categoryFeed.length > 0 ? categoryFeed : feed;
-
-      for (const feedProduct of preferredFeed) {
-        const sku = normalizeSku(feedProduct.sku);
-        if (!sku || existingSkus.has(sku)) {
-          continue;
-        }
-        sourceProducts.push(buildStorageProductFromFeed(feedProduct, screen, selectedTemplate.id, "awareness"));
-        existingSkus.add(sku);
-        if (sourceProducts.length >= minProductCount) {
-          break;
-        }
-      }
-    }
 
     const products = sourceProducts.map((product, index) =>
       normalizeProductForDelivery(preferFeedImageForProduct(product, feedLookup), {

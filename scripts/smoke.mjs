@@ -158,6 +158,7 @@ async function checkTemplateScreens(templates, screens) {
 async function checkScreenDelivery(screens) {
   const failures = [];
   const results = [];
+  const skipped = [];
 
   for (const screen of screens) {
     try {
@@ -187,15 +188,22 @@ async function checkScreenDelivery(screens) {
         screenId: screen.screenId,
         templateId,
         products: products.length,
-        firstImage
+        firstImage,
+        pageId: screen.pageId,
+        storeId: screen.storeId,
+        location: screen.location
       });
     } catch (error) {
+      if (String(error?.message || "").includes("has no line items configured")) {
+        skipped.push(String(screen.screenId || ""));
+        continue;
+      }
       failures.push(`${screen.screenId}: ${error.message}`);
     }
   }
 
   assert(failures.length === 0, `Screen smoke failures:\n${failures.join("\n")}`);
-  return results;
+  return { results, skipped };
 }
 
 async function checkLiveSnapshots() {
@@ -250,8 +258,8 @@ async function checkLiveSnapshots() {
   };
 }
 
-async function checkTelemetryLoop(screens, liveResults) {
-  const firstScreen = screens[0];
+async function checkTelemetryLoop(screenResults, liveResults) {
+  const firstScreen = screenResults[0];
   assert(firstScreen?.screenId, "No screen available for telemetry smoke check");
 
   const screenId = encodeURIComponent(String(firstScreen.screenId || ""));
@@ -343,26 +351,38 @@ async function runSmoke() {
 
     claimedWorkspace = await ensureWorkspaceClaimed();
     const options = await fetchJson("/api/options");
-    const screensResponse = await fetchJson("/api/screens");
+    const screensResponse = await fetchJson("/api/screens?includeLineItems=true");
     const templates = Array.isArray(options.templates) ? options.templates : [];
     const screens = Array.isArray(screensResponse.screens) ? screensResponse.screens : [];
-    const screenSample = buildScreenSmokeSample(screens);
+    const renderableScreens = screens.filter((screen) => Array.isArray(screen.lineItems) && screen.lineItems.length > 0);
+    const screenSample = buildScreenSmokeSample(renderableScreens.length > 0 ? renderableScreens : screens);
 
     assert(templates.length > 0, "No templates returned by /api/options");
     assert(screens.length > 0, "No screens returned by /api/screens");
 
     await checkTemplateScreens(templates, screens);
-    const screenResults = await checkScreenDelivery(screenSample);
+    const screenDelivery = await checkScreenDelivery(screenSample);
     const liveResults = await checkLiveSnapshots();
-    const telemetryResults = await checkTelemetryLoop(screenSample, liveResults);
+    const telemetryResults =
+      screenDelivery.results.length > 0
+        ? await checkTelemetryLoop(screenDelivery.results, liveResults)
+        : {
+            checked: false,
+            reason: "No renderable screens were available for telemetry smoke checks."
+          };
 
     console.log("PASS smoke checks");
     console.log(`Templates: ${templates.length}, Screens: ${screens.length} total (${screenSample.length} sampled)`);
-    console.log(`Screen sample: ${shortList(screenResults.map((entry) => entry.screenId))}`);
+    console.log(`Screen sample: ${shortList(screenDelivery.results.map((entry) => entry.screenId)) || "none"}`);
+    if (screenDelivery.skipped.length > 0) {
+      console.log(`Skipped empty screens: ${shortList(screenDelivery.skipped)}`);
+    }
     console.log(
-      `Telemetry: ${telemetryResults.total} event(s) tracked (${Math.round(
-        telemetryResults.exposureMs / 1000
-      )}s exposure) (${telemetryResults.topScreen} / ${telemetryResults.topSku})`
+      telemetryResults.checked
+        ? `Telemetry: ${telemetryResults.total} event(s) tracked (${Math.round(
+            telemetryResults.exposureMs / 1000
+          )}s exposure) (${telemetryResults.topScreen} / ${telemetryResults.topSku})`
+        : `Telemetry: skipped (${telemetryResults.reason})`
     );
     if (liveResults.checked) {
       console.log(

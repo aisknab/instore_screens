@@ -820,6 +820,9 @@
             : "";
         const heroMetricValue = context.savings.percentText || context.rating || context.categoryLabel || "In store now";
         const heroMetricLabel = context.savings.percentText || context.rating ? "Proof" : "Category";
+        const kioskHeroProof =
+          context.savings.percentText || context.rating || context.savings.lineText || "Featured now";
+        const kioskPhoneName = compactProductName(context.name, 3);
 
         switch (context.templateId) {
           case "fullscreen-hero":
@@ -885,31 +888,41 @@
           case "kiosk-interactive":
             return `
               <div class="fallback__kiosk-shell">
-                <section class="fallback__copy-panel fallback__copy-panel--kiosk">
-                  <div class="fallback__meta-row">
-                    <span class="fallback__badge">${escapeHtml(context.badge)}</span>
-                    <span class="fallback__scene">${escapeHtml(context.locationLabel)}</span>
-                  </div>
-                  ${buildBrandMarkMarkup(context)}
-                  <p class="fallback__eyebrow">${escapeHtml(context.promotion)}</p>
-                  <h1 class="fallback__headline fallback__headline--kiosk">${escapeHtml(context.promotion)}</h1>
-                  ${priceMarkup}
-                  <p class="fallback__kiosk-product">${escapeHtml(context.name)}</p>
-                  <div class="fallback__action-row fallback__action-row--kiosk">
-                    <span class="fallback__cta">${escapeHtml(context.cta)}</span>
-                    ${supportMarkup}
-                  </div>
-                  <p class="fallback__subcopy fallback__subcopy--kiosk">${escapeHtml(context.subcopy)}</p>
-                  ${proofMarkup}
-                  ${legalMarkup}
-                </section>
                 <section class="fallback__kiosk-stage">
-                  <div class="fallback__kiosk-primary">
-                    <div class="fallback__kiosk-product-card">
+                  <div class="fallback__kiosk-hero">
+                    <div class="fallback__kiosk-hero-topline">
                       <span class="fallback__stage-label">Featured product</span>
-                      <img class="fallback__product-image fallback__product-image--kiosk" src="${escapeHtml(context.image)}" alt="${escapeHtml(context.name)}">
+                      <span class="fallback__kiosk-chip">${escapeHtml(context.locationLabel)}</span>
                     </div>
+                    <span class="fallback__kiosk-hero-pill">${escapeHtml(kioskHeroProof)}</span>
+                    <img class="fallback__product-image fallback__product-image--kiosk" src="${escapeHtml(context.image)}" alt="${escapeHtml(context.name)}">
+                    <div class="fallback__kiosk-hero-footer">
+                      <div class="fallback__kiosk-hero-summary">
+                        <span>${escapeHtml(context.brand || context.categoryLabel)}</span>
+                        <strong>${escapeHtml(context.promotion)}</strong>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="fallback__kiosk-handoff">
                     ${buildQrMarkup(context, "fallback__qr-card--primary fallback__qr-card--kiosk")}
+                    <div class="fallback__phone-panel fallback__phone-panel--kiosk">
+                      <div class="fallback__phone-shell fallback__phone-shell--kiosk">
+                        <span class="fallback__phone-status">Saved to phone</span>
+                        <div class="fallback__phone-screen fallback__phone-screen--kiosk">
+                          <div class="fallback__phone-ticket">
+                            <span class="fallback__phone-ticket-label">Ready to redeem</span>
+                            <strong>${escapeHtml(kioskPhoneName)}</strong>
+                            <span>${escapeHtml(context.priceDisplay)}</span>
+                          </div>
+                          <div class="fallback__phone-progress" aria-hidden="true">
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                          </div>
+                        </div>
+                      </div>
+                      <span class="fallback__phone-note">Offer stays with the shopper until checkout.</span>
+                    </div>
                   </div>
                   <div class="fallback__benefit-strip" aria-label="Checkout handoff flow">
                     <div class="fallback__benefit-card">
@@ -928,19 +941,23 @@
                       <p>Bring it back to checkout.</p>
                     </div>
                   </div>
-                  <div class="fallback__phone-panel">
-                    <div class="fallback__phone-shell">
-                      <span class="fallback__phone-status">Saved offer</span>
-                      <div class="fallback__phone-screen">
-                        <img class="fallback__product-image fallback__product-image--phone" src="${escapeHtml(context.image)}" alt="${escapeHtml(context.name)}">
-                      </div>
-                      <div class="fallback__phone-summary">
-                        <strong>${escapeHtml(compactProductName(context.name))}</strong>
-                        <span>${escapeHtml(context.priceDisplay)}</span>
-                      </div>
-                    </div>
-                    <span class="fallback__phone-note">Offer follows the shopper</span>
+                </section>
+                <section class="fallback__copy-panel fallback__copy-panel--kiosk">
+                  <div class="fallback__meta-row">
+                    <span class="fallback__badge">${escapeHtml(context.badge)}</span>
+                    <span class="fallback__scene">${escapeHtml(context.locationLabel)}</span>
                   </div>
+                  ${buildBrandMarkMarkup(context)}
+                  <p class="fallback__eyebrow">${escapeHtml(context.promotion)}</p>
+                  <h1 class="fallback__headline fallback__headline--kiosk">${escapeHtml(context.headlineName)}</h1>
+                  ${priceMarkup}
+                  <p class="fallback__subcopy fallback__subcopy--kiosk">${escapeHtml(context.subcopy)}</p>
+                  ${proofMarkup}
+                  <div class="fallback__action-row fallback__action-row--kiosk">
+                    <span class="fallback__cta">${escapeHtml(context.cta)}</span>
+                    ${supportMarkup}
+                  </div>
+                  ${legalMarkup}
                 </section>
               </div>
             `;

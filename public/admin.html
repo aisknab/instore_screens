@@ -902,6 +902,21 @@
         </div>
       </div>
     </section>
+    <section id="shareRotationOverlay" class="share-rotation-overlay" hidden>
+      <div class="share-rotation-overlay__backdrop" aria-hidden="true"></div>
+      <div class="share-rotation-overlay__panel" role="dialog" aria-modal="true" aria-labelledby="shareRotationTitle">
+        <div class="share-rotation-overlay__top">
+          <div>
+            <p class="section-kicker">Share Breakdown</p>
+            <h2 id="shareRotationTitle">Screen share of voice</h2>
+            <p id="shareRotationBody" class="share-rotation-overlay__lede"></p>
+          </div>
+          <button id="shareRotationCloseBtn" type="button" class="btn btn--ghost btn--compact">Close</button>
+        </div>
+        <div id="shareRotationSlots" class="share-rotation-overlay__slots"></div>
+        <div id="shareRotationEntries" class="share-rotation-overlay__entries"></div>
+      </div>
+    </section>
     <script type="module" src="/admin.js"></script>
   </body>
 </html>
