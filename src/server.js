@@ -38,7 +38,7 @@ const GOAL_OBJECTIVES = [
       promotion: "Seen across the store today",
       badge: "Store Feature",
       cta: "See it in this zone",
-      subcopy: "Designed for broad-reach store traffic with fast-read product and brand messaging.",
+      subcopy: "In store today.",
       legal: "Pricing and availability vary by location."
     }
   },
@@ -50,7 +50,7 @@ const GOAL_OBJECTIVES = [
       promotion: "Easy add-on before checkout",
       badge: "Queue-Side Pick",
       cta: "Pick it up before you pay",
-      subcopy: "Built for quick basket-building decisions near checkout, queue, and service points.",
+      subcopy: "Easy add-on before you pay.",
       legal: "Offer and assortment vary by checkout location."
     }
   },
@@ -62,7 +62,7 @@ const GOAL_OBJECTIVES = [
       promotion: "Marked down in this store",
       badge: "Final Units",
       cta: "Find the clearance bay",
-      subcopy: "Clearance-led messaging for inventory that needs fast movement while stock remains on floor.",
+      subcopy: "Limited stock at this price.",
       legal: "Clearance pricing and stock are store-specific."
     }
   },
@@ -74,7 +74,7 @@ const GOAL_OBJECTIVES = [
       promotion: "Premium range feature",
       badge: "Signature Display",
       cta: "See the premium wall",
-      subcopy: "Hero-first messaging for products where design, price, and proof all need room to breathe.",
+      subcopy: "See it on display today.",
       legal: "Premium assortment differs by location."
     }
   }
@@ -132,7 +132,7 @@ const TEMPLATE_PRESETS = [
     defaultPromotion: "Store arrival offer",
     defaultBadge: "At the Entrance",
     defaultCta: "Find it in store",
-    defaultSubcopy: "Built for broad-reach retail messaging that shoppers can act on immediately inside the store.",
+    defaultSubcopy: "In store today.",
     defaultLegal: "Pricing and availability vary by location."
   },
   {
@@ -147,7 +147,7 @@ const TEMPLATE_PRESETS = [
     defaultPromotion: "Category feature",
     defaultBadge: "On the Feature Wall",
     defaultCta: "See the live display",
-    defaultSubcopy: "Designed for premium comparisons, launches, and high-intent category traffic.",
+    defaultSubcopy: "See it on display today.",
     defaultLegal: "Selection may vary by location."
   },
   {
@@ -162,7 +162,7 @@ const TEMPLATE_PRESETS = [
     defaultPromotion: "Rotating range highlights",
     defaultBadge: "This Zone Today",
     defaultCta: "Explore the full range",
-    defaultSubcopy: "A rotating wall format for showcasing multiple products in the same aisle or category.",
+    defaultSubcopy: "See more in this range.",
     defaultLegal: "Offers rotate throughout the day."
   },
   {
@@ -177,7 +177,7 @@ const TEMPLATE_PRESETS = [
     defaultPromotion: "Continue on your phone",
     defaultBadge: "Mobile Handoff",
     defaultCta: "Scan to keep this offer",
-    defaultSubcopy: "Designed for QR-assisted journeys, account sign-in, and deeper product detail away from the screen.",
+    defaultSubcopy: "Take this offer with you.",
     defaultLegal: "Digital offers and sign-in flows vary by store."
   },
   {
@@ -192,7 +192,7 @@ const TEMPLATE_PRESETS = [
     defaultPromotion: "Shelf-side feature",
     defaultBadge: "Compare Here",
     defaultCta: "Scan for details",
-    defaultSubcopy: "Compact creative for price, savings, and product proof at decision distance.",
+    defaultSubcopy: "Check price and details here.",
     defaultLegal: "Price and availability are specific to this location."
   },
   {
@@ -207,7 +207,7 @@ const TEMPLATE_PRESETS = [
     defaultPromotion: "Counter highlight",
     defaultBadge: "Today's Picks",
     defaultCta: "Scan for ingredients",
-    defaultSubcopy: "Menu-board creative built for daypart offers, combos, and service counter upsell.",
+    defaultSubcopy: "Order at the counter.",
     defaultLegal: "Preparation times and availability may vary."
   }
 ];
@@ -5943,12 +5943,20 @@ function applyGoalCreativeAttributes(product, objectiveId, targetProduct = null,
     readOptionalString(templateId, 80) ||
     readOptionalString(current.templateId, 80) ||
     "fullscreen-banner";
-  const role = describeGoalScreenRole(getGoalScreenRole(screen || { location: screen?.location, screenType: "", pageId: "" }));
   const brand = readOptionalString(targetProduct?.brand, 80);
   const qrMetadata = buildTemplateQrMetadata(resolvedTemplateId, objective.id, readOptionalString(screen?.location, 80));
-  const dynamicSubcopy = brand
-    ? `${objective.creativeDefaults.subcopy} ${brand} is framed for ${role}.`
-    : `${objective.creativeDefaults.subcopy} Designed for ${role}.`;
+  const dynamicSubcopy = (() => {
+    switch (objective.id) {
+      case "checkout-attach":
+        return brand ? `Add ${brand} before you pay.` : "Easy add-on before you pay.";
+      case "clearance":
+        return brand ? `${brand} while stock lasts.` : "Limited stock at this price.";
+      case "premium":
+        return brand ? `${brand} on display today.` : "See it on display today.";
+      default:
+        return brand ? `${brand} in store today.` : "In store today.";
+    }
+  })();
 
   return normalizeRenderingAttributes({
     ...qrMetadata,
