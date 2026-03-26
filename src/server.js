@@ -6430,6 +6430,29 @@ function resetWorkspaceState(rootDb, workspaceId) {
   delete rootDb.workspaces[normalizedWorkspaceId];
 }
 
+function pruneOrphanedWorkspaceStates(rootDb) {
+  ensureWorkspaceRoot(rootDb);
+  for (const workspaceId of Object.keys(rootDb.workspaces)) {
+    const normalizedWorkspaceId = readOptionalString(workspaceId, 80).toLowerCase();
+    if (!normalizedWorkspaceId || !DEMO_WORKSPACE_MAP.has(normalizedWorkspaceId)) {
+      delete rootDb.workspaces[workspaceId];
+      continue;
+    }
+
+    const normalizedState = normalizeWorkspaceState(rootDb.workspaces[workspaceId]);
+    if (workspaceId !== normalizedWorkspaceId) {
+      delete rootDb.workspaces[workspaceId];
+    }
+
+    if (!rootDb.workspaceClaims[normalizedWorkspaceId]) {
+      delete rootDb.workspaces[normalizedWorkspaceId];
+      continue;
+    }
+
+    rootDb.workspaces[normalizedWorkspaceId] = normalizedState;
+  }
+}
+
 function getWorkspaceClaimLastActivityAt(claim) {
   return readOptionalString(claim?.lastActivityAt, 80) || readOptionalString(claim?.claimedAt, 80);
 }
@@ -6526,6 +6549,7 @@ function pruneExpiredWorkspaceClaims(rootDb, now = Date.now()) {
       expireWorkspaceClaim(rootDb, claim);
     }
   }
+  pruneOrphanedWorkspaceStates(rootDb);
 }
 
 function formatLeaseRemainingMs(expiresAt, now = Date.now()) {
@@ -7396,16 +7420,14 @@ app.post("/api/workspaces/activity", async (req, res) => {
 app.post("/api/workspaces/release", async (req, res) => {
   try {
     const sessionId = ensureSessionId(req, res);
-    const resetWorkspace = readBoolean(req.body?.reset, false);
     const payload = await mutateDb(async (rootDb) => {
       pruneExpiredWorkspaceClaims(rootDb);
       const currentClaim = findWorkspaceClaimBySession(rootDb, sessionId);
       if (currentClaim) {
         delete rootDb.workspaceClaims[readOptionalString(currentClaim.workspaceId, 80)];
-        if (resetWorkspace) {
-          resetWorkspaceState(rootDb, currentClaim.workspaceId);
-        }
+        resetWorkspaceState(rootDb, currentClaim.workspaceId);
       }
+      pruneOrphanedWorkspaceStates(rootDb);
       return buildWorkspaceStatusPayload(rootDb, sessionId);
     });
     clearSessionCookie(res);

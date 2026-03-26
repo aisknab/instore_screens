@@ -20,7 +20,7 @@
           <p id="previewEyebrow" class="preview-panel__eyebrow">Immersive screen preview</p>
           <h1 id="previewHeading">Retail display mockup</h1>
           <p id="previewNarrative" class="preview-panel__narrative">
-            The shared player will load inside a proportionate device frame so the ad can be judged as signage, not as a browser tab.
+            The shared player will load inside a proportionate device frame so the ad can be judged as signage, not as a browser tab. Live feed of the screen: when you see it, customers are seeing it.
           </p>
           <dl id="previewSpecs" class="preview-panel__specs"></dl>
         </aside>
@@ -136,6 +136,7 @@
       const previewHeading = document.getElementById("previewHeading");
       const previewNarrative = document.getElementById("previewNarrative");
       const previewSpecs = document.getElementById("previewSpecs");
+      const livePreviewNarrative = "Live feed of the screen: when you see it, customers are seeing it.";
 
       document.body.classList.toggle("body--showcase", isShowcaseMode);
       document.body.dataset.scene = "sales-floor";
@@ -1304,7 +1305,7 @@
         previewHeading.textContent = productName || scene.heading;
         previewNarrative.textContent =
           readText(errorMessage) ||
-          `${scene.narrative} Native canvas: ${size.label} ${size.orientation}.`;
+          `${scene.narrative} ${livePreviewNarrative} Native canvas: ${size.label} ${size.orientation}.`;
 
         previewSpecs.innerHTML = buildPreviewSpecsMarkup([
           { label: "Placement", value: scene.placementLabel },
