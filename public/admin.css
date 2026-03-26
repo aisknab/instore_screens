@@ -400,7 +400,7 @@ a {
 }
 
 .brand-badge--picker.brand-badge--media-only .brand-badge__media {
-  width: clamp(196px, 30vw, 252px);
+  width: min(100%, clamp(104px, 14vw, 132px));
 }
 
 .brand-badge--picker-option.brand-badge--media-only {
@@ -418,6 +418,7 @@ a {
 .field--brand-picker {
   position: relative;
   z-index: 4;
+  min-width: 0;
 }
 
 .brand-picker {
@@ -429,8 +430,9 @@ a {
   min-height: 60px;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   gap: 12px;
+  min-width: 0;
   padding: 10px 12px;
   border-radius: 16px;
   border: 1px solid var(--line);
@@ -461,6 +463,12 @@ a {
   min-width: 0;
   display: grid;
   gap: 4px;
+  flex: 1 1 auto;
+}
+
+.brand-picker__trigger > .brand-badge--picker {
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .brand-picker__trigger-copy strong {
@@ -478,6 +486,7 @@ a {
   width: 10px;
   height: 10px;
   flex: 0 0 auto;
+  margin-left: auto;
   margin-right: 4px;
   border-right: 2px solid currentColor;
   border-bottom: 2px solid currentColor;
