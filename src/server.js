@@ -377,7 +377,7 @@ const DEMO_STAGE_ORDER = ["cyield-supply", "cmax-demand", "monitoring"];
 const DEMO_PAGE_SPECS = [
   {
     pageId: "ENTRANCE",
-    pageType: "Homepage",
+    pageType: "In-Store Zone",
     environment: "In-Store",
     verbosity: "Min",
     firePageBeacons: true,

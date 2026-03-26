@@ -25,7 +25,7 @@ function buildDefaultGoalPrompt(storeId = DEFAULT_DEMO_STORE_ID) {
 const MANUAL_SUPPLY = {
   page: {
     pageId: "ENTRANCE",
-    pageType: "Homepage",
+    pageType: "In-Store Zone",
     environment: "In-Store",
     firePageBeacons: true,
     oneTagHybridIntegration: false,
@@ -2011,7 +2011,7 @@ function getBrandInitials(value = "") {
 
 function buildBrandIdentityMarkup(
   brandContext = {},
-  { className = "brand-badge", baseClass = "brand-badge", meta = "", hideTitleWhenLogo = false } = {}
+  { className = "brand-badge", baseClass = "brand-badge", meta, hideTitleWhenLogo = false } = {}
 ) {
   const brand = String(brandContext?.brand || "").trim();
   const advertiserId = String(brandContext?.advertiserId || "").trim();
@@ -2022,7 +2022,8 @@ function buildBrandIdentityMarkup(
   if (!title && !logo) {
     return "";
   }
-  const metaText = String(meta || brandContext?.accountLabel || advertiserId || "").trim();
+  const resolvedMeta = meta !== undefined ? meta : brandContext?.accountLabel || advertiserId || "";
+  const metaText = String(resolvedMeta || "").trim();
   const showTitle = !(hideTitleWhenLogo && logo);
   const copyMarkup = showTitle || metaText
     ? `<span class="${escapeHtml(`${baseClass}__copy${showTitle ? "" : ` ${baseClass}__copy--meta-only`}`)}">
@@ -2047,7 +2048,7 @@ function buildBrandIdentityMarkup(
 function renderBrandContextSlot(
   container,
   brandContext = {},
-  { meta = "", className = "brand-badge brand-badge--compact", hideTitleWhenLogo = true } = {}
+  { meta, className = "brand-badge brand-badge--compact", hideTitleWhenLogo = true } = {}
 ) {
   if (!container) {
     return;
@@ -2130,6 +2131,7 @@ function renderGoalBrandPicker(accounts = [], selectedAdvertiserId = "") {
   const triggerMarkup = selectedAccount
     ? buildBrandIdentityMarkup(selectedAccount, {
         className: "brand-badge brand-badge--picker",
+        meta: "",
         hideTitleWhenLogo: true
       })
     : `<span class="brand-picker__trigger-copy">
@@ -2164,6 +2166,7 @@ function renderGoalBrandPicker(accounts = [], selectedAdvertiserId = "") {
               ${
                 buildBrandIdentityMarkup(account, {
                   className: "brand-badge brand-badge--picker-option",
+                  meta: "",
                   hideTitleWhenLogo: true
                 }) || ""
               }
@@ -6027,6 +6030,212 @@ function renderGoalPlan() {
     </div>`;
   };
 
+  const renderPlacementCard = (entry, index, { funded = true, available = false } = {}) => {
+    const screenId = String(entry?.screenId || "").trim();
+    const screen = { ...(getGoalPlanScreen(screenId) || {}), ...(entry || {}), screenId };
+    const proposedChange = proposedChangeByScreenId.get(screenId);
+    const recommendedSkus = Array.isArray(entry?.recommendedTargetSkus)
+      ? entry.recommendedTargetSkus
+      : Array.isArray(proposedChange?.recommendedTargetSkus)
+        ? proposedChange.recommendedTargetSkus
+        : [];
+    const recommendedSkuLabels = recommendedSkus.map((sku) => getProductLabelBySku(sku)).filter(Boolean);
+    const priorityProducts = getProductsForSkuList(recommendedSkus, targetProducts);
+    const visiblePriorityProducts = priorityProducts.length > 0 ? priorityProducts : uniqueGoalProductsBySku(targetProducts);
+    const placementLabel = available
+      ? "Available"
+      : plan.status === "applied"
+        ? funded
+          ? "Live"
+          : "Budget hold"
+        : funded
+          ? "Funded"
+          : "Held by budget";
+    const placementReason = available
+      ? describeAvailablePlacementReason(entry, getGoalPlacementReason(entry || {}, screen, plan, targetProducts))
+      : getGoalPlacementReason(entry || {}, screen, plan, targetProducts);
+    const scoreLine = getGoalPlacementScoreLine(entry || {});
+    const templateRationale = String(entry?.templateRationale || "").trim();
+    const shareRationale = String(entry?.shareRationale || "").trim();
+    const shareLabel = String(entry?.shareLabel || "").trim();
+    const placementRole = String(entry?.placementRole || getGoalPlacementRole(screen, plan.goal?.objective) || "").trim();
+    const expectedOutcome = String(entry?.expectedOutcome || "").trim();
+    const placementCost = Math.max(0, Math.round(Number(entry?.placementCost || 0)));
+    const cpm = Math.max(0, Math.round(Number(entry?.cpm || 0)));
+    const estimatedImpressions = Math.max(0, Math.round(Number(entry?.estimatedImpressions || 0)));
+    const estimatedDailyImpressions = Math.max(0, Math.round(Number(entry?.estimatedDailyImpressions || 0)));
+    const dailyRate = Math.max(0, Math.round(Number(entry?.dailyRate || 0)));
+    const screenType = String(entry?.screenType || screen?.screenType || "").trim();
+    const normalizedExpectedOutcome = expectedOutcome.replace(/^Expected outcome:\s*/i, "");
+    const pricingMetaCopy =
+      cpm > 0 && estimatedImpressions > 0
+        ? `${shareLabel ? `${shareLabel} | ` : ""}${formatCount(estimatedImpressions)} est. imps${
+            estimatedDailyImpressions > 0 ? ` | ${formatCount(estimatedDailyImpressions)}/day` : ""
+          } | ${formatMoney(cpm)} CPM${screenType ? ` | ${screenType}` : ""}`
+        : `${shareLabel ? `${shareLabel} | ` : ""}${formatMoney(dailyRate)} / day${screenType ? ` | ${screenType}` : ""}`;
+    const actionButton =
+      plan.status === "applied"
+        ? ""
+        : available
+          ? `<button type="button" class="btn btn--tiny js-goal-placement-add" data-plan-id="${escapeHtml(plan.planId || "")}" data-screen-id="${escapeHtml(screenId)}">Add placement</button>`
+          : `<button type="button" class="btn btn--tiny js-goal-placement-remove" data-plan-id="${escapeHtml(plan.planId || "")}" data-screen-id="${escapeHtml(screenId)}">Remove</button>`;
+    const priorityLabel = recommendedSkuLabels.length > 0
+      ? formatSentenceList(recommendedSkuLabels, Math.min(recommendedSkuLabels.length, 3))
+      : focusLabel === "the selected brief"
+        ? goalTargetSourceLabel(plan.goal?.targetSource)
+        : focusLabel;
+    const placementMetaRows = [
+      placementRole
+        ? renderPlacementMetaBlock(
+            "Role",
+            placementRole,
+            normalizedExpectedOutcome ? `Expected outcome: ${normalizedExpectedOutcome}` : ""
+          )
+        : "",
+      scoreLine ? renderPlacementMetaBlock("Score", scoreLine) : "",
+      placementCost > 0 ? renderPlacementMetaBlock("Cost", formatMoney(placementCost), pricingMetaCopy) : "",
+      shareLabel ? renderPlacementMetaBlock("Screen share", shareLabel, shareRationale) : "",
+      templateRationale ? renderPlacementMetaBlock("Creative logic", templateRationale) : "",
+      available && String(entry?.reasonCode || "").trim()
+        ? renderPlacementMetaBlock(
+            "Status",
+            String(entry.reasonCode).trim(),
+            "This placement is currently outside the active plan.",
+            "goal-placement-card__meta-block--muted"
+          )
+        : "",
+      `<div class="goal-placement-card__meta-block">
+        <span class="goal-placement-card__meta-label">Priority SKU focus</span>
+        <strong>${escapeHtml(priorityLabel)}</strong>
+        ${buildProductThumbStripMarkup(visiblePriorityProducts, {
+          className: "product-thumb product-thumb--xs",
+          maxItems: 3
+        })}
+        ${
+          available
+            ? '<span class="goal-placement-card__meta-copy">Add this placement to include it before budgeting.</span>'
+            : funded
+              ? ""
+              : '<span class="goal-placement-card__meta-copy">This placement drops below the current budget cut line.</span>'
+        }
+      </div>`
+    ]
+      .filter(Boolean)
+      .join("");
+    const placementNumber = Number(entry?.budgetRank || entry?.selectionRank || index + 1);
+    const eyebrow = available && Number(entry?.budgetRank || 0) <= 0
+      ? "Available placement"
+      : `Placement ${String(placementNumber).padStart(2, "0")}`;
+
+    return `<article class="record goal-placement-card${funded && !available ? "" : " record--muted"}${
+      !funded && !available ? " goal-placement-card--excluded" : ""
+    }${available ? " goal-placement-card--available" : ""}">
+      <div class="record__top goal-placement-card__top">
+        <div class="goal-placement-card__headline">
+          <p class="goal-placement-card__eyebrow">${escapeHtml(eyebrow)}</p>
+          <strong>${escapeHtml(getScreenDisplayLabel(screenId) || screenId || "")}</strong>
+        </div>
+        <div class="goal-placement-card__actions">
+          <span class="goal-placement__status pill ${available ? "" : plan.status === "applied" ? "pill--applied" : "pill--planned"}">${escapeHtml(placementLabel)}</span>
+          ${actionButton}
+        </div>
+      </div>
+      <p class="goal-placement-card__reason">${escapeHtml(placementReason)}</p>
+      <div class="goal-placement-card__meta-grid">
+        ${placementMetaRows}
+      </div>
+    </article>`;
+  };
+
+  const renderPlacementTypeCard = (group, index) => {
+    const placementCount = group.entries.length;
+    const storeCount = group.storeLabels.length;
+    const scopedStoreCount = Math.max(storeCount, 1);
+    const typeLabel = String(group.title || "screen type").trim().toLowerCase();
+    const summaryLead = `${placementCount} ${typeLabel} ${pluralize("placement", placementCount)} ${
+      plan.status === "applied" ? "are live" : "sit inside the current budget"
+    } across ${scopedStoreCount} ${pluralize("store", scopedStoreCount)}.`;
+    const summarySupport =
+      group.templateRationales.length === 1
+        ? group.templateRationales[0]
+        : group.reasonLines.length === 1
+          ? group.reasonLines[0]
+          : "Showing one card per unique screen type in the funded line-up.";
+    const shareSummary =
+      group.shareLabels.length === 1 ? group.shareLabels[0] : group.shareLabels.length > 1 ? "Mixed screen shares" : "Standard screen share";
+    const storeSummary = summarizeListWithOverflow(group.storeLabels, 3, `${placementCount} ${pluralize("placement", placementCount)}`);
+    const screenSummary = summarizeListWithOverflow(group.screenLabels, 2, group.title);
+    const focusSummary =
+      summarizeListWithOverflow(group.priorityLabels, 1) ||
+      summarizeListWithOverflow(targetProducts.map((product) => product.name), 3) ||
+      goalTargetSourceLabel(plan.goal?.targetSource);
+    const creativeValue =
+      group.templateNames.length === 1
+        ? group.templateNames[0]
+        : group.templateNames.length > 1
+          ? `${group.templateNames.length} creative variants`
+          : "Creative mix";
+    const creativeCopy =
+      group.templateRationales.length === 1
+        ? group.templateRationales[0]
+        : group.templateRationales.length > 1
+          ? "Creative logic varies slightly by store."
+          : "";
+    const impressionsCopy =
+      group.totalImpressions > 0
+        ? `${formatCount(group.totalImpressions)} est. imps${
+            group.totalDailyImpressions > 0 ? ` | ${formatCount(group.totalDailyImpressions)}/day` : ""
+          }`
+        : group.totalDailyImpressions > 0
+          ? `${formatCount(group.totalDailyImpressions)}/day`
+          : "";
+    const singleEntry = group.entries.length === 1 ? group.entries[0] : null;
+    const actionButton =
+      singleEntry && plan.status !== "applied"
+        ? `<button type="button" class="btn btn--tiny js-goal-placement-remove" data-plan-id="${escapeHtml(plan.planId || "")}" data-screen-id="${escapeHtml(singleEntry.screenId)}">Remove</button>`
+        : "";
+    const title = group.title || "Screen type";
+    const eyebrow = `Screen type ${String(index + 1).padStart(2, "0")}`;
+    const placementMetaRows = [
+      renderPlacementMetaBlock("Coverage", `${placementCount} funded ${pluralize("placement", placementCount)}`, storeSummary),
+      renderPlacementMetaBlock("Commercials", group.totalCost > 0 ? formatMoney(group.totalCost) : "No spend modelled", impressionsCopy),
+      renderPlacementMetaBlock("Screen share", shareSummary, screenSummary),
+      `<div class="goal-placement-card__meta-block">
+        <span class="goal-placement-card__meta-label">Priority SKU focus</span>
+        <strong>${escapeHtml(focusSummary)}</strong>
+        ${buildProductThumbStripMarkup(group.visiblePriorityProducts, {
+          className: "product-thumb product-thumb--xs",
+          maxItems: 4
+        })}
+        ${
+          group.sampleExpectedOutcome
+            ? `<span class="goal-placement-card__meta-copy">Expected outcome: ${escapeHtml(group.sampleExpectedOutcome)}</span>`
+            : '<span class="goal-placement-card__meta-copy">One card per unique screen type to keep the funded view compact.</span>'
+        }
+      </div>`,
+      renderPlacementMetaBlock("Creative", creativeValue, creativeCopy)
+    ]
+      .filter(Boolean)
+      .join("");
+
+    return `<article class="record goal-placement-card">
+      <div class="record__top goal-placement-card__top">
+        <div class="goal-placement-card__headline">
+          <p class="goal-placement-card__eyebrow">${escapeHtml(eyebrow)}</p>
+          <strong>${escapeHtml(title)}</strong>
+        </div>
+        <div class="goal-placement-card__actions">
+          <span class="goal-placement__status pill ${plan.status === "applied" ? "pill--applied" : "pill--planned"}">${escapeHtml(plan.status === "applied" ? "Live" : "Funded")}</span>
+          ${actionButton}
+        </div>
+      </div>
+      <p class="goal-placement-card__reason">${escapeHtml([summaryLead, summarySupport].filter(Boolean).join(" "))}</p>
+      <div class="goal-placement-card__meta-grid">
+        ${placementMetaRows}
+      </div>
+    </article>`;
+  };
+
   const renderPlacementRow = (entry, index, { funded = true, available = false } = {}) => {
     const screenId = String(entry?.screenId || "").trim();
     const screen = { ...(getGoalPlanScreen(screenId) || {}), ...(entry || {}), screenId };
@@ -6236,7 +6445,7 @@ function renderGoalPlan() {
       .map((value) => renderPlacementMetric(value))
       .join("");
     const groupTitle = screenType || placementRoleLabel || "Placement";
-    const groupKey = [String(entry?.placementRole || "").trim().toLowerCase(), groupTitle.toLowerCase()].filter(Boolean).join("::") || screenId;
+    const groupKey = groupTitle.toLowerCase() || screenId;
 
     return {
       key: screenId,
@@ -6486,22 +6695,18 @@ function renderGoalPlan() {
     planPlacements.filter((entry) => budgetScenario.fundedIds.has(String(entry?.screenId || "").trim())),
     { funded: true }
   );
-  const heldPlacementGroups = buildPlacementGroups(
-    planPlacements.filter((entry) => budgetScenario.heldBackIds.has(String(entry?.screenId || "").trim())),
-    { funded: false }
-  );
-  const availablePlacementGroups = buildPlacementGroups(availablePlacements, { available: true });
 
   const fundedPlacementMarkup = fundedPlacementGroups
-    .map((group, index) => renderPlacementGroup(group, index, { funded: true, totalGroups: fundedPlacementGroups.length }))
+    .map((group, index) => renderPlacementTypeCard(group, index))
     .join("");
 
-  const heldPlacementMarkup = heldPlacementGroups
-    .map((group, index) => renderPlacementGroup(group, index, { funded: false, totalGroups: heldPlacementGroups.length }))
+  const heldPlacementMarkup = planPlacements
+    .filter((entry) => budgetScenario.heldBackIds.has(String(entry?.screenId || "").trim()))
+    .map((entry, index) => renderPlacementCard(entry, index, { funded: false }))
     .join("");
 
-  const availablePlacementMarkup = availablePlacementGroups
-    .map((group, index) => renderPlacementGroup(group, index, { available: true, totalGroups: availablePlacementGroups.length }))
+  const availablePlacementMarkup = availablePlacements
+    .map((entry, index) => renderPlacementCard(entry, index, { available: true }))
     .join("");
 
   elements.goalPlanChanges.innerHTML =
@@ -6510,8 +6715,8 @@ function renderGoalPlan() {
         ? `<section class="goal-placement-group goal-placement-group--recommended">
             <div class="goal-placement-group__header">
               <p class="section-kicker">${escapeHtml(plan.status === "applied" ? "Approved line-up" : "Funded line-up")}</p>
-              <h3>${escapeHtml(plan.status === "applied" ? "Live placements" : "Placements within budget")}</h3>
-              <p class="goal-placement-group__meta">Grouped by placement type. Expand a card for store-level rationale, SKU focus, and placement controls.</p>
+              <h3>${escapeHtml(plan.status === "applied" ? "Live screen types" : "Funded screen types")}</h3>
+              <p class="goal-placement-group__meta">Showing one card per unique screen type. Totals still reflect every funded placement in the plan.</p>
             </div>
             <div class="goal-placement-list">
               ${fundedPlacementMarkup}
@@ -6521,9 +6726,9 @@ function renderGoalPlan() {
       heldPlacementMarkup
         ? `<section class="goal-placement-group goal-placement-group--excluded">
             <div class="goal-placement-group__header">
-              <p class="section-kicker">Unfunded</p>
-              <h3>Selected placements outside the current budget</h3>
-              <p class="goal-placement-group__meta">Grouped by placement type. These stay selected, but they do not fund until the budget line moves.</p>
+              <p class="section-kicker">Budget hold</p>
+              <h3>Selected placements below the cut line</h3>
+              <p class="goal-placement-group__meta">These stay selected, but they will not launch until the budget line moves down.</p>
             </div>
             <div class="goal-placement-list">
               ${heldPlacementMarkup}
@@ -6536,7 +6741,7 @@ function renderGoalPlan() {
               <div class="goal-placement-dropdown__summary-copy">
                 <p class="section-kicker">Available placements</p>
                 <h3>${escapeHtml(`${availablePlacements.length} placement${availablePlacements.length === 1 ? "" : "s"} not in the current plan`)}</h3>
-                <p>Grouped by placement type. Add or restore placements here before setting the budget and sending the plan live.</p>
+                <p>Add or restore placements here before setting the budget and sending the plan live.</p>
               </div>
               <span class="card__badge">${escapeHtml(`${availablePlacements.length} available`)}</span>
             </summary>

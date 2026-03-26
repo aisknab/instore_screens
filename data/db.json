@@ -35,7 +35,7 @@
     },
     {
       "pageId": "ENTRANCE",
-      "pageType": "Homepage",
+      "pageType": "In-Store Zone",
       "environment": "In-Store",
       "verbosity": "Min",
       "firePageBeacons": true,

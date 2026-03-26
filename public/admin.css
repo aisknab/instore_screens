@@ -495,11 +495,11 @@ a {
   position: absolute;
   top: calc(100% + 8px);
   left: 0;
-  width: min(920px, calc(100vw - 96px));
+  width: max(100%, min(640px, calc(100vw - 96px)));
   min-width: 100%;
   z-index: 60;
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(172px, 1fr));
   gap: 8px;
   max-height: min(360px, 52vh);
   overflow: auto;
@@ -583,7 +583,7 @@ a {
 
 @media (max-width: 1080px) {
   .brand-picker__menu {
-    width: min(720px, calc(100vw - 72px));
+    width: max(100%, min(520px, calc(100vw - 72px)));
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
@@ -7565,6 +7565,10 @@ body.admin-app .monitoring-dashboard {
 body.admin-app .monitoring-layout {
   gap: 28px;
   grid-template-columns: minmax(0, 1.24fr) minmax(320px, 0.82fr);
+}
+
+body.admin-app .monitoring-layout--focused {
+  grid-template-columns: minmax(0, 1fr);
 }
 
 body.admin-app .monitoring-layout__primary,
