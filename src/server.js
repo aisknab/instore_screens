@@ -4376,6 +4376,12 @@ function recordTelemetryEvent(db, rawInput) {
   const event = readTelemetryEventType(input.event);
   const screenId = readRequiredString(input.screenId, "screenId", 80);
   const screen = (db.screens || []).find((entry) => entry.screenId === screenId) || null;
+  const matchedLineItem =
+    findPreferredLineItem(Array.isArray(screen?.lineItems) ? screen.lineItems : [], {
+      lineItemId: readOptionalString(input.lineItemId, 120),
+      goalPlanId: readOptionalString(input.goalPlanId, 120),
+      advertiserId: readOptionalString(input.goalAdvertiserId ?? input.advertiserId, 120)
+    }) || null;
   const productId = readOptionalString(input.productId, 80) || readOptionalString(input.sku, 80);
   const nowIso = new Date().toISOString();
   const positionValue = Number(input.position);
@@ -4389,7 +4395,11 @@ function recordTelemetryEvent(db, rawInput) {
     pageId: readOptionalString(input.pageId, 40) || readOptionalString(screen?.pageId, 40),
     location: readOptionalString(input.location, 80) || readOptionalString(screen?.location, 80),
     templateId: readOptionalString(input.templateId, 80) || readOptionalString(screen?.templateId, 80),
-    lineItemId: readOptionalString(input.lineItemId, 120),
+    lineItemId: readOptionalString(input.lineItemId, 120) || readOptionalString(matchedLineItem?.lineItemId, 120),
+    goalPlanId: readOptionalString(input.goalPlanId, 120) || readOptionalString(matchedLineItem?.goalPlanId, 120),
+    goalAdvertiserId:
+      readOptionalString(input.goalAdvertiserId ?? input.advertiserId, 120) ||
+      readOptionalString(matchedLineItem?.goalAdvertiserId, 120),
     adid: readOptionalString(input.adid, 160),
     productId,
     sku: normalizeSku(input.sku || productId),
@@ -5062,6 +5072,40 @@ function buildTelemetryBreakdown(events, keySelector, decorate, limit = TELEMETR
     .slice(0, limit);
 }
 
+function filterTelemetryEventsForPlan(db, planId, events) {
+  const normalizedPlanId = readOptionalString(planId, 120);
+  const run = resolveTelemetryMeasurementRun(db, normalizedPlanId);
+  if (!normalizedPlanId || !run) {
+    return [];
+  }
+
+  const appliedMs = safeDateMs(run.appliedAt);
+  if (appliedMs === null) {
+    return [];
+  }
+
+  const scopedScreenIds = new Set(collectMeasurementScreenIds(run));
+  const candidateEvents = events.filter((event) => {
+    const eventMs =
+      safeDateMs(readOptionalString(event.occurredAt, 80) || readOptionalString(event.collectedAt, 80)) ?? 0;
+    if (eventMs < appliedMs) {
+      return false;
+    }
+
+    const eventPlanId = readOptionalString(event.goalPlanId, 120);
+    if (eventPlanId) {
+      return eventPlanId === normalizedPlanId;
+    }
+
+    const eventScreenId = readOptionalString(event.screenId, 80);
+    return scopedScreenIds.size > 0 && scopedScreenIds.has(eventScreenId);
+  });
+  const attributedEvents = candidateEvents.filter(
+    (event) => readOptionalString(event.goalPlanId, 120) === normalizedPlanId
+  );
+  return attributedEvents.length > 0 ? attributedEvents : candidateEvents;
+}
+
 function buildPlanTelemetryComparison(db, planId, events) {
   const runs = ensureAgentRunsArray(db);
   const run = runs.find((entry) => entry.planId === planId);
@@ -5097,11 +5141,16 @@ function buildPlanTelemetryComparison(db, planId, events) {
     }
     return eventMs < appliedMs;
   });
-  const afterApplyEvents = scopedEvents.filter((event) => {
+  const candidateAfterApplyEvents = scopedEvents.filter((event) => {
     const eventMs =
       safeDateMs(readOptionalString(event.occurredAt, 80) || readOptionalString(event.collectedAt, 80)) ?? 0;
     return eventMs >= appliedMs;
   });
+  const attributedAfterApplyEvents = candidateAfterApplyEvents.filter(
+    (event) => readOptionalString(event.goalPlanId, 120) === planId
+  );
+  const afterApplyEvents =
+    attributedAfterApplyEvents.length > 0 ? attributedAfterApplyEvents : candidateAfterApplyEvents;
 
   return {
     planId,
@@ -5123,13 +5172,14 @@ function buildTelemetrySummary(db, planId = "") {
       safeDateMs(readOptionalString(left.occurredAt, 80) || readOptionalString(left.collectedAt, 80)) ?? 0;
     return rightMs - leftMs;
   });
-  const telemetryTotals = summarizeTelemetryCounts(telemetryEvents);
+  const scopedTelemetryEvents = planId ? filterTelemetryEventsForPlan(db, planId, telemetryEvents) : telemetryEvents;
+  const telemetryTotals = summarizeTelemetryCounts(scopedTelemetryEvents);
   const planComparison = planId ? buildPlanTelemetryComparison(db, planId, telemetryEvents) : null;
 
   return {
     totals: telemetryTotals,
     byScreen: buildTelemetryBreakdown(
-      telemetryEvents,
+      scopedTelemetryEvents,
       (event) => event.screenId,
       (event, key) => ({
         screenId: key,
@@ -5139,7 +5189,7 @@ function buildTelemetrySummary(db, planId = "") {
       })
     ),
     byTemplate: buildTelemetryBreakdown(
-      telemetryEvents,
+      scopedTelemetryEvents,
       (event) => event.templateId,
       (_event, key) => {
         const template = getTemplatePreset(key);
@@ -5150,7 +5200,7 @@ function buildTelemetrySummary(db, planId = "") {
       }
     ),
     bySku: buildTelemetryBreakdown(
-      telemetryEvents,
+      scopedTelemetryEvents,
       (event) => normalizeSku(event.sku || event.productId),
       (event, key) => ({
         sku: key,
@@ -6247,6 +6297,8 @@ const WORKSPACE_SESSION_COOKIE = "instore_demo_session";
 const WORKSPACE_SESSION_COOKIE_MAX_AGE_SECONDS = 30 * 24 * 60 * 60;
 const WORKSPACE_LEASE_MS = 60 * 60 * 1000;
 const WORKSPACE_INACTIVITY_TIMEOUT_MS = 30 * 60 * 1000;
+const WORKSPACE_ACTIVITY_HEARTBEAT_INTERVAL_MS = 60 * 1000;
+const WORKSPACE_ACTIVITY_ACTIVE_GRACE_MS = WORKSPACE_ACTIVITY_HEARTBEAT_INTERVAL_MS + 5000;
 const DEMO_WORKSPACES = [
   { id: "atlas", label: "Atlas", initials: "AT", accent: "#ef7c63" },
   { id: "nova", label: "Nova", initials: "NV", accent: "#4fa7ff" },
@@ -6382,20 +6434,42 @@ function getWorkspaceClaimLastActivityAt(claim) {
   return readOptionalString(claim?.lastActivityAt, 80) || readOptionalString(claim?.claimedAt, 80);
 }
 
-function formatWorkspaceInactivityRemainingMs(claim, now = Date.now()) {
-  const parsed = Date.parse(getWorkspaceClaimLastActivityAt(claim));
-  if (!Number.isFinite(parsed)) {
-    return 0;
+function readWorkspaceInactivityBudgetMs(claim) {
+  const remainingMs = Number(claim?.inactivityRemainingMs);
+  if (Number.isFinite(remainingMs)) {
+    return Math.max(0, remainingMs);
   }
-  return Math.max(0, parsed + WORKSPACE_INACTIVITY_TIMEOUT_MS - now);
+  return WORKSPACE_INACTIVITY_TIMEOUT_MS;
+}
+
+function getWorkspaceActivityGraceUntilMs(claim) {
+  const parsed = Date.parse(readOptionalString(claim?.activeUntilAt, 80));
+  if (Number.isFinite(parsed)) {
+    return parsed;
+  }
+  return Date.parse(getWorkspaceClaimLastActivityAt(claim));
+}
+
+function formatWorkspaceInactivityRemainingMs(claim, now = Date.now()) {
+  const remainingBudgetMs = readWorkspaceInactivityBudgetMs(claim);
+  const activeUntilMs = getWorkspaceActivityGraceUntilMs(claim);
+  const idleElapsedMs = Number.isFinite(activeUntilMs) ? Math.max(0, now - activeUntilMs) : 0;
+  return Math.max(0, remainingBudgetMs - idleElapsedMs);
+}
+
+function commitWorkspaceInactivityBudget(claim, now = Date.now()) {
+  claim.inactivityRemainingMs = formatWorkspaceInactivityRemainingMs(claim, now);
+  claim.activeUntilAt = new Date(now).toISOString();
 }
 
 function getWorkspaceClaimExpiration(claim, now = Date.now()) {
   const leaseExpiryAt = Date.parse(readOptionalString(claim?.expiresAt, 80));
-  const lastActivityAt = Date.parse(getWorkspaceClaimLastActivityAt(claim));
-  const inactivityExpiryAt = Number.isFinite(lastActivityAt) ? lastActivityAt + WORKSPACE_INACTIVITY_TIMEOUT_MS : NaN;
+  const activityGraceUntilMs = getWorkspaceActivityGraceUntilMs(claim);
+  const inactivityExpiryAt = Number.isFinite(activityGraceUntilMs)
+    ? activityGraceUntilMs + readWorkspaceInactivityBudgetMs(claim)
+    : NaN;
   const leaseExpired = !Number.isFinite(leaseExpiryAt) || leaseExpiryAt <= now;
-  const inactivityExpired = !Number.isFinite(inactivityExpiryAt) || inactivityExpiryAt <= now;
+  const inactivityExpired = formatWorkspaceInactivityRemainingMs(claim, now) <= 0;
 
   if (!leaseExpired && !inactivityExpired) {
     return null;
@@ -6499,12 +6573,14 @@ function buildWorkspaceStatusPayload(rootDb, sessionId) {
     sessionId: readOptionalString(sessionId, 120),
     leaseDurationMs: WORKSPACE_LEASE_MS,
     inactivityTimeoutMs: WORKSPACE_INACTIVITY_TIMEOUT_MS,
+    activityGraceMs: WORKSPACE_ACTIVITY_ACTIVE_GRACE_MS,
     currentWorkspace:
       currentClaim && DEMO_WORKSPACE_MAP.has(readOptionalString(currentClaim.workspaceId, 80))
         ? {
             ...DEMO_WORKSPACE_MAP.get(readOptionalString(currentClaim.workspaceId, 80)),
             claimedAt: readOptionalString(currentClaim.claimedAt, 80),
             lastActivityAt: getWorkspaceClaimLastActivityAt(currentClaim),
+            activeUntilAt: readOptionalString(currentClaim.activeUntilAt, 80) || getWorkspaceClaimLastActivityAt(currentClaim),
             expiresAt: readOptionalString(currentClaim.expiresAt, 80),
             remainingMs: formatLeaseRemainingMs(currentClaim.expiresAt, now),
             inactivityRemainingMs: formatWorkspaceInactivityRemainingMs(currentClaim, now)
@@ -7253,6 +7329,8 @@ app.post("/api/workspaces/claim", async (req, res) => {
         sessionId,
         claimedAt: claimedAt.toISOString(),
         lastActivityAt: claimedAt.toISOString(),
+        activeUntilAt: new Date(claimedAt.getTime() + WORKSPACE_ACTIVITY_ACTIVE_GRACE_MS).toISOString(),
+        inactivityRemainingMs: WORKSPACE_INACTIVITY_TIMEOUT_MS,
         expiresAt: new Date(claimedAt.getTime() + WORKSPACE_LEASE_MS).toISOString()
       };
       resetWorkspaceState(rootDb, requestedWorkspaceId);
@@ -7291,7 +7369,9 @@ app.post("/api/workspaces/activity", async (req, res) => {
         return null;
       }
 
+      commitWorkspaceInactivityBudget(claim, now);
       claim.lastActivityAt = new Date(now).toISOString();
+      claim.activeUntilAt = new Date(now + WORKSPACE_ACTIVITY_ACTIVE_GRACE_MS).toISOString();
       return buildWorkspaceStatusPayload(rootDb, sessionId);
     });
 
@@ -8369,6 +8449,8 @@ app.get("/api/screen-ad", async (req, res) => {
         pageId: screen.pageId,
         location: screen.location,
         lineItemId: selectedLineItem.lineItemId,
+        goalPlanId: readOptionalString(selectedLineItem.goalPlanId, 120),
+        goalAdvertiserId: readOptionalString(selectedLineItem.goalAdvertiserId, 120),
         deliveryShareRatio: Number(selectedShare?.shareRatio || 0),
         deliveryShareLabel: readOptionalString(selectedShare?.shareLabel, 40),
         screenShareSlots: shareConfig.totalSlots,

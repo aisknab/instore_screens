@@ -7,6 +7,7 @@ const LIVE_SCREEN_RESULT_LIMIT = 12;
 let workspaceRecoveryScheduled = false;
 const WORKSPACE_INACTIVITY_TIMEOUT_MS = 30 * 60 * 1000;
 const WORKSPACE_ACTIVITY_HEARTBEAT_INTERVAL_MS = 60 * 1000;
+const WORKSPACE_ACTIVITY_ACTIVE_GRACE_MS = WORKSPACE_ACTIVITY_HEARTBEAT_INTERVAL_MS + 5000;
 
 function buildDemoScreenId(storeId, suffix) {
   const normalizedStoreId = String(storeId || "").trim();
@@ -559,9 +560,12 @@ const state = {
   marketStoryAnimationFrameIds: [],
   workspaceOverlayPollId: null,
   workspaceInactivityTimeoutId: null,
+  workspaceBadgeTickerId: null,
   workspaceTrackedWorkspaceId: "",
   workspaceLastActivityAt: 0,
   workspaceLastHeartbeatAt: 0,
+  workspaceInactivityRemainingMs: 0,
+  workspaceActivityGraceUntilAt: 0,
   workspaceActivityHeartbeatPending: false,
   workspaceSwitchMode: false,
   pendingActions: new Set()
@@ -2881,6 +2885,10 @@ function getWorkspaceInactivityTimeoutMs() {
   return Math.max(1000, Number(state.workspaceStatus?.inactivityTimeoutMs || WORKSPACE_INACTIVITY_TIMEOUT_MS));
 }
 
+function getWorkspaceActivityGraceMs() {
+  return Math.max(0, Number(state.workspaceStatus?.activityGraceMs || WORKSPACE_ACTIVITY_ACTIVE_GRACE_MS));
+}
+
 function stopWorkspaceInactivityTimer() {
   if (state.workspaceInactivityTimeoutId) {
     window.clearTimeout(state.workspaceInactivityTimeoutId);
@@ -2888,15 +2896,38 @@ function stopWorkspaceInactivityTimer() {
   }
 }
 
-function getWorkspaceActivityReferenceMs() {
-  const current = getCurrentWorkspace();
-  if (!current) {
-    return 0;
+function stopWorkspaceBadgeTicker() {
+  if (state.workspaceBadgeTickerId) {
+    window.clearInterval(state.workspaceBadgeTickerId);
+    state.workspaceBadgeTickerId = null;
   }
-  return Math.max(
-    Number(state.workspaceLastActivityAt || 0),
-    parseWorkspaceTimestamp(current.lastActivityAt || current.claimedAt)
-  );
+}
+
+function ensureWorkspaceBadgeTicker() {
+  if (!getCurrentWorkspace()) {
+    stopWorkspaceBadgeTicker();
+    return;
+  }
+  if (state.workspaceBadgeTickerId) {
+    return;
+  }
+  state.workspaceBadgeTickerId = window.setInterval(() => {
+    updateWorkspaceBadge();
+  }, 1000);
+}
+
+function getWorkspaceLocalInactivityRemainingMs(now = Date.now()) {
+  const remainingBudgetMs = Math.max(0, Number(state.workspaceInactivityRemainingMs || 0));
+  const activeUntilAt = Number(state.workspaceActivityGraceUntilAt || 0);
+  if (activeUntilAt <= 0) {
+    return remainingBudgetMs;
+  }
+  return Math.max(0, remainingBudgetMs - Math.max(0, now - activeUntilAt));
+}
+
+function getWorkspaceLocalExpiryDelayMs(now = Date.now()) {
+  const activeUntilAt = Number(state.workspaceActivityGraceUntilAt || 0);
+  return Math.max(0, getWorkspaceLocalInactivityRemainingMs(now) + Math.max(0, activeUntilAt - now));
 }
 
 function syncWorkspaceActivityState() {
@@ -2906,19 +2937,35 @@ function syncWorkspaceActivityState() {
     state.workspaceTrackedWorkspaceId = "";
     state.workspaceLastActivityAt = 0;
     state.workspaceLastHeartbeatAt = 0;
+    state.workspaceInactivityRemainingMs = 0;
+    state.workspaceActivityGraceUntilAt = 0;
     state.workspaceActivityHeartbeatPending = false;
     stopWorkspaceInactivityTimer();
+    stopWorkspaceBadgeTicker();
     return;
   }
 
+  const now = Date.now();
   const serverLastActivityAt = parseWorkspaceTimestamp(current.lastActivityAt || current.claimedAt);
+  const serverInactivityRemainingMs = Math.max(0, Number(current.inactivityRemainingMs || getWorkspaceInactivityTimeoutMs()));
+  const serverActivityGraceUntilAt =
+    parseWorkspaceTimestamp(current.activeUntilAt || current.lastActivityAt || current.claimedAt) || now;
+  const localLastActivityAt = Number(state.workspaceLastActivityAt || 0);
   if (state.workspaceTrackedWorkspaceId !== currentWorkspaceId) {
     state.workspaceTrackedWorkspaceId = currentWorkspaceId;
     state.workspaceLastActivityAt = serverLastActivityAt || Date.now();
     state.workspaceLastHeartbeatAt = 0;
+    state.workspaceInactivityRemainingMs = serverInactivityRemainingMs;
+    state.workspaceActivityGraceUntilAt = serverActivityGraceUntilAt;
   } else {
-    state.workspaceLastActivityAt = Math.max(Number(state.workspaceLastActivityAt || 0), serverLastActivityAt);
+    const hasLocalActivitySinceServerSync = localLastActivityAt > serverLastActivityAt;
+    state.workspaceLastActivityAt = Math.max(localLastActivityAt, serverLastActivityAt);
+    if (!hasLocalActivitySinceServerSync) {
+      state.workspaceInactivityRemainingMs = serverInactivityRemainingMs;
+      state.workspaceActivityGraceUntilAt = serverActivityGraceUntilAt;
+    }
   }
+  ensureWorkspaceBadgeTicker();
 }
 
 function scheduleWorkspaceInactivityTimeout() {
@@ -2926,9 +2973,7 @@ function scheduleWorkspaceInactivityTimeout() {
   if (!getCurrentWorkspace()) {
     return;
   }
-  const timeoutMs = getWorkspaceInactivityTimeoutMs();
-  const activityReferenceMs = getWorkspaceActivityReferenceMs() || Date.now();
-  const delayMs = Math.max(0, activityReferenceMs + timeoutMs - Date.now());
+  const delayMs = getWorkspaceLocalExpiryDelayMs();
   state.workspaceInactivityTimeoutId = window.setTimeout(() => {
     expireWorkspaceForInactivity().catch(handleError);
   }, delayMs);
@@ -2981,7 +3026,11 @@ function registerWorkspaceActivity({ forceHeartbeat = false } = {}) {
     return;
   }
   const now = Date.now();
+  state.workspaceInactivityRemainingMs = getWorkspaceLocalInactivityRemainingMs(now);
   state.workspaceLastActivityAt = now;
+  state.workspaceActivityGraceUntilAt = now + getWorkspaceActivityGraceMs();
+  updateWorkspaceBadge();
+  ensureWorkspaceBadgeTicker();
   scheduleWorkspaceInactivityTimeout();
   if (forceHeartbeat || now - Number(state.workspaceLastHeartbeatAt || 0) >= WORKSPACE_ACTIVITY_HEARTBEAT_INTERVAL_MS) {
     sendWorkspaceActivityHeartbeat().catch(handleError);
@@ -3020,7 +3069,7 @@ function updateWorkspaceBadge() {
     return;
   }
   elements.workspaceBadgeName.textContent = current.label || "Workspace";
-  elements.workspaceBadgeStatus.textContent = formatLeaseRemaining(current.remainingMs || 0);
+  elements.workspaceBadgeStatus.textContent = formatLeaseRemaining(getWorkspaceLocalInactivityRemainingMs());
 }
 
 function buildWorkspaceCardMeta(workspace) {
@@ -7122,8 +7171,8 @@ function renderMeasurementPrimaryCards(board, totals = {}) {
 
   const incrementalMetric = getMeasurementMetric(board, "incrementality");
   const roasMetric = getMeasurementMetric(board, "inStoreROAS");
-  const playCount = Number(totals?.playCount || board?.current?.playCount || 0);
-  const exposureMs = Number(totals?.exposureMs || board?.current?.exposureMs || 0);
+  const playCount = Number(board?.current?.playCount || totals?.playCount || 0);
+  const exposureMs = Number(board?.current?.exposureMs || totals?.exposureMs || 0);
 
   const cards = [
     buildMeasurementFocusCardMarkup({
@@ -8736,6 +8785,7 @@ function wireEvents() {
   window.addEventListener("beforeunload", () => {
     stopWorkspaceOverlayPolling();
     stopWorkspaceInactivityTimer();
+    stopWorkspaceBadgeTicker();
     cancelMarketStoryAnimations();
   });
 }
