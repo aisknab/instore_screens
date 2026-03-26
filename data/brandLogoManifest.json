@@ -1,0 +1,226 @@
+{
+  "promptVersion": "brand-logo-v1",
+  "updatedAt": "2026-03-26T00:34:18.188Z",
+  "items": {
+    "advertiser-aegis": {
+      "key": "advertiser-aegis",
+      "advertiserId": "advertiser-aegis",
+      "brand": "Aegis",
+      "status": "generated",
+      "imagePath": "/assets/brands/generated/advertiser-aegis.png",
+      "categories": [
+        "electronics"
+      ],
+      "generatedAt": "2026-03-26T00:28:43.275Z",
+      "prompt": "Create a polished retail brand logo with a transparent background. Return exactly one logo or wordmark only, centered on the canvas. No background plate, no box, no label sticker, no mockup, no billboard, no paper texture, no product, no mascot costume, no watermark, and no extra words beyond the brand identity itself. Use crisp vector-style edges, modern brand design, and strong readability at small sizes for dashboards, live previews, and in-store screens. Prefer a clean wordmark or a simple combined icon-plus-wordmark lockup. Brand name: Aegis. Retail context: electronics. Brand cues: accessory, amplifier, audio, camera, capture, checkout-attach, creator, dac. Representative products: GameCore 16 RTX, USB-C Multi Dock, Aegis ForgeBook 14 Gaming Laptop. Leave enough transparent padding around the logo so it can sit on different backgrounds.",
+      "promptHash": "b9624aab826e822117c652be67554e52d2412f145c3276a920313cc7e57065cc",
+      "promptVersion": "brand-logo-v1",
+      "model": "gpt-5.4",
+      "quality": "high",
+      "size": "1024x1024",
+      "attempts": 1,
+      "durationMs": 32847,
+      "responseId": "resp_016d29f8e22d47130069c47d9afbd48190aad9569906beb130"
+    },
+    "advertiser-aurora": {
+      "key": "advertiser-aurora",
+      "advertiserId": "advertiser-aurora",
+      "brand": "Aurora",
+      "status": "generated",
+      "imagePath": "/assets/brands/generated/advertiser-aurora.png",
+      "categories": [
+        "electronics"
+      ],
+      "generatedAt": "2026-03-26T00:29:20.485Z",
+      "prompt": "Create a polished retail brand logo with a transparent background. Return exactly one logo or wordmark only, centered on the canvas. No background plate, no box, no label sticker, no mockup, no billboard, no paper texture, no product, no mascot costume, no watermark, and no extra words beyond the brand identity itself. Use crisp vector-style edges, modern brand design, and strong readability at small sizes for dashboards, live previews, and in-store screens. Prefer a clean wordmark or a simple combined icon-plus-wordmark lockup. Brand name: Aurora. Retail context: electronics. Brand cues: accessory, audio, camera, capture, creator, electronics, laptop, monitor. Representative products: Creator Studio 15 OLED, Aurora CreatorBook 14, Aurora CreatorBook 16 Pro. Leave enough transparent padding around the logo so it can sit on different backgrounds.",
+      "promptHash": "d9e4c86497197bd18d329282d99c821fb9af10351263c41353640b8598be500f",
+      "promptVersion": "brand-logo-v1",
+      "model": "gpt-5.4",
+      "quality": "high",
+      "size": "1024x1024",
+      "attempts": 1,
+      "durationMs": 37200,
+      "responseId": "resp_0bf57c140870065d0069c47dbbd0288195b39120c6ec895419"
+    },
+    "advertiser-beancraft": {
+      "key": "advertiser-beancraft",
+      "advertiserId": "advertiser-beancraft",
+      "brand": "BeanCraft",
+      "status": "generated",
+      "imagePath": "/assets/brands/generated/advertiser-beancraft.png",
+      "categories": [
+        "aisle"
+      ],
+      "generatedAt": "2026-03-26T00:29:56.290Z",
+      "prompt": "Create a polished retail brand logo with a transparent background. Return exactly one logo or wordmark only, centered on the canvas. No background plate, no box, no label sticker, no mockup, no billboard, no paper texture, no product, no mascot costume, no watermark, and no extra words beyond the brand identity itself. Use crisp vector-style edges, modern brand design, and strong readability at small sizes for dashboards, live previews, and in-store screens. Prefer a clean wordmark or a simple combined icon-plus-wordmark lockup. Brand name: BeanCraft. Retail context: aisle. Brand cues: aeropress, aisle, blend, coffee, coffee-pods, cold-brew, daily, decaf. Representative products: Premium Coffee Beans, BeanCraft Morning Rise Whole Bean Coffee, BeanCraft Deep Roast Espresso Beans. Leave enough transparent padding around the logo so it can sit on different backgrounds.",
+      "promptHash": "586ec185d12dce18103eb4e66fc459023d9fe3cf4b9f673b7d606a3023b5163e",
+      "promptVersion": "brand-logo-v1",
+      "model": "gpt-5.4",
+      "quality": "high",
+      "size": "1024x1024",
+      "attempts": 1,
+      "durationMs": 35784,
+      "responseId": "resp_0975a509cd3424750069c47de11bbc8194b50c5f56d23d25bb"
+    },
+    "advertiser-chefline": {
+      "key": "advertiser-chefline",
+      "advertiserId": "advertiser-chefline",
+      "brand": "ChefLine",
+      "status": "generated",
+      "imagePath": "/assets/brands/generated/advertiser-chefline.png",
+      "categories": [
+        "whitegoods"
+      ],
+      "generatedAt": "2026-03-26T00:30:26.373Z",
+      "prompt": "Create a polished retail brand logo with a transparent background. Return exactly one logo or wordmark only, centered on the canvas. No background plate, no box, no label sticker, no mockup, no billboard, no paper texture, no product, no mascot costume, no watermark, and no extra words beyond the brand identity itself. Use crisp vector-style edges, modern brand design, and strong readability at small sizes for dashboards, live previews, and in-store screens. Prefer a clean wordmark or a simple combined icon-plus-wordmark lockup. Brand name: ChefLine. Retail context: whitegoods. Brand cues: air-fryer, builtin, clearance, coffee, cooktop, dishwasher, double, dryer. Representative products: Steam Oven Pro 60L, ChefLine PureHeat 60cm Built-In Oven, ChefLine PureHeat 90cm Double Oven. Leave enough transparent padding around the logo so it can sit on different backgrounds.",
+      "promptHash": "daf782a2a0a1ffa959d756a394a905ba5abe8521943cbeed3071c9cad5a634e5",
+      "promptVersion": "brand-logo-v1",
+      "model": "gpt-5.4",
+      "quality": "high",
+      "size": "1024x1024",
+      "attempts": 1,
+      "durationMs": 30067,
+      "responseId": "resp_067e1a16481b69cc0069c47e046b308197ace06bc8f18779d1"
+    },
+    "advertiser-fitfuel": {
+      "key": "advertiser-fitfuel",
+      "advertiserId": "advertiser-fitfuel",
+      "brand": "FitFuel",
+      "status": "generated",
+      "imagePath": "/assets/brands/generated/advertiser-fitfuel.png",
+      "categories": [
+        "aisle"
+      ],
+      "generatedAt": "2026-03-26T00:30:57.705Z",
+      "prompt": "Create a polished retail brand logo with a transparent background. Return exactly one logo or wordmark only, centered on the canvas. No background plate, no box, no label sticker, no mockup, no billboard, no paper texture, no product, no mascot costume, no watermark, and no extra words beyond the brand identity itself. Use crisp vector-style edges, modern brand design, and strong readability at small sizes for dashboards, live previews, and in-store screens. Prefer a clean wordmark or a simple combined icon-plus-wordmark lockup. Brand name: FitFuel. Retail context: aisle. Brand cues: aisle, bar, bars, bites, breakfast, chocolate, clearance, collagen. Representative products: Protein Bar 6 Pack, FitFuel Whey Protein Vanilla Bean, FitFuel Whey Protein Chocolate Fudge. Leave enough transparent padding around the logo so it can sit on different backgrounds.",
+      "promptHash": "8e3a340cfb1c5293cdfade0c5235a1093bde81ee89086f66776d16be3f94a520",
+      "promptVersion": "brand-logo-v1",
+      "model": "gpt-5.4",
+      "quality": "high",
+      "size": "1024x1024",
+      "attempts": 1,
+      "durationMs": 31323,
+      "responseId": "resp_096400326adf15c30069c47e227df48197a3c03bcfd8860e4c"
+    },
+    "advertiser-hydrohome": {
+      "key": "advertiser-hydrohome",
+      "advertiserId": "advertiser-hydrohome",
+      "brand": "HydroHome",
+      "status": "generated",
+      "imagePath": "/assets/brands/generated/advertiser-hydrohome.png",
+      "categories": [
+        "whitegoods"
+      ],
+      "generatedAt": "2026-03-26T00:31:30.066Z",
+      "prompt": "Create a polished retail brand logo with a transparent background. Return exactly one logo or wordmark only, centered on the canvas. No background plate, no box, no label sticker, no mockup, no billboard, no paper texture, no product, no mascot costume, no watermark, and no extra words beyond the brand identity itself. Use crisp vector-style edges, modern brand design, and strong readability at small sizes for dashboards, live previews, and in-store screens. Prefer a clean wordmark or a simple combined icon-plus-wordmark lockup. Brand name: HydroHome. Retail context: whitegoods. Brand cues: carpet-cleaner, combo, dryer, energy-efficient, extractor, floor-cleaner, front-load, garment-steamer. Representative products: EcoWash Washer 9kg, HydroHome CleanSpin 8kg Front Load Washer, HydroHome CleanSpin 10kg Front Load Washer. Leave enough transparent padding around the logo so it can sit on different backgrounds.",
+      "promptHash": "66a45e9c3c6f9c122c32275ea451bd9a6b74bf52164bd4da7d7c123ff56998fb",
+      "promptVersion": "brand-logo-v1",
+      "model": "gpt-5.4",
+      "quality": "high",
+      "size": "1024x1024",
+      "attempts": 1,
+      "durationMs": 32351,
+      "responseId": "resp_0b4d39d0aa81b8ee0069c47e4238548197a3880993dd6eeb62"
+    },
+    "advertiser-northfield": {
+      "key": "advertiser-northfield",
+      "advertiserId": "advertiser-northfield",
+      "brand": "Northfield",
+      "status": "generated",
+      "imagePath": "/assets/brands/generated/advertiser-northfield.png",
+      "categories": [
+        "electronics"
+      ],
+      "generatedAt": "2026-03-26T00:32:03.710Z",
+      "prompt": "Create a polished retail brand logo with a transparent background. Return exactly one logo or wordmark only, centered on the canvas. No background plate, no box, no label sticker, no mockup, no billboard, no paper texture, no product, no mascot costume, no watermark, and no extra words beyond the brand identity itself. Use crisp vector-style edges, modern brand design, and strong readability at small sizes for dashboards, live previews, and in-store screens. Prefer a clean wordmark or a simple combined icon-plus-wordmark lockup. Brand name: Northfield. Retail context: electronics. Brand cues: 2-in-1, accessory, business, cable, case, charger, checkout-attach, conferencing. Representative products: Business Lite 14, Ergo Wireless Mouse, Northfield WorkBook 14 Business Laptop. Leave enough transparent padding around the logo so it can sit on different backgrounds.",
+      "promptHash": "d6c18262d740bcbd60318c723f0916dd15f8630f7217d20d42ab9a6ac23a646e",
+      "promptVersion": "brand-logo-v1",
+      "model": "gpt-5.4",
+      "quality": "high",
+      "size": "1024x1024",
+      "attempts": 1,
+      "durationMs": 33633,
+      "responseId": "resp_0e936581185c11820069c47e63a5c88194980dbc3818556708"
+    },
+    "advertiser-orbit": {
+      "key": "advertiser-orbit",
+      "advertiserId": "advertiser-orbit",
+      "brand": "Orbit",
+      "status": "generated",
+      "imagePath": "/assets/brands/generated/advertiser-orbit.png",
+      "categories": [
+        "electronics"
+      ],
+      "generatedAt": "2026-03-26T00:32:39.311Z",
+      "prompt": "Create a polished retail brand logo with a transparent background. Return exactly one logo or wordmark only, centered on the canvas. No background plate, no box, no label sticker, no mockup, no billboard, no paper texture, no product, no mascot costume, no watermark, and no extra words beyond the brand identity itself. Use crisp vector-style edges, modern brand design, and strong readability at small sizes for dashboards, live previews, and in-store screens. Prefer a clean wordmark or a simple combined icon-plus-wordmark lockup. Brand name: Orbit. Retail context: electronics. Brand cues: 2-in-1, accessory, audio, bag, budget, cable, case, charger. Representative products: Student Plus 15, Commuter Laptop Backpack, Orbit StudyBook 14 Student Laptop. Leave enough transparent padding around the logo so it can sit on different backgrounds.",
+      "promptHash": "7c06b064d4060d3d15e225e8ab3947fa55210f1749f9f82da3039cab9ed6adca",
+      "promptVersion": "brand-logo-v1",
+      "model": "gpt-5.4",
+      "quality": "high",
+      "size": "1024x1024",
+      "attempts": 1,
+      "durationMs": 35587,
+      "responseId": "resp_09c407b00a422f440069c47e83d9688194b2426ed39630c318"
+    },
+    "advertiser-polarix": {
+      "key": "advertiser-polarix",
+      "advertiserId": "advertiser-polarix",
+      "brand": "Polarix",
+      "status": "generated",
+      "imagePath": "/assets/brands/generated/advertiser-polarix.png",
+      "categories": [
+        "whitegoods"
+      ],
+      "generatedAt": "2026-03-26T00:33:15.162Z",
+      "prompt": "Create a polished retail brand logo with a transparent background. Return exactly one logo or wordmark only, centered on the canvas. No background plate, no box, no label sticker, no mockup, no billboard, no paper texture, no product, no mascot costume, no watermark, and no extra words beyond the brand identity itself. Use crisp vector-style edges, modern brand design, and strong readability at small sizes for dashboards, live previews, and in-store screens. Prefer a clean wordmark or a simple combined icon-plus-wordmark lockup. Brand name: Polarix. Retail context: whitegoods. Brand cues: bar-fridge, beverage-center, beverage-cooler, bottom-mount, chest-freezer, cooling, counter-depth, display-cooler. Representative products: Smart Fridge Family XL, Polarix AeroChill 520L French Door Refrigerator, Polarix FrostLine 420L Bottom Mount Refrigerator. Leave enough transparent padding around the logo so it can sit on different backgrounds.",
+      "promptHash": "ae791af8153e81bc32d04844e45dcc90bbad21b186db4d9b24ab7cabd37498e9",
+      "promptVersion": "brand-logo-v1",
+      "model": "gpt-5.4",
+      "quality": "high",
+      "size": "1024x1024",
+      "attempts": 1,
+      "durationMs": 35827,
+      "responseId": "resp_06ba275d73e415ff0069c47ea772b08193994389ca046147de"
+    },
+    "advertiser-quickbite": {
+      "key": "advertiser-quickbite",
+      "advertiserId": "advertiser-quickbite",
+      "brand": "QuickBite",
+      "status": "generated",
+      "imagePath": "/assets/brands/generated/advertiser-quickbite.png",
+      "categories": [
+        "foodcourt"
+      ],
+      "generatedAt": "2026-03-26T00:33:47.471Z",
+      "prompt": "Create a polished retail brand logo with a transparent background. Return exactly one logo or wordmark only, centered on the canvas. No background plate, no box, no label sticker, no mockup, no billboard, no paper texture, no product, no mascot costume, no watermark, and no extra words beyond the brand identity itself. Use crisp vector-style edges, modern brand design, and strong readability at small sizes for dashboards, live previews, and in-store screens. Prefer a clean wordmark or a simple combined icon-plus-wordmark lockup. Brand name: QuickBite. Retail context: foodcourt. Brand cues: bacon, bowl, breakfast, combo, eggs, foodcourt, lunch, menu. Representative products: Lunch Combo Upgrade, Breakfast Stack + Coffee, QuickBite Bacon Egg Muffin. Leave enough transparent padding around the logo so it can sit on different backgrounds.",
+      "promptHash": "9f112078ebecc651e6741b6d59134449378cd3e8c9cf52472a2143c65b1fa294",
+      "promptVersion": "brand-logo-v1",
+      "model": "gpt-5.4",
+      "quality": "high",
+      "size": "1024x1024",
+      "attempts": 1,
+      "durationMs": 32298,
+      "responseId": "resp_0a6c45c0f8d472400069c47ecb48248197a747ede31ae02ecd"
+    },
+    "advertiser-vertex": {
+      "key": "advertiser-vertex",
+      "advertiserId": "advertiser-vertex",
+      "brand": "Vertex",
+      "status": "generated",
+      "imagePath": "/assets/brands/generated/advertiser-vertex.png",
+      "categories": [
+        "electronics"
+      ],
+      "generatedAt": "2026-03-26T00:34:18.188Z",
+      "prompt": "Create a polished retail brand logo with a transparent background. Return exactly one logo or wordmark only, centered on the canvas. No background plate, no box, no label sticker, no mockup, no billboard, no paper texture, no product, no mascot costume, no watermark, and no extra words beyond the brand identity itself. Use crisp vector-style edges, modern brand design, and strong readability at small sizes for dashboards, live previews, and in-store screens. Prefer a clean wordmark or a simple combined icon-plus-wordmark lockup. Brand name: Vertex. Retail context: electronics. Brand cues: 2-in-1, accessory, audio, cable, carbon, charger, dock, electronics. Representative products: UltraBook 13 Pro, Flex 2-in-1 14 Touch, Vertex HaloBook 13 Carbon. Leave enough transparent padding around the logo so it can sit on different backgrounds.",
+      "promptHash": "6ed512e9d6722009b5c116c26c39e9406888cd4ba449a72d4811a2a4dd0fcc84",
+      "promptVersion": "brand-logo-v1",
+      "model": "gpt-5.4",
+      "quality": "high",
+      "size": "1024x1024",
+      "attempts": 1,
+      "durationMs": 30691,
+      "responseId": "resp_0d2d465eee55e6a30069c47eeb9b588194915599297a7eb127"
+    }
+  }
+}
