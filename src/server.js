@@ -1777,6 +1777,25 @@ function resolveLineItemDeliveryShares(lineItems = [], totalSlots = SCREEN_SHARE
   });
 }
 
+function isAutoSeededDemoLineItem(lineItem = {}) {
+  const lineItemId = readOptionalString(lineItem?.lineItemId, 120);
+  if (/^LI-DEMO-/i.test(lineItemId)) {
+    return true;
+  }
+
+  const products = Array.isArray(lineItem?.products) ? lineItem.products : [];
+  return products.some((product) => {
+    const attributes = parseJsonObject(product?.RenderingAttributes ?? product?.renderingAttributes);
+    return readOptionalString(attributes?.demoPresetId, 120) === DEMO_PRESET_ID;
+  });
+}
+
+function getEffectiveScreenLineItems(screen = {}) {
+  return (Array.isArray(screen?.lineItems) ? screen.lineItems : []).filter(
+    (lineItem) => lineItem && !isAutoSeededDemoLineItem(lineItem)
+  );
+}
+
 function lineItemOverlapsWindow(lineItem, window = {}) {
   const windowStartMs = Date.parse(readIsoDateOr(window?.activeFrom, "1970-01-01T00:00:00.000Z"));
   const windowEndMs = Date.parse(readIsoDateOr(window?.activeTo, "9999-12-31T23:59:59.999Z"));
@@ -1786,7 +1805,7 @@ function lineItemOverlapsWindow(lineItem, window = {}) {
 }
 
 function resolveScreenShareAvailability(screen, { goal = null, planId = "" } = {}) {
-  const source = Array.isArray(screen?.lineItems) ? screen.lineItems.filter(Boolean) : [];
+  const source = getEffectiveScreenLineItems(screen);
   const goalWindow = resolveGoalFlightWindow(goal || null);
   const shareConfig = resolveScreenShareConfig(screen);
   const overlappingLineItems = source.filter((lineItem) => lineItemOverlapsWindow(lineItem, goalWindow));
@@ -3989,7 +4008,7 @@ function screenContainsAnyTargetSku(screen, targetSkuIds) {
     return false;
   }
   const targetSkuSet = new Set(targetSkuIds.map((sku) => normalizeSku(sku)));
-  for (const lineItem of Array.isArray(screen.lineItems) ? screen.lineItems : []) {
+  for (const lineItem of getEffectiveScreenLineItems(screen)) {
     for (const product of Array.isArray(lineItem.products) ? lineItem.products : []) {
       const sku = normalizeSku(product.ProductId || product.productId || product.sku);
       if (sku && targetSkuSet.has(sku)) {
@@ -4009,7 +4028,7 @@ function getExistingTargetProductsForScreen(screen, targetProducts) {
     return [];
   }
   const matchedSkuIds = new Set();
-  for (const lineItem of Array.isArray(screen.lineItems) ? screen.lineItems : []) {
+  for (const lineItem of getEffectiveScreenLineItems(screen)) {
     for (const product of Array.isArray(lineItem.products) ? lineItem.products : []) {
       const sku = normalizeSku(product.ProductId || product.productId || product.sku);
       if (sku) {
@@ -4276,7 +4295,7 @@ function buildLiveRotationEntry(screen, shareEntry, selectedLineItem, totalSlots
 
 function buildLiveScreenSnapshot(screen, options = {}) {
   const now = new Date();
-  const lineItems = Array.isArray(screen.lineItems) ? screen.lineItems : [];
+  const lineItems = getEffectiveScreenLineItems(screen);
   const activeLineItems = lineItems.filter((lineItem) => isLineItemActive(lineItem, now));
   const candidateLineItems = activeLineItems.length > 0 ? activeLineItems : lineItems;
   const shareConfig = resolveScreenShareConfig(screen);
@@ -4442,7 +4461,7 @@ function recordTelemetryEvent(db, rawInput) {
   const screenId = readRequiredString(input.screenId, "screenId", 80);
   const screen = (db.screens || []).find((entry) => entry.screenId === screenId) || null;
   const matchedLineItem =
-    findPreferredLineItem(Array.isArray(screen?.lineItems) ? screen.lineItems : [], {
+    findPreferredLineItem(getEffectiveScreenLineItems(screen), {
       lineItemId: readOptionalString(input.lineItemId, 120),
       goalPlanId: readOptionalString(input.goalPlanId, 120),
       advertiserId: readOptionalString(input.goalAdvertiserId ?? input.advertiserId, 120)
@@ -6438,7 +6457,12 @@ function normalizeWorkspaceState(data) {
   const source = data && typeof data === "object" ? data : {};
   return {
     pages: Array.isArray(source.pages) ? source.pages : [],
-    screens: Array.isArray(source.screens) ? source.screens : [],
+    screens: Array.isArray(source.screens)
+      ? source.screens.map((screen) => ({
+          ...screen,
+          lineItems: getEffectiveScreenLineItems(screen)
+        }))
+      : [],
     agentRuns: Array.isArray(source.agentRuns) ? source.agentRuns : [],
     telemetryEvents: Array.isArray(source.telemetryEvents) ? source.telemetryEvents : [],
     pricing: source.pricing && typeof source.pricing === "object" ? source.pricing : {}
@@ -6873,30 +6897,6 @@ function buildDemoProductInput(feedProduct, screenSpec, index) {
 }
 
 function buildDemoScreenRecord(screenSpec, feed, nowIso) {
-  const selectedProducts = selectDemoFeedProducts(feed, screenSpec);
-  const productInputs = selectedProducts.map((product, index) => buildDemoProductInput(product, screenSpec, index));
-  const fallbackProduct =
-    productInputs[0] || buildStorageProduct({}, screenSpec.screenId, screenSpec.location, screenSpec.templateId);
-  const activeFrom = new Date(Date.parse(nowIso) - 5 * 60 * 1000).toISOString();
-  const activeTo = new Date(Date.parse(nowIso) + 365 * 24 * 60 * 60 * 1000).toISOString();
-  const lineItem = normalizeLineItemForStorage(
-    {
-      lineItemId: screenSpec.lineItemId,
-      name: screenSpec.lineItemName,
-      activeFrom,
-      activeTo,
-      templateId: screenSpec.templateId,
-      products: productInputs
-    },
-    {
-      screenId: screenSpec.screenId,
-      templateId: screenSpec.templateId,
-      location: screenSpec.location,
-      fallbackProduct
-    },
-    0
-  );
-
   return {
     screenId: screenSpec.screenId,
     storeId: screenSpec.storeId,
@@ -6922,7 +6922,7 @@ function buildDemoScreenRecord(screenSpec, feed, nowIso) {
       screenSize: screenSpec.screenSize,
       resolverId: screenSpec.resolverId || screenSpec.screenId
     }),
-    lineItems: [lineItem]
+    lineItems: []
   };
 }
 
@@ -8345,7 +8345,7 @@ app.post("/api/agent/goals/apply", async (req, res) => {
           continue;
         }
 
-        const existingLineItems = Array.isArray(screen.lineItems) ? screen.lineItems : [];
+        const existingLineItems = getEffectiveScreenLineItems(screen);
         const hadManagedGoalLineItem = existingLineItems.some((lineItem) =>
           isManagedGoalLineItemForGoal(lineItem, run.goal || {}, run.planId)
         );
@@ -8435,8 +8435,9 @@ app.get("/api/screen-ad", async (req, res) => {
     const screenId = screen.screenId;
 
     const now = new Date();
-    const activeLineItems = (screen.lineItems || []).filter((lineItem) => isLineItemActive(lineItem, now));
-    const candidateLineItems = activeLineItems.length > 0 ? activeLineItems : screen.lineItems || [];
+    const lineItems = getEffectiveScreenLineItems(screen);
+    const activeLineItems = lineItems.filter((lineItem) => isLineItemActive(lineItem, now));
+    const candidateLineItems = activeLineItems.length > 0 ? activeLineItems : lineItems;
     const shareConfig = resolveScreenShareConfig(screen);
     const deliveryShares = resolveLineItemDeliveryShares(candidateLineItems, shareConfig.totalSlots);
     const shareByLineItemId = new Map(
@@ -8491,7 +8492,7 @@ app.get("/api/screen-ad", async (req, res) => {
         screenShareSlots: shareConfig.totalSlots,
         defaultSellableShareSlots: shareConfig.sellableShareSlots,
         defaultSellableShareLabel: shareConfig.shareLabel,
-        lineItemCount: Array.isArray(screen.lineItems) ? screen.lineItems.length : 0,
+        lineItemCount: lineItems.length,
         activeLineItemCount: candidateLineItems.length,
         sharedPlayerUrl: SHARED_PLAYER_URL,
         resolverId: getScreenDeviceHints(screen).resolverId,

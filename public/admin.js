@@ -7490,8 +7490,30 @@ function buildLiveInspectorStatMarkup(label) {
   return `<span class="goal-live-inspector__stat">${escapeHtml(normalizedLabel)}</span>`;
 }
 
+function formatTurnCountLabel(turnCount, totalTurns, noun = "screen turns") {
+  const normalizedTurns = Math.max(0, Math.round(Number(turnCount || 0)));
+  const normalizedTotal = Math.max(normalizedTurns, Math.round(Number(totalTurns || 0)) || 0);
+  if (!normalizedTotal) {
+    return "";
+  }
+  return `${normalizedTurns} of ${normalizedTotal} ${noun}`;
+}
+
+function getBookedRotationEntries(entries = []) {
+  return (Array.isArray(entries) ? entries : []).filter((entry) => readTextValue(entry?.role) !== "unallocated");
+}
+
+function getBookedTurnTotal(entries = []) {
+  return getBookedRotationEntries(entries).reduce((sum, entry) => sum + Math.max(0, Number(entry?.shareTurnCount || 0)), 0);
+}
+
+function getOpenTurnCount(entries = [], totalSlots = 6) {
+  const normalizedTotal = Math.max(1, Math.round(Number(totalSlots || 0)) || 6);
+  return Math.max(0, normalizedTotal - getBookedTurnTotal(entries));
+}
+
 function buildShareRotationButtonMarkup(screen = {}) {
-  const sovLabel = formatShareOfVoiceLabel(screen.activeLineItemShareRatio);
+  const sovLabel = formatShareOfVoiceLabel(getLiveScreenDisplaySovRatio(screen));
   if (!sovLabel) {
     return "";
   }
@@ -7515,10 +7537,6 @@ function getLiveScreenRotationBreakdown(screen = {}) {
       products: Array.isArray(entry?.products) ? entry.products : []
     }))
     .filter((entry) => entry.shareRatio > 0 || entry.shareTurnCount > 0);
-
-  if (normalizedProvidedEntries.length > 0) {
-    return normalizedProvidedEntries;
-  }
 
   const fallbackEntries = [];
   const activeShareRatio = Math.max(0, Math.min(1, Number(screen?.activeLineItemShareRatio || 0)));
@@ -7547,7 +7565,27 @@ function getLiveScreenRotationBreakdown(screen = {}) {
     });
   }
 
-  return fallbackEntries;
+  const entries = normalizedProvidedEntries.length > 0 ? normalizedProvidedEntries : fallbackEntries;
+  const bookedTurnTotal = getBookedTurnTotal(entries);
+
+  return entries.map((entry) => ({
+    ...entry,
+    displaySovRatio:
+      entry.role === "unallocated"
+        ? 0
+        : bookedTurnTotal > 0
+          ? Math.max(0, Number(entry.shareTurnCount || 0)) / bookedTurnTotal
+          : Math.max(0, Math.min(1, Number(entry.shareRatio || 0)))
+  }));
+}
+
+function getSelectedRotationEntry(screen = {}) {
+  const entries = getLiveScreenRotationBreakdown(screen);
+  return entries.find((entry) => entry.role === "selected") || getBookedRotationEntries(entries)[0] || entries[0] || null;
+}
+
+function getLiveScreenDisplaySovRatio(screen = {}) {
+  return Number(getSelectedRotationEntry(screen)?.displaySovRatio || 0);
 }
 
 function getShareRotationTone(entry = {}) {
@@ -7587,9 +7625,16 @@ function buildShareRotationSlotsMarkup(entries = [], totalSlots = 6) {
 
 function buildShareRotationEntryMarkup(entry = {}, totalSlots = 6) {
   const tone = getShareRotationTone(entry);
-  const sovLabel = formatShareOfVoiceLabel(entry.shareRatio) || readTextValue(entry.shareLabel) || "Screen share";
-  const turnLabel = formatShareTurnLabel(entry.shareRatio, totalSlots);
+  const bookedTurnTotal = Math.max(1, Math.round(Number(entry.bookedTurnTotal || 0)) || Math.round(Number(totalSlots || 0)) || 6);
   const products = Array.isArray(entry.products) ? entry.products : [];
+  const shareHeading =
+    tone === "unallocated"
+      ? "Open turns"
+      : formatShareOfVoiceLabel(entry.displaySovRatio) || readTextValue(entry.shareLabel) || "Screen share";
+  const turnLabel =
+    tone === "unallocated"
+      ? formatTurnCountLabel(entry.shareTurnCount, totalSlots)
+      : formatTurnCountLabel(entry.shareTurnCount, bookedTurnTotal, "active screen turns");
 
   return `<article class="share-rotation-entry${tone === "selected" ? " share-rotation-entry--selected" : ""}">
     <div class="share-rotation-entry__top">
@@ -7598,7 +7643,7 @@ function buildShareRotationEntryMarkup(entry = {}, totalSlots = 6) {
         <strong class="share-rotation-entry__name">${escapeHtml(entry.name || "Rotation")}</strong>
       </div>
       <div class="share-rotation-entry__share">
-        <strong>${escapeHtml(sovLabel)}</strong>
+        <strong>${escapeHtml(shareHeading)}</strong>
         ${turnLabel ? `<span>${escapeHtml(turnLabel)}</span>` : ""}
       </div>
     </div>
@@ -7626,23 +7671,43 @@ function renderShareRotationOverlay() {
     const rank = { selected: 0, rotation: 1, campaign: 2, unallocated: 3 };
     return (rank[left.role] ?? 9) - (rank[right.role] ?? 9);
   });
-  const selectedEntry = rotationEntries.find((entry) => entry.role === "selected") || rotationEntries[0] || null;
-  const otherEntries = rotationEntries.filter((entry) => entry !== selectedEntry);
-  const otherShareRatio = otherEntries.reduce((sum, entry) => sum + Number(entry?.shareRatio || 0), 0);
-  const otherSummary =
-    otherEntries.length === 0
-      ? "No other screen time is currently allocated."
-      : otherEntries.some((entry) => entry.role === "unallocated")
-        ? `${formatShareOfVoiceLabel(otherShareRatio) || "The remaining share"} is currently unallocated.`
-        : `${formatShareOfVoiceLabel(otherShareRatio) || "The remaining share"} is taken by ${otherEntries.length === 1 ? "1 other rotation" : `${otherEntries.length} other rotations`}.`;
+  const selectedEntry = rotationEntries.find((entry) => entry.role === "selected") || getBookedRotationEntries(rotationEntries)[0] || rotationEntries[0] || null;
+  const bookedEntries = getBookedRotationEntries(rotationEntries);
+  const bookedTurnTotal = getBookedTurnTotal(rotationEntries);
+  const openTurnCount = getOpenTurnCount(rotationEntries, totalSlots);
+  const otherBookedEntries = bookedEntries.filter((entry) => entry !== selectedEntry);
+  const summaryParts = [];
 
-  elements.shareRotationTitle.textContent = `${formatShareOfVoiceLabel(selectedEntry?.shareRatio) || "Screen"} on ${screen.screenId || "selected screen"}`;
-  elements.shareRotationBody.textContent =
-    selectedEntry && formatShareTurnLabel(selectedEntry.shareRatio, totalSlots)
-      ? `This campaign holds ${formatShareTurnLabel(selectedEntry.shareRatio, totalSlots)} on this screen. ${otherSummary}`
-      : otherSummary;
+  if (selectedEntry && bookedTurnTotal > 0) {
+    summaryParts.push(`This campaign currently holds ${formatTurnCountLabel(selectedEntry.shareTurnCount, bookedTurnTotal, "active screen turns")}.`);
+  }
+  if (otherBookedEntries.length > 0) {
+    const otherBookedTurnTotal = otherBookedEntries.reduce((sum, entry) => sum + Math.max(0, Number(entry?.shareTurnCount || 0)), 0);
+    summaryParts.push(
+      `${formatTurnCountLabel(otherBookedTurnTotal, bookedTurnTotal, "active screen turns")} ${otherBookedEntries.length === 1 ? "belongs to 1 other rotation." : `belong to ${otherBookedEntries.length} other rotations.`}`
+    );
+  }
+  if (openTurnCount > 0) {
+    summaryParts.push(`${formatTurnCountLabel(openTurnCount, totalSlots)} are still open.`);
+  }
+  if (summaryParts.length === 0) {
+    summaryParts.push("No booked screen turns are currently attached to this screen.");
+  }
+
+  elements.shareRotationTitle.textContent = `${formatShareOfVoiceLabel(selectedEntry?.displaySovRatio) || "Screen"} on ${screen.screenId || "selected screen"}`;
+  elements.shareRotationBody.textContent = summaryParts.join(" ");
   elements.shareRotationSlots.innerHTML = buildShareRotationSlotsMarkup(rotationEntries, totalSlots);
-  elements.shareRotationEntries.innerHTML = rotationEntries.map((entry) => buildShareRotationEntryMarkup(entry, totalSlots)).join("");
+  elements.shareRotationEntries.innerHTML = rotationEntries
+    .map((entry) =>
+      buildShareRotationEntryMarkup(
+        {
+          ...entry,
+          bookedTurnTotal
+        },
+        totalSlots
+      )
+    )
+    .join("");
   setShareRotationOverlayVisible(true);
 }
 
@@ -7757,7 +7822,7 @@ function renderLiveScreens() {
   }
 
   const liveScreens = Array.isArray(plan.liveScreens) ? plan.liveScreens : [];
-  const liveShareLabel = formatShareOfVoiceLabel(liveScreens[0]?.activeLineItemShareRatio);
+  const liveShareLabel = formatShareOfVoiceLabel(getLiveScreenDisplaySovRatio(liveScreens[0] || {}));
   if (elements.goalLiveSearch) {
     elements.goalLiveSearch.disabled = liveScreens.length === 0;
   }
@@ -7812,7 +7877,7 @@ function renderLiveScreens() {
             const isActive = screen.screenId === selectedScreenId;
             const metaLine = [screen.storeId, screen.pageId, screen.location].filter(Boolean).join(" | ");
             const detailLine = [
-              formatShareOfVoiceLabel(screen.activeLineItemShareRatio),
+              formatShareOfVoiceLabel(getLiveScreenDisplaySovRatio(screen)),
               screen.screenType,
               screen.screenSize,
               formatLiveRefreshInterval(screen.refreshInterval)
