@@ -527,6 +527,10 @@ const state = {
   workspaceSwitchMode: false,
   pendingActions: new Set()
 };
+const DEFAULT_BUSY_OVERLAY_COPY = Object.freeze({
+  title: "Finishing an update",
+  message: "Please wait while the page finishes updating."
+});
 // Keep the real preset path for normal-sized demos; only short-circuit massive rollouts that time out the UI.
 const LARGE_DEMO_PRESET_SCREEN_THRESHOLD = 1000;
 const GOAL_BUDGET_IDLE_COMMIT_MS = 1000;
@@ -618,6 +622,8 @@ const elements = {
   workspaceOverlayMessage: qs("#workspaceOverlayMessage"),
   workspaceGrid: qs("#workspaceGrid"),
   busyOverlay: qs("#busyOverlay"),
+  busyOverlayTitle: qs("#busyOverlayTitle"),
+  busyOverlayMessage: qs("#busyOverlayMessage"),
   workspaceBadge: qs("#workspaceBadge"),
   workspaceBadgeName: qs("#workspaceBadgeName"),
   workspaceBadgeStatus: qs("#workspaceBadgeStatus"),
@@ -931,6 +937,137 @@ function setBusyOverlayVisible(visible) {
   } else {
     document.body.removeAttribute("aria-busy");
   }
+}
+
+function getBusyOverlayActionKey() {
+  for (const pendingKey of state.pendingActions) {
+    if (pendingKey !== "goalPlan") {
+      return pendingKey;
+    }
+  }
+  return "";
+}
+
+function getBusyOverlayCopy() {
+  const pendingKey = getBusyOverlayActionKey();
+  if (!pendingKey) {
+    return DEFAULT_BUSY_OVERLAY_COPY;
+  }
+
+  if (pendingKey.startsWith("workspaceClaim:")) {
+    const workspaceId = pendingKey.slice("workspaceClaim:".length).trim();
+    return {
+      title: workspaceId ? `Opening workspace ${workspaceId}` : "Opening workspace",
+      message: "Please wait while the demo reserves this avatar and reloads the workspace."
+    };
+  }
+
+  if (pendingKey === "workspaceRelease") {
+    return {
+      title: "Releasing the workspace",
+      message: "Please wait while the current demo workspace is cleared and handed back."
+    };
+  }
+
+  if (pendingKey === "pricing:save") {
+    return {
+      title: "Saving retailer pricing",
+      message: "Please wait while the CPM card is saved for future buying plans."
+    };
+  }
+
+  if (pendingKey === "inventory:page") {
+    return {
+      title: "Saving the page setup",
+      message: "Please wait while the page is added and the supply inventory refreshes."
+    };
+  }
+
+  if (pendingKey === "inventory:anchor") {
+    return {
+      title: "Creating the first screen",
+      message: "Please wait while the first screen is saved and connected to the selected page."
+    };
+  }
+
+  if (pendingKey === "inventory:screen") {
+    return {
+      title: "Saving screen changes",
+      message: "Please wait while the screen settings are updated and the supply inventory refreshes."
+    };
+  }
+
+  if (pendingKey.startsWith("inventory:delete:")) {
+    const screenId = pendingKey.slice("inventory:delete:".length).trim();
+    return {
+      title: screenId ? `Deleting screen ${screenId}` : "Deleting the screen",
+      message: "Please wait while the screen is removed and the supply inventory refreshes."
+    };
+  }
+
+  if (pendingKey === "inventory:preset") {
+    return {
+      title: "Building the rest of the screens",
+      message: "Please wait while the demo creates the remaining supply screens."
+    };
+  }
+
+  if (pendingKey === "inventory:reset") {
+    return {
+      title: "Resetting the demo",
+      message: "Please wait while the demo workspace is cleared and rebuilt."
+    };
+  }
+
+  if (pendingKey === "inventory:refresh") {
+    return {
+      title: "Refreshing the supply inventory",
+      message: "Please wait while the latest pages and screens are loaded."
+    };
+  }
+
+  if (pendingKey.startsWith("goalPlanApply:")) {
+    const planId = pendingKey.slice("goalPlanApply:".length).trim();
+    return {
+      title: planId ? `Launching recommendation ${planId}` : "Launching the recommendation",
+      message: "Please wait while the approved buy is pushed live across the selected screens."
+    };
+  }
+
+  if (pendingKey.startsWith("goalPlanLoad:")) {
+    const planId = pendingKey.slice("goalPlanLoad:".length).trim();
+    return {
+      title: planId ? `Loading recommendation ${planId}` : "Loading the recommendation",
+      message: "Please wait while the selected plan and its latest telemetry are loaded."
+    };
+  }
+
+  if (pendingKey === "goalRunsRefresh") {
+    return {
+      title: "Refreshing recent launches",
+      message: "Please wait while the latest plan runs, live placements, and telemetry are loaded."
+    };
+  }
+
+  if (pendingKey === "telemetryRefresh") {
+    return {
+      title: "Refreshing telemetry",
+      message: "Please wait while the latest monitoring data is loaded."
+    };
+  }
+
+  return DEFAULT_BUSY_OVERLAY_COPY;
+}
+
+function renderBusyOverlay() {
+  const copy = getBusyOverlayCopy();
+  if (elements.busyOverlayTitle) {
+    elements.busyOverlayTitle.textContent = copy.title;
+  }
+  if (elements.busyOverlayMessage) {
+    elements.busyOverlayMessage.textContent = copy.message;
+  }
+  setBusyOverlayVisible(shouldShowBusyOverlay());
 }
 
 function shouldShowBusyOverlay() {
@@ -1993,7 +2130,7 @@ function renderGoalBrandPicker(accounts = [], selectedAdvertiserId = "") {
   const triggerMarkup = selectedAccount
     ? buildBrandIdentityMarkup(selectedAccount, {
         className: "brand-badge brand-badge--picker",
-        meta: selectedAccount.advertiserId || "Selected account"
+        hideTitleWhenLogo: true
       })
     : `<span class="brand-picker__trigger-copy">
         <strong>Select an account</strong>
@@ -2027,7 +2164,7 @@ function renderGoalBrandPicker(accounts = [], selectedAdvertiserId = "") {
               ${
                 buildBrandIdentityMarkup(account, {
                   className: "brand-badge brand-badge--picker-option",
-                  meta: account.advertiserId || getProductAccountLabel(account)
+                  hideTitleWhenLogo: true
                 }) || ""
               }
             </button>`;
@@ -4471,8 +4608,7 @@ function renderBrandContextSlots() {
     className: "brand-badge brand-badge--hero"
   });
   renderBrandContextSlot(elements.buyingBrandContext, brandContext, {
-    meta: brandContext.objectiveLabel || "",
-    className: "brand-badge brand-badge--compact"
+    className: "brand-badge brand-badge--compact brand-badge--workspace"
   });
   renderBrandContextSlot(elements.monitoringBrandContext, brandContext, {
     meta: brandContext.objectiveLabel || "",
@@ -5849,6 +5985,50 @@ function renderGoalPlan() {
     return `<span class="goal-placement-row__metric">${escapeHtml(text)}</span>`;
   };
 
+  const proposedChangeByScreenId = new Map(
+    (plan.proposedChanges || [])
+      .map((change) => [String(change?.screenId || "").trim(), change])
+      .filter(([screenId]) => screenId)
+  );
+
+  const pluralize = (word, count) => (count === 1 ? word : `${word}s`);
+
+  const summarizeListWithOverflow = (values, limit = 2, fallback = "") => {
+    const items = [...new Set((values || []).map((value) => String(value || "").trim()).filter(Boolean))];
+    if (items.length === 0) {
+      return fallback;
+    }
+    const visible = items.slice(0, Math.max(1, limit));
+    const summary = formatSentenceList(visible, visible.length);
+    return items.length > visible.length ? `${summary} +${items.length - visible.length} more` : summary;
+  };
+
+  const formatGoalStoreLabel = (storeId) => {
+    const raw = String(storeId || "").trim();
+    if (!raw) {
+      return "";
+    }
+    const normalized = raw.replace(/[_-]+/g, " ");
+    const match = normalized.match(/^store\s*0*(\d+)$/i);
+    if (match) {
+      return `Store ${match[1]}`;
+    }
+    return titleCase(normalized);
+  };
+
+  const renderPlacementMetaBlock = (label, value, copy = "", className = "") => {
+    const primary = String(value || "").trim();
+    const secondary = String(copy || "").trim();
+    if (!primary && !secondary) {
+      return "";
+    }
+    return `<div class="goal-placement-card__meta-block${className ? ` ${className}` : ""}">
+      <span class="goal-placement-card__meta-label">${escapeHtml(label)}</span>
+      ${primary ? `<strong>${escapeHtml(primary)}</strong>` : ""}
+      ${secondary ? `<span class="goal-placement-card__meta-copy">${escapeHtml(secondary)}</span>` : ""}
+    </div>`;
+  };
+
   const renderPlacementRow = (entry, index, { funded = true, available = false } = {}) => {
     const screenId = String(entry?.screenId || "").trim();
     const screen = { ...(getGoalPlanScreen(screenId) || {}), ...(entry || {}), screenId };
@@ -5997,18 +6177,333 @@ function renderGoalPlan() {
     </details>`;
   };
 
-  const fundedPlacementMarkup = planPlacements
-    .filter((entry) => budgetScenario.fundedIds.has(String(entry?.screenId || "").trim()))
-    .map((entry, index) => renderPlacementRow(entry, index, { funded: true }))
+  const buildPlacementEntryViewModel = (entry, index, { funded = true, available = false } = {}) => {
+    const screenId = String(entry?.screenId || "").trim();
+    const screen = { ...(getGoalPlanScreen(screenId) || {}), ...(entry || {}), screenId };
+    const proposedChange = proposedChangeByScreenId.get(screenId);
+    const recommendedSkus = Array.isArray(entry?.recommendedTargetSkus)
+      ? entry.recommendedTargetSkus
+      : Array.isArray(proposedChange?.recommendedTargetSkus)
+        ? proposedChange.recommendedTargetSkus
+        : [];
+    const recommendedSkuLabels = recommendedSkus.map((sku) => getProductLabelBySku(sku)).filter(Boolean);
+    const priorityProducts = getProductsForSkuList(recommendedSkus, targetProducts);
+    const visiblePriorityProducts = priorityProducts.length > 0 ? priorityProducts : uniqueGoalProductsBySku(targetProducts);
+    const placementReason = available
+      ? describeAvailablePlacementReason(entry, getGoalPlacementReason(entry || {}, screen, plan, targetProducts))
+      : getGoalPlacementReason(entry || {}, screen, plan, targetProducts);
+    const templateRationale = String(entry?.templateRationale || "").trim();
+    const shareLabel = String(entry?.shareLabel || "").trim();
+    const expectedOutcome = String(entry?.expectedOutcome || "").trim();
+    const placementCost = Math.max(0, Math.round(Number(entry?.placementCost || 0)));
+    const estimatedImpressions = Math.max(0, Math.round(Number(entry?.estimatedImpressions || 0)));
+    const estimatedDailyImpressions = Math.max(0, Math.round(Number(entry?.estimatedDailyImpressions || 0)));
+    const screenType = String(entry?.screenType || screen?.screenType || "").trim();
+    const templateId = String(entry?.recommendedTemplateId || entry?.currentTemplateId || screen?.templateId || "").trim();
+    const templateName = getTemplateById(templateId)?.name || templateId || "Creative";
+    const placementRoleLabel = getGoalPlacementRole(screen, plan.goal?.objective);
+    const normalizedExpectedOutcome = expectedOutcome.replace(/^Expected outcome:\s*/i, "");
+    const actionButton =
+      plan.status === "applied"
+        ? ""
+        : available
+          ? `<button type="button" class="btn btn--tiny js-goal-placement-add" data-plan-id="${escapeHtml(plan.planId || "")}" data-screen-id="${escapeHtml(screenId)}">Add placement</button>`
+          : `<button type="button" class="btn btn--tiny js-goal-placement-remove" data-plan-id="${escapeHtml(plan.planId || "")}" data-screen-id="${escapeHtml(screenId)}">Remove</button>`;
+    const storeDisplay = formatGoalStoreLabel(screen.storeId || entry?.storeId || "");
+    const screenContext = [
+      storeDisplay || String(screen.storeId || "").trim(),
+      titleCase(screen.location || ""),
+      String(screen.pageId || "").trim()
+    ]
+      .map((value) => String(value || "").trim())
+      .filter(Boolean)
+      .join(" | ");
+    const entryPriorityLabel = recommendedSkuLabels.length > 0
+      ? formatSentenceList(recommendedSkuLabels, Math.min(recommendedSkuLabels.length, 3))
+      : focusLabel === "the selected brief"
+        ? goalTargetSourceLabel(plan.goal?.targetSource)
+        : focusLabel;
+    const summaryMetrics = [
+      placementCost > 0 ? formatMoney(placementCost) : "",
+      estimatedImpressions > 0
+        ? `${formatCount(estimatedImpressions)} imps`
+        : estimatedDailyImpressions > 0
+          ? `${formatCount(estimatedDailyImpressions)}/day`
+          : "",
+      shareLabel || "",
+      templateName || ""
+    ]
+      .filter(Boolean)
+      .slice(0, 3)
+      .map((value) => renderPlacementMetric(value))
+      .join("");
+    const groupTitle = screenType || placementRoleLabel || "Placement";
+    const groupKey = [String(entry?.placementRole || "").trim().toLowerCase(), groupTitle.toLowerCase()].filter(Boolean).join("::") || screenId;
+
+    return {
+      key: screenId,
+      screenId,
+      screenLabel: getScreenDisplayLabel(screenId) || screenId || "Placement",
+      screenContext,
+      storeDisplay,
+      groupKey,
+      groupTitle,
+      groupEyebrow: placementRoleLabel || "Placement type",
+      placementReason,
+      templateName,
+      templateRationale,
+      shareLabel,
+      priorityLabel: entryPriorityLabel,
+      normalizedExpectedOutcome,
+      visiblePriorityProducts,
+      placementCost,
+      estimatedImpressions,
+      estimatedDailyImpressions,
+      summaryMetrics,
+      actionButton,
+      placementNumber: Number(entry?.budgetRank || entry?.selectionRank || index + 1)
+    };
+  };
+
+  const buildPlacementGroups = (entries, options = {}) => {
+    const groups = [];
+    const groupByKey = new Map();
+
+    entries.forEach((entry, index) => {
+      const view = buildPlacementEntryViewModel(entry, index, options);
+      let group = groupByKey.get(view.groupKey);
+      if (!group) {
+        group = {
+          key: view.groupKey,
+          title: view.groupTitle,
+          eyebrow: view.groupEyebrow,
+          entries: [],
+          storeLabels: new Set(),
+          screenLabels: new Set(),
+          shareLabels: new Set(),
+          templateNames: new Set(),
+          templateRationales: new Set(),
+          priorityLabels: new Set(),
+          reasonLines: new Set(),
+          productMap: new Map(),
+          totalCost: 0,
+          totalImpressions: 0,
+          totalDailyImpressions: 0,
+          sampleExpectedOutcome: view.normalizedExpectedOutcome
+        };
+        groupByKey.set(view.groupKey, group);
+        groups.push(group);
+      }
+
+      group.entries.push(view);
+      if (view.storeDisplay) {
+        group.storeLabels.add(view.storeDisplay);
+      }
+      if (view.screenLabel) {
+        group.screenLabels.add(view.screenLabel);
+      }
+      if (view.shareLabel) {
+        group.shareLabels.add(view.shareLabel);
+      }
+      if (view.templateName) {
+        group.templateNames.add(view.templateName);
+      }
+      if (view.templateRationale) {
+        group.templateRationales.add(view.templateRationale);
+      }
+      if (view.priorityLabel) {
+        group.priorityLabels.add(view.priorityLabel);
+      }
+      if (view.placementReason) {
+        group.reasonLines.add(view.placementReason);
+      }
+      view.visiblePriorityProducts.forEach((product) => {
+        const productKey =
+          normalizeSku(product?.sku || product?.ProductId || product?.productId) || `${view.screenId}:${group.productMap.size}`;
+        if (!group.productMap.has(productKey)) {
+          group.productMap.set(productKey, product);
+        }
+      });
+      group.totalCost += view.placementCost;
+      group.totalImpressions += view.estimatedImpressions;
+      group.totalDailyImpressions += view.estimatedDailyImpressions;
+    });
+
+    return groups.map((group) => ({
+      ...group,
+      storeLabels: [...group.storeLabels],
+      screenLabels: [...group.screenLabels],
+      shareLabels: [...group.shareLabels],
+      templateNames: [...group.templateNames],
+      templateRationales: [...group.templateRationales],
+      priorityLabels: [...group.priorityLabels],
+      reasonLines: [...group.reasonLines],
+      visiblePriorityProducts: [...group.productMap.values()]
+    }));
+  };
+
+  const renderPlacementClusterEntry = (entry) => {
+    const detailNote = [
+      entry.priorityLabel ? `SKU focus: ${entry.priorityLabel}` : "",
+      entry.normalizedExpectedOutcome ? `Expected: ${entry.normalizedExpectedOutcome}` : ""
+    ]
+      .filter(Boolean)
+      .join(" | ");
+
+    return `<div class="goal-placement-cluster__entry">
+      <div class="goal-placement-cluster__entry-copy">
+        <div class="goal-placement-cluster__entry-top">
+          <span class="goal-placement-cluster__entry-index">${escapeHtml(String(entry.placementNumber).padStart(2, "0"))}</span>
+          <strong>${escapeHtml(entry.screenLabel)}</strong>
+        </div>
+        ${entry.screenContext ? `<p class="goal-placement-cluster__entry-context">${escapeHtml(entry.screenContext)}</p>` : ""}
+        <p class="goal-placement-cluster__entry-reason">${escapeHtml(entry.placementReason)}</p>
+        ${detailNote ? `<p class="goal-placement-cluster__entry-note">${escapeHtml(detailNote)}</p>` : ""}
+      </div>
+      <div class="goal-placement-cluster__entry-side">
+        ${entry.summaryMetrics ? `<div class="goal-placement-row__metrics">${entry.summaryMetrics}</div>` : ""}
+        ${entry.actionButton ? `<div class="goal-placement-cluster__entry-actions">${entry.actionButton}</div>` : ""}
+      </div>
+    </div>`;
+  };
+
+  const renderPlacementGroup = (group, index, { funded = true, available = false, totalGroups = 0 } = {}) => {
+    const placementCount = group.entries.length;
+    const storeCount = group.storeLabels.length;
+    const statusText = available
+      ? `${placementCount} available`
+      : funded
+        ? `${placementCount} ${plan.status === "applied" ? "live" : "funded"}`
+        : `${placementCount} unfunded`;
+    const statusPillClass = available ? "" : funded ? (plan.status === "applied" ? "pill--applied" : "pill--planned") : "";
+    const metricMarkup = [
+      `${placementCount} ${pluralize("placement", placementCount)}`,
+      storeCount > 0 ? `${storeCount} ${pluralize("store", storeCount)}` : "",
+      group.totalCost > 0 ? formatMoney(group.totalCost) : "",
+      group.totalImpressions > 0
+        ? `${formatCount(group.totalImpressions)} imps`
+        : group.totalDailyImpressions > 0
+          ? `${formatCount(group.totalDailyImpressions)}/day`
+          : ""
+    ]
+      .filter(Boolean)
+      .map((value) => renderPlacementMetric(value))
+      .join("");
+    const typeLabel = String(group.title || "placement").trim().toLowerCase();
+    const scopedStoreCount = Math.max(storeCount, 1);
+    const summaryLead = available
+      ? `${placementCount} ${typeLabel} ${pluralize("placement", placementCount)} can be added across ${scopedStoreCount} ${pluralize("store", scopedStoreCount)}.`
+      : funded
+        ? `${placementCount} ${typeLabel} ${pluralize("placement", placementCount)} ${plan.status === "applied" ? "are live" : "sit inside the current budget"} across ${scopedStoreCount} ${pluralize("store", scopedStoreCount)}.`
+        : `${placementCount} selected ${typeLabel} ${pluralize("placement", placementCount)} are currently outside the funded line-up across ${scopedStoreCount} ${pluralize("store", scopedStoreCount)}.`;
+    const summarySupport =
+      group.templateRationales.length === 1
+        ? group.templateRationales[0]
+        : group.reasonLines.length === 1
+          ? group.reasonLines[0]
+          : "";
+    const shareSummary =
+      group.shareLabels.length === 1 ? group.shareLabels[0] : group.shareLabels.length > 1 ? "Mixed screen shares" : "Standard screen share";
+    const storeSummary = summarizeListWithOverflow(group.storeLabels, 3, `${placementCount} ${pluralize("placement", placementCount)}`);
+    const screenSummary = summarizeListWithOverflow(group.screenLabels, 2, group.title);
+    const focusSummary =
+      summarizeListWithOverflow(group.priorityLabels, 1) ||
+      summarizeListWithOverflow(targetProducts.map((product) => product.name), 3) ||
+      goalTargetSourceLabel(plan.goal?.targetSource);
+    const creativeValue =
+      group.templateNames.length === 1
+        ? group.templateNames[0]
+        : group.templateNames.length > 1
+          ? `${group.templateNames.length} creative variants`
+          : "Creative mix";
+    const creativeCopy =
+      group.templateRationales.length === 1
+        ? group.templateRationales[0]
+        : group.templateRationales.length > 1
+          ? "Creative logic shifts slightly by store format."
+          : "";
+    const footerNote = available
+      ? "Expand this type to add individual placements back into the plan before budgeting."
+      : funded
+        ? plan.status === "applied"
+          ? "Expand this type to review the live store-level placements."
+          : "Expand this type to review store-level rationale or remove individual placements."
+        : "Expand this type to review the unfunded stores or remove selections from the plan.";
+    const defaultOpen = totalGroups === 1 || (index === 0 && totalGroups <= 2);
+
+    return `<details class="goal-placement goal-placement-cluster${funded || available ? "" : " goal-placement--muted goal-placement-cluster--held"}${available ? " goal-placement--muted goal-placement-cluster--available" : ""}"${defaultOpen ? " open" : ""}>
+      <summary class="goal-placement-cluster__summary">
+        <div class="goal-placement-cluster__top">
+          <div class="goal-placement-cluster__headline">
+            <p class="goal-placement-cluster__eyebrow">${escapeHtml(group.eyebrow)}</p>
+            <div class="goal-placement-cluster__title-row">
+              <strong class="goal-placement__title">${escapeHtml(group.title)}</strong>
+              <span class="goal-placement__status pill ${statusPillClass}">${escapeHtml(statusText)}</span>
+            </div>
+            <p class="goal-placement-cluster__summary-copy">${escapeHtml([summaryLead, summarySupport].filter(Boolean).join(" "))}</p>
+          </div>
+          <div class="goal-placement-cluster__summary-meta">
+            ${metricMarkup}
+            <span class="goal-placement-cluster__chevron" aria-hidden="true"></span>
+          </div>
+        </div>
+      </summary>
+      <div class="goal-placement-cluster__detail">
+        <div class="goal-placement-card__meta-grid">
+          ${renderPlacementMetaBlock("Coverage", `${placementCount} ${pluralize("placement", placementCount)}`, storeSummary)}
+          ${renderPlacementMetaBlock(
+            "Commercials",
+            group.totalCost > 0 ? formatMoney(group.totalCost) : "No spend modelled",
+            group.totalImpressions > 0
+              ? `${formatCount(group.totalImpressions)} est. imps${
+                  group.totalDailyImpressions > 0 ? ` | ${formatCount(group.totalDailyImpressions)}/day` : ""
+                }`
+              : group.totalDailyImpressions > 0
+                ? `${formatCount(group.totalDailyImpressions)}/day`
+                : ""
+          )}
+          ${renderPlacementMetaBlock("Screen share", shareSummary, screenSummary)}
+          ${renderPlacementMetaBlock(
+            "SKU focus",
+            focusSummary,
+            group.sampleExpectedOutcome ? `Expected outcome: ${group.sampleExpectedOutcome}` : ""
+          )}
+          ${renderPlacementMetaBlock("Creative", creativeValue, creativeCopy)}
+        </div>
+        ${buildProductThumbStripMarkup(group.visiblePriorityProducts, {
+          className: "product-thumb product-thumb--xs",
+          maxItems: 4
+        })}
+        <div class="goal-placement-cluster__entry-list">
+          ${group.entries.map((entry) => renderPlacementClusterEntry(entry)).join("")}
+        </div>
+        <div class="goal-placement-cluster__footer">
+          <p class="goal-placement-cluster__footer-note">${escapeHtml(footerNote)}</p>
+        </div>
+      </div>
+    </details>`;
+  };
+
+  const fundedPlacementGroups = buildPlacementGroups(
+    planPlacements.filter((entry) => budgetScenario.fundedIds.has(String(entry?.screenId || "").trim())),
+    { funded: true }
+  );
+  const heldPlacementGroups = buildPlacementGroups(
+    planPlacements.filter((entry) => budgetScenario.heldBackIds.has(String(entry?.screenId || "").trim())),
+    { funded: false }
+  );
+  const availablePlacementGroups = buildPlacementGroups(availablePlacements, { available: true });
+
+  const fundedPlacementMarkup = fundedPlacementGroups
+    .map((group, index) => renderPlacementGroup(group, index, { funded: true, totalGroups: fundedPlacementGroups.length }))
     .join("");
 
-  const heldPlacementMarkup = planPlacements
-    .filter((entry) => budgetScenario.heldBackIds.has(String(entry?.screenId || "").trim()))
-    .map((entry, index) => renderPlacementRow(entry, index, { funded: false }))
+  const heldPlacementMarkup = heldPlacementGroups
+    .map((group, index) => renderPlacementGroup(group, index, { funded: false, totalGroups: heldPlacementGroups.length }))
     .join("");
 
-  const availablePlacementMarkup = availablePlacements
-    .map((entry, index) => renderPlacementRow(entry, index, { available: true }))
+  const availablePlacementMarkup = availablePlacementGroups
+    .map((group, index) => renderPlacementGroup(group, index, { available: true, totalGroups: availablePlacementGroups.length }))
     .join("");
 
   elements.goalPlanChanges.innerHTML =
@@ -6018,9 +6513,9 @@ function renderGoalPlan() {
             <div class="goal-placement-group__header">
               <p class="section-kicker">${escapeHtml(plan.status === "applied" ? "Approved line-up" : "Funded line-up")}</p>
               <h3>${escapeHtml(plan.status === "applied" ? "Live placements" : "Placements within budget")}</h3>
-              <p class="goal-placement-group__meta">Compact review rail. Expand a row for creative logic, SKU focus, and placement controls.</p>
+              <p class="goal-placement-group__meta">Grouped by placement type. Expand a card for store-level rationale, SKU focus, and placement controls.</p>
             </div>
-            <div class="goal-placement-list goal-placement-list--rail">
+            <div class="goal-placement-list">
               ${fundedPlacementMarkup}
             </div>
           </section>`
@@ -6028,11 +6523,11 @@ function renderGoalPlan() {
       heldPlacementMarkup
         ? `<section class="goal-placement-group goal-placement-group--excluded">
             <div class="goal-placement-group__header">
-              <p class="section-kicker">Budget hold</p>
-              <h3>Selected placements below the cut line</h3>
-              <p class="goal-placement-group__meta">These stay selected, but they will not launch until the budget line moves down.</p>
+              <p class="section-kicker">Unfunded</p>
+              <h3>Selected placements outside the current budget</h3>
+              <p class="goal-placement-group__meta">Grouped by placement type. These stay selected, but they do not fund until the budget line moves.</p>
             </div>
-            <div class="goal-placement-list goal-placement-list--rail">
+            <div class="goal-placement-list">
               ${heldPlacementMarkup}
             </div>
           </section>`
@@ -6043,11 +6538,11 @@ function renderGoalPlan() {
               <div class="goal-placement-dropdown__summary-copy">
                 <p class="section-kicker">Available placements</p>
                 <h3>${escapeHtml(`${availablePlacements.length} placement${availablePlacements.length === 1 ? "" : "s"} not in the current plan`)}</h3>
-                <p>Add or restore placements here before setting the budget and sending the plan live.</p>
+                <p>Grouped by placement type. Add or restore placements here before setting the budget and sending the plan live.</p>
               </div>
               <span class="card__badge">${escapeHtml(`${availablePlacements.length} available`)}</span>
             </summary>
-            <div class="goal-placement-list goal-placement-list--rail">
+            <div class="goal-placement-list">
               ${availablePlacementMarkup}
             </div>
           </details>`
@@ -6835,7 +7330,7 @@ function updateMonitoringNarrative() {
 }
 
 function renderAll() {
-  setBusyOverlayVisible(shouldShowBusyOverlay());
+  renderBusyOverlay();
   renderMarketStoryOverlay();
   refreshPageCounter();
   renderBrandContextSlots();
