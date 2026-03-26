@@ -226,6 +226,7 @@ const SCREEN_SHARE_SLOT_COUNT = 6;
 const DEFAULT_SELLABLE_SHARE_SLOTS = 1;
 const SCREEN_SHARE_SLOT_MAX = 12;
 const GOAL_LINE_ITEM_SOURCE = "goal-share";
+const MAX_GOAL_SCREEN_ID_LIST_ITEMS = 50000;
 
 function clampNumber(value, min = 0, max = 1) {
   const parsed = Number(value);
@@ -1213,6 +1214,12 @@ function readStringArray(value, maxItems = 20, itemMaxLength = 80) {
     .map((entry) => readOptionalString(entry, itemMaxLength))
     .filter(Boolean)
     .slice(0, maxItems);
+}
+
+function readScreenIdArray(value, maxItems = MAX_GOAL_SCREEN_ID_LIST_ITEMS) {
+  return readStringArray(value, maxItems, 80)
+    .map((screenId) => readOptionalString(screenId, 80))
+    .filter(Boolean);
 }
 
 function readOptionalInteger(value, fallback, { min = Number.MIN_SAFE_INTEGER, max = Number.MAX_SAFE_INTEGER } = {}) {
@@ -4322,15 +4329,11 @@ function ensureAgentRunsArray(db) {
 }
 
 function resolveGoalRunScreenIds(run) {
-  const appliedScreenIds = readStringArray(run?.appliedScreenIds, 500, 80).map((screenId) =>
-    readOptionalString(screenId, 80)
-  );
+  const appliedScreenIds = readScreenIdArray(run?.appliedScreenIds);
   if (appliedScreenIds.length > 0) {
     return appliedScreenIds;
   }
-  const plannedScreenIds = readStringArray(run?.plannedScreenIds, 500, 80).map((screenId) =>
-    readOptionalString(screenId, 80)
-  );
+  const plannedScreenIds = readScreenIdArray(run?.plannedScreenIds);
   if (plannedScreenIds.length > 0) {
     return plannedScreenIds;
   }
@@ -5090,9 +5093,7 @@ function buildPlanTelemetryComparison(db, planId, events) {
     return null;
   }
 
-  const appliedScreenIds = readStringArray(run.appliedScreenIds, 500, 80).map((screenId) =>
-    readOptionalString(screenId, 80)
-  );
+  const appliedScreenIds = readScreenIdArray(run.appliedScreenIds);
   const proposedChanges = Array.isArray(run.proposedChanges) ? run.proposedChanges : [];
   const fallbackScreenIds = proposedChanges.map((change) => readOptionalString(change.screenId, 80)).filter(Boolean);
   const screenIds = [...new Set((appliedScreenIds.length > 0 ? appliedScreenIds : fallbackScreenIds).filter(Boolean))];
@@ -8069,9 +8070,7 @@ app.post("/api/agent/goals/apply", async (req, res) => {
   try {
     const planId = readRequiredString(req.body.planId, "planId", 120);
     const requestedBudgetSpend = Number(req.body.budgetSpend);
-    const requestedSelectedScreenIds = readStringArray(req.body.selectedScreenIds, 500, 80).map((screenId) =>
-      readOptionalString(screenId, 80)
-    );
+    const requestedSelectedScreenIds = readScreenIdArray(req.body.selectedScreenIds);
     const feed = await readProductFeed();
 
     const result = await mutateDb(async (rootDb) => {
@@ -8110,9 +8109,9 @@ app.post("/api/agent/goals/apply", async (req, res) => {
           placementPool.set(screenId, placement);
         }
       }
-      const persistedSelectedScreenIds = readStringArray(run.selectedPlacementScreenIds, 500, 80)
-        .map((screenId) => readOptionalString(screenId, 80))
-        .filter((screenId) => placementPool.has(screenId));
+      const persistedSelectedScreenIds = readScreenIdArray(run.selectedPlacementScreenIds).filter((screenId) =>
+        placementPool.has(screenId)
+      );
       const fallbackSelectedScreenIds = (Array.isArray(run.recommendedPlacements) ? run.recommendedPlacements : [])
         .map((placement) => readOptionalString(placement?.screenId, 80))
         .filter((screenId) => placementPool.has(screenId));

@@ -484,9 +484,27 @@
 
                   <div class="planner-step__body">
                     <div class="field-row field-row--three">
-                      <div class="field">
+                      <div class="field field--brand-picker">
                         <label for="goalBrandAccount">Account*</label>
-                        <select id="goalBrandAccount" name="advertiserId" required></select>
+                        <div id="goalBrandPicker" class="brand-picker" data-open="false">
+                          <button
+                            id="goalBrandPickerButton"
+                            class="brand-picker__trigger"
+                            type="button"
+                            aria-haspopup="listbox"
+                            aria-expanded="false"
+                            aria-controls="goalBrandPickerMenu"
+                          >
+                            <span class="brand-picker__trigger-copy">
+                              <strong>Select an account</strong>
+                              <span>Brand logos will appear here and carry into the live flow.</span>
+                            </span>
+                            <span class="brand-picker__trigger-chev" aria-hidden="true"></span>
+                          </button>
+                          <div id="goalBrandPickerMenu" class="brand-picker__menu" role="listbox" hidden></div>
+                        </div>
+                        <select id="goalBrandAccount" name="advertiserId" required class="u-visually-hidden"></select>
+                        <div id="goalBrandSelection" class="brand-context-slot brand-picker__selection" aria-live="polite"></div>
                       </div>
                       <div class="field">
                         <label for="goalObjective">Goal Objective*</label>

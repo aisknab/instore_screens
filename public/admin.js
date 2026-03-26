@@ -677,6 +677,10 @@ const elements = {
   goalPromptRunBtn: qs("#goalPromptRunBtn"),
   goalPromptAiStatus: qs("#goalPromptAiStatus"),
   goalBrandAccount: qs("#goalBrandAccount"),
+  goalBrandPicker: qs("#goalBrandPicker"),
+  goalBrandPickerButton: qs("#goalBrandPickerButton"),
+  goalBrandPickerMenu: qs("#goalBrandPickerMenu"),
+  goalBrandSelection: qs("#goalBrandSelection"),
   goalProductCategory: qs("#goalProductCategory"),
   goalProductSearch: qs("#goalProductSearch"),
   goalSelectedSkuHeadline: qs("#goalSelectedSkuHeadline"),
@@ -1786,6 +1790,12 @@ function buildProductAccountsFromProducts(products = []) {
   );
 }
 
+function getGoalBrandAccounts() {
+  return Array.isArray(state.productAccounts) && state.productAccounts.length > 0
+    ? state.productAccounts
+    : buildProductAccountsFromProducts(state.productFeed || []);
+}
+
 function getBrandInitials(value = "") {
   const tokens = String(value || "")
     .trim()
@@ -1850,7 +1860,128 @@ function getGoalAccountByAdvertiserId(advertiserId = getSelectedGoalAdvertiserId
   if (!normalizedId) {
     return null;
   }
-  return (state.productAccounts || []).find((entry) => entry.advertiserId === normalizedId) || null;
+  return getGoalBrandAccounts().find((entry) => entry.advertiserId === normalizedId) || null;
+}
+
+function getGoalBrandPickerOptions() {
+  return elements.goalBrandPickerMenu ? [...elements.goalBrandPickerMenu.querySelectorAll(".brand-picker__option")] : [];
+}
+
+function isGoalBrandPickerOpen() {
+  return elements.goalBrandPicker?.dataset.open === "true" && !elements.goalBrandPickerMenu?.hidden;
+}
+
+function setGoalBrandPickerOpen(isOpen) {
+  if (!elements.goalBrandPicker || !elements.goalBrandPickerButton || !elements.goalBrandPickerMenu) {
+    return;
+  }
+  const canOpen = !elements.goalBrandPickerButton.disabled && getGoalBrandPickerOptions().length > 0;
+  const nextOpen = Boolean(isOpen) && canOpen;
+  elements.goalBrandPicker.dataset.open = nextOpen ? "true" : "false";
+  elements.goalBrandPickerButton.setAttribute("aria-expanded", nextOpen ? "true" : "false");
+  elements.goalBrandPickerMenu.hidden = !nextOpen;
+}
+
+function focusGoalBrandPickerOption(direction = 1) {
+  const options = getGoalBrandPickerOptions();
+  if (options.length === 0) {
+    return;
+  }
+  const activeOption =
+    document.activeElement instanceof HTMLElement
+      ? document.activeElement.closest(".brand-picker__option")
+      : null;
+  const currentIndex = activeOption ? options.indexOf(activeOption) : -1;
+  const fallbackIndex = direction < 0 ? options.length - 1 : 0;
+  const nextIndex =
+    currentIndex === -1 ? fallbackIndex : (currentIndex + direction + options.length) % options.length;
+  options[nextIndex]?.focus();
+}
+
+function updateGoalBrandSelectionSlot(account = null) {
+  renderBrandContextSlot(elements.goalBrandSelection, account || {}, {
+    meta: account?.advertiserId ? `Selected for this buying plan | ${account.advertiserId}` : "",
+    className: "brand-badge brand-badge--selection"
+  });
+}
+
+function renderGoalBrandPicker(accounts = [], selectedAdvertiserId = "") {
+  if (!elements.goalBrandPickerButton || !elements.goalBrandPickerMenu) {
+    return;
+  }
+
+  const normalizedSelected = String(selectedAdvertiserId || "").trim();
+  const selectedAccount = accounts.find((entry) => entry.advertiserId === normalizedSelected) || null;
+  const triggerMarkup = selectedAccount
+    ? buildBrandIdentityMarkup(selectedAccount, {
+        className: "brand-badge brand-badge--picker",
+        meta: selectedAccount.advertiserId || "Selected account"
+      })
+    : `<span class="brand-picker__trigger-copy">
+        <strong>Select an account</strong>
+        <span>Brand logos will appear here and carry into the live flow.</span>
+      </span>`;
+  const optionMarkup =
+    accounts.length === 0
+      ? '<div class="brand-picker__empty">No brand accounts available yet.</div>'
+      : [
+          `<button
+            type="button"
+            class="brand-picker__option brand-picker__option--placeholder${selectedAccount ? "" : " is-selected"}"
+            data-advertiser-id=""
+            role="option"
+            aria-selected="${selectedAccount ? "false" : "true"}"
+          >
+            <span class="brand-picker__option-placeholder">
+              <strong>Select an account</strong>
+              <span>Pick a brand to scope the assortment and buying plan.</span>
+            </span>
+          </button>`,
+          ...accounts.map((account) => {
+            const isSelected = account.advertiserId === normalizedSelected;
+            return `<button
+              type="button"
+              class="brand-picker__option${isSelected ? " is-selected" : ""}"
+              data-advertiser-id="${escapeHtml(account.advertiserId)}"
+              role="option"
+              aria-selected="${isSelected ? "true" : "false"}"
+            >
+              ${
+                buildBrandIdentityMarkup(account, {
+                  className: "brand-badge brand-badge--picker-option",
+                  meta: account.advertiserId || getProductAccountLabel(account)
+                }) || ""
+              }
+            </button>`;
+          })
+        ].join("");
+
+  elements.goalBrandPickerButton.innerHTML = `
+    ${triggerMarkup}
+    <span class="brand-picker__trigger-chev" aria-hidden="true"></span>
+  `;
+  elements.goalBrandPickerMenu.innerHTML = optionMarkup;
+  elements.goalBrandPickerButton.disabled = Boolean(elements.goalBrandAccount?.disabled) || accounts.length === 0;
+  setGoalBrandPickerOpen(false);
+  updateGoalBrandSelectionSlot(selectedAccount);
+}
+
+function chooseGoalBrandAccount(advertiserId = "") {
+  if (!elements.goalBrandAccount) {
+    return;
+  }
+  const normalizedId = String(advertiserId || "").trim();
+  const validValues = new Set([...elements.goalBrandAccount.options].map((option) => option.value));
+  const nextValue = validValues.has(normalizedId) ? normalizedId : "";
+  const changed = elements.goalBrandAccount.value !== nextValue;
+
+  elements.goalBrandAccount.value = nextValue;
+  renderGoalBrandPicker(getGoalBrandAccounts(), nextValue);
+  elements.goalBrandPickerButton?.focus();
+
+  if (changed) {
+    elements.goalBrandAccount.dispatchEvent(new Event("change", { bubbles: true }));
+  }
 }
 
 function getBrandScopedProducts(advertiserId = getSelectedGoalAdvertiserId()) {
@@ -4783,9 +4914,7 @@ function renderBrandContextSlots() {
 
 function renderGoalBrandOptions() {
   const current = getSelectedGoalAdvertiserId();
-  const accounts = Array.isArray(state.productAccounts) && state.productAccounts.length > 0
-    ? state.productAccounts
-    : buildProductAccountsFromProducts(state.productFeed || []);
+  const accounts = getGoalBrandAccounts();
   const advertiserIds = accounts.map((entry) => entry.advertiserId).filter(Boolean);
   const labelMap = Object.fromEntries(accounts.map((entry) => [entry.advertiserId, getProductAccountLabel(entry)]));
   const selected = advertiserIds.includes(current) ? current : "";
@@ -4796,6 +4925,7 @@ function renderGoalBrandOptions() {
     labelMap,
     "Select an account"
   );
+  renderGoalBrandPicker(accounts, selected);
 }
 
 function renderGoalProductCategoryOptions() {
@@ -4996,6 +5126,13 @@ function updateGoalPlannerFieldStates() {
     if (field) {
       field.disabled = plannerBusy;
     }
+  }
+  if (plannerBusy) {
+    setGoalBrandPickerOpen(false);
+  }
+  if (elements.goalBrandPickerButton) {
+    elements.goalBrandPickerButton.disabled =
+      plannerBusy || Boolean(elements.goalBrandAccount?.disabled) || getGoalBrandPickerOptions().length === 0;
   }
 }
 
@@ -7651,6 +7788,21 @@ function wireEvents() {
       return;
     }
 
+    const brandPickerOption = event.target.closest(".brand-picker__option");
+    if (brandPickerOption && elements.goalBrandPicker?.contains(brandPickerOption)) {
+      chooseGoalBrandAccount(brandPickerOption.dataset.advertiserId || "");
+      return;
+    }
+
+    if (event.target.closest("#goalBrandPickerButton")) {
+      setGoalBrandPickerOpen(!isGoalBrandPickerOpen());
+      return;
+    }
+
+    if (isGoalBrandPickerOpen() && !event.target.closest("#goalBrandPicker")) {
+      setGoalBrandPickerOpen(false);
+    }
+
     const stageJump = event.target.closest(".js-stage-jump");
     if (stageJump) {
       setStage(stageJump.dataset.stage || "supply", true);
@@ -7817,6 +7969,7 @@ function wireEvents() {
       renderGoalProducts();
     }
     applyGoalScopeSuggestionFromSelection();
+    renderAll();
     const account = getGoalAccountByAdvertiserId();
     if (removedCount > 0) {
       showStatus(`Account changed. Removed ${removedCount} SKU(s) from the previous account.`);
@@ -7829,7 +7982,44 @@ function wireEvents() {
     } else {
       showStatus("Choose an account to continue planning.");
     }
-    publishPresenterSnapshot();
+  });
+  elements.goalBrandPickerButton?.addEventListener("keydown", (event) => {
+    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+      event.preventDefault();
+      setGoalBrandPickerOpen(true);
+      focusGoalBrandPickerOption(event.key === "ArrowDown" ? 1 : -1);
+      return;
+    }
+    if (event.key === "Escape") {
+      setGoalBrandPickerOpen(false);
+    }
+  });
+  elements.goalBrandPickerMenu?.addEventListener("keydown", (event) => {
+    const option = event.target.closest(".brand-picker__option");
+    if (event.key === "Escape") {
+      event.preventDefault();
+      setGoalBrandPickerOpen(false);
+      elements.goalBrandPickerButton?.focus();
+      return;
+    }
+    if (event.key === "Tab") {
+      setGoalBrandPickerOpen(false);
+      return;
+    }
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      focusGoalBrandPickerOption(1);
+      return;
+    }
+    if (event.key === "ArrowUp") {
+      event.preventDefault();
+      focusGoalBrandPickerOption(-1);
+      return;
+    }
+    if ((event.key === "Enter" || event.key === " ") && option) {
+      event.preventDefault();
+      chooseGoalBrandAccount(option.dataset.advertiserId || "");
+    }
   });
   elements.goalObjective?.addEventListener("change", () => {
     if (getGoalPromptText()) {
