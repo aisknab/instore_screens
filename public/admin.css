@@ -4542,7 +4542,7 @@ textarea:focus {
 
 .telemetry-grid--dashboard {
   margin-top: 0;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .telemetry-panel--dashboard {
@@ -4618,7 +4618,7 @@ textarea:focus {
 
 .goal-live-browser__content {
   display: grid;
-  grid-template-columns: minmax(260px, 0.9fr) minmax(0, 1.35fr);
+  grid-template-columns: minmax(0, 1fr);
   gap: 14px;
   align-items: start;
 }
@@ -4626,7 +4626,7 @@ textarea:focus {
 .goal-live-results {
   display: grid;
   gap: 10px;
-  max-height: 560px;
+  max-height: 360px;
   overflow: auto;
   padding-right: 4px;
 }

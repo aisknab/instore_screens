@@ -933,6 +933,18 @@ function setBusyOverlayVisible(visible) {
   }
 }
 
+function shouldShowBusyOverlay() {
+  if (state.pendingActions.size === 0) {
+    return false;
+  }
+  for (const pendingKey of state.pendingActions) {
+    if (pendingKey !== "goalPlan") {
+      return true;
+    }
+  }
+  return false;
+}
+
 function cancelMarketStoryAnimations() {
   for (const frameId of state.marketStoryAnimationFrameIds) {
     window.cancelAnimationFrame(frameId);
@@ -6823,7 +6835,7 @@ function updateMonitoringNarrative() {
 }
 
 function renderAll() {
-  setBusyOverlayVisible(state.pendingActions.size > 0);
+  setBusyOverlayVisible(shouldShowBusyOverlay());
   renderMarketStoryOverlay();
   refreshPageCounter();
   renderBrandContextSlots();

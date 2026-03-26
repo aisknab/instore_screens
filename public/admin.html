@@ -34,15 +34,6 @@
             <small id="workspaceBadgeStatus">Lease active</small>
           </div>
           <button id="switchWorkspaceBtn" type="button" class="btn btn--ghost btn--compact is-hidden">Switch avatar</button>
-          <a
-            id="demoScreenLink"
-            class="btn btn--primary hero__screen-link"
-            href="/screen.html?preview=showcase"
-            target="_blank"
-            rel="noreferrer"
-          >
-            Open immersive preview
-          </a>
         </div>
       </div>
     </header>
@@ -824,40 +815,17 @@
                       </div>
                     </article>
 
-                    <div class="measurement-board__aux">
-                      <article class="card monitoring-card monitoring-card--preview">
-                        <div class="card__header monitoring-card__header">
-                          <div>
-                            <p class="section-kicker">Preview</p>
-                            <h3>Live creative</h3>
-                            <p>Keep a single live preview close to the dashboard.</p>
-                          </div>
-                          <a id="monitorPreviewLink" class="btn btn--ghost btn--compact" href="/screen.html?preview=showcase" target="_blank" rel="noreferrer">
-                            Open preview
-                          </a>
+                    <article class="card monitoring-card monitoring-card--runs">
+                      <div class="card__header monitoring-card__header">
+                        <div>
+                          <p class="section-kicker">Campaigns</p>
+                          <h3>Recent launches</h3>
+                          <p>Keep the latest plans and live launches close to the measurement view.</p>
                         </div>
+                      </div>
 
-                        <div id="monitorPreviewRail" class="preview-pane preview-pane--monitoring">
-                          <p class="preview-pane__eyebrow">Live screen placeholder</p>
-                          <h4>Waiting for the active plan</h4>
-                          <p id="monitoringNarrative">
-                            Live campaign previews will appear here once the selected brand has active screens.
-                          </p>
-                        </div>
-                      </article>
-
-                      <article class="card monitoring-card monitoring-card--runs">
-                        <div class="card__header monitoring-card__header">
-                          <div>
-                            <p class="section-kicker">Campaigns</p>
-                            <h3>Recent launches</h3>
-                            <p>Keep the latest plans and live launches close to the measurement view.</p>
-                          </div>
-                        </div>
-
-                        <div id="agentRunsList" class="stack-list"></div>
-                      </article>
-                    </div>
+                      <div id="agentRunsList" class="stack-list"></div>
+                    </article>
                   </div>
                 </details>
               </div>
