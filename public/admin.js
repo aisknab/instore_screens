@@ -2602,8 +2602,8 @@ function buildPreviewRailFrameMarkup(bodyMarkup) {
 }
 
 function buildMonitoringPreviewCardMarkup(snapshot) {
-  const sharedPreviewUrl = buildSharedPreviewUrl(snapshot.screenId);
-  const debugPreviewUrl = buildDebugScreenUrl(snapshot.screenId);
+  const sharedPreviewUrl = buildSharedPreviewUrl(snapshot.screenId, getActiveCampaignPreviewOptions());
+  const debugPreviewUrl = buildDebugScreenUrl(snapshot.screenId, getActiveCampaignPreviewOptions());
   const metaParts = [
     snapshot.templateName,
     snapshot.deliveryShareLabel,
@@ -3576,7 +3576,7 @@ function getScreenResolverId(screenRef) {
   ).trim();
 }
 
-function buildSharedPreviewUrl(screenRef, { rmjs = "off" } = {}) {
+function buildSharedPreviewUrl(screenRef, { rmjs = "off", goalPlanId = "", advertiserId = "", lineItemId = "" } = {}) {
   const params = new URLSearchParams();
   const screenId = typeof screenRef === "string" ? screenRef : readTextValue(screenRef?.screenId);
   const resolverId = getScreenResolverId(screenRef);
@@ -3587,6 +3587,15 @@ function buildSharedPreviewUrl(screenRef, { rmjs = "off" } = {}) {
   }
   if (rmjs) {
     params.set("rmjs", rmjs);
+  }
+  if (goalPlanId) {
+    params.set("goalPlanId", goalPlanId);
+  }
+  if (advertiserId) {
+    params.set("advertiserId", advertiserId);
+  }
+  if (lineItemId) {
+    params.set("lineItemId", lineItemId);
   }
   params.set("preview", "showcase");
   const query = params.toString();
@@ -3615,8 +3624,30 @@ function getPrimaryScreenId() {
   return getPreferredPreviewScreenIds()[0] || getSupplyStage().starterScreenId || getManualSupplyConfig().screen.screenId;
 }
 
-function buildDebugScreenUrl(screenId) {
-  return `${SHARED_PLAYER_URL}?screenId=${encodeURIComponent(screenId)}&rmjs=off`;
+function getActiveCampaignPreviewOptions() {
+  if (state.stage === "monitoring" && state.activeGoalPlan?.status === "applied" && state.activeGoalPlan?.planId) {
+    return {
+      goalPlanId: String(state.activeGoalPlan.planId || ""),
+      advertiserId: String(state.activeGoalPlan?.goal?.advertiserId || "")
+    };
+  }
+  return {};
+}
+
+function buildDebugScreenUrl(screenId, { goalPlanId = "", advertiserId = "", lineItemId = "" } = {}) {
+  const params = new URLSearchParams();
+  params.set("screenId", String(screenId || ""));
+  params.set("rmjs", "off");
+  if (goalPlanId) {
+    params.set("goalPlanId", goalPlanId);
+  }
+  if (advertiserId) {
+    params.set("advertiserId", advertiserId);
+  }
+  if (lineItemId) {
+    params.set("lineItemId", lineItemId);
+  }
+  return `${SHARED_PLAYER_URL}?${params.toString()}`;
 }
 
 function countPlannedScreens(plan) {
@@ -7467,8 +7498,8 @@ function renderLiveScreenDetail(screen) {
       ${productMarkup}
     </div>
     <div class="record__actions">
-      <a href="${escapeHtml(buildSharedPreviewUrl(screen))}" target="_blank" rel="noreferrer">Immersive preview</a>
-      <a href="${escapeHtml(buildDebugScreenUrl(screen.screenId || ""))}" target="_blank" rel="noreferrer">Debug preview</a>
+      <a href="${escapeHtml(buildSharedPreviewUrl(screen, getActiveCampaignPreviewOptions()))}" target="_blank" rel="noreferrer">Immersive preview</a>
+      <a href="${escapeHtml(buildDebugScreenUrl(screen.screenId || "", getActiveCampaignPreviewOptions()))}" target="_blank" rel="noreferrer">Debug preview</a>
     </div>
   </article>`;
 }
@@ -7508,9 +7539,9 @@ function renderLiveScreens() {
     }
     elements.goalLiveScreens.innerHTML = "";
     renderLiveScreenDetail(null);
-    if (elements.monitorPreviewLink) {
-      elements.monitorPreviewLink.href = buildSharedPreviewUrl(getPreferredPreviewScreenIds()[0] || "");
-    }
+  if (elements.monitorPreviewLink) {
+    elements.monitorPreviewLink.href = buildSharedPreviewUrl(getPreferredPreviewScreenIds()[0] || "", getActiveCampaignPreviewOptions());
+  }
     renderPreviewRail(getPreferredPreviewScreenIds());
     return;
   }
@@ -7548,9 +7579,9 @@ function renderLiveScreens() {
     }
     elements.goalLiveScreens.innerHTML = '<div class="empty">No live screens were captured for this applied run.</div>';
     renderLiveScreenDetail(null);
-    if (elements.monitorPreviewLink) {
-      elements.monitorPreviewLink.href = buildSharedPreviewUrl(getPreferredPreviewScreenIds()[0] || "");
-    }
+  if (elements.monitorPreviewLink) {
+      elements.monitorPreviewLink.href = buildSharedPreviewUrl(getPreferredPreviewScreenIds()[0] || "", getActiveCampaignPreviewOptions());
+  }
     renderPreviewRail(getPreferredPreviewScreenIds());
     return;
   }
@@ -7594,7 +7625,7 @@ function renderLiveScreens() {
 
   renderLiveScreenDetail(selectedScreen);
   if (elements.monitorPreviewLink) {
-    elements.monitorPreviewLink.href = buildSharedPreviewUrl(selectedScreen || liveScreens[0] || "");
+    elements.monitorPreviewLink.href = buildSharedPreviewUrl(selectedScreen || liveScreens[0] || "", getActiveCampaignPreviewOptions());
   }
   renderPreviewRail(getLivePreviewScreenIds(liveScreens, selectedScreenId));
 }

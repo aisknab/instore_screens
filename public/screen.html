@@ -58,6 +58,9 @@
       const screenIdOverride = (urlParams.get("screenId") || "").trim();
       const deviceId = (urlParams.get("deviceId") || "").trim();
       const deviceProfile = (urlParams.get("deviceProfile") || "").trim();
+      const goalPlanIdOverride = (urlParams.get("goalPlanId") || "").trim();
+      const advertiserIdOverride = (urlParams.get("advertiserId") || "").trim();
+      const lineItemIdOverride = (urlParams.get("lineItemId") || "").trim();
       const apiBase = (urlParams.get("apiBase") || "").replace(/\/$/, "");
       const rmjsMode = (urlParams.get("rmjs") || "auto").toLowerCase();
       const previewMode = (urlParams.get("preview") || urlParams.get("view") || "").trim().toLowerCase();
@@ -188,6 +191,15 @@
         }
         if (deviceProfile) {
           params.set("deviceProfile", deviceProfile);
+        }
+        if (goalPlanIdOverride) {
+          params.set("goalPlanId", goalPlanIdOverride);
+        }
+        if (advertiserIdOverride) {
+          params.set("advertiserId", advertiserIdOverride);
+        }
+        if (lineItemIdOverride) {
+          params.set("lineItemId", lineItemIdOverride);
         }
         const viewport = getViewportString();
         if (viewport) {
