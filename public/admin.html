@@ -68,7 +68,7 @@
             <span class="stage-step__index">01</span>
             <span class="stage-step__copy">
               <strong>CYield Supply Setup</strong>
-              <small>Add one placement, then load the preset inventory.</small>
+              <small>Create one screen, then auto build the rest.</small>
             </span>
           </button>
           <button type="button" class="stage-step js-stage-jump" data-stage="buying">
@@ -94,7 +94,7 @@
             <p id="supplyStageKicker" class="section-kicker">Start here</p>
             <h2 id="supplyStageTitle">CYield Supply Setup</h2>
             <p id="supplyStageLede" class="stage-panel__lede">
-              Keep this to two clicks: add one anchor placement, then apply the shared preset.
+              Keep this to two clicks: create screen, then auto build the rest of the screens (for demo purposes).
             </p>
           </div>
           <div class="stage-panel__actions">
@@ -122,8 +122,8 @@
                 <section class="supply-step">
                   <div class="supply-step__index">1</div>
                   <div class="supply-step__body">
-                    <p class="section-kicker">Anchor placement</p>
-                    <h4>Create one page-screen mapping</h4>
+                    <p class="section-kicker">Manual setup</p>
+                    <h4>Create screen</h4>
                     <p class="supply-step__lede">
                       This is the only manual setup step. We prefill the entrance page and hero screen so the shared player can go live immediately.
                     </p>
@@ -136,12 +136,12 @@
                       <label for="anchorSharePreset">Sellable Share</label>
                       <select id="anchorSharePreset" aria-describedby="anchorSharePresetHint"></select>
                       <p id="anchorSharePresetHint" class="form-section__hint">
-                        Applies to the anchor screen. The shared preset keeps the rest of the screens at 1/6 unless you change screens in Advanced config.
+                        Applies to the first screen. The demo auto-build keeps the rest of the screens at 1/6 unless you change screens in Advanced config.
                       </p>
                     </div>
                   </div>
                   <div class="supply-step__actions">
-                    <button id="createAnchorBtn" type="button" class="btn btn--primary btn--large">Add one anchor placement</button>
+                    <button id="createAnchorBtn" type="button" class="btn btn--primary btn--large">Create screen</button>
                     <p class="supply-step__hint">Creates the CYield page and the first mapped screen in one action.</p>
                   </div>
                 </section>
@@ -149,10 +149,10 @@
                 <section class="supply-step">
                   <div class="supply-step__index">2</div>
                   <div class="supply-step__body">
-                    <p class="section-kicker">Preset rollout</p>
-                    <h4>Fan out the rest of the store</h4>
+                    <p class="section-kicker">For demo purposes</p>
+                    <h4>Auto build rest of screens</h4>
                     <p class="supply-step__lede">
-                      Once the anchor exists, one preset fills the remaining supply-side screens so you can move straight into buying.
+                      Once the first screen exists, one action fills the remaining supply-side screens so you can move straight into buying.
                     </p>
                     <div class="supply-chip-row">
                       <span class="supply-chip">Electronics Hero</span>
@@ -162,8 +162,8 @@
                     </div>
                   </div>
                   <div class="supply-step__actions">
-                    <button id="loadPresetBtn" type="button" class="btn btn--primary btn--large">Apply shared preset</button>
-                    <p class="supply-step__hint">Applies the shared supply preset and prepares the handoff into CMax.</p>
+                    <button id="loadPresetBtn" type="button" class="btn btn--primary btn--large">Auto build rest of screens</button>
+                    <p class="supply-step__hint">For demo purposes, auto builds the remaining screens and prepares the handoff into CMax.</p>
                   </div>
                 </section>
               </div>
@@ -183,7 +183,7 @@
                 </div>
               </section>
 
-              <div id="presetSummary" class="goal-summary">Add one anchor placement, then apply the shared preset.</div>
+              <div id="presetSummary" class="goal-summary">Create the first screen, then auto build the rest of the screens.</div>
             </div>
           </article>
 
@@ -196,7 +196,7 @@
                   <span class="advanced-panel__summary-note">Manual page and screen mapping details</span>
                 </span>
               </summary>
-              <p class="advanced-panel__hint">Open this only if someone asks how the anchor page, screen, or retailer-owned share are mapped.</p>
+              <p class="advanced-panel__hint">Open this only if someone asks how the first page, screen, or retailer-owned share are mapped.</p>
 
               <div class="advanced-grid">
                 <section class="advanced-grid__panel">
@@ -213,7 +213,7 @@
                       <div class="form-section__head">
                         <div>
                           <h4 class="form-section__title">Identity</h4>
-                          <p class="form-section__hint">Use the CYield page ID for the anchor placement.</p>
+                          <p class="form-section__hint">Use the CYield page ID for the first screen.</p>
                         </div>
                       </div>
                       <div class="form-section__body">
@@ -912,7 +912,7 @@
         <p class="section-kicker">Presenter access</p>
         <h2 id="workspaceOverlayTitle">Select your avatar</h2>
         <p class="workspace-overlay__lede">
-          Each avatar is a separate demo workspace. Occupied avatars are locked, every lease expires after 1 hour, and 30 minutes of inactivity also resets the avatar back to a fresh workspace for the next presenter.
+          Each avatar is a separate demo workspace. Selecting an avatar always starts a fresh demo, occupied avatars are locked, every lease expires after 1 hour, and 30 minutes of inactivity also resets the avatar for the next presenter.
         </p>
         <p id="workspaceOverlayMessage" class="workspace-overlay__message"></p>
         <div id="workspaceGrid" class="workspace-grid"></div>

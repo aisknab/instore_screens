@@ -177,9 +177,9 @@ const DEFAULT_DEMO_CONFIG = {
     supply: createDefaultStage(
       "cyield-supply",
       "CYield Supply Setup",
-      "Treat screens like pages, then load the preset inventory in one click.",
+      "Treat screens like pages, create one screen, then auto build the remaining demo inventory.",
       buildDemoScreenId(DEFAULT_DEMO_STORE_ID, DEMO_SUPPLY_STARTER_SUFFIX),
-      "Load supply preset"
+      "Auto build rest of screens"
     ),
     buying: createDefaultStage(
       "cmax-demand",
@@ -858,6 +858,22 @@ function readMarketIntroAcknowledged(workspaceId = getCurrentWorkspace()?.id) {
 function syncMarketIntroAcknowledged(workspaceId = getCurrentWorkspace()?.id) {
   state.marketIntroAcknowledged = readMarketIntroAcknowledged(workspaceId);
   state.marketStoryStep = 0;
+}
+
+function clearMarketIntroAcknowledged(workspaceId = getCurrentWorkspace()?.id) {
+  const storageKey = getMarketIntroStorageKey(workspaceId);
+  if (!storageKey) {
+    return;
+  }
+  try {
+    window.sessionStorage.removeItem(storageKey);
+  } catch {
+    // Ignore storage failures and keep the in-memory state.
+  }
+  if (String(getCurrentWorkspace()?.id || "").trim() === String(workspaceId || "").trim()) {
+    state.marketIntroAcknowledged = false;
+    state.marketStoryStep = 0;
+  }
 }
 
 function setMarketIntroAcknowledged(acknowledged) {
@@ -2618,11 +2634,7 @@ function updateWorkspaceBadge() {
 }
 
 function buildWorkspaceCardMeta(workspace) {
-  const counts = workspace?.counts || {};
-  if (!workspace?.hasSavedJourney) {
-    return "Fresh workspace";
-  }
-  return `${Number(counts.screens || 0)} screens | ${Number(counts.agentRuns || 0)} plans`;
+  return workspace?.status === "claimed-by-you" ? "Current demo workspace" : "Fresh demo on selection";
 }
 
 function renderWorkspaceSelector(message = "") {
@@ -2645,8 +2657,8 @@ function renderWorkspaceSelector(message = "") {
         : switchingFromCurrentWorkspace
           ? "Current avatar"
         : workspace.status === "claimed-by-you"
-          ? "Resume workspace"
-          : "Open workspace";
+          ? "Current avatar"
+          : "Start fresh demo";
       const availabilityLabel =
         workspace.status === "claimed"
           ? "Locked"
@@ -2713,6 +2725,7 @@ async function claimWorkspace(workspaceId) {
         method: "POST",
         body: JSON.stringify({ workspaceId })
       });
+      clearMarketIntroAcknowledged(workspaceId);
       window.location.reload();
     } catch (error) {
       renderWorkspaceSelector(error.message || "Unable to claim workspace.");
@@ -2784,7 +2797,7 @@ async function ensureWorkspaceClaim() {
   state.workspaceSwitchMode = false;
   renderWorkspaceSelector();
   setWorkspaceOverlayVisible(true);
-  showStatus("Select an avatar to open an isolated demo workspace.");
+  showStatus("Select an avatar to open a fresh demo workspace.");
   await new Promise(() => undefined);
 }
 
@@ -3014,7 +3027,7 @@ function getRelevantScreenSummaries() {
   const summaries = [
     {
       screenId: manual.screenId,
-      label: "Manual first placement",
+      label: "Manual first screen",
       storeId: manual.storeId,
       pageId: manual.pageId,
       location: manual.location,
@@ -3399,8 +3412,8 @@ function buildPresenterCards() {
     ];
   }
   return [
-    { label: "Anchor", value: isManualSupplyConfirmed() ? "Ready" : "Pending" },
-    { label: "Preset", value: `${getDemoStoreCount()} stores` },
+    { label: "First screen", value: isManualSupplyConfirmed() ? "Ready" : "Pending" },
+    { label: "Auto build", value: `${getDemoStoreCount()} stores` },
     { label: "Shared URL", value: SHARED_PLAYER_URL }
   ];
 }
@@ -3538,12 +3551,12 @@ function buildSupplyPresenterPayload(stageConfig) {
   const actionMessage = readTextValue(state.lastDemoAction?.message);
   const presetMaterialized = isDemoPresetMaterialized();
   const summaryMessage = !isManualSupplyConfirmed()
-    ? "Add one anchor placement, then apply the shared preset to finish the supply setup."
+    ? "Create the first screen, then auto build the rest of the screens to finish the supply setup."
     : presetMaterialized
       ? state.supplyHandoffAcknowledged
         ? "Setup complete: minimal CYield change, shared backend-resolved player URL, and the handoff into CMax is open."
         : "Setup complete. Review the rollout handoff below, then continue into CMax when you're ready."
-      : `Anchor screen saved. Load the preset to roll out the remaining ${remaining} supply-stage screen(s) across ${demoStoreCount} stores.`;
+      : `First screen saved. Auto build the remaining ${remaining} supply-stage screen(s) across ${demoStoreCount} stores.`;
   const mappedPlacements = total || configured;
   const handoffMessage = isSupplyPresetReady()
     ? `The shared player is mapped across ${mappedPlacements} supply placement${
@@ -3563,8 +3576,8 @@ function buildSupplyPresenterPayload(stageConfig) {
       "Advanced config"
     ]),
     demoActions: readPresenterStringList(stageConfig.demoActions, [
-      "Create the anchor placement.",
-      "Apply the shared preset.",
+      "Create the first screen.",
+      "Auto build the rest of the screens.",
       "Use the handoff card if someone wants rollout scale."
     ]),
     qaPrompts: readPresenterStringList(stageConfig.qaPrompts, [
@@ -3580,15 +3593,15 @@ function buildSupplyPresenterPayload(stageConfig) {
       buildPresenterDetailRow("Retailer CPM card", summarizeGoalRateCard()),
       buildPresenterDetailRow(
         "Sellable share",
-        `${anchorShareLabel} on the anchor screen. Preset screens stay at 1/6 unless changed in Advanced config.`
+        `${anchorShareLabel} on the first screen. Auto-built screens stay at 1/6 unless changed in Advanced config.`
       ),
       buildPresenterDetailRow(
         "Handoff",
         handoffMessage ||
           actionMessage ||
           (isManualSupplyConfirmed()
-            ? `Anchor is live. ${remaining} supply-stage screen(s) remain before full preset rollout.`
-            : "Anchor placement still needs to be created.")
+            ? `The first screen is live. ${remaining} supply-stage screen(s) remain before the demo auto-build is complete.`
+            : "The first screen still needs to be created.")
       ),
       buildPresenterDetailRow("Advanced config", advancedConfigSummary)
     ].filter(Boolean)
@@ -4357,9 +4370,9 @@ function updateStagePills() {
       isSupplyMarketIntroActive()
         ? "Story first"
         : supplyReady
-          ? "Preset ready"
+          ? "Auto build ready"
           : manualReady
-            ? "Anchor added"
+            ? "Screen created"
             : "Start here";
   }
   if (elements.buyingStagePill) {
@@ -4401,15 +4414,19 @@ function updateActionButtons() {
   if (elements.createAnchorBtn) {
     elements.createAnchorBtn.disabled = manualReady || inventoryBusy;
     elements.createAnchorBtn.textContent = anchorPending
-      ? "Creating anchor..."
+      ? "Creating screen..."
       : manualReady
-        ? "Anchor ready"
-        : "Add one anchor placement";
+        ? "Screen ready"
+        : "Create screen";
   }
 
   for (const button of qsa("#loadPresetBtn, #loadPresetBtnSecondary")) {
     button.disabled = !manualReady || presetMaterialized || inventoryBusy;
-    button.textContent = presetPending ? "Applying preset..." : presetMaterialized ? "Shared preset applied" : "Apply shared preset";
+    button.textContent = presetPending
+      ? "Auto building screens..."
+      : presetMaterialized
+        ? "Auto build complete"
+        : "Auto build rest of screens";
   }
 
   for (const button of qsa("#nextToBuyingBtn, #nextToBuyingBtnSecondary")) {
@@ -4497,10 +4514,10 @@ function buildDemoActionMessage(kind, result) {
   }
 
   if (createdPages + createdScreens === 0 && updatedPages + updatedScreens === 0) {
-    return "Preset already matched the current configuration.";
+    return "The demo auto-build already matched the current configuration.";
   }
 
-  return `Shared preset ready. ${affectedStoreCount ? `${affectedStoreCount} store(s) seeded, ` : ""}${createdPages} page(s) created, ${updatedPages} refreshed, ${createdScreens} screen(s) created, ${updatedScreens} refreshed.`;
+  return `Demo auto-build complete. ${affectedStoreCount ? `${affectedStoreCount} store(s) seeded, ` : ""}${createdPages} page(s) created, ${updatedPages} refreshed, ${createdScreens} screen(s) created, ${updatedScreens} refreshed.`;
 }
 
 function renderSupplySummary() {
@@ -4513,11 +4530,11 @@ function renderSupplySummary() {
   elements.supplySummaryCards.innerHTML = [
     {
       value: isManualSupplyConfirmed() ? "Done" : "Pending",
-      label: "Anchor screen"
+      label: "First screen"
     },
     {
       value: `${demoStoreCount} stores`,
-      label: "Preset rollout"
+      label: "Auto build"
     },
     {
       value: isBuyingStageUnlocked() ? "Unlocked" : isSupplyHandoffPending() ? "Review handoff" : "Locked",
@@ -4548,23 +4565,23 @@ function renderPresetSummary() {
   const presetMaterialized = isDemoPresetMaterialized();
   const anchorShareLabel = getAnchorShareDisplayLabel();
   const summaryMessage = !isManualSupplyConfirmed()
-    ? "Add one anchor placement, then apply the shared preset to finish the supply setup."
+    ? "Create the first screen, then auto build the rest of the screens to finish the supply setup."
     : presetMaterialized
       ? state.supplyHandoffAcknowledged
         ? "Setup complete: minimal CYield change, shared backend-resolved player URL, and the handoff into CMax is open."
         : "Setup complete. Review the rollout handoff below, then continue into CMax when you're ready."
-      : `Anchor screen saved. Load the preset to roll out the remaining ${remaining} supply-stage screen(s) across ${demoStoreCount} stores.`;
+      : `First screen saved. Auto build the remaining ${remaining} supply-stage screen(s) across ${demoStoreCount} stores.`;
 
   elements.presetSummary.classList.remove("empty");
   elements.presetSummary.innerHTML = `
     <strong>Shared player URL: ${escapeHtml(SHARED_PLAYER_URL)}</strong>
     <p>${escapeHtml(summaryMessage)}</p>
-    <p class="goal-change__metrics">Sellable share: ${escapeHtml(anchorShareLabel)} on the anchor screen | preset screens default to 1/6.</p>
+    <p class="goal-change__metrics">Sellable share: ${escapeHtml(anchorShareLabel)} on the first screen | auto-built screens default to 1/6.</p>
     <p class="goal-change__metrics">Retailer CPM card: ${escapeHtml(summarizeGoalRateCard())}</p>
     <p class="goal-change__metrics">
       ${escapeHtml(
         presetMaterialized
-          ? actionMessage || "Shared preset is active across the demo inventory."
+          ? actionMessage || "The demo auto-build is active across the demo inventory."
           : "CYield keeps the same page-like request model. The only extra layer is a resolver that maps the TV/browser footprint to the right screen config."
       )}
     </p>
@@ -4626,7 +4643,7 @@ function renderPagesList() {
       const displayConfigured = page.isManual ? isManualSupplyConfirmed() : presetMaterialized && (page.configured || presetSimulated);
       const status = page.isManual
         ? isManualSupplyConfirmed()
-          ? "Anchor saved"
+          ? "Screen created"
           : "Add this first"
         : presetMaterialized
           ? presetSimulated
@@ -4634,14 +4651,14 @@ function renderPagesList() {
             : page.configured
               ? "Configured"
               : "Pending"
-          : "Loaded by preset";
+          : "Ready for auto build";
       return `<article class="record ${displayConfigured ? "" : "record--muted"}">
         <div class="record__top">
           <strong>${escapeHtml(page.pageId)}</strong>
           <span>${escapeHtml(status)}</span>
         </div>
         <p>${escapeHtml(page.pageType || "Page")} | ${escapeHtml(page.environment || "In-Store")}</p>
-        <p>${page.isManual ? "Show one page-to-screen mapping manually." : "The preset expands the same CYield page model across the rest of the store."}</p>
+        <p>${page.isManual ? "Show one page-to-screen mapping manually." : "The demo auto-build expands the same CYield page model across the rest of the store."}</p>
       </article>`;
     })
     .join("");
@@ -4689,7 +4706,7 @@ function renderScreensList() {
       const deletingThisScreen = deletingScreenId === summary.screenId;
       const status = summary.isManual
         ? isManualSupplyConfirmed()
-          ? "Anchor saved"
+          ? "Screen created"
           : "Add this first"
         : presetMaterialized
           ? presetSimulated
@@ -4697,7 +4714,7 @@ function renderScreensList() {
             : summary.configured
               ? "Configured"
               : "Pending"
-          : "Loaded by preset";
+          : "Ready for auto build";
       const actions = canManageLiveScreen
         ? `<span class="record__actions">
             <button type="button" class="btn btn--tiny js-edit-screen" data-screen-id="${escapeHtml(summary.screenId)}" ${
@@ -7194,13 +7211,13 @@ async function createAnchorPlacement() {
     screenPayload.defaultSellableShareSlots = anchorSharePreset.defaultSellableShareSlots;
 
     if (!pagePayload.pageId) {
-      throw new Error("Anchor page configuration is missing.");
+      throw new Error("First-screen page configuration is missing.");
     }
     if (!screenPayload.screenId) {
-      throw new Error("Anchor screen configuration is missing.");
+      throw new Error("First-screen screen configuration is missing.");
     }
 
-    showStatus("Creating the anchor placement...");
+    showStatus("Creating the first screen...");
 
     const existingPage = findPageRecord(pagePayload.pageId);
     if (!existingPage) {
@@ -7229,13 +7246,13 @@ async function createAnchorPlacement() {
     state.supplyHandoffAcknowledged = false;
     state.lastDemoAction = {
       kind: "anchor",
-      message: `Anchor ready. ${screenPayload.screenId} is mapped to ${pagePayload.pageId} at ${getScreenShareDisplayLabel(screenPayload)}.`
+      message: `Screen ready. ${screenPayload.screenId} is mapped to ${pagePayload.pageId} at ${getScreenShareDisplayLabel(screenPayload)}.`
     };
 
     syncSupplyFormDefaults();
     renderAll();
-    showToast("Anchor placement ready.");
-    showStatus("Anchor placement is ready. Apply the shared preset to finish Supply.");
+    showToast("Screen ready.");
+    showStatus("The first screen is ready. Auto build the rest of the screens to finish Supply.");
   }, { lockKey: "inventory" });
 }
 
@@ -7284,7 +7301,7 @@ async function handleScreenSubmit(event) {
     }
 
     if (effectiveScreenId === getManualSupplyConfig().screen.screenId) {
-      showStatus("Anchor screen is ready. Load the preset to expand the rest of the supply setup.");
+      showStatus("The first screen is ready. Auto build the rest of the screens to expand the supply setup.");
     }
   }, { lockKey: "inventory" });
 }
@@ -7514,10 +7531,10 @@ function buildSimulatedPresetResponse() {
 async function loadPreset() {
   return runPendingAction("inventory:preset", async () => {
     if (!isManualSupplyConfirmed()) {
-      throw new Error("Add the anchor screen first, then load the preset.");
+      throw new Error("Create the first screen first, then auto build the rest.");
     }
 
-    showStatus("Applying the shared preset...");
+    showStatus("Auto building the rest of the screens...");
     const response = shouldSimulateLargePresetLoad()
       ? buildSimulatedPresetResponse()
       : (await requestOptionalJson("/api/demo/preset", { method: "POST" })) || (await loadPresetFallback());
@@ -7951,7 +7968,7 @@ function wireEvents() {
     }
     renderPresetSummary();
     publishPresenterSnapshot();
-    showStatus(`Anchor sellable share set to ${preset.label}. Preset screens stay at 1/6 unless changed in Advanced config.`);
+    showStatus(`First-screen sellable share set to ${preset.label}. Auto-built screens stay at 1/6 unless changed in Advanced config.`);
   });
   elements.screenSharePreset?.addEventListener("change", () => {
     const preset = getScreenSharePresetConfig(elements.screenSharePreset.value);

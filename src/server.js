@@ -443,7 +443,7 @@ const DEMO_SCREEN_BLUEPRINTS = [
       badge: "CYield Supply",
       promotion: "Supply setup is live",
       cta: "Open the demo flow",
-      subcopy: "Load one placement manually, then fan out the preset in one click.",
+      subcopy: "Create one screen, then auto build the rest in one click for demo purposes.",
       legal: "Demo baseline only."
     }
   },
@@ -469,7 +469,7 @@ const DEMO_SCREEN_BLUEPRINTS = [
       badge: "Store Inventory",
       promotion: "Electronics supply on the shelf",
       cta: "Show the placement",
-      subcopy: "The first manual placement becomes the anchor for the preset.",
+      subcopy: "The first manual screen becomes the starting point for the demo auto-build.",
       legal: "Demo baseline only."
     }
   },
@@ -605,37 +605,37 @@ const DEMO_STAGE_TEMPLATES = [
   {
     id: "cyield-supply",
     label: "CYield Supply Setup",
-    description: "Use the two-action supply flow to show one manual CYield anchor, then fan the shared player across the rest of the store.",
-    actionLabel: "Load supply preset",
+    description: "Use the two-action supply flow to create one screen in CYield, then auto build the rest of the store for demo purposes.",
+    actionLabel: "Auto build rest of screens",
     starterScreenId: DEMO_SUPPLY_STARTER_SCREEN_ID,
     speakerSummary:
-      "Keep supply tight: one manual CYield-style mapping proves the integration point, then the preset, rate card, and handoff show how the same shared player scales across stores.",
+      "Keep supply tight: one manual CYield-style screen creation proves the integration point, then the demo auto-build, rate card, and handoff show how the same shared player scales across stores.",
     presenterNotes: [
-      "Start with one anchor placement so the workflow still looks like a normal CYield page-to-screen setup.",
+      "Start with one manually created screen so the workflow still looks like a normal CYield page-to-screen setup.",
       "Call out that every physical screen still uses the same /screen.html player path.",
       "The extra logic is backend resolution of which installed screen is calling the shared player.",
-      "Use the preset summary and handoff state to show rollout scale, not a pile of manual page creation."
+      "Use the auto-build summary and handoff state to show rollout scale, not a pile of manual page creation."
     ],
     proofPoints: [
       "Minimal CYield change",
       "One shared player URL",
-      "Preset rolls out the store fast",
+      "Demo auto-build rolls out the store fast",
       "Retailer pricing stays on the supply side"
     ],
     supportingModules: [
       "2-action supply flow",
-      "Preset summary plus retailer CPM card",
+      "Auto-build summary plus retailer CPM card",
       "Supply handoff across stores and placements",
       "Advanced page and screen mapping details"
     ],
     demoActions: [
-      "Click Add one anchor placement to show the only manual CYield step.",
+      "Click Create screen to show the only manual CYield step.",
       "Point to the shared player URL and explain that the resolver, not the retailer page model, identifies the installed screen.",
-      "Click Apply shared preset to fan out entrance, electronics, whitegoods, aisle, and checkout coverage.",
+      "Click Auto build rest of screens to fan out entrance, electronics, whitegoods, aisle, and checkout coverage for demo purposes.",
       "Use the handoff card only if needed to quantify mapped placements, stores, and the shared player path."
     ],
     qaPrompts: [
-      "If someone asks about implementation, open Advanced config and show the page, screen, and share fields behind the anchor placement.",
+      "If someone asks about implementation, open Advanced config and show the page, screen, and share fields behind the first screen.",
       "If someone asks about retailer control, point to the CPM card and explain that pricing still lives on the supply side.",
       "If someone asks about scale, use the handoff stats instead of walking screen by screen."
     ]
@@ -7250,6 +7250,7 @@ app.post("/api/workspaces/claim", async (req, res) => {
       const currentClaim = findWorkspaceClaimBySession(rootDb, sessionId);
       if (currentClaim && readOptionalString(currentClaim.workspaceId, 80) !== requestedWorkspaceId) {
         delete rootDb.workspaceClaims[readOptionalString(currentClaim.workspaceId, 80)];
+        resetWorkspaceState(rootDb, currentClaim.workspaceId);
       }
 
       const existingClaim = rootDb.workspaceClaims[requestedWorkspaceId];
@@ -7269,6 +7270,7 @@ app.post("/api/workspaces/claim", async (req, res) => {
         lastActivityAt: claimedAt.toISOString(),
         expiresAt: new Date(claimedAt.getTime() + WORKSPACE_LEASE_MS).toISOString()
       };
+      resetWorkspaceState(rootDb, requestedWorkspaceId);
       getWorkspaceState(rootDb, requestedWorkspaceId, { create: true, seedState: seedDb });
       return buildWorkspaceStatusPayload(rootDb, sessionId);
     });

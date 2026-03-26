@@ -1,934 +1,500 @@
-# In-Store Screens Demo: Technical Explanation
-
-This document is an engineering-oriented explanation of the repository as inspected on March 26, 2026. It is intended to help a retail media engineering team understand what the code does, how the pieces fit together, what is real versus demo-modeled, and where the main implementation boundaries sit.
+# In-Store Screens for Criteo Retail Media: Technical Explanation
 
-## 1. What This Repo Actually Is
+## 1. What This Proposal Is Trying to Show
 
-This repository is a self-contained demo platform for treating physical in-store screens as retail media inventory.
+The point of this project is not "a demo website with some screens in it." The point is to show that in-store digital screens can be treated as a natural extension of Criteo's existing retail media model rather than as a separate store-tech product.
 
-At runtime it behaves like one monolithic Node/Express application that does all of the following:
+The core proposal is:
 
-- serves the admin UI used to set up supply, plan campaigns, and view monitoring
-- serves the screen player used by physical screens or simulated screens
-- serves a presenter-notes companion page
-- persists state to a local JSON database
-- reads a local product feed
-- plans in-store campaigns against configured or synthetic demo inventory
-- applies campaign changes by writing managed line items into screen records
-- emits and aggregates proof-of-play / exposure telemetry
-- optionally runs OpenAI-backed batch generation for product images and brand logos
+- physical in-store screens become retail media supply
+- that supply can be modeled using concepts that already exist in CYield today
+- buying can work in a way that is structurally similar to onsite retail media buying
+- monitoring can combine delivery proof, shopper engagement signals, and retail outcome modeling in one loop
 
-This is not a microservice system, and it is not split into a frontend app plus backend API in separate projects. It is one process, one repo, and mostly one large server file plus one large admin client file.
+At a high level, the repo demonstrates an operating model where the store becomes another addressable media environment inside the same retail media system.
 
-## 2. Repository Shape
+## 2. The Strategic Fit with Current Criteo Retail Media
 
-The important files are:
+The cleanest way to understand the proposal is to compare it to onsite.
 
-- `src/server.js`
-  The main application. It contains constants, utility functions, product-feed normalization, device-resolution logic, goal planning, telemetry modeling, demo-preset generation, workspace leasing, API routes, and server startup.
-- `src/dataStore.js`
-  File-backed persistence layer. It serializes all DB access through an in-memory queue and writes atomically.
-- `src/demoStoreCatalog.js`
-  Synthetic large-scale store catalog generator. It builds thousands of store profiles across markets, tiers, and archetypes.
-- `public/admin.html`, `public/admin.js`, `public/admin.css`
-  The guided admin/demo experience.
-- `public/screen.html`, `public/screen.css`
-  The shared screen player and native fallback renderer.
-- `public/presenter-notes.html`, `public/presenter-notes.js`, `public/presenter-notes.css`
-  Presenter companion view that follows the main demo state.
-- `data/db.json`
-  Tracked seed database.
-- `data/productFeed.json`
-  Tracked product catalog used for targeting, creative, and fallback content.
-- `scripts/smoke.mjs`
-  End-to-end smoke test against the local server.
-- `scripts/generate-product-images.mjs`
-  Resumable OpenAI-backed packshot generation.
-- `scripts/generate-brand-logos.mjs`
-  Resumable OpenAI-backed brand-logo generation.
-- `scripts/deploy-production.sh`
-  Simple Linux deploy helper.
+Today, onsite retail media already works around a familiar pattern:
 
-## 3. Current Repository Data Snapshot
+- a retailer exposes supply
+- that supply is described in terms of pages, placements, and delivery rules
+- buying selects where and how to activate against that supply
+- delivery returns creative payloads
+- measurement reports what ran and how it performed
 
-At the inspected repo state:
+This project proposes that in-store screens can fit into the same pattern with minimal conceptual change.
 
-- `data/db.json` contains:
-  - 6 pages
-  - 58 screens
-  - 11 agent runs
-  - 2,542 telemetry events
-- `data/productFeed.json` contains:
-  - 1,164 products
-  - 4 categories: `electronics`, `whitegoods`, `aisle`, `foodcourt`
-  - 10 advertiser accounts with roughly even product counts
+Instead of inventing a separate supply stack, the model is:
 
-The synthetic demo catalog is much larger than the tracked seed DB:
+- treat each in-store screen as another supply surface
+- describe that screen in CYield-like terms
+- let a shared player request delivery payloads from the middleware
+- let buying and monitoring reason about store inventory the same way they already reason about onsite inventory
 
-- `src/demoStoreCatalog.js` generates 2,359 demo stores
-- `src/server.js` defines 5 blueprint screens per store
-- that produces 11,795 synthetic screen specs for planning and guided-demo rollouts
+That is why the supply setup in this repo is intentionally similar to CYield rather than resembling digital signage software.
 
-That distinction matters:
+## 3. The Supply Model: How In-Store Screens Map to CYield
 
-- `data/db.json` is the tracked seed state
-- the demo store catalog is generated code-side
-- the admin UI can materialize large parts of that generated inventory into the writable DB via the demo preset
+The most important supply idea in the repo is that a physical screen can be represented using the same mental model as an onsite placement.
 
-## 4. Runtime Architecture
+The demo expresses this with three concepts:
 
-### 4.1 Process model
+- `Page`
+- `Screen`
+- `Template`
 
-The app is an ESM Node app requiring Node 18+.
+### 3.1 `Page` as the store-side equivalent of an onsite page or placement context
 
-`package.json` exposes:
+In the proposal, a page is not literally a web page. It is the logical retail context where media can run.
 
-- `npm start`: run `src/server.js`
-- `npm run dev`: watch mode for `src/server.js`
-- `npm run smoke`: exercise the API end to end
-- `npm run generate:product-images`
-- `npm run generate:brand-logos`
+Examples:
 
-### 4.2 HTTP surfaces
+- `ENTRANCE`
+- `ELECTRONICS`
+- `WHITEGOODS`
+- `AISLE`
+- `CHECKOUT`
 
-The process serves:
+This is the key abstraction:
 
-- static assets from `public/`
-- generated product images from the configured generated-image directory
-- generated brand logos from the configured generated-logo directory
-- JSON APIs under `/api/*`
-- telemetry collection at `/collect`
+- an onsite page is a shopper context in digital commerce
+- an in-store page is a shopper context on the shop floor
 
-`/` redirects to `/admin.html`.
+So "page" becomes a reusable supply primitive across environments.
 
-### 4.3 Persistence model
+### 3.2 `Screen` as the physical placement attached to that page context
 
-The writable DB defaults to `temp/db.json`, not `data/db.json`.
+A screen record carries the physical information needed to actually deliver:
 
-Startup persistence flow:
+- store ID
+- location
+- page mapping
+- screen type
+- screen size
+- refresh interval
+- delivery share configuration
+- line items
 
-1. `src/dataStore.js` treats `data/db.json` as the seed DB.
-2. On first write/read it bootstraps `temp/db.json` from the seed if no writable DB exists.
-3. All future mutations operate on the writable DB file.
+This is equivalent to saying:
 
-This is an important design choice:
+- the page defines the logical supply context
+- the screen defines the actual installed media surface inside that context
 
-- tracked demo state stays in git
-- runtime mutations stay out of git by default
-- production can move the DB entirely out of the checkout with `DB_FILE`
+So if CYield today knows how to reason about pages and placements, the proposal is that it can reason about screens without changing its underlying mental model very much.
 
-## 5. Core Domain Model
+### 3.3 `Template` as the in-store equivalent of format / placement behavior
 
-The application revolves around a few main persisted objects.
-
-### 5.1 Page
+Templates describe how a given screen placement behaves visually and operationally.
 
-A page is the CYield-style logical placement or zone definition.
+Examples in the repo:
 
-Example shape:
+- fullscreen banner
+- fullscreen hero
+- carousel banner
+- kiosk
+- shelf spotlight
+- menu loop
 
-```json
-{
-  "pageId": "ELECTRONICS",
-  "pageType": "Category",
-  "environment": "In-Store",
-  "verbosity": "Min",
-  "firePageBeacons": true,
-  "oneTagHybridIntegration": false,
-  "includeBidInResponse": false,
-  "createdAt": "2026-02-09T10:00:00.000Z",
-  "updatedAt": "2026-03-24T00:20:55.532Z"
-}
-```
+These are the in-store equivalent of saying:
 
-### 5.2 Screen
+- this is not just "creative"
+- this is the expected behavior of a particular placement type
 
-A screen is the physical placement plus its delivery behavior.
+That is important because in-store media has different viewing conditions from onsite:
 
-Key fields:
+- some screens are passive and distant
+- some are portrait
+- some are shelf-edge
+- some are queue-side or kiosk-like
+- some need multiple products rotating
 
-- `screenId`
-- `storeId`
-- `location`
-- `pageId`
-- `screenType`
-- `screenSize`
-- `format`
-- `templateId`
-- `refreshInterval`
-- `screenShareSlots`
-- `defaultSellableShareSlots`
-- `deviceHints`
-- `lineItems[]`
+The template layer is what lets the same retail media system adapt to those differences while still keeping one delivery model underneath.
 
-`deviceHints` is important because the shared player can resolve a screen without an explicit `screenId` by using resolver/device metadata.
+## 4. Treating Each Screen Like a Page in Practice
 
-### 5.3 Line item
-
-A line item is the unit actually rotated and delivered on a screen.
+One of the clearest ideas the demo is trying to prove is that each installed screen can be treated as a supply endpoint in a way that is analogous to how onsite pages are treated today.
 
-Important fields:
+That means:
 
-- `lineItemId`
-- `name`
-- `activeFrom`
-- `activeTo`
-- `templateId`
-- `deliverySource`
-- `deliveryShareSlots`
-- `goalPlanId`
-- `goalAdvertiserId`
-- `goalObjective`
-- `products[]`
+- a screen has identity
+- a screen belongs to a store
+- a screen belongs to a logical retail context
+- a screen has sellable media share
+- a screen can carry one or more line items
+- a screen can request creative from a delivery endpoint
 
-The system supports multiple line items per screen and allocates delivery via share-slot weighting.
+The project is effectively saying:
 
-### 5.4 Product
+"Do not think of a store screen as a separate signage estate. Think of it as another page-like supply node in the retail media graph."
 
-There are two closely related product shapes:
+That is what allows the proposal to fit naturally into current CYield thinking.
 
-- feed products in `data/productFeed.json`
-- delivery products returned by `/api/screen-ad`
+## 5. Shared Player Model
 
-Feed products are lower-case, internal, and planning-oriented:
+The repo deliberately uses one shared player URL:
 
-```json
-{
-  "sku": "LAP-ULTRA-13-001",
-  "name": "UltraBook 13 Pro",
-  "category": "electronics",
-  "brand": "Vertex",
-  "productPage": "https://store.example.com/products/lap-ultra-13-001",
-  "image": "/assets/products/lap-ultra-13-001.svg",
-  "price": "1299.00",
-  "comparePrice": "1499.00",
-  "rating": "4.8",
-  "advertiserId": "advertiser-vertex",
-  "tags": ["laptop", "ultrabook", "premium", "new-range"]
-}
-```
+- `/screen.html`
 
-Delivery products are RMJS-facing and title-cased:
+The idea behind that is also strategic, not just technical convenience.
 
-- `ProductId`
-- `ProductName`
-- `ProductPage`
-- `Image`
-- `Price`
-- `ComparePrice`
-- `Rating`
-- `ClientAdvertiserId`
-- `RenderingAttributes`
-- beacon URLs
+It shows that:
 
-The server spends a lot of code translating between these two shapes.
+- the retailer does not need a completely custom player per screen
+- the delivery system can resolve which installed screen is calling
+- the same rendering path can be reused across many physical placements
 
-### 5.5 Agent run
+In product terms, this matters because it reduces the gap between onsite and in-store delivery:
 
-An agent run is the persisted output of the goal planner.
+- onsite already has a standard delivery model
+- in-store can move toward a standard player plus supply metadata model
 
-It stores:
+The backend resolves the actual screen using stored device hints and request context, but the higher-level point is simpler:
 
-- the normalized goal request
-- inferred or chosen target SKUs
-- store rankings and planning signals
-- recommended placements
-- proposed changes
-- excluded screens and reasons
-- budget outputs
-- live snapshot after apply
+- one shared player
+- many mapped placements
+- centrally managed delivery
 
-This is the central artifact connecting planning, apply, and monitoring.
+That is exactly the kind of thing a scalable retail media supply system needs.
 
-### 5.6 Telemetry event
+## 6. Inventory and Sellable Share
 
-Only two telemetry event types exist:
+Another important proposal in the repo is that an in-store screen should not be modeled as "all or nothing."
 
-- `play`
-- `exposure`
+Instead, the screen has configurable share of voice:
 
-Fields include:
+- total screen-share slots
+- default sellable share
+- line-item share allocation
 
-- `eventId`
-- `event`
-- `occurredAt`
-- `screenId`
-- `storeId`
-- `pageId`
-- `location`
-- `templateId`
-- `lineItemId`
-- `adid`
-- `sku`
-- `productName`
-- `source`
-- `reason`
-- `exposureMs`
+This is a very retail-media-native idea.
 
-### 5.7 Workspace root
+It means the retailer can keep part of the screen for:
 
-The root DB also contains:
+- retailer messaging
+- store operations
+- organic merchandising
 
-- `workspaces`
-- `workspaceClaims`
+while still making a defined share of the screen available as monetizable media supply.
 
-Each presenter avatar gets an isolated workspace state derived from the seed DB. The admin app never edits the root default state directly once a workspace is claimed.
+This is one of the strongest parts of the proposal because it mirrors onsite realities:
 
-## 6. Server Responsibilities in `src/server.js`
+- not every placement is 100% sponsored
+- there is usually a balance between owned retail content and paid media inventory
 
-`src/server.js` is the true application boundary. It currently combines at least nine concerns:
+By modeling that explicitly, the repo shows how in-store screens can be sold as media without pretending that the retailer gives up the whole surface.
 
-1. static config and enums
-2. demo inventory generation
-3. product-feed normalization and caching
-4. OpenAI-backed SKU inference
-5. goal planning and budget modeling
-6. line-item normalization and delivery
-7. telemetry collection and modeled measurement
-8. workspace session / lease management
-9. route definitions and server startup
+## 7. Supply Setup in CYield Terms
 
-From an engineering point of view, this file is a monolith. That is not a criticism of the demo working; it is simply the main fact the next team should understand before modifying it.
+The supply workflow in the project is intentionally framed to resemble existing CYield behavior.
 
-## 7. Data Store Internals
+The proposed operating pattern is:
 
-`src/dataStore.js` is small but important.
+1. Create a logical page mapping for the retail context.
+2. Attach a physical screen to that page.
+3. Define the screen's format, cadence, and sellable share.
+4. Expose the shared player URL as the delivery surface.
+5. Scale that mapping across stores and placements using preset logic rather than manual one-off setup.
 
-What it does:
+What this is trying to prove:
 
-- normalizes DB shape on read
-- bootstraps writable DB from seed data
-- serializes all reads and writes through a promise queue
-- performs atomic writes using a temp file plus rename
-- falls back to direct overwrite if rename hits Windows `EPERM`
-- keeps `lastKnownDb` in memory as a recovery fallback if JSON parsing fails
+- current onsite-style setup concepts can be extended into store
+- the retailer-side operational model remains familiar
+- large in-store supply estates can be expressed through standard mappings instead of custom ad hoc configuration
 
-Implications:
+That is why the demo keeps repeating the idea that "screens can be configured in the current platform with minimal modification."
 
-- there is no real multi-process locking
-- within one Node process, writes are serialized safely
-- across multiple processes, this is not a production-grade datastore
-- for a demo or single-service install, it is adequate
+## 8. Buying Model: How Demand Works
 
-## 8. Demo Store Catalog
+The buying side of the repo is framed in CMax terms rather than signage terms.
 
-`src/demoStoreCatalog.js` is not a list of hardcoded stores. It is a generator for a large synthetic network.
+The proposal is that in-store buying should work like a retail media planning problem:
 
-It models:
+- choose the advertiser
+- choose the goal
+- choose the product set or brand focus
+- choose scope and flight
+- generate a recommended line-up
+- fund the selected placements
 
-- store archetypes such as `flagship`, `metro`, `suburban`, `regional`, `compact`
-- market definitions across the US, Canada, and Mexico
-- trade areas within metros
-- store-level inventory and traffic scaling
-- category bias by store
-- screen configs by placement type
+That is much closer to onsite media buying than to store operations software.
 
-The generated output gives the planner something large enough to feel like a real network.
+### 8.1 Inputs to buying
 
-Important detail:
-
-- the tracked DB seed still contains a small curated demo
-- the planner can operate against the generated network when the request targets demo stores
-- the demo preset can materialize generated screen specs into the writable DB
-
-## 9. Workspace / Avatar Model
-
-Before most API calls, the admin user must claim an avatar workspace.
-
-Implementation summary:
-
-- `/api/workspaces` creates or reads a session cookie
-- `/api/workspaces/claim` assigns one of 12 demo avatars such as `atlas`, `nova`, `sora`
-- the claim is stored in `workspaceClaims`
-- leases expire after 2 hours
-- once claimed, middleware `requireWorkspaceClaim` gates `/api/*` and `/collect`
-- per-workspace state is stored under `workspaces[workspaceId]`
-
-This is a useful demo feature because multiple presenters can run separate journeys without overwriting each other.
-
-It is not multi-user auth. It is lightweight lease-based state isolation.
-
-## 10. Admin UI
-
-### 10.1 What the admin app is
-
-The admin UI is a guided three-stage demo shell:
-
-- `supply`
-- `buying`
-- `monitoring`
-
-`public/admin.html` provides the structure.
-`public/admin.js` provides almost all behavior.
-`public/admin.css` provides the visual system.
-
-### 10.2 How `public/admin.js` is organized
-
-`public/admin.js` is another monolith. It contains:
-
-- a large in-memory `state` object
-- element lookup map
-- fetch wrappers
-- render functions for every section
-- event handlers for every interaction
-- workspace handling
-- market-story overlay logic
-- goal prompt inference helpers
-- preview rail loading
-- presenter snapshot publishing
-
-This is effectively a hand-written SPA with no framework.
-
-### 10.3 The three-stage flow
-
-Supply stage:
-
-- create one anchor placement
-- optionally inspect advanced page/screen config
-- apply shared preset
-- show rollout handoff
-
-Buying stage:
-
-- choose account / advertiser
-- choose objective and aggressiveness
-- set scope and flight dates
-- let AI or heuristics shortlist SKUs
-- review recommended placements
-- edit funded placements and budget
-- apply plan
-
-Monitoring stage:
-
-- brand dashboard
-- KPI rail
-- measurement board
-- live screen inspector
-- preview rail
-- recent campaign runs
-
-### 10.4 Presenter-notes integration
-
-The admin app publishes a stage-aware snapshot to:
-
-- `localStorage`
-- `BroadcastChannel`
-
-The presenter notes page reads that snapshot and renders:
-
-- talk track
-- proof points
-- stage modules
-- live state
-- plan context
-- telemetry summary
-
-This is a clean demo-specific pattern: the notes page does not call the backend itself; it follows the main admin tab.
-
-## 11. Shared Screen Player
-
-### 11.1 What `public/screen.html` does
-
-The screen player is the runtime surface that a physical device or simulated device would load.
-
-It supports three major modes:
-
-- explicit `screenId`
-- resolved `deviceId` / device profile
-- showcase preview mode
-
-It also supports RMJS mode flags:
-
-- `rmjs=auto`
-- `rmjs=on`
-- `rmjs=off`
-
-### 11.2 Delivery strategy
-
-Load flow:
-
-1. build `/api/screen-ad` request from query params and viewport/orientation hints
-2. optionally try to load RMJS
-3. if RMJS is available, render with RMJS
-4. otherwise render with the native fallback layouts
-5. schedule refresh on the screen refresh interval
-
-### 11.3 Native fallback renderer
-
-The fallback renderer is not a placeholder. It has bespoke markup and styling per template:
-
-- `fullscreen-banner`
-- `fullscreen-hero`
-- `carousel-banner`
-- `kiosk-interactive`
-- `shelf-spotlight`
-- `menu-loop`
-
-The screen player:
-
-- parses `RenderingAttributes`
-- derives copy if the stored copy looks too generic
-- injects QR modules for kiosk, shelf, menu, and some clearance cases
-- loops multi-product templates locally
-- posts `play` and `exposure` beacons back to `/collect`
-
-`public/screen.css` is therefore doing two jobs:
-
-- immersive device/showcase framing
-- full native creative layouts for the fallback renderer
-
-## 12. Device Resolution Model
-
-One of the most important ideas in the repo is that all physical screens can use the same shared player URL.
-
-The server resolves the actual screen by:
-
-- explicit `screenId` when supplied
-- explicit resolver/device ID
-- device profile string
-- viewport size
-- orientation
-- coarse browser hints
-
-Each screen stores `deviceHints`, including:
-
-- `resolverId`
-- `viewport`
-- `orientation`
-- page/location/store tokens
-- user-agent hints
-
-If the shared player cannot resolve uniquely, the API returns a conflict instructing the caller to provide stronger device identity.
-
-This is the core mechanism behind the “one shared player URL” story in the demo.
-
-## 13. Supply Setup and Demo Preset
-
-The guided supply workflow is implemented through:
-
-- page creation APIs
-- screen creation APIs
-- demo preset helpers in the server
-
-The demo preset logic:
-
-- seeds or updates the standard demo pages
-- seeds or updates a set of generated screen specs across the demo store network
-- populates line items from the product feed
-- clears rotation state
-- optionally clears runs and telemetry on full reset
-
-The server also builds a `demo config snapshot` that the admin UI uses to render:
-
-- stage progress
-- configured vs missing screens
-- quick links
-- counts
-- handoff summaries
-
-This means the admin UI is not hardcoding the stage summary. The backend synthesizes it from live state.
-
-## 14. Goal Planning System
-
-This is the most complex subsystem in the repo.
-
-### 14.1 Inputs
-
-The planner takes:
+The planner works from:
 
 - objective
-- aggressiveness
-- flight start/end
-- advertiser
-- optional brand
-- optional assortment category
-- optional store/page scope
+- advertiser / brand
+- optional SKU shortlist
 - optional prompt
-- optional manual target SKUs
+- store scope
+- page scope
+- flight dates
+- aggressiveness
 
-### 14.2 Target SKU resolution
+This is exactly the type of input surface a retail media buyer or account team would expect.
 
-The planner resolves products in this order:
+### 8.2 How the planner thinks
 
-1. manual `targetSkuIds` if supplied
-2. prompt-based inference
-3. advertiser/brand assortment fallback
-4. no target products
+The planner combines:
 
-Prompt inference has two layers:
+- screen context
+- store context
+- product relevance
+- template suitability
+- sellable-share availability
+- modeled traffic and commerce signals
+- budget constraints
 
-- OpenAI-based semantic selection if `OPENAI_API_KEY` is present
-- heuristic scoring fallback if not
+So the output is not "put this asset on these screens." The output is:
 
-The heuristic scorer uses:
+- which placements are the best fit
+- why they are the best fit
+- which screens were excluded and why
+- what the expected spend and impression model looks like
 
-- SKU, category, name, brand, and tag token matches
-- intent signals such as `stock`, `value`, `premium`, `rating`, `newness`
-- store-level stock signals
-- price / discount / rating features
+That is a proper buying system shape, not a playlist scheduler.
 
-The OpenAI path is tightly constrained:
+### 8.3 SKU and assortment logic
 
-- the server first scores and narrows candidates
-- only top candidates are sent to the model
-- the model must return JSON matching a schema
-- if the call fails or times out, the server falls back to heuristics
+The repo also proposes that in-store buying can be product-aware in the same way onsite sponsored product systems are.
 
-### 14.3 Store strategy
+The planner can:
 
-The planner does not just score screens independently.
+- take explicit SKU inputs
+- infer candidate SKUs from a planning brief
+- fall back to brand assortment when needed
 
-It first builds store-level strategy using synthetic sales signals derived from the demo catalog:
+This matters because it makes in-store buying feel like retail media rather than generic DOOH:
 
-- total sales
-- foot traffic index
-- checkout intent index
-- premium demand index
-- clearance pressure index
+- the system is tied to retailer assortment
+- the creative can be built around real products
+- the plan can explain product-to-placement fit
+
+That is much closer to the value Criteo already provides in commerce media.
+
+## 9. Store and Placement Selection Logic
+
+The repo does not simply pick screens at random.
+
+It uses modeled store and placement signals to decide where media should run.
+
+Examples of the kinds of signals used:
+
+- foot traffic
+- checkout intent
+- premium demand
+- clearance pressure
 - stock fit
 - traffic fit
-- capability fit
-- continuity fit
+- placement role fit
 
-This lets the plan explain why certain stores are favored.
+At a proposal level, the message is:
 
-### 14.4 Screen scoring
+- buying in-store media should be more intelligent than "all screens in all stores"
+- a retail media system should be able to choose the right store, the right zone, and the right screen for a given commercial objective
 
-For each candidate screen, the planner computes:
+That is important because it positions in-store supply as performance-oriented retail media inventory, not just awareness signage.
 
-- objective fit
-- assortment fit
-- stock fit
-- traffic fit
-- capability fit
-- continuity fit
-- scope fit
+## 10. Applying the Buy
 
-It also computes:
+When a plan is approved, the repo applies it by writing managed line items onto the selected screens.
 
-- recommended template
-- recommended target SKUs for that screen
-- planned share of screen
-- estimated impressions
-- estimated placement cost
-- confidence score
-- exclusion reason if held out
+That is the right abstraction for the proposal.
 
-### 14.5 Budget model
+The buy does not replace the retailer's entire screen setup. Instead it:
 
-Budgeting is built on retailer-set CPM by screen type.
+- preserves baseline rotation
+- injects sponsored share
+- attaches campaign identity to the line item
+- limits delivery to the selected flight and available share
 
-The code stores default CPMs for:
+In other words:
 
-- vertical screens
-- horizontal screens
-- shelf edge
-- endcap
-- kiosk
-- digital menu board
+- the retailer continues to own the screen
+- the campaign occupies a funded sponsored layer on that screen
 
-Estimated impressions are modeled from:
+That is a much more plausible operating model for retail media than treating the screen as a dedicated ad slot with no retailer control.
 
-- screen type
-- placement role
-- store traffic / checkout signals
-- refresh interval
-- sellable share ratio
-- flight duration
+## 11. Delivery Model
 
-The output includes:
+The delivery endpoint is:
 
-- `maxSpend`
-- `selectedSpend`
-- funded vs held-back placements
-- funded vs held-back impressions
+- `GET /api/screen-ad`
 
-### 14.6 Guardrails
+Conceptually this is the in-store equivalent of an ad call.
 
-The planner excludes screens when:
+It returns:
 
-- the configured sellable share is already full for the flight
-- screen context does not fit the selected assortment strongly enough
-- conservative planning should stay anchored to the requested page
-- score is below threshold
-- stronger placements cover the same scenario more efficiently
+- the selected products
+- the format
+- template settings
+- beacon metadata
+- contextual settings for the player
 
-Excluded placements are persisted with reasons, not silently dropped.
+The repo rotates through active line items, respects share allocation, and enriches products from the feed.
 
-That is why the admin UI can explain why something is missing.
+The product proposal behind that is straightforward:
 
-## 15. Apply Flow
+- store screens should request media from a central delivery layer
+- delivery should remain product-aware
+- the payload shape should support both standard rendering and resilient fallback rendering
 
-Applying a plan does not replace the whole screen record. It injects a managed sponsored-share line item.
+That makes in-store inventory look and behave like real addressable media supply.
 
-Apply behavior:
+## 12. Creative Model
 
-1. pick the funded placements after budget selection
-2. re-check screen-share capacity for the selected flight
-3. materialize demo screens/pages if the plan references generated demo inventory not yet in the DB
-4. preserve non-goal line items
-5. create a goal-managed line item with objective-specific creative attributes
-6. add a baseline rotation line item if the screen would otherwise become empty
-7. write live snapshot details back to the run record
+The repo assumes in-store creative is still product-led retail media, but expressed differently depending on placement.
 
-The managed line items are tagged with:
+Examples:
 
-- `deliverySource: "goal-share"`
-- `goalPlanId`
-- `goalAdvertiserId`
-- `goalObjective`
+- entrance hero
+- category hero
+- aisle spotlight
+- queue-side handoff
+- menu-board rotation
 
-That is how later reads distinguish “campaign-owned” line items from the pre-existing baseline rotation.
+The important product idea is not the CSS itself. The important idea is:
 
-## 16. Screen Delivery
+- the same advertiser and product inputs can be adapted to different store contexts
+- creative can remain standardized enough to scale
+- placement-specific behavior is controlled by templates rather than custom one-offs
 
-`GET /api/screen-ad` is the delivery endpoint used by the player.
+That is exactly how onsite retail media scales today: common underlying inputs, adapted to different placement types.
 
-Its main job is to convert stored screen state into a delivery-ready payload.
+## 13. Monitoring Model
 
-It does the following:
+The monitoring part of the repo is trying to prove that in-store media can close the loop in a way that is familiar to retail media teams.
 
-1. resolve the target screen
-2. filter to active line items
-3. compute weighted share allocation
-4. honor explicit requested line item / plan / advertiser if provided
-5. otherwise rotate fairly via `rotationState`
-6. top up multi-product templates from the product feed if under-configured
-7. prefer feed image paths for matching SKUs
-8. normalize product shape for delivery
-9. emit beacon URLs in the payload
+It includes three layers:
 
-The response contains:
+- what is live
+- what was delivered
+- what commercial impact is inferred
 
-- `format`
-- `products[]`
-- `settings`
+### 13.1 Live state
 
-`settings` includes delivery metadata the player uses, such as template, refresh interval, selected line item, delivery share info, resolver ID, and request-resolution details.
+The monitoring experience shows:
 
-## 17. Line-Item Share Model
+- which screens are live
+- what is currently running on them
+- how the creative looks in context
 
-The repo models sellable share explicitly.
+This is the operational equivalent of live placement verification.
 
-Key concepts:
+### 13.2 Observed delivery
 
-- a screen has total share slots, defaulting to 6
-- a screen also has a default number of sellable share slots
-- a line item may declare `deliveryShareSlots`
-- the planner only buys into free sellable share for the target flight
+The repo records:
 
-This is one of the more realistic parts of the demo because it separates:
+- proof of play
+- exposure time
 
-- screen existence
-- baseline retailer-owned rotation
-- sponsored share availability
+This gives the system an observed delivery layer, which is the minimum credible base for in-store media monitoring.
 
-The rotation picker uses share weight rather than simple round-robin, so line items with more share slots win proportionally more calls.
+### 13.3 Modeled commercial outcomes
 
-## 18. Telemetry and Measurement
-
-### 18.1 Observed telemetry
-
-Observed telemetry is minimal but clear:
-
-- `play` events
-- `exposure` events with dwell time
-
-These events can come from:
-
-- the native fallback renderer in `screen.html`
-- the smoke test
-- any external caller posting to `/collect`
-
-The summary API aggregates totals and breakdowns by:
-
-- screen
-- template
-- SKU
-
-### 18.2 Modeled measurement board
-
-The monitoring dashboard also shows modeled retail metrics.
-
-These are not raw truth data. They are simulated from:
-
-- live telemetry totals
-- plan budget
-- target products
-- averaged demo store sales signals
-- objective-specific boost factors
-
-Modeled outputs include:
+The repo also adds modeled outputs such as:
 
 - shopper interaction rate
 - QR scans
 - incremental sales
 - new-to-brand sales
 - return on spend
-- total exposure time
-- total ad plays
 
-The code is explicit about this by attaching source tags such as:
+These are demo-modeled, not live retailer transaction truth, but the proposal is clear:
 
-- `telemetry`
-- `modeled`
-- `sales-signal`
-- `plan`
+- in-store media should not stop at proof of play
+- it should be brought into the same commercial measurement conversation as the rest of retail media
 
-Engineering implication:
+That is essential if in-store screens are going to be sold as part of a broader Criteo retail media proposition rather than as digital signage inventory.
 
-- proof-of-play and exposure are observed
-- QR, incrementality, sales lift, and ROAS are demo-modeled
+## 14. Why This Looks Like Retail Media and Not Signage Software
 
-That distinction matters for anyone treating this as a prototype for productization.
+The repo is deliberately opinionated about the framing.
 
-## 19. Product Feed and Generated Assets
+It is not trying to build:
 
-The product feed is more than a static lookup table. It is the canonical source for:
+- a CMS for all store screens
+- a general signage scheduler
+- a store-ops communications tool
 
-- SKU targeting
-- screen creative enrichment
-- fallback product top-up
-- advertiser/brand account derivation
-- generated asset stamping
-- synthetic stock signals
+It is trying to show:
 
-The image and logo generation scripts mutate the feed by writing generated asset paths and metadata back into the JSON.
+- how store screens become monetizable supply
+- how that supply can be represented with CYield-like constructs
+- how CMax-like buying can activate against it
+- how monitoring can report delivery and business impact
 
-That means:
+That is a very different proposition.
 
-- the feed is both input data and generated-state storage
-- manifests track generation progress and failures
-- delivery automatically picks up generated assets because it prefers the feed image/logo for matching SKUs
+It keeps the center of gravity on:
 
-## 20. OpenAI-Backed Generation Jobs
+- monetizable media supply
+- advertiser demand
+- product-aware targeting
+- placement and store selection
+- retail outcome measurement
 
-The server exposes background job APIs for:
+Those are Criteo retail media problems, not generic digital signage problems.
 
-- product images
-- brand logos
+## 15. The Product Story Being Proposed
 
-Those APIs do not generate images inline inside the HTTP request. Instead they:
+If this were expressed as a clean product thesis, it would be:
 
-- validate options
-- spawn a child Node process running the relevant script
-- capture stdout/stderr into in-memory job logs
-- expose job snapshot and progress endpoints
+### 15.1 Supply thesis
 
-The scripts themselves are resumable:
+Physical in-store screens can be onboarded into CYield-like supply using familiar concepts:
 
-- they read the feed
-- read or create a manifest
-- skip existing assets unless forced
-- call the OpenAI Responses API with the image-generation tool
-- write PNGs atomically
-- update the feed and manifest atomically
+- pages
+- placements
+- formats
+- sellable share
+- delivery identity
 
-This is a sensible demo pattern because long-running generation is decoupled from request latency.
+### 15.2 Buying thesis
 
-## 21. Smoke Test
+Those screens can be bought through a retail-media-native workflow:
 
-`scripts/smoke.mjs` is the main automated verification path.
+- choose advertiser and objective
+- choose brand or SKUs
+- recommend the best store and placement mix
+- fund only the selected inventory share
 
-It checks:
+### 15.3 Monitoring thesis
 
-- health endpoint
-- workspace claim flow
-- template availability
-- sample screen delivery
-- live snapshot behavior if there is an applied plan
-- telemetry round trip through `/collect`
+The same system can then monitor:
 
-This is valuable because there are otherwise no formal unit or integration tests in the repo.
+- what ran
+- where it ran
+- how long it was seen
+- what shopper and commercial outcomes it is expected to drive
 
-## 22. Environment Variables and Operational Controls
+### 15.4 Strategic thesis
 
-Important env vars include:
+This extends the current onsite model into store rather than creating a disconnected product category.
 
-- `PORT`
-- `HOST`
-- `DB_FILE`
-- `TRACKING_BASE_URL`
-- `OPENAI_API_KEY`
-- `OPENAI_MODEL`
-- `OPENAI_BASE_URL`
-- `PRODUCT_FEED_FILE`
-- `PRODUCT_IMAGE_MANIFEST_FILE`
-- `PRODUCT_IMAGE_OUTPUT_DIR`
-- `PRODUCT_IMAGE_BASE_PATH`
-- `BRAND_LOGO_MANIFEST_FILE`
-- `BRAND_LOGO_OUTPUT_DIR`
-- `BRAND_LOGO_BASE_PATH`
-- `OPENAI_PRODUCT_IMAGE_MODEL`
-- `OPENAI_PRODUCT_IMAGE_QUALITY`
-- `OPENAI_PRODUCT_IMAGE_SIZE`
-- `OPENAI_BRAND_LOGO_MODEL`
-- `OPENAI_BRAND_LOGO_QUALITY`
-- `OPENAI_BRAND_LOGO_SIZE`
+That matters because it means:
 
-Operationally, the app is designed to be easy to run on a single host behind a reverse proxy.
+- retailer-side setup remains legible
+- advertiser buying remains legible
+- measurement remains legible
+- Criteo can position in-store screens as another retail media environment, not as a separate business with a separate operating model
 
-It is not designed for horizontally scaled, stateless multi-instance deployment without replacing the file-based DB and in-memory job state.
+## 16. Bottom Line
 
-## 23. Engineering Assessment
+The project is best understood as a prototype for a new retail media capability:
 
-### 23.1 Strengths
+- CYield-style supply setup for in-store screens
+- CMax-style buying against that supply
+- shared delivery through a central player
+- monitoring that combines live state, delivery proof, and retail outcome modeling
 
-- extremely self-contained demo
-- realistic screen-share and line-item concepts
-- good fallback path when RMJS is unavailable
-- synthetic large-scale network gives the planner something credible to work against
-- telemetry and live snapshot loop make the demo observable
-- workspace leasing is a pragmatic demo feature
-- generation jobs and manifests are resumable
+The most important idea is this:
 
-### 23.2 Main technical debt
+in-store screens do not need to sit outside the existing retail media model.
 
-- `src/server.js` is far too large for safe long-term ownership
-- `public/admin.js` is also monolithic and stateful
-- the same file mixes domain logic, API logic, and demo storytelling concerns
-- there is no schema enforcement layer beyond manual normalization
-- file-backed persistence is a bottleneck and a single-host assumption
-- the measurement board mixes observed and modeled metrics in one surface, which is fine for demoing but risky if not clearly labeled in future product work
-- the player logic is inline inside `screen.html`, which makes it harder to test and reuse
+They can be treated as another form of page-like, placement-like, product-aware supply inside the same overall system.
 
-### 23.3 Where to split first if productizing
-
-If this moved beyond demo stage, the cleanest first decomposition would be:
-
-1. `server/api/*`
-   routes only
-2. `server/domain/planning/*`
-   goal planner, scoring, budgeting, target inference
-3. `server/domain/delivery/*`
-   screen resolution, line-item rotation, product normalization
-4. `server/domain/telemetry/*`
-   event collection, aggregation, modeled measurement
-5. `server/domain/demo/*`
-   demo catalog, preset materialization, presenter metadata
-6. `server/storage/*`
-   DB and feed adapters
-7. `client/admin/*`
-   state, services, rendering
-8. `client/player/*`
-   player runtime separated from HTML shell
-
-That would preserve behavior while cutting the main maintenance risk.
-
-## 24. Bottom Line
-
-The codebase is best understood as a monolithic demo platform with four big capabilities:
-
-- model in-store screens as CYield-like supply objects
-- plan CMax-style demand against that supply
-- deliver and preview the resulting creative on a shared player URL
-- monitor the result with observed telemetry plus modeled retail outcomes
-
-The most important technical ideas are:
-
-- one shared player URL, resolved server-side to a physical screen
-- explicit screen-share inventory and managed sponsored-share line items
-- a planner that combines SKU intent, store signals, and template logic
-- a demo-friendly but clearly synthetic measurement layer
-
-If the team keeps those four ideas in mind, the rest of the repository becomes much easier to reason about.
+That is what this repo is really trying to demonstrate.
