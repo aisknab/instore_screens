@@ -740,10 +740,15 @@ const GOAL_PLANNING_THEME_KEYWORDS = {
 const DEFAULT_PRODUCT_FEED_FILE = path.resolve(process.cwd(), "data", "productFeed.json");
 const DEFAULT_PRODUCT_IMAGE_MANIFEST_FILE = path.resolve(process.cwd(), "data", "productImageManifest.json");
 const DEFAULT_PRODUCT_IMAGE_OUTPUT_DIR = path.resolve(process.cwd(), "public", "assets", "products", "generated");
+const DEFAULT_PRODUCT_IMAGE_REMOTE_ORIGIN = "https://criteoscreens.keaton.com.au";
 const DEFAULT_BRAND_LOGO_MANIFEST_FILE = path.resolve(process.cwd(), "data", "brandLogoManifest.json");
 const DEFAULT_BRAND_LOGO_OUTPUT_DIR = path.resolve(process.cwd(), "public", "assets", "brands", "generated");
 const PRODUCT_GENERATED_IMAGE_BASE_PATH =
   toTrimmedString(process.env.PRODUCT_IMAGE_BASE_PATH) || "/assets/products/generated";
+const PRODUCT_IMAGE_REMOTE_ORIGIN = normalizeUrlOrigin(
+  process.env.PRODUCT_IMAGE_REMOTE_ORIGIN,
+  DEFAULT_PRODUCT_IMAGE_REMOTE_ORIGIN
+);
 const BRAND_LOGO_BASE_PATH = toTrimmedString(process.env.BRAND_LOGO_BASE_PATH) || "/assets/brands/generated";
 const PRODUCT_FEED_FILE = resolvePathFromEnv("PRODUCT_FEED_FILE", DEFAULT_PRODUCT_FEED_FILE);
 const PRODUCT_IMAGE_MANIFEST_FILE = resolvePathFromEnv(
@@ -1032,6 +1037,7 @@ function buildProductFeedResponseItem(product = {}, { includeStockByStore = fals
     logo: normalizeBrandLogoPath(product.logo || product.brandLogo),
     productPage: product.productPage,
     image: product.image,
+    fallbackImage: product.fallbackImage,
     price: product.price,
     comparePrice: product.comparePrice,
     rating: product.rating,
@@ -1067,6 +1073,20 @@ function toTrimmedString(value) {
 function resolvePathFromEnv(envName, fallbackPath) {
   const override = toTrimmedString(process.env[envName]);
   return override ? path.resolve(override) : fallbackPath;
+}
+
+function normalizeUrlOrigin(value, fallback = "") {
+  const explicit = toTrimmedString(value);
+  const source = explicit || fallback;
+  if (!source || /^(false|none|off|0)$/i.test(source)) {
+    return "";
+  }
+  try {
+    const url = new URL(source);
+    return url.protocol === "http:" || url.protocol === "https:" ? url.origin : "";
+  } catch {
+    return "";
+  }
 }
 
 function readRequiredString(value, fieldName, maxLength = 120) {
@@ -2191,6 +2211,65 @@ function buildProductImagePathFromSku(sku) {
   return `${PRODUCT_IMAGE_BASE_PATH}/${slug}.svg`;
 }
 
+function buildGeneratedProductImagePathFromSku(sku) {
+  const slug = slugify(sku) || "product";
+  const generatedBasePath = PRODUCT_GENERATED_IMAGE_BASE_PATH.replace(/\/+$/, "");
+  return `${generatedBasePath}/${slug}.png`;
+}
+
+function isGeneratedProductImagePath(value) {
+  const image = readOptionalString(value, 500);
+  const generatedBasePath = PRODUCT_GENERATED_IMAGE_BASE_PATH.replace(/\/+$/, "");
+  return Boolean(image && (image === generatedBasePath || image.startsWith(`${generatedBasePath}/`)));
+}
+
+function preferGeneratedProductImagePath(imageValue, sku) {
+  const image = readOptionalString(imageValue, 500);
+  const normalizedSku = normalizeSku(sku);
+  if (!PRODUCT_IMAGE_REMOTE_ORIGIN || !normalizedSku || REMOTE_URL_PATTERN.test(image) || isGeneratedProductImagePath(image)) {
+    return image;
+  }
+  return buildGeneratedProductImagePathFromSku(normalizedSku);
+}
+
+function isRequestForProductImageRemoteOrigin(req) {
+  if (!PRODUCT_IMAGE_REMOTE_ORIGIN) {
+    return false;
+  }
+  try {
+    return readOptionalString(req?.headers?.host, 300).toLowerCase() === new URL(PRODUCT_IMAGE_REMOTE_ORIGIN).host.toLowerCase();
+  } catch {
+    return false;
+  }
+}
+
+function buildRemoteGeneratedProductImageUrl(requestPath = "") {
+  if (!PRODUCT_IMAGE_REMOTE_ORIGIN) {
+    return "";
+  }
+  const generatedBasePath = PRODUCT_GENERATED_IMAGE_BASE_PATH.replace(/\/+$/, "");
+  const suffix = `/${String(requestPath || "").replace(/^\/+/, "")}`;
+  try {
+    return new URL(`${generatedBasePath}${suffix}`, PRODUCT_IMAGE_REMOTE_ORIGIN).toString();
+  } catch {
+    return "";
+  }
+}
+
+function redirectMissingGeneratedProductImageToRemote(req, res, next) {
+  if ((req.method !== "GET" && req.method !== "HEAD") || isRequestForProductImageRemoteOrigin(req)) {
+    next();
+    return;
+  }
+
+  const remoteUrl = buildRemoteGeneratedProductImageUrl(req.path);
+  if (!remoteUrl) {
+    next();
+    return;
+  }
+  res.redirect(302, remoteUrl);
+}
+
 function buildCategoryFallbackImagePath(category) {
   const slug = slugify(category) || "general";
   return `${PRODUCT_IMAGE_BASE_PATH}/category-${slug}.svg`;
@@ -2200,12 +2279,8 @@ function hasDemoSkuImage(sku) {
   return DEMO_SKU_IMAGE_PREFIXES.some((prefix) => sku.startsWith(prefix));
 }
 
-function resolveProductImagePath(
-  imageValue,
-  { sku = "", category = "", location = "", templateId = "fullscreen-banner" } = {}
-) {
+function buildProductFallbackImagePath({ sku = "", category = "", location = "", templateId = "fullscreen-banner" } = {}) {
   const template = getTemplatePreset(templateId);
-  const explicitImage = readOptionalString(imageValue, 500);
   const normalizedSku = normalizeSku(sku);
   const normalizedCategory = slugify(category || location || "");
   const skuFallback =
@@ -2214,16 +2289,21 @@ function resolveProductImagePath(
     normalizedCategory && DEMO_CATEGORY_IMAGE_FALLBACKS.has(normalizedCategory)
       ? buildCategoryFallbackImagePath(normalizedCategory)
       : "";
-  const fallbackImage = skuFallback || categoryFallback || template.defaultImage;
+  return skuFallback || categoryFallback || template.defaultImage;
+}
+
+function resolveProductImagePath(
+  imageValue,
+  { sku = "", category = "", location = "", templateId = "fullscreen-banner" } = {}
+) {
+  const explicitImage = readOptionalString(imageValue, 500);
+  const fallbackImage = buildProductFallbackImagePath({ sku, category, location, templateId });
 
   if (!explicitImage) {
     return fallbackImage;
   }
-  if (explicitImage.startsWith("/assets/")) {
+  if (explicitImage.startsWith("/assets/") || REMOTE_URL_PATTERN.test(explicitImage)) {
     return explicitImage;
-  }
-  if (REMOTE_URL_PATTERN.test(explicitImage)) {
-    return fallbackImage;
   }
   return explicitImage;
 }
@@ -2238,7 +2318,13 @@ function normalizeProductFeedItem(rawProduct, index, { includeStockByStore = fal
   const productPage =
     readOptionalString(product.productPage || product.ProductPage, 500) ||
     `https://store.example.com/products/${slugify(sku) || `sku-${index + 1}`}`;
-  const imageInput = readOptionalString(product.image || product.Image, 500);
+  const imageInput = preferGeneratedProductImagePath(product.image || product.Image, sku);
+  const fallbackImage = buildProductFallbackImagePath({
+    sku,
+    category,
+    location: category,
+    templateId: "fullscreen-banner"
+  });
   const image = resolveProductImagePath(imageInput, {
     sku,
     category,
@@ -2260,6 +2346,7 @@ function normalizeProductFeedItem(rawProduct, index, { includeStockByStore = fal
     logo,
     productPage,
     image,
+    fallbackImage,
     price,
     comparePrice,
     rating,
@@ -7326,6 +7413,7 @@ const __dirname = path.dirname(__filename);
 
 app.use(express.json({ limit: "1mb" }));
 app.use(PRODUCT_GENERATED_IMAGE_BASE_PATH, express.static(PRODUCT_IMAGE_OUTPUT_DIR));
+app.use(PRODUCT_GENERATED_IMAGE_BASE_PATH, redirectMissingGeneratedProductImageToRemote);
 app.use(BRAND_LOGO_BASE_PATH, express.static(BRAND_LOGO_OUTPUT_DIR));
 app.use(express.static(path.resolve(__dirname, "../public")));
 

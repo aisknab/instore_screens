@@ -23,6 +23,18 @@
             The shared player will load inside a proportionate device frame so the ad can be judged as signage, not as a browser tab. Live feed of the screen: when you see it, customers are seeing it.
           </p>
           <dl id="previewSpecs" class="preview-panel__specs"></dl>
+          <section id="adCallPanel" class="preview-panel__adcall" aria-live="polite">
+            <div class="preview-panel__adcall-head">
+              <span>Ad call proof</span>
+              <strong id="adCallStatus">Waiting for request</strong>
+            </div>
+            <code id="adCallEndpoint" class="preview-panel__adcall-endpoint">/api/screen-ad</code>
+            <div id="adCallMeta" class="preview-panel__adcall-meta"></div>
+            <details class="preview-panel__adcall-payload" open>
+              <summary>RMJS payload excerpt</summary>
+              <pre id="adCallPayload">{}</pre>
+            </details>
+          </section>
         </aside>
 
         <section id="previewStage" class="preview-stage" aria-label="Retail screen preview stage">
@@ -139,7 +151,23 @@
       const previewHeading = document.getElementById("previewHeading");
       const previewNarrative = document.getElementById("previewNarrative");
       const previewSpecs = document.getElementById("previewSpecs");
+      const adCallPanel = document.getElementById("adCallPanel");
+      const adCallStatus = document.getElementById("adCallStatus");
+      const adCallEndpoint = document.getElementById("adCallEndpoint");
+      const adCallMeta = document.getElementById("adCallMeta");
+      const adCallPayload = document.getElementById("adCallPayload");
       const livePreviewNarrative = "Live feed of the screen: when you see it, customers are seeing it.";
+      const AD_CALL_REQUIRED_PRODUCT_FIELDS = [
+        "ProductId",
+        "ProductName",
+        "ProductPage",
+        "Image",
+        "Price",
+        "ClientAdvertiserId",
+        "adid",
+        "OnLoadBeacon",
+        "OnViewBeacon"
+      ];
 
       document.body.classList.toggle("body--showcase", isShowcaseMode);
       document.body.dataset.scene = "sales-floor";
@@ -1352,6 +1380,195 @@
           .join("");
       }
 
+      function absoluteRequestUrl(value) {
+        const raw = readText(value);
+        if (!raw) {
+          return "";
+        }
+        try {
+          return new URL(raw, window.location.href).toString();
+        } catch {
+          return raw;
+        }
+      }
+
+      function formatRequestDuration(value) {
+        const parsed = Number(value);
+        if (!Number.isFinite(parsed) || parsed < 0) {
+          return "";
+        }
+        if (parsed < 1000) {
+          return `${Math.round(parsed)}ms`;
+        }
+        return `${(parsed / 1000).toFixed(1)}s`;
+      }
+
+      function formatPanelTimestamp(value = new Date()) {
+        try {
+          return new Intl.DateTimeFormat("en-US", {
+            hour: "numeric",
+            minute: "2-digit",
+            second: "2-digit"
+          }).format(value);
+        } catch {
+          return "";
+        }
+      }
+
+      function pickObjectFields(source, fields) {
+        const entry = source && typeof source === "object" ? source : {};
+        return fields.reduce((picked, field) => {
+          const value = entry[field];
+          if (value !== undefined && value !== null && value !== "") {
+            picked[field] = value;
+          }
+          return picked;
+        }, {});
+      }
+
+      function countPresentProductFields(product) {
+        const entry = product && typeof product === "object" ? product : {};
+        return AD_CALL_REQUIRED_PRODUCT_FIELDS.filter((field) => {
+          const value = entry[field];
+          if (typeof value === "number") {
+            return Number.isFinite(value);
+          }
+          return value !== undefined && value !== null && readText(String(value)) !== "";
+        }).length;
+      }
+
+      function buildRmjsPayloadExcerpt(data = {}) {
+        const settings = data.settings && typeof data.settings === "object" ? data.settings : {};
+        const products = Array.isArray(data.products) ? data.products : [];
+        const firstProduct = products[0] && typeof products[0] === "object" ? products[0] : {};
+        return {
+          Status: "OK",
+          Placements: [
+            {
+              Format: readText(data.format),
+              Products: [
+                pickObjectFields(firstProduct, AD_CALL_REQUIRED_PRODUCT_FIELDS)
+              ],
+              RenderingSettings: pickObjectFields(settings, [
+                "templateId",
+                "templateName",
+                "screenId",
+                "storeId",
+                "pageId",
+                "lineItemId",
+                "goalPlanId",
+                "goalAdvertiserId",
+                "deliveryShareLabel",
+                "sharedPlayerUrl",
+                "resolverId",
+                "resolvedBy",
+                "requestViewport",
+                "requestOrientation"
+              ])
+            }
+          ],
+          InjectionPoint: "#ad-canvas",
+          Environment: "instore"
+        };
+      }
+
+      function buildAdCallMetaMarkup(items = []) {
+        return items
+          .filter((entry) => readText(entry?.label) && readText(entry?.value))
+          .map(
+            (entry) => `
+              <div class="preview-panel__adcall-meta-item">
+                <span>${escapeHtml(entry.label)}</span>
+                <strong>${escapeHtml(entry.value)}</strong>
+              </div>
+            `
+          )
+          .join("");
+      }
+
+      function updateAdCallPanel(state = {}) {
+        if (!adCallPanel) {
+          return;
+        }
+
+        const requestState = readText(state.state) || "idle";
+        const requestUrl = absoluteRequestUrl(state.requestUrl || buildScreenAdUrl());
+        const payload = state.payload && typeof state.payload === "object" ? state.payload : null;
+        const settings = payload?.settings && typeof payload.settings === "object" ? payload.settings : {};
+        const products = Array.isArray(payload?.products) ? payload.products : [];
+        const firstProduct = products[0] && typeof products[0] === "object" ? products[0] : {};
+        const durationText = formatRequestDuration(state.durationMs);
+        const statusCode = Number(state.statusCode);
+        const statusText = readText(state.statusText);
+        const presentFields = countPresentProductFields(firstProduct);
+        const productFieldText = products.length > 0
+          ? `${presentFields}/${AD_CALL_REQUIRED_PRODUCT_FIELDS.length} first-product keys`
+          : "No products";
+
+        adCallPanel.dataset.state = requestState;
+        adCallEndpoint.textContent = requestUrl || "/api/screen-ad";
+
+        if (requestState === "loading") {
+          adCallStatus.textContent = "Requesting live ad";
+        } else if (requestState === "error") {
+          adCallStatus.textContent = statusCode ? `${statusCode} failed` : "Request failed";
+        } else if (requestState === "success") {
+          adCallStatus.textContent = `${statusCode || 200} ${statusText || "OK"}${durationText ? ` in ${durationText}` : ""}`;
+        } else {
+          adCallStatus.textContent = "Waiting for request";
+        }
+
+        const metaItems = requestState === "error"
+          ? [
+              { label: "Method", value: "GET" },
+              { label: "Status", value: statusCode ? `${statusCode} ${statusText || "Error"}` : readText(state.errorMessage) || "Network error" },
+              { label: "Checked", value: formatPanelTimestamp() }
+            ]
+          : [
+              { label: "Method", value: "GET" },
+              { label: "Renderer", value: readText(state.renderer) || (rmjsAvailable ? "RMJS" : "Native fallback") },
+              { label: "Screen", value: readText(settings.screenId) || currentResolvedScreenId || screenIdOverride || deviceId },
+              { label: "Line item", value: readText(settings.lineItemId) },
+              { label: "Format", value: readText(payload?.format) },
+              { label: "Products", value: products.length ? `${products.length} returned` : "" },
+              { label: "RMJS fields", value: productFieldText },
+              { label: "Beacons", value: readText(firstProduct.OnLoadBeacon) && readText(firstProduct.OnViewBeacon) ? "play + exposure" : "" },
+              { label: "Resolver", value: readText(settings.resolvedBy) },
+              { label: "Checked", value: requestState === "success" ? formatPanelTimestamp() : "" }
+            ];
+        adCallMeta.innerHTML = buildAdCallMetaMarkup(metaItems);
+
+        if (requestState === "error") {
+          adCallPayload.textContent = JSON.stringify(
+            {
+              request: {
+                method: "GET",
+                url: requestUrl
+              },
+              error: readText(state.errorMessage) || statusText || "Request failed"
+            },
+            null,
+            2
+          );
+          return;
+        }
+
+        if (payload) {
+          adCallPayload.textContent = JSON.stringify(buildRmjsPayloadExcerpt(payload), null, 2);
+        } else {
+          adCallPayload.textContent = JSON.stringify(
+            {
+              request: {
+                method: "GET",
+                url: requestUrl
+              }
+            },
+            null,
+            2
+          );
+        }
+      }
+
       function updatePreviewShell(settings = {}, product = {}, errorMessage = "") {
         if (!isShowcaseMode || !previewDevice || !previewSpecs) {
           return;
@@ -1649,17 +1866,28 @@
       }
 
       async function loadAndRenderAd() {
+        let requestUrl = "";
+        let requestStartedAt = 0;
         try {
           flushActiveExposure("screen-refresh");
           setStatus(`Loading ${getRequestLabel()}...`);
+          requestUrl = buildScreenAdUrl();
+          updateAdCallPanel({ state: "loading", requestUrl });
           if (!rmjsChecked || rmjsMode === "on") {
             await ensureRmjsReady();
           }
-          const response = await fetch(buildScreenAdUrl(), {
+          requestStartedAt = performance.now();
+          const response = await fetch(requestUrl, {
             cache: "no-store"
           });
+          const durationMs = performance.now() - requestStartedAt;
           if (!response.ok) {
-            throw new Error(await readResponseError(response));
+            const message = await readResponseError(response);
+            const responseError = new Error(message);
+            responseError.adCallStatusCode = response.status;
+            responseError.adCallStatusText = response.statusText;
+            responseError.adCallDurationMs = durationMs;
+            throw responseError;
           }
 
           const payload = await response.json();
@@ -1669,6 +1897,15 @@
           if (!renderedByRmjs) {
             renderFallback(payload);
           }
+          updateAdCallPanel({
+            state: "success",
+            requestUrl,
+            statusCode: response.status,
+            statusText: response.statusText,
+            durationMs,
+            payload,
+            renderer: renderedByRmjs ? "RMJS" : "Native fallback"
+          });
 
           const refreshInterval = Number(payload.settings?.refreshInterval) || 30000;
           scheduleRefresh(refreshInterval);
@@ -1682,6 +1919,17 @@
             )}s refresh`
           );
         } catch (error) {
+          const durationMs = Number.isFinite(Number(error?.adCallDurationMs))
+            ? Number(error.adCallDurationMs)
+            : requestStartedAt ? performance.now() - requestStartedAt : 0;
+          updateAdCallPanel({
+            state: "error",
+            requestUrl: requestUrl || buildScreenAdUrl(),
+            statusCode: error?.adCallStatusCode,
+            statusText: error?.adCallStatusText,
+            durationMs,
+            errorMessage: String(error.message || "Unknown error")
+          });
           clearFallbackLoop();
           flushActiveExposure("load-failed");
           setStatus("Load failed | retrying");
@@ -1722,6 +1970,7 @@
       }
 
       seedPreviewShell();
+      updateAdCallPanel({ state: "idle", requestUrl: buildScreenAdUrl() });
       window.addEventListener("resize", syncAdCanvasLayout);
       window.addEventListener("load", loadAndRenderAd);
       window.addEventListener("beforeunload", () => {

@@ -101,6 +101,8 @@ Environment=PRODUCT_IMAGE_BASE_PATH=/assets/products/generated
 
 The server will still serve those external PNGs at `/assets/products/generated/...`.
 
+For local development, missing generated product images fall back to the generated assets on `https://criteoscreens.keaton.com.au`. Override or disable that with `PRODUCT_IMAGE_REMOTE_ORIGIN` (`false`, `none`, `off`, or `0` disables it).
+
 Typical run:
 
 ```bash
@@ -501,7 +503,7 @@ Response shape:
 
 - `GET /api/screen-ad` rotates through active line items per screen across calls.
 - RMJS payload includes all required product fields even when defaults are used.
-- Product images are normalized to local demo assets when remote URLs are present, to avoid broken visuals in restricted networks.
+- Product feed image URLs are preserved when provided; local demo assets are still used when an item has no image, and the admin UI falls back cleanly if a thumbnail URL fails.
 - If a screen product SKU exists in `data/productFeed.json`, the screen delivery payload prefers the feed's current image path for that SKU.
 - Looping templates are topped up from product feed at runtime when a screen is under-configured (so carousel/menu demos still rotate).
 - If `rm.js` fails to load (for example DNS/network restrictions), fallback renderer still shows full template behavior.
@@ -522,6 +524,7 @@ Response shape:
 - Set `OPENAI_BRAND_LOGO_MODEL` to override the brand logo generator model alias. It defaults to `gpt-5.4`.
 - Set `OPENAI_BRAND_LOGO_QUALITY` and `OPENAI_BRAND_LOGO_SIZE` when you want to tune batch logo output.
 - Set `PRODUCT_FEED_FILE`, `PRODUCT_IMAGE_MANIFEST_FILE`, and `PRODUCT_IMAGE_OUTPUT_DIR` to move generated image state out of the git checkout.
+- Set `PRODUCT_IMAGE_REMOTE_ORIGIN` if localhost should use generated product images hosted by another environment; set it to `false` to force local-only assets.
 - Set `BRAND_LOGO_MANIFEST_FILE` and `BRAND_LOGO_OUTPUT_DIR` to move generated brand-logo state out of the git checkout.
 - Keep `PRODUCT_IMAGE_BASE_PATH` as `/assets/products/generated` unless you intentionally want a different public URL.
 - Keep `BRAND_LOGO_BASE_PATH` as `/assets/brands/generated` unless you intentionally want a different public URL.

@@ -95,6 +95,11 @@ function shortList(values, max = 4) {
   return `${items.join(", ")}, +${values.length - max} more`;
 }
 
+function isSupportedProductImage(value) {
+  const image = String(value || "").trim();
+  return image.startsWith("/assets/products/") || /^https?:\/\//i.test(image);
+}
+
 function buildScreenSmokeSample(screens, max = 8) {
   const source = Array.isArray(screens) ? screens : [];
   if (source.length <= max) {
@@ -171,7 +176,7 @@ async function checkScreenDelivery(screens) {
       assert(Boolean(templateId), `No template id returned for ${screen.screenId}`);
       assert(Boolean(String(ad.format || "").trim()), `No format returned for ${screen.screenId}`);
       assert(products.length > 0, `No products returned for ${screen.screenId}`);
-      assert(firstImage.startsWith("/assets/products/"), `Non-local image on ${screen.screenId}: ${firstImage}`);
+      assert(isSupportedProductImage(firstImage), `Unsupported image on ${screen.screenId}: ${firstImage}`);
 
       if (templateId === "carousel-banner" || templateId === "menu-loop") {
         assert(
@@ -180,9 +185,11 @@ async function checkScreenDelivery(screens) {
         );
       }
 
-      // Confirm image path actually resolves from static assets.
-      const imageResponse = await fetch(`${BASE_URL}${firstImage}`);
-      assert(imageResponse.ok, `Image path failed for ${screen.screenId}: ${firstImage}`);
+      // Confirm local image paths actually resolve from static assets.
+      if (firstImage.startsWith("/assets/products/")) {
+        const imageResponse = await fetch(`${BASE_URL}${firstImage}`);
+        assert(imageResponse.ok, `Image path failed for ${screen.screenId}: ${firstImage}`);
+      }
 
       results.push({
         screenId: screen.screenId,
@@ -230,10 +237,7 @@ async function checkLiveSnapshots() {
     for (const product of products) {
       const image = String(product.image || "").trim();
       assert(Boolean(image), `Live product missing image on ${liveScreen.screenId}`);
-      assert(
-        image.startsWith("/assets/products/"),
-        `Live product uses non-local image on ${liveScreen.screenId}: ${image}`
-      );
+      assert(isSupportedProductImage(image), `Live product uses unsupported image on ${liveScreen.screenId}: ${image}`);
     }
   }
 

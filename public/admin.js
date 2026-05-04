@@ -2317,6 +2317,10 @@ function getProductDisplayImage(product = {}) {
   return readTextValue(product?.image || product?.Image);
 }
 
+function getProductDisplayFallbackImage(product = {}) {
+  return readTextValue(product?.fallbackImage || product?.FallbackImage);
+}
+
 function buildProductThumbMarkup(product = {}, { className = "product-thumb", alt = "" } = {}) {
   const label =
     readTextValue(alt) ||
@@ -2324,16 +2328,44 @@ function buildProductThumbMarkup(product = {}, { className = "product-thumb", al
     normalizeSku(product?.sku || product?.ProductId || product?.productId) ||
     "Product";
   const image = getProductDisplayImage(product);
+  const fallbackImage = getProductDisplayFallbackImage(product);
   const fallbackLabel = normalizeSku(product?.sku || product?.ProductId || product?.productId) || label;
   const fallbackText = fallbackLabel.slice(0, 4) || "SKU";
 
   if (image) {
-    return `<span class="${escapeHtml(className)}"><img src="${escapeHtml(image)}" alt="${escapeHtml(label)}" loading="lazy"></span>`;
+    const fallbackAttribute = fallbackImage && fallbackImage !== image ? ` data-fallback-src="${escapeHtml(fallbackImage)}"` : "";
+    return `<span class="${escapeHtml(className)}"><img class="product-thumb__image js-product-thumb-image" src="${escapeHtml(
+      image
+    )}" alt="${escapeHtml(label)}" loading="lazy" data-fallback-text="${escapeHtml(
+      fallbackText
+    )}"${fallbackAttribute}></span>`;
   }
 
   return `<span class="${escapeHtml(`${className} product-thumb--fallback`)}" aria-hidden="true">${escapeHtml(
     fallbackText
   )}</span>`;
+}
+
+function handleProductThumbImageError(event) {
+  const image = event.target;
+  if (!(image instanceof HTMLImageElement) || !image.classList.contains("js-product-thumb-image")) {
+    return;
+  }
+
+  const fallbackSrc = readTextValue(image.dataset.fallbackSrc);
+  const currentSrc = image.getAttribute("src") || "";
+  if (fallbackSrc && image.dataset.fallbackAttempted !== "true" && fallbackSrc !== currentSrc) {
+    image.dataset.fallbackAttempted = "true";
+    image.src = fallbackSrc;
+    return;
+  }
+
+  const thumb = image.closest(".product-thumb");
+  if (!thumb) {
+    return;
+  }
+  thumb.classList.add("product-thumb--fallback");
+  thumb.textContent = readTextValue(image.dataset.fallbackText) || "SKU";
 }
 
 function getProductsForSkuList(skus = [], fallbackProducts = []) {
@@ -8608,6 +8640,7 @@ function continueToBuying() {
 }
 
 function wireEvents() {
+  document.addEventListener("error", handleProductThumbImageError, true);
   const handleWorkspaceActivity = () => {
     registerWorkspaceActivity();
   };
