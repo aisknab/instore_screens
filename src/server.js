@@ -222,6 +222,9 @@ const DEMO_STORE_ID_SET = new Set(DEMO_STORE_IDS);
 const LEGACY_DEMO_STORE_ID_SET = new Set(LEGACY_DEMO_STORE_IDS);
 const DEFAULT_REFRESH_INTERVAL = 30000;
 const DEFAULT_TRACKING_BASE_URL = "/collect";
+const DEFAULT_DEMO_CRITEO_PARTNER_ID = "108341";
+const DEFAULT_DISPLAY_IMPLEMENTATION = "S2SAPI";
+const DEFAULT_DISPLAY_ENVIRONMENT = "instore";
 const SCREEN_SHARE_SLOT_COUNT = 6;
 const DEFAULT_SELLABLE_SHARE_SLOTS = 1;
 const SCREEN_SHARE_SLOT_MAX = 12;
@@ -1106,6 +1109,22 @@ function readOptionalString(value, maxLength = 500) {
     return "";
   }
   return parsed.slice(0, maxLength);
+}
+
+function readFirstQueryParam(req, name, maxLength = 120) {
+  const raw = req?.query?.[name];
+  const value = Array.isArray(raw) ? raw[0] : raw;
+  return readOptionalString(value, maxLength);
+}
+
+function readAnyQueryParam(req, names = [], maxLength = 120) {
+  for (const name of names) {
+    const value = readFirstQueryParam(req, name, maxLength);
+    if (value) {
+      return value;
+    }
+  }
+  return "";
 }
 
 function readBoolean(value, defaultValue = false) {
@@ -2035,6 +2054,10 @@ function buildScreenRequestContext(req) {
   const orientation =
     readOptionalString(req.query.orientation || req.get("x-screen-orientation"), 20).toLowerCase() ||
     viewport.orientation;
+  const placementId = readAnyQueryParam(req, ["placement-id", "placementId"], 120).toLowerCase();
+  const deliveryPageId = readAnyQueryParam(req, ["page-id", "pageId"], 120).toLowerCase();
+  const deliveryEventType = readAnyQueryParam(req, ["event-type", "eventType"], 80).toLowerCase();
+  const regionId = readAnyQueryParam(req, ["regionId", "storeId"], 80).toLowerCase();
 
   return {
     userAgent,
@@ -2043,7 +2066,11 @@ function buildScreenRequestContext(req) {
     viewport,
     orientation,
     explicitResolverId,
-    deviceProfile
+    deviceProfile,
+    placementId,
+    deliveryPageId,
+    deliveryEventType,
+    regionId
   };
 }
 
@@ -2051,11 +2078,44 @@ function scoreScreenForRequest(screen, context) {
   const hints = getScreenDeviceHints(screen);
   const normalizedScreenId = readOptionalString(screen.screenId, 80).toLowerCase();
   const resolverId = readOptionalString(hints.resolverId, 120).toLowerCase();
+  const screenStoreId = readOptionalString(screen.storeId, 80).toLowerCase();
+  const screenPageId = readOptionalString(screen.pageId, 80).toLowerCase();
   let score = 0;
   let resolvedBy = "shared-url fallback";
 
   if (context.explicitResolverId && (context.explicitResolverId === resolverId || context.explicitResolverId === normalizedScreenId)) {
     return { score: 100, resolvedBy: "resolver id", hints };
+  }
+
+  if (context.placementId && (context.placementId === normalizedScreenId || context.placementId === resolverId)) {
+    return { score: 95, resolvedBy: "placement-id", hints };
+  }
+
+  if (context.regionId && screenStoreId && context.regionId === screenStoreId) {
+    score += 20;
+    resolvedBy = "regionId";
+  }
+
+  if (context.deliveryPageId) {
+    const normalizedDeliveryPageId = slugify(context.deliveryPageId);
+    if (screenPageId && context.deliveryPageId === screenPageId) {
+      score += 14;
+      resolvedBy = "page-id";
+    } else if (hints.pageToken && normalizedDeliveryPageId.includes(hints.pageToken)) {
+      score += 10;
+      resolvedBy = "page-id";
+    }
+  }
+
+  if (context.placementId) {
+    if (hints.locationToken && context.placementId.includes(hints.locationToken)) {
+      score += 8;
+      resolvedBy = "placement-id";
+    }
+    if (hints.pageToken && context.placementId.includes(hints.pageToken)) {
+      score += 6;
+      resolvedBy = "placement-id";
+    }
   }
 
   if (context.deviceProfile) {
@@ -2111,9 +2171,10 @@ function scoreScreenForRequest(screen, context) {
 }
 
 function resolveScreenRequest(db, req) {
-  const explicitScreenId = readOptionalString(req.query.screenId, 80);
+  const screens = Array.isArray(db.screens) ? db.screens : [];
+  const explicitScreenId = readAnyQueryParam(req, ["screenId"], 80);
   if (explicitScreenId) {
-    const screen = (db.screens || []).find((entry) => entry.screenId === explicitScreenId);
+    const screen = screens.find((entry) => entry.screenId === explicitScreenId);
     if (!screen) {
       throw new HttpError(404, `Screen ${explicitScreenId} was not found.`);
     }
@@ -2124,7 +2185,23 @@ function resolveScreenRequest(db, req) {
     };
   }
 
-  const screens = Array.isArray(db.screens) ? db.screens : [];
+  const explicitPlacementId = readAnyQueryParam(req, ["placement-id", "placementId"], 120);
+  if (explicitPlacementId) {
+    const normalizedPlacementId = explicitPlacementId.toLowerCase();
+    const screen = screens.find((entry) => {
+      const screenId = readOptionalString(entry?.screenId, 80).toLowerCase();
+      const resolverId = readOptionalString(getScreenDeviceHints(entry).resolverId, 120).toLowerCase();
+      return normalizedPlacementId === screenId || normalizedPlacementId === resolverId;
+    });
+    if (screen) {
+      return {
+        screen,
+        resolvedBy: "placement-id",
+        requestContext: buildScreenRequestContext(req)
+      };
+    }
+  }
+
   if (screens.length === 0) {
     throw new HttpError(404, "No screens are configured yet.");
   }
@@ -2149,7 +2226,7 @@ function resolveScreenRequest(db, req) {
 
   const topScore = Number(best.score || 0);
   const tiedMatches = scored.filter((entry) => Number(entry.score || 0) === topScore);
-  if (!context.explicitResolverId) {
+  if (!context.explicitResolverId && !context.placementId && !context.regionId && !context.deliveryPageId) {
     if (topScore <= 0) {
       throw new HttpError(
         409,
@@ -6394,8 +6471,15 @@ function normalizeProductForDelivery(rawProduct, { screenId, lineItemId, index, 
       readOptionalString(product.ClientAdvertiserId, 120) ||
       readOptionalString(product.clientAdvertiserId, 120) ||
       "demo-advertiser",
+    AdvertiserId:
+      readOptionalString(product.AdvertiserId, 120) ||
+      readOptionalString(product.advertiserId, 120) ||
+      readOptionalString(product.ClientAdvertiserId, 120) ||
+      readOptionalString(product.clientAdvertiserId, 120) ||
+      "demo-advertiser",
     advertiserId:
       readOptionalString(product.advertiserId, 120) ||
+      readOptionalString(product.AdvertiserId, 120) ||
       readOptionalString(product.ClientAdvertiserId, 120) ||
       readOptionalString(product.clientAdvertiserId, 120) ||
       "demo-advertiser",
@@ -6408,12 +6492,226 @@ function normalizeProductForDelivery(rawProduct, { screenId, lineItemId, index, 
     ),
     OnLoadBeacon: buildBeaconUrl("play", screenId, adid, trackingBaseUrl),
     OnViewBeacon: buildBeaconUrl("exposure", screenId, adid, trackingBaseUrl),
-    OnClickBeacon: readOptionalString(product.OnClickBeacon, 500),
+    OnClickBeacon: readOptionalString(product.OnClickBeacon, 500) || buildBeaconUrl("click", screenId, adid, trackingBaseUrl),
     OnBasketChangeBeacon: readOptionalString(product.OnBasketChangeBeacon, 500),
     OnWishlistBeacon: readOptionalString(product.OnWishlistBeacon, 500)
   };
 }
 
+function buildCriteoDisplayFormat(templateId, productCount = 0) {
+  switch (templateId) {
+    case "carousel-banner":
+    case "menu-loop":
+      return "CDGS";
+    case "shelf-spotlight":
+      return productCount > 1 ? "CDGS" : "CDGD";
+    case "fullscreen-banner":
+    case "fullscreen-hero":
+    case "kiosk-interactive":
+    default:
+      return "CDS";
+  }
+}
+
+function mapScreenPageTypeToCriteoEventType(page = {}, screen = {}) {
+  const pageType = readOptionalString(page?.pageType, 80).toLowerCase();
+  const location = readOptionalString(screen?.location, 80).toLowerCase();
+  const screenType = readOptionalString(screen?.screenType, 80).toLowerCase();
+  const combined = `${pageType} ${location} ${screenType}`;
+
+  if (/confirmation|order|transaction/.test(combined)) {
+    return "trackTransaction";
+  }
+  if (/checkout|basket|cart/.test(combined)) {
+    return "viewBasket";
+  }
+  if (/product/.test(combined)) {
+    return "viewItem";
+  }
+  if (/search/.test(combined)) {
+    return "viewSearchResult";
+  }
+  if (/home|entrance/.test(combined)) {
+    return "viewHome";
+  }
+  return "viewCategory";
+}
+
+function buildCriteoDeliveryPageId(eventType) {
+  return `${eventType}_API_instore`;
+}
+
+function readCriteoRequestEventType(req, page, screen) {
+  return readAnyQueryParam(req, ["event-type", "eventType"], 80) || mapScreenPageTypeToCriteoEventType(page, screen);
+}
+
+function readCriteoRequestPageId(req, eventType) {
+  return readAnyQueryParam(req, ["page-id", "pageId"], 120) || buildCriteoDeliveryPageId(eventType);
+}
+
+function readCriteoPlacementId(req, screen) {
+  return readAnyQueryParam(req, ["placement-id", "placementId"], 120) || readOptionalString(screen?.screenId, 120);
+}
+
+function buildCriteoDisplayRendering({ products = [], template, screen }) {
+  const product = products[0] && typeof products[0] === "object" ? products[0] : {};
+  const attributes = parseJsonObject(product.RenderingAttributes ?? product.renderingAttributes);
+  const image =
+    readOptionalString(attributes.background_image, 500) ||
+    readOptionalString(attributes.desktop_background_image, 500) ||
+    readOptionalString(product.Image, 500) ||
+    readOptionalString(template?.defaultImage, 500);
+  const mobileImage =
+    readOptionalString(attributes.mobile_background_image, 500) ||
+    readOptionalString(attributes.background_image, 500) ||
+    image;
+  const productName = readOptionalString(product.ProductName, 120) || readOptionalString(template?.name, 120) || "In-store offer";
+  const ctaText =
+    readOptionalString(attributes.cta_text, 20) ||
+    readOptionalString(attributes.cta, 20) ||
+    readOptionalString(template?.defaultCta, 20) ||
+    "Shop now";
+  const legalText =
+    readOptionalString(attributes.legal_text, 90) ||
+    readOptionalString(attributes.legal, 90) ||
+    readOptionalString(template?.defaultLegal, 90) ||
+    "Terms apply.";
+  const moreInfoText =
+    readOptionalString(attributes.more_info_text, 180) ||
+    readOptionalString(attributes.subcopy, 180) ||
+    readOptionalString(template?.defaultSubcopy, 180) ||
+    "Available in this store.";
+
+  return {
+    background_image: image,
+    background_image_alt_text: readOptionalString(attributes.background_image_alt_text, 120) || productName,
+    mobile_background_image: mobileImage,
+    mobile_background_image_alt_text: readOptionalString(attributes.mobile_background_image_alt_text, 120) || productName,
+    redirect_url: readOptionalString(attributes.redirect_url, 500) || readOptionalString(product.ProductPage, 500),
+    redirect_target: readOptionalString(attributes.redirect_target, 20) || "_self",
+    redirect_url_app:
+      readOptionalString(attributes.redirect_url_app, 500) ||
+      `instore://screen/${encodeURIComponent(readOptionalString(screen?.screenId, 120))}/product/${encodeURIComponent(
+        readOptionalString(product.ProductId, 120)
+      )}`,
+    cta_text: ctaText,
+    cta_text_color: readOptionalString(attributes.cta_text_color, 20) || "#FFFFFF",
+    cta_color: readOptionalString(attributes.cta_color, 20) || "#1F6FEB",
+    legal_text: legalText,
+    more_info_text: moreInfoText,
+    color_mode: readOptionalString(attributes.color_mode, 20) || "darkcommand"
+  };
+}
+
+function buildCriteoProductsOrder(products = []) {
+  const productIds = products.map((product) => readOptionalString(product?.ProductId, 120)).filter(Boolean);
+  return productIds.length > 0 ? [{ products: productIds, isMandatory: false }] : [];
+}
+
+function buildCriteoDeliveryParameters(req, { screen, products, eventType, pageId, placementId }) {
+  const parameters = {
+    "criteo-partner-id":
+      readAnyQueryParam(req, ["criteo-partner-id", "criteoPartnerId"], 40) ||
+      readOptionalString(process.env.CRITEO_PARTNER_ID, 40) ||
+      DEFAULT_DEMO_CRITEO_PARTNER_ID,
+    environment: readAnyQueryParam(req, ["environment"], 40) || DEFAULT_DISPLAY_ENVIRONMENT,
+    "retailer-visitor-id":
+      readAnyQueryParam(req, ["retailer-visitor-id", "retailerVisitorId"], 120) ||
+      `instore-${slugify(screen?.storeId)}-${slugify(screen?.screenId)}`,
+    "page-id": pageId,
+    "event-type": eventType,
+    "placement-id": placementId,
+    regionId: readAnyQueryParam(req, ["regionId", "storeId"], 80) || readOptionalString(screen?.storeId, 80),
+    implementation: readAnyQueryParam(req, ["implementation"], 40) || DEFAULT_DISPLAY_IMPLEMENTATION,
+    verbosity: readAnyQueryParam(req, ["verbosity"], 20) || "full"
+  };
+
+  for (const name of [
+    "customer-id",
+    "email",
+    "nocall",
+    "gdpr",
+    "gdpr_consent",
+    "block",
+    "keywords",
+    "item",
+    "parent-item",
+    "category",
+    "filters",
+    "page-number",
+    "list-size"
+  ]) {
+    const value = readFirstQueryParam(req, name, 500);
+    if (value) {
+      parameters[name] = value;
+    }
+  }
+
+  if (eventType === "viewCategory" && !parameters.category) {
+    parameters.category = readOptionalString(screen?.location, 80) || readOptionalString(screen?.pageId, 80);
+  }
+  if ((eventType === "viewSearchResult" || eventType === "viewSearchResultApi") && !parameters.keywords) {
+    parameters.keywords = readOptionalString(screen?.location, 80) || "in-store";
+  }
+  if (!parameters["list-size"] && Array.isArray(products) && products.length > 0) {
+    parameters["list-size"] = String(products.length);
+  }
+
+  return parameters;
+}
+
+function buildCriteoAdCallMetadata(req, options) {
+  const parameters = buildCriteoDeliveryParameters(req, options);
+  return {
+    method: "GET",
+    endpoint: readOptionalString(process.env.CRITEO_DELIVERY_ENDPOINT, 500) || "https://d.as.criteo.com/delivery/retailmedia",
+    localEndpoint: "/api/screen-ad",
+    parameters,
+    headers: {
+      Referer: readOptionalString(req.get("referer"), 500) || "https://instore.demo.local/screen.html",
+      "X-Forwarded-For": readOptionalString(req.get("x-forwarded-for"), 120) || readOptionalString(req.ip, 120) || "127.0.0.1",
+      "User-Agent": readOptionalString(req.get("user-agent"), 500) || "instore-screen-player/0.1"
+    }
+  };
+}
+
+function buildCriteoDisplayDeliveryResponse({ req, screen, page, selectedLineItem, selectedTemplate, products }) {
+  const eventType = readCriteoRequestEventType(req, page, screen);
+  const pageId = readCriteoRequestPageId(req, eventType);
+  const placementId = readCriteoPlacementId(req, screen);
+  const placementKey = `${pageId}-${placementId}`;
+  const displayFormat = buildCriteoDisplayFormat(selectedTemplate.id, products.length);
+  const trackingBaseUrl = readOptionalString(process.env.TRACKING_BASE_URL, 500) || DEFAULT_TRACKING_BASE_URL;
+  const placementAdId = `${readOptionalString(selectedLineItem?.lineItemId, 120) || placementId}-placement`;
+  const firstProduct = products[0] && typeof products[0] === "object" ? products[0] : {};
+  const adCall = buildCriteoAdCallMetadata(req, { screen, products, eventType, pageId, placementId });
+  const placementAd = {
+    format: displayFormat,
+    products,
+    products_order: buildCriteoProductsOrder(products),
+    rendering: buildCriteoDisplayRendering({ products, template: selectedTemplate, screen }),
+    OnLoadBeacon: buildBeaconUrl("load", screen.screenId, placementAdId, trackingBaseUrl),
+    OnViewBeacon: buildBeaconUrl("view", screen.screenId, placementAdId, trackingBaseUrl),
+    OnClickBeacon:
+      readOptionalString(firstProduct.OnClickBeacon, 500) || buildBeaconUrl("click", screen.screenId, placementAdId, trackingBaseUrl),
+    OnFileClickBeacon: buildBeaconUrl("file-click", screen.screenId, placementAdId, trackingBaseUrl),
+    OnBundleBasketChangeBeacon: buildBeaconUrl("basket-change", screen.screenId, placementAdId, trackingBaseUrl)
+  };
+
+  return {
+    status: "OK",
+    placements: [{ [placementKey]: [placementAd] }],
+    "page-uid": randomUUID(),
+    adCall,
+    placement: {
+      placementId,
+      placementKey,
+      format: displayFormat,
+      eventType,
+      pageId
+    }
+  };
+}
 function isLineItemActive(lineItem, currentDate) {
   if (!lineItem) {
     return false;
@@ -8569,36 +8867,56 @@ app.get("/api/screen-ad", async (req, res) => {
       })
     );
 
+    const page = (Array.isArray(db.pages) ? db.pages : []).find((entry) => entry.pageId === screen.pageId) || null;
+    const displayDelivery = buildCriteoDisplayDeliveryResponse({
+      req,
+      screen,
+      page,
+      selectedLineItem,
+      selectedTemplate,
+      products
+    });
+    const settings = {
+      templateId: selectedTemplate.id,
+      templateName: selectedTemplate.name,
+      loopIntervalMs: getTemplateLoopIntervalMs(selectedTemplate.id),
+      refreshInterval: readRefreshInterval(screen.refreshInterval),
+      screenId: screen.screenId,
+      storeId: screen.storeId,
+      screenType: screen.screenType,
+      screenSize: screen.screenSize,
+      pageId: screen.pageId,
+      deliveryPageId: displayDelivery.placement.pageId,
+      eventType: displayDelivery.placement.eventType,
+      placementId: displayDelivery.placement.placementId,
+      location: screen.location,
+      lineItemId: selectedLineItem.lineItemId,
+      goalPlanId: readOptionalString(selectedLineItem.goalPlanId, 120),
+      goalAdvertiserId: readOptionalString(selectedLineItem.goalAdvertiserId, 120),
+      deliveryShareRatio: Number(selectedShare?.shareRatio || 0),
+      deliveryShareLabel: readOptionalString(selectedShare?.shareLabel, 40),
+      screenShareSlots: shareConfig.totalSlots,
+      defaultSellableShareSlots: shareConfig.sellableShareSlots,
+      defaultSellableShareLabel: shareConfig.shareLabel,
+      lineItemCount: lineItems.length,
+      activeLineItemCount: candidateLineItems.length,
+      sharedPlayerUrl: SHARED_PLAYER_URL,
+      resolverId: getScreenDeviceHints(screen).resolverId,
+      resolvedBy: resolved.resolvedBy,
+      requestViewport: resolved.requestContext.viewport.normalized || "",
+      requestOrientation: resolved.requestContext.orientation || "",
+      adCall: displayDelivery.adCall
+    };
+
     res.json({
+      status: displayDelivery.status,
+      placements: displayDelivery.placements,
+      "page-uid": displayDelivery["page-uid"],
+      placement: displayDelivery.placement,
+      adCall: displayDelivery.adCall,
       format: buildDefaultFormat(selectedTemplate.id, screen.screenSize),
       products,
-      settings: {
-        templateId: selectedTemplate.id,
-        templateName: selectedTemplate.name,
-        loopIntervalMs: getTemplateLoopIntervalMs(selectedTemplate.id),
-        refreshInterval: readRefreshInterval(screen.refreshInterval),
-        screenId: screen.screenId,
-        storeId: screen.storeId,
-        screenType: screen.screenType,
-        screenSize: screen.screenSize,
-        pageId: screen.pageId,
-        location: screen.location,
-        lineItemId: selectedLineItem.lineItemId,
-        goalPlanId: readOptionalString(selectedLineItem.goalPlanId, 120),
-        goalAdvertiserId: readOptionalString(selectedLineItem.goalAdvertiserId, 120),
-        deliveryShareRatio: Number(selectedShare?.shareRatio || 0),
-        deliveryShareLabel: readOptionalString(selectedShare?.shareLabel, 40),
-        screenShareSlots: shareConfig.totalSlots,
-        defaultSellableShareSlots: shareConfig.sellableShareSlots,
-        defaultSellableShareLabel: shareConfig.shareLabel,
-        lineItemCount: lineItems.length,
-        activeLineItemCount: candidateLineItems.length,
-        sharedPlayerUrl: SHARED_PLAYER_URL,
-        resolverId: getScreenDeviceHints(screen).resolverId,
-        resolvedBy: resolved.resolvedBy,
-        requestViewport: resolved.requestContext.viewport.normalized || "",
-        requestOrientation: resolved.requestContext.orientation || ""
-      }
+      settings
     });
   } catch (error) {
     const normalized = normalizeError(error);

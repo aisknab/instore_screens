@@ -459,41 +459,59 @@ Returns live/run-time snapshot data for an applied plan.
 
 ### `GET /api/screen-ad?screenId=STORE_42_ELECTRONICS_V1`
 
-Returns RMJS-ready payload with all required product fields.
+Local in-store equivalent of Criteo's Retail Media Delivery API display ad call. The screen player now sends Criteo-style query parameters while still passing `screenId` for deterministic demo resolution:
 
-Response shape:
+```http
+GET /api/screen-ad?criteo-partner-id=108341&environment=instore&retailer-visitor-id=...&page-id=viewCategory_API_instore&event-type=viewCategory&placement-id=STORE_42_ELECTRONICS_V1&regionId=STORE_42&implementation=S2SAPI&verbosity=full&screenId=STORE_42_ELECTRONICS_V1
+```
+
+The response keeps the legacy `format/products/settings` fields for the in-store renderer and also includes the public Delivery API-style display envelope:
 
 ```json
 {
-  "format": "desktop-instore-1080x1920",
-  "products": [
+  "status": "OK",
+  "placements": [
     {
-      "ProductId": "SKU-HDPH-001",
-      "ProductName": "ANC Headphones Pro",
-      "ProductPage": "https://store.example.com/products/sku-hdph-001",
-      "Image": "/assets/products/category-electronics.svg",
-      "Price": "199.99",
-      "ComparePrice": "249.99",
-      "Rating": "4.8",
-      "adid": "LI-ELEC-001-...",
-      "ClientAdvertiserId": "advertiser-audio",
-      "RenderingAttributes": "{\"promotion\":\"Save 20%\",\"badge\":\"Featured\",\"cta\":\"Find in aisle\"}",
-      "OnLoadBeacon": "https://...",
-      "OnViewBeacon": "https://...",
-      "OnClickBeacon": "https://...",
-      "OnBasketChangeBeacon": "",
-      "OnWishlistBeacon": ""
+      "viewCategory_API_instore-STORE_42_ELECTRONICS_V1": [
+        {
+          "format": "CDS",
+          "products": [
+            {
+              "ProductId": "SKU-HDPH-001",
+              "ProductName": "ANC Headphones Pro",
+              "ProductPage": "https://store.example.com/products/sku-hdph-001",
+              "Image": "/assets/products/category-electronics.svg",
+              "Price": "199.99",
+              "ComparePrice": "249.99",
+              "Rating": "4.8",
+              "ClientAdvertiserId": "advertiser-audio",
+              "AdvertiserId": "advertiser-audio",
+              "RenderingAttributes": "{\"promotion\":\"Save 20%\",\"badge\":\"Featured\",\"cta\":\"Find in aisle\"}",
+              "OnLoadBeacon": "https://...",
+              "OnViewBeacon": "https://...",
+              "OnClickBeacon": "https://..."
+            }
+          ],
+          "products_order": [{ "products": ["SKU-HDPH-001"], "isMandatory": false }],
+          "rendering": {
+            "background_image": "/assets/products/category-electronics.svg",
+            "redirect_url": "https://store.example.com/products/sku-hdph-001",
+            "cta_text": "Find in aisle"
+          },
+          "OnLoadBeacon": "https://...",
+          "OnViewBeacon": "https://...",
+          "OnClickBeacon": "https://..."
+        }
+      ]
     }
   ],
+  "format": "desktop-instore-hero-1080x1920",
+  "products": [{ "ProductId": "SKU-HDPH-001" }],
   "settings": {
     "templateId": "fullscreen-hero",
-    "templateName": "Fullscreen Hero",
-    "loopIntervalMs": 0,
-    "refreshInterval": 30000,
-    "storeId": "STORE_42",
-    "screenType": "Vertical Screen",
-    "pageId": "ELECTRONICS",
-    "location": "electronics",
+    "deliveryPageId": "viewCategory_API_instore",
+    "eventType": "viewCategory",
+    "placementId": "STORE_42_ELECTRONICS_V1",
     "lineItemId": "LI-ELEC-001"
   }
 }
@@ -502,6 +520,7 @@ Response shape:
 ## Important Demo Notes
 
 - `GET /api/screen-ad` rotates through active line items per screen across calls.
+- The demo mirrors the current Display Delivery API response shape (`status`, `placements`, display `format`, `products`, `products_order`, `rendering`, and beacons) while keeping in-store screen metadata in `settings`.
 - RMJS payload includes all required product fields even when defaults are used.
 - Product feed image URLs are preserved when provided; local demo assets are still used when an item has no image, and the admin UI falls back cleanly if a thumbnail URL fails.
 - If a screen product SKU exists in `data/productFeed.json`, the screen delivery payload prefers the feed's current image path for that SKU.

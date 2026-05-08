@@ -31,7 +31,7 @@
             <code id="adCallEndpoint" class="preview-panel__adcall-endpoint">/api/screen-ad</code>
             <div id="adCallMeta" class="preview-panel__adcall-meta"></div>
             <details class="preview-panel__adcall-payload" open>
-              <summary>RMJS payload excerpt</summary>
+              <summary>Delivery payload excerpt</summary>
               <pre id="adCallPayload">{}</pre>
             </details>
           </section>
@@ -75,6 +75,10 @@
       const lineItemIdOverride = (urlParams.get("lineItemId") || "").trim();
       const apiBase = (urlParams.get("apiBase") || "").replace(/\/$/, "");
       const rmjsMode = (urlParams.get("rmjs") || "auto").toLowerCase();
+      const deliveryEventTypeOverride = (urlParams.get("event-type") || urlParams.get("eventType") || "").trim();
+      const deliveryPageIdOverride = (urlParams.get("page-id") || urlParams.get("pageId") || "").trim();
+      const regionIdOverride = (urlParams.get("regionId") || "").trim();
+      const criteoPartnerId = (urlParams.get("criteo-partner-id") || urlParams.get("criteoPartnerId") || "108341").trim();
       const previewMode = (urlParams.get("preview") || urlParams.get("view") || "").trim().toLowerCase();
       const isShowcaseMode = ["showcase", "immersive", "mockup"].includes(previewMode);
       const moneyFormatter = new Intl.NumberFormat("en-US", {
@@ -209,13 +213,85 @@
         return screenIdOverride || deviceId || "shared player URL";
       }
 
+      function inferDisplayEventType() {
+        const source = `${screenIdOverride} ${deviceId} ${deviceProfile}`.toLowerCase();
+        if (source.includes("checkout") || source.includes("basket") || source.includes("cart")) {
+          return "viewBasket";
+        }
+        if (source.includes("entrance") || source.includes("home")) {
+          return "viewHome";
+        }
+        return "viewCategory";
+      }
+
+      function inferRegionId() {
+        const match = `${screenIdOverride} ${deviceId} ${deviceProfile}`.match(/STORE[_-]?\d+/i);
+        return match ? match[0].replace("-", "_").toUpperCase() : "";
+      }
+
+      function inferCategory() {
+        const source = `${screenIdOverride} ${deviceProfile}`.toLowerCase();
+        if (source.includes("electronics")) return "electronics";
+        if (source.includes("whitegoods")) return "whitegoods";
+        if (source.includes("foodcourt")) return "foodcourt";
+        if (source.includes("aisle")) return "aisle";
+        return "in-store";
+      }
+
+      function getRetailerVisitorId() {
+        const explicit = (urlParams.get("retailer-visitor-id") || urlParams.get("retailerVisitorId") || "").trim();
+        if (explicit) {
+          return explicit;
+        }
+        const fallback = `instore-${screenIdOverride || deviceId || "shared-player"}`;
+        try {
+          const storageKey = "instoreRetailerVisitorId";
+          const existing = window.localStorage?.getItem(storageKey);
+          if (existing) {
+            return existing;
+          }
+          const generated = `${fallback}-${window.crypto?.randomUUID ? window.crypto.randomUUID() : Date.now()}`;
+          window.localStorage?.setItem(storageKey, generated);
+          return generated;
+        } catch {
+          return fallback;
+        }
+      }
+
       function buildScreenAdUrl() {
         const params = new URLSearchParams();
+        const eventType = deliveryEventTypeOverride || inferDisplayEventType();
+        const regionId = regionIdOverride || inferRegionId();
+
+        params.set("criteo-partner-id", criteoPartnerId);
+        params.set("environment", "instore");
+        params.set("retailer-visitor-id", getRetailerVisitorId());
+        params.set("page-id", deliveryPageIdOverride || `${eventType}_API_instore`);
+        params.set("event-type", eventType);
+        params.set("implementation", "S2SAPI");
+        params.set("verbosity", (urlParams.get("verbosity") || "full").trim());
+
         if (screenIdOverride) {
           params.set("screenId", screenIdOverride);
+          params.set("placement-id", screenIdOverride);
         }
         if (deviceId) {
           params.set("deviceId", deviceId);
+          if (!params.has("placement-id")) {
+            params.set("placement-id", deviceId);
+          }
+        }
+        if (regionId) {
+          params.set("regionId", regionId);
+        }
+        if (eventType === "viewCategory" && !urlParams.has("category")) {
+          params.set("category", inferCategory());
+        }
+        for (const passThrough of ["customer-id", "email", "nocall", "gdpr", "gdpr_consent", "block", "keywords", "item", "filters"]) {
+          const value = (urlParams.get(passThrough) || "").trim();
+          if (value) {
+            params.set(passThrough, value);
+          }
         }
         if (deviceProfile) {
           params.set("deviceProfile", deviceProfile);
@@ -1437,38 +1513,58 @@
         }).length;
       }
 
-      function buildRmjsPayloadExcerpt(data = {}) {
-        const settings = data.settings && typeof data.settings === "object" ? data.settings : {};
-        const products = Array.isArray(data.products) ? data.products : [];
-        const firstProduct = products[0] && typeof products[0] === "object" ? products[0] : {};
+      function getFirstDeliveryPlacementAd(data = {}) {
+        const placements = Array.isArray(data.placements) ? data.placements : [];
+        for (const placement of placements) {
+          if (!placement || typeof placement !== "object") {
+            continue;
+          }
+          for (const [placementKey, ads] of Object.entries(placement)) {
+            if (Array.isArray(ads) && ads[0] && typeof ads[0] === "object") {
+              return { placementKey, ad: ads[0] };
+            }
+          }
+        }
+        return { placementKey: "", ad: null };
+      }
+
+      function buildRmjsRenderPayload(data = {}) {
+        const deliveryPlacement = getFirstDeliveryPlacementAd(data);
+        const placementAd = deliveryPlacement.ad || {};
         return {
-          Status: "OK",
+          Status: readText(data.status).toUpperCase() || "OK",
           Placements: [
             {
-              Format: readText(data.format),
-              Products: [
-                pickObjectFields(firstProduct, AD_CALL_REQUIRED_PRODUCT_FIELDS)
-              ],
-              RenderingSettings: pickObjectFields(settings, [
-                "templateId",
-                "templateName",
-                "screenId",
-                "storeId",
-                "pageId",
-                "lineItemId",
-                "goalPlanId",
-                "goalAdvertiserId",
-                "deliveryShareLabel",
-                "sharedPlayerUrl",
-                "resolverId",
-                "resolvedBy",
-                "requestViewport",
-                "requestOrientation"
-              ])
+              Format: readText(placementAd.format) || readText(data.format),
+              Products: Array.isArray(placementAd.products) ? placementAd.products : Array.isArray(data.products) ? data.products : [],
+              Rendering: placementAd.rendering && typeof placementAd.rendering === "object" ? placementAd.rendering : {},
+              RenderingSettings: data.settings || {},
+              OnLoadBeacon: readText(placementAd.OnLoadBeacon),
+              OnViewBeacon: readText(placementAd.OnViewBeacon),
+              OnClickBeacon: readText(placementAd.OnClickBeacon)
             }
           ],
           InjectionPoint: "#ad-canvas",
           Environment: "instore"
+        };
+      }
+
+      function buildRmjsPayloadExcerpt(data = {}) {
+        const settings = data.settings && typeof data.settings === "object" ? data.settings : {};
+        const adCall = data.adCall && typeof data.adCall === "object" ? data.adCall : settings.adCall;
+        const deliveryPlacement = getFirstDeliveryPlacementAd(data);
+        return {
+          request: adCall || {
+            method: "GET",
+            localEndpoint: "/api/screen-ad"
+          },
+          response: {
+            status: readText(data.status) || "OK",
+            placements: data.placements || [],
+            "page-uid": readText(data["page-uid"]),
+            placementKey: deliveryPlacement.placementKey
+          },
+          rmjsPayload: buildRmjsRenderPayload(data)
         };
       }
 
@@ -1526,10 +1622,13 @@
             ]
           : [
               { label: "Method", value: "GET" },
+              { label: "Delivery endpoint", value: readText(settings.adCall?.endpoint) || "https://d.as.criteo.com/delivery/retailmedia" },
               { label: "Renderer", value: readText(state.renderer) || (rmjsAvailable ? "RMJS" : "Native fallback") },
+              { label: "Placement", value: readText(settings.placementId) || readText(payload?.placement?.placementId) },
+              { label: "Event", value: readText(settings.eventType) },
               { label: "Screen", value: readText(settings.screenId) || currentResolvedScreenId || screenIdOverride || deviceId },
               { label: "Line item", value: readText(settings.lineItemId) },
-              { label: "Format", value: readText(payload?.format) },
+              { label: "Display format", value: readText(payload?.placement?.format) || readText(payload?.format) },
               { label: "Products", value: products.length ? `${products.length} returned` : "" },
               { label: "RMJS fields", value: productFieldText },
               { label: "Beacons", value: readText(firstProduct.OnLoadBeacon) && readText(firstProduct.OnViewBeacon) ? "play + exposure" : "" },
@@ -1849,18 +1948,7 @@
         clearFallbackLoop();
         adCanvas.innerHTML = "";
 
-        window.RMJS.render({
-          Status: "OK",
-          Placements: [
-            {
-              Format: data.format,
-              Products: data.products,
-              RenderingSettings: data.settings || {}
-            }
-          ],
-          InjectionPoint: "#ad-canvas",
-          Environment: "instore"
-        });
+        window.RMJS.render(buildRmjsRenderPayload(data));
 
         return true;
       }
